@@ -61,7 +61,7 @@ not been reproduced.
 
 ## 3. Fidelity gaps against the console
 
-These are measured against the modified DuckStation (`tools/port/duckstation.py`).
+These are measured against the modified DuckStation (`tools/port/duckstation.py`, built as `tools/port/DUCKSTATION.md` describes).
 Game logic and 1x rendering already match, and every one-pad scenario (attract, all menus with and without a save, garage, emblem editor, Time Attack, Extra Trial, the full Grand Prix) enters each mode on DuckStation's field with the same FrameCounter and rand. What remains:
 
 | ID | Where | Gap |
@@ -101,7 +101,6 @@ Game logic and 1x rendering already match, and every one-pad scenario (attract, 
 
 | ID | Sev | Where | Debt | Fix |
 | --- | --- | --- | --- | --- |
-| P1 | High | `tools/port/duckstation.py:24`, `~/Projects/duckstation-pe2-reference` | Every "matches DuckStation" result depends on an uncommitted local working tree of DuckStation (regtest additions: PAD2 and pad types, axis binds, CARD1=none, audio dump, SPU trace, VRAM out) on top of upstream `2c527f4f2`, with no fork remote. `duckstation.py` also defaults to home paths and fixed ports, and leaves the emulator running when a connect fails. | Commit the changes to a fork branch, or keep `tools/port/duckstation-regtest.patch` with its base commit. |
 | P2 | Medium | CI | No game-level test runs in CI, because they need a disc. The parsers in `main.c`, mount failures and disc validation are not covered. | Unit-test the parsers. Add a synthetic `SYSTEM.CNF` image like `host_files_test`. Keep a local `tools/port/regress.sh` for disc runs. |
 | P3 | Medium | `.github/workflows/release-*.yml:39` | A manual `workflow_dispatch` builds the tag's source with main's current workflow and `stage.sh`. | Dispatch the run on the tag itself, or pin the staging script to the tag. |
 | P4 | Medium | `release-macos.yml:65,145`, `release-checksums.yml:10-15` | Without `MACOS_*` secrets the macOS build is only ad-hoc signed, yet any re-run uploads it with `--clobber` over the locally notarized zip. Checksums also run after failed builds. | Skip the upload when the secrets are missing; check `workflow_run.conclusion`. |

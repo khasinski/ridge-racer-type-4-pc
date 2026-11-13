@@ -1,0 +1,1086 @@
+diff --git a/src/core/spu.cpp b/src/core/spu.cpp
+index 824a9ae9a..0ba65db03 100644
+--- a/src/core/spu.cpp
++++ b/src/core/spu.cpp
+@@ -55,6 +55,8 @@ ALWAYS_INLINE constexpr float ApplyVolumeF(float sample, s16 volume)
+   return (sample * static_cast<float>(volume)) / static_cast<float>(0x8000);
+ }
+ 
++std::FILE* g_regtest_audio_dump = nullptr;
++
+ namespace SPU {
+ namespace {
+ 
+@@ -865,6 +867,15 @@ u16 SPU::ReadRegister(u32 offset)
+ 
+ void SPU::WriteRegister(u32 offset, u16 value)
+ {
++  // Regtest: DUCKSTATION_SPU_REG_TRACE=1 logs CPU writes to the voice and
++  // voice-mask registers (0x000-0x19F) with the frame number.
++  static const bool reg_trace = [] {
++    const char* trace = std::getenv("DUCKSTATION_SPU_REG_TRACE");
++    return trace && *trace && *trace != '0';
++  }();
++  if (reg_trace && offset < 0x1A0)
++    std::fprintf(stderr, "DS-SPU reg frame=%u off=%03x val=%04x\n", System::GetFrameNumber(), offset, value);
++
+   switch (offset)
+   {
+     case 0x1F801D80 - SPU_BASE:
+@@ -1677,6 +1688,15 @@ CoreAudioStream& SPU::GetOutputStream()
+ 
+ void SPU::Voice::KeyOn()
+ {
++  if (std::getenv("DUCKSTATION_SPU_KEY_TRACE"))
++  {
++    const std::ptrdiff_t index = this - s_state.voices.data();
++    std::fprintf(stderr,
++                 "DS-SPU key-on voice=%td addr=%u repeat=%u pitch=%u left=%d right=%d adsr1=%u adsr2=%u\n",
++                 index, regs.adpcm_start_address, regs.adpcm_repeat_address, regs.adpcm_sample_rate,
++                 static_cast<s16>(regs.volume_left.bits), static_cast<s16>(regs.volume_right.bits),
++                 static_cast<u16>(regs.adsr.bits), static_cast<u16>(regs.adsr.bits >> 16));
++  }
+   current_address = regs.adpcm_start_address & ~u16(1);
+   counter.bits = 0;
+   regs.adsr_volume = 0;
+@@ -1695,6 +1715,8 @@ void SPU::Voice::KeyOn()
+ 
+ void SPU::Voice::KeyOff()
+ {
++  if (std::getenv("DUCKSTATION_SPU_KEY_TRACE"))
++    std::fprintf(stderr, "DS-SPU key-off voice=%td\n", this - s_state.voices.data());
+   if (adsr_phase == ADSRPhase::Off || adsr_phase == ADSRPhase::Release)
+     return;
+ 
+@@ -1932,6 +1954,13 @@ void SPU::Voice::DecodeBlock(const ADPCMBlock& block)
+ 
+   std::copy(last_samples, last_samples + countof(last_samples), adpcm_last_samples.begin());
+   current_block_flags.bits = block.flags.bits;
++  if (std::getenv("DUCKSTATION_ADPCM_DUMP") && (this - s_state.voices.data()) == 18)
++  {
++    static std::FILE* dump = std::fopen(std::getenv("DUCKSTATION_ADPCM_DUMP"), "wb");
++    if (dump)
++      std::fwrite(&current_block_samples[NUM_SAMPLES_FROM_LAST_ADPCM_BLOCK], sizeof(s16),
++                  NUM_SAMPLES_PER_ADPCM_BLOCK, dump);
++  }
+ }
+ 
+ s32 SPU::Voice::Interpolate() const
+@@ -2429,6 +2458,18 @@ void SPU::Execute(void* param, TickCount ticks)
+       for (u32 voice = 0; voice < NUM_VOICES; voice++)
+       {
+         const auto [left, right] = SampleVoice(voice);
++        if (voice == 18)
++        {
++          static std::FILE* dump = []() -> std::FILE* {
++            const char* path = std::getenv("DUCKSTATION_VOICE18_DUMP");
++            return (path && *path) ? std::fopen(path, "wb") : nullptr;
++          }();
++          if (dump)
++          {
++            const s16 sample = static_cast<s16>(Clamp16(s_state.voices[voice].last_volume));
++            std::fwrite(&sample, sizeof(sample), 1, dump);
++          }
++        }
+         left_sum += left;
+         right_sum += right;
+ 
+@@ -2531,6 +2572,10 @@ void SPU::Execute(void* param, TickCount ticks)
+       }
+     }
+ 
++    // Regtest "audiodump": raw 44100 Hz s16 stereo of the mixed output.
++    if (g_regtest_audio_dump) [[unlikely]]
++      std::fwrite(output_frame_start, sizeof(s16) * 2, frames_in_this_batch, g_regtest_audio_dump);
++
+ #ifndef __ANDROID__
+     if (MediaCapture* cap = System::GetMediaCapture()) [[unlikely]]
+     {
+diff --git a/src/duckstation-regtest/CMakeLists.txt b/src/duckstation-regtest/CMakeLists.txt
+index 9a7080255..d7b1ba718 100644
+--- a/src/duckstation-regtest/CMakeLists.txt
++++ b/src/duckstation-regtest/CMakeLists.txt
+@@ -11,4 +11,24 @@ add_executable(duckstation-regtest
+ target_include_directories(duckstation-regtest PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+ target_link_libraries(duckstation-regtest PRIVATE core common scmversion)
+ 
+-add_core_resources(duckstation-regtest)
+\ No newline at end of file
++add_custom_command(TARGET duckstation-regtest POST_BUILD
++  COMMAND ${CMAKE_COMMAND} -E rm -rf "$<TARGET_FILE_DIR:duckstation-regtest>/resources"
++  COMMAND ${CMAKE_COMMAND} -E copy_directory
++          "${CMAKE_SOURCE_DIR}/data/resources"
++          "$<TARGET_FILE_DIR:duckstation-regtest>/resources"
++  COMMENT "Copying resources for headless regtest runner")
++
++if(APPLE)
++  add_custom_command(TARGET duckstation-regtest POST_BUILD
++    COMMAND ${CMAKE_COMMAND} -E copy_if_different
++            "${CMAKE_CURRENT_SOURCE_DIR}/metal_shaders.metallib"
++            "$<TARGET_FILE_DIR:duckstation-regtest>/resources/metal_shaders.metallib"
++    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/Frameworks"
++    COMMAND ${CMAKE_COMMAND} -E copy_if_different
++            "${CMAKE_SOURCE_DIR}/dep/prebuilt/macos-universal/lib/libshaderc_shared.dylib"
++            "${CMAKE_SOURCE_DIR}/dep/prebuilt/macos-universal/lib/libspirv-cross-c-shared.0.dylib"
++            "${CMAKE_SOURCE_DIR}/dep/prebuilt/macos-universal/lib/libharfbuzz.dylib"
++            "${CMAKE_SOURCE_DIR}/dep/prebuilt/macos-universal/lib/libdiscord-rpc.dylib"
++            "${CMAKE_BINARY_DIR}/Frameworks"
++    COMMENT "Copying macOS runtime dylibs for headless regtest runner")
++endif()
+diff --git a/src/duckstation-regtest/metal_shaders.metallib b/src/duckstation-regtest/metal_shaders.metallib
+new file mode 100644
+index 0000000000000000000000000000000000000000..c4acc44f7eb53fec7ffe33396821b9c1555b1a57
+GIT binary patch
+literal 14814
+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
+W91SVx(16Rg_r&3U=KV$6U-Vy8ZI;mh
+
+literal 0
+HcmV?d00001
+
+diff --git a/src/duckstation-regtest/regtest_host.cpp b/src/duckstation-regtest/regtest_host.cpp
+index 85d6fa826..54e1b0e88 100644
+--- a/src/duckstation-regtest/regtest_host.cpp
++++ b/src/duckstation-regtest/regtest_host.cpp
+@@ -2,20 +2,25 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "core/achievements.h"
++#include "core/analog_controller.h"
+ #include "core/bus.h"
+ #include "core/controller.h"
+ #include "core/core_private.h"
+ #include "core/cpu_core.h"
++#include "core/digital_controller.h"
+ #include "core/fullscreenui.h"
+ #include "core/fullscreenui_widgets.h"
+ #include "core/game_list.h"
++#include "core/gdb_server.h"
+ #include "core/gpu.h"
+ #include "core/gpu_backend.h"
+ #include "core/host.h"
+ #include "core/performance_counters.h"
++#include "core/pad.h"
+ #include "core/spu.h"
+ #include "core/system.h"
+ #include "core/system_private.h"
++#include "core/timing_event.h"
+ #include "core/video_presenter.h"
+ #include "core/video_thread.h"
+ #include "core/video_thread_private.h"
+@@ -27,6 +32,8 @@
+ #include "util/http_downloader.h"
+ #include "util/imgui_manager.h"
+ #include "util/input_manager.h"
++#include "util/image.h"
++#include "util/sockets.h"
+ #include "util/translation.h"
+ 
+ #include "common/assert.h"
+@@ -43,12 +50,21 @@
+ 
+ #include "fmt/format.h"
+ 
++#include <algorithm>
++#include <condition_variable>
+ #include <csignal>
+ #include <cstdio>
++#include <cstdlib>
+ #include <ctime>
++#include <deque>
++#include <string>
++#include <string_view>
++#include <vector>
+ 
+ LOG_CHANNEL(Host);
+ 
++extern std::FILE* g_regtest_audio_dump;
++
+ namespace RegTestHost {
+ 
+ static bool ParseCommandLineParameters(int argc, char* argv[], std::optional<SystemBootParameters>& autoboot);
+@@ -78,6 +94,490 @@ static u32 s_frames_to_run = 60 * 60;
+ static u32 s_frames_remaining = 0;
+ static u32 s_frame_dump_interval = 0;
+ static std::string s_dump_base_directory;
++static std::optional<u16> s_gdb_port;
++static bool s_wait_for_debugger = false;
++static std::optional<u16> s_ai_port;
++static u32 s_ai_advance_remaining = 0;
++static bool s_slow_boot = false;
++static std::mutex s_latest_frame_mutex;
++static Image s_latest_frame;
++static u64 s_latest_frame_number = 0;
++
++namespace AIControl {
++
++static bool Initialize(u16 port);
++static void Poll(u32 timeout_ms);
++static void Shutdown();
++static bool HasServer();
++static bool EqualsIgnoreCase(std::string_view lhs, std::string_view rhs);
++
++namespace {
++
++class ClientSocket final : public BufferedStreamSocket
++{
++public:
++  ClientSocket(SocketMultiplexer& multiplexer, SocketDescriptor descriptor);
++  ~ClientSocket() override;
++
++protected:
++  void OnConnected() override;
++  void OnDisconnected(const Error& error) override;
++  void OnRead() override;
++
++private:
++  void ProcessCommand(std::string_view command);
++  void SendText(std::string_view text);
++  void SendError(std::string_view text);
++  void SendScreenshot();
++  void SetButtons(std::string_view args, u32 port);
++
++  std::string m_pending_data;
++};
++
++struct Locals
++{
++  std::unique_ptr<SocketMultiplexer> multiplexer;
++  std::shared_ptr<ListenSocket> listen_socket;
++  std::vector<std::shared_ptr<ClientSocket>> clients;
++};
++
++static Locals s_locals;
++
++} // namespace
++
++static std::optional<u32> GetButtonIndex(std::string_view name)
++{
++  static constexpr std::pair<std::string_view, u32> BUTTONS[] = {
++    {"Select", static_cast<u32>(AnalogController::Button::Select)},
++    {"L3", static_cast<u32>(AnalogController::Button::L3)},
++    {"R3", static_cast<u32>(AnalogController::Button::R3)},
++    {"Start", static_cast<u32>(AnalogController::Button::Start)},
++    {"Up", static_cast<u32>(AnalogController::Button::Up)},
++    {"Right", static_cast<u32>(AnalogController::Button::Right)},
++    {"Down", static_cast<u32>(AnalogController::Button::Down)},
++    {"Left", static_cast<u32>(AnalogController::Button::Left)},
++    {"L2", static_cast<u32>(AnalogController::Button::L2)},
++    {"R2", static_cast<u32>(AnalogController::Button::R2)},
++    {"L1", static_cast<u32>(AnalogController::Button::L1)},
++    {"R1", static_cast<u32>(AnalogController::Button::R1)},
++    {"Triangle", static_cast<u32>(AnalogController::Button::Triangle)},
++    {"Circle", static_cast<u32>(AnalogController::Button::Circle)},
++    {"Cross", static_cast<u32>(AnalogController::Button::Cross)},
++    {"Square", static_cast<u32>(AnalogController::Button::Square)},
++    {"Analog", static_cast<u32>(AnalogController::Button::Analog)},
++  };
++
++  for (const auto& it : BUTTONS)
++  {
++    if (EqualsIgnoreCase(name, it.first))
++      return it.second;
++  }
++
++  return std::nullopt;
++}
++
++static std::optional<u32> GetAxisIndex(std::string_view name)
++{
++  static constexpr u32 HALF_AXIS_START = static_cast<u32>(AnalogController::Button::Count);
++  static constexpr std::pair<std::string_view, u32> AXES[] = {
++    {"LLeft", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::LLeft)},
++    {"LRight", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::LRight)},
++    {"LDown", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::LDown)},
++    {"LUp", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::LUp)},
++    {"RLeft", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::RLeft)},
++    {"RRight", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::RRight)},
++    {"RDown", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::RDown)},
++    {"RUp", HALF_AXIS_START + static_cast<u32>(AnalogController::HalfAxis::RUp)},
++  };
++
++  for (const auto& it : AXES)
++  {
++    if (EqualsIgnoreCase(name, it.first))
++      return it.second;
++  }
++
++  return std::nullopt;
++}
++
++static std::string_view Trim(std::string_view value)
++{
++  while (!value.empty() && std::isspace(static_cast<unsigned char>(value.front())))
++    value.remove_prefix(1);
++  while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back())))
++    value.remove_suffix(1);
++  return value;
++}
++
++static bool EqualsIgnoreCase(std::string_view lhs, std::string_view rhs)
++{
++  if (lhs.size() != rhs.size())
++    return false;
++
++  for (size_t i = 0; i < lhs.size(); i++)
++  {
++    if (std::tolower(static_cast<unsigned char>(lhs[i])) != std::tolower(static_cast<unsigned char>(rhs[i])))
++      return false;
++  }
++
++  return true;
++}
++
++ClientSocket::ClientSocket(SocketMultiplexer& multiplexer, SocketDescriptor descriptor)
++  : BufferedStreamSocket(multiplexer, descriptor, 65536, 16 * 1024 * 1024)
++{
++}
++
++ClientSocket::~ClientSocket() = default;
++
++void ClientSocket::OnConnected()
++{
++  INFO_LOG("AI control client {} connected.", GetRemoteAddress().ToString());
++  SetNagleBuffering(false);
++  s_locals.clients.push_back(std::static_pointer_cast<ClientSocket>(shared_from_this()));
++  SendText("OK ai-control ready\n");
++}
++
++void ClientSocket::OnDisconnected(const Error& error)
++{
++  INFO_LOG("AI control client {} disconnected: {}", GetRemoteAddress().ToString(), error.GetDescription());
++  const auto iter = std::find_if(s_locals.clients.begin(), s_locals.clients.end(),
++                                 [this](const std::shared_ptr<ClientSocket>& rhs) { return rhs.get() == this; });
++  if (iter != s_locals.clients.end())
++    s_locals.clients.erase(iter);
++}
++
++void ClientSocket::OnRead()
++{
++  const std::span<const u8> buffer = AcquireReadBuffer();
++  if (buffer.empty())
++    return;
++
++  m_pending_data.append(reinterpret_cast<const char*>(buffer.data()), buffer.size());
++  ReleaseReadBuffer(buffer.size());
++
++  for (;;)
++  {
++    const std::string::size_type newline = m_pending_data.find('\n');
++    if (newline == std::string::npos)
++      break;
++
++    std::string command = m_pending_data.substr(0, newline);
++    m_pending_data.erase(0, newline + 1);
++    if (!command.empty() && command.back() == '\r')
++      command.pop_back();
++
++    ProcessCommand(Trim(command));
++  }
++}
++
++void ClientSocket::SendText(std::string_view text)
++{
++  Write(text.data(), text.size());
++}
++
++void ClientSocket::SendError(std::string_view text)
++{
++  SmallString reply;
++  reply.format("ERR {}\n", text);
++  SendText(reply);
++}
++
++void ClientSocket::SendScreenshot()
++{
++  Image image;
++  u64 frame = 0;
++  {
++    std::unique_lock lock(s_latest_frame_mutex);
++    image = s_latest_frame;
++    frame = s_latest_frame_number;
++  }
++
++  if (!image.IsValid())
++  {
++    SendError("no screenshot available yet");
++    return;
++  }
++
++  const size_t size = image.GetStorageSize();
++  const SmallString header = SmallString::from_format("SCREENSHOT {} {} {} {} {}\n", image.GetWidth(),
++                                                       image.GetHeight(), image.GetPitch(), size, frame);
++  const void* buffers[] = {header.c_str(), image.GetPixels()};
++  const size_t lengths[] = {header.length(), size};
++  WriteVector(buffers, lengths, 2);
++}
++
++void ClientSocket::SetButtons(std::string_view args, u32 port)
++{
++  Controller* const controller = Pad::GetController(port);
++  if (!controller)
++  {
++    SendError("pad 1 controller is not connected");
++    return;
++  }
++
++  while (!args.empty())
++  {
++    args = Trim(args);
++    const size_t end = args.find(' ');
++    const std::string_view token = args.substr(0, end);
++    args = (end == std::string_view::npos) ? std::string_view() : args.substr(end + 1);
++    if (token.empty())
++      continue;
++
++    const size_t equals = token.find('=');
++    if (equals == std::string_view::npos)
++    {
++      SendError("button tokens must be Name=value");
++      return;
++    }
++
++    const std::string_view name = token.substr(0, equals);
++    const std::string_view raw_value = token.substr(equals + 1);
++    const std::optional<float> parsed_value = StringUtil::FromChars<float>(raw_value);
++    if (!parsed_value.has_value())
++    {
++      SendError("invalid button value");
++      return;
++    }
++
++    if (const std::optional<u32> button = GetButtonIndex(name); button.has_value())
++    {
++      controller->SetBindState(button.value(), parsed_value.value() != 0.0f ? 1.0f : 0.0f);
++    }
++    else if (const std::optional<u32> axis = GetAxisIndex(name); axis.has_value())
++    {
++      controller->SetBindState(axis.value(), std::clamp(parsed_value.value(), 0.0f, 1.0f));
++    }
++    else
++    {
++      SendError("unknown button or axis");
++      return;
++    }
++  }
++
++  SendText("OK\n");
++}
++
++void ClientSocket::ProcessCommand(std::string_view command)
++{
++  if (command.empty())
++    return;
++
++  const size_t space = command.find(' ');
++  const std::string_view verb = command.substr(0, space);
++  const std::string_view args = (space == std::string_view::npos) ? std::string_view() : Trim(command.substr(space + 1));
++
++  if (EqualsIgnoreCase(verb, "status"))
++  {
++    SendText(SmallString::from_format("OK paused={} running={} frames_remaining={} advance_remaining={}\n",
++                                      System::IsPaused() ? 1 : 0, System::IsValid() ? 1 : 0, s_frames_remaining,
++                                      s_ai_advance_remaining));
++  }
++  else if (EqualsIgnoreCase(verb, "pause"))
++  {
++    s_ai_advance_remaining = 0;
++    System::PauseSystem(true);
++    SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "resume"))
++  {
++    s_ai_advance_remaining = 0;
++    System::PauseSystem(false);
++    SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "advance"))
++  {
++    const std::optional<u32> frames = StringUtil::FromChars<u32>(args);
++    if (!frames.has_value() || frames.value() == 0)
++    {
++      SendError("advance requires a positive frame count");
++      return;
++    }
++
++    s_ai_advance_remaining = frames.value();
++    System::PauseSystem(false);
++    SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "buttons") || EqualsIgnoreCase(verb, "buttons2"))
++  {
++    SetButtons(args, EqualsIgnoreCase(verb, "buttons2") ? 1u : 0u);
++  }
++  else if (EqualsIgnoreCase(verb, "bind") || EqualsIgnoreCase(verb, "bind2"))
++  {
++    // bind[2] <index>=<value>...: the controller type's own bind indices
++    // (buttons, then its half axes), for types other than the digital pad.
++    Controller* const controller = Pad::GetController(EqualsIgnoreCase(verb, "bind2") ? 1u : 0u);
++    std::string_view rest = args;
++    while (controller && !rest.empty())
++    {
++      const size_t end = rest.find(' ');
++      const std::string_view token = rest.substr(0, end);
++      rest = (end == std::string_view::npos) ? std::string_view() : Trim(rest.substr(end + 1));
++      const size_t equals = token.find('=');
++      const std::optional<u32> index =
++        (equals == std::string_view::npos) ? std::nullopt : StringUtil::FromChars<u32>(token.substr(0, equals));
++      const std::optional<float> value =
++        index.has_value() ? StringUtil::FromChars<float>(token.substr(equals + 1)) : std::nullopt;
++      if (!value.has_value())
++      {
++        SendError("bind tokens must be index=value");
++        return;
++      }
++      controller->SetBindState(index.value(), value.value());
++    }
++    if (!controller)
++      SendError("controller is not connected");
++    else
++      SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "release") || EqualsIgnoreCase(verb, "release2"))
++  {
++    Controller* const controller = Pad::GetController(EqualsIgnoreCase(verb, "release2") ? 1u : 0u);
++    if (!controller)
++    {
++      SendError("pad 1 controller is not connected");
++      return;
++    }
++
++    for (u32 i = 0; i < static_cast<u32>(AnalogController::Button::Count); i++)
++      controller->SetBindState(i, 0.0f);
++    for (u32 i = 0; i < static_cast<u32>(AnalogController::HalfAxis::Count); i++)
++      controller->SetBindState(static_cast<u32>(AnalogController::Button::Count) + i, 0.0f);
++    SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "screenshot"))
++  {
++    SendScreenshot();
++  }
++  else if (EqualsIgnoreCase(verb, "vram"))
++  {
++    // dump full 1024x512 16-bit VRAM to the given path (raw little-endian u16)
++    std::string path(args);
++    std::FILE* fp = path.empty() ? nullptr : std::fopen(path.c_str(), "wb");
++    if (!fp)
++    {
++      SendError("vram requires a writable path");
++    }
++    else
++    {
++      std::fwrite(g_vram, 1, VRAM_SIZE, fp);
++      std::fclose(fp);
++      SendText("OK\n");
++    }
++  }
++  else if (EqualsIgnoreCase(verb, "spuram"))
++  {
++    std::string path(args);
++    std::FILE* fp = path.empty() ? nullptr : std::fopen(path.c_str(), "wb");
++    if (!fp)
++      SendError("spuram requires a writable path");
++    else
++    {
++      const auto& ram = SPU::GetRAM();
++      std::fwrite(ram.data(), 1, ram.size(), fp);
++      std::fclose(fp);
++      SendText("OK\n");
++    }
++  }
++  else if (EqualsIgnoreCase(verb, "audiodump"))
++  {
++    // audiodump <path>: append the mixed SPU output (raw 44100 Hz s16 stereo)
++    // to path from now on; audiodump without a path closes the file.
++    if (g_regtest_audio_dump)
++    {
++      std::fclose(g_regtest_audio_dump);
++      g_regtest_audio_dump = nullptr;
++    }
++    std::string path(args);
++    if (!path.empty() && !(g_regtest_audio_dump = std::fopen(path.c_str(), "wb")))
++      SendError("audiodump requires a writable path");
++    else
++      SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "disc"))
++  {
++    // disc <path>: swap the disc in the drive (a multi-disc game's "please set disc N").
++    std::string path(args);
++    if (path.empty() || !System::InsertMedia(path.c_str()))
++      SendError("disc requires a readable disc image");
++    else
++      SendText("OK\n");
++  }
++  else if (EqualsIgnoreCase(verb, "ticks"))
++  {
++    // ticks: the emulated system clock (global tick counter plus the CPU's
++    // pending ticks) and the frame number, e.g. at a GDB breakpoint stop.
++    SendText(SmallString::from_format("OK ticks={} frame={}\n",
++                                      TimingEvents::GetGlobalTickCounter() + CPU::GetPendingTicks(),
++                                      System::GetFrameNumber()));
++  }
++  else if (EqualsIgnoreCase(verb, "help"))
++  {
++    SendText("OK commands: status pause resume advance <frames> buttons[2] Name=value... release[2] screenshot help\n");
++  }
++  else
++  {
++    SendError("unknown command");
++  }
++}
++
++bool Initialize(u16 port)
++{
++  Error error;
++  const std::optional<SocketAddress> address =
++    SocketAddress::Parse(SocketAddress::Type::IPv4, "127.0.0.1", port, &error);
++  if (!address.has_value())
++  {
++    ERROR_LOG("Failed to parse AI control address: {}", error.GetDescription());
++    return false;
++  }
++
++  if (!(s_locals.multiplexer = SocketMultiplexer::Create(&error)))
++  {
++    ERROR_LOG("Failed to create AI control socket multiplexer: {}", error.GetDescription());
++    return false;
++  }
++
++  s_locals.listen_socket = s_locals.multiplexer->CreateListenSocket<ClientSocket>(address.value(), &error);
++  if (!s_locals.listen_socket)
++  {
++    ERROR_LOG("Failed to create AI control listen socket: {}", error.GetDescription());
++    s_locals.multiplexer.reset();
++    return false;
++  }
++
++  INFO_LOG("AI control server is now listening on {}.", address->ToString());
++  return true;
++}
++
++void Poll(u32 timeout_ms)
++{
++  if (s_locals.multiplexer)
++    s_locals.multiplexer->PollEventsWithTimeout(timeout_ms);
++}
++
++void Shutdown()
++{
++  while (!s_locals.clients.empty())
++  {
++    std::shared_ptr<ClientSocket> client = s_locals.clients.back();
++    client->Close();
++  }
++
++  if (s_locals.listen_socket)
++  {
++    s_locals.listen_socket->Close();
++    s_locals.listen_socket.reset();
++  }
++  s_locals.multiplexer.reset();
++}
++
++bool HasServer()
++{
++  return static_cast<bool>(s_locals.listen_socket);
++}
++
++} // namespace AIControl
+ 
+ bool RegTestHost::InitializeFoldersAndConfig(Error* error)
+ {
+@@ -92,9 +592,38 @@ bool RegTestHost::InitializeFoldersAndConfig(Error* error)
+   SettingsInterface& si = *Core::GetBaseSettingsLayer();
+   si.SetStringValue("GPU", "Renderer", Settings::GetRendererName(GPURenderer::Software));
+   si.SetBoolValue("GPU", "DisableShaderCache", true);
+-  si.SetStringValue("Pad1", "Type", Controller::GetControllerInfo(ControllerType::AnalogController).name);
+-  si.SetStringValue("Pad2", "Type", Controller::GetControllerInfo(ControllerType::None).name);
+-  si.SetStringValue("MemoryCards", "Card1Type", Settings::GetMemoryCardTypeName(MemoryCardType::NonPersistent));
++  si.SetStringValue("Pad1", "Type", Controller::GetControllerInfo(ControllerType::DigitalController).name);
++  // REGTEST_PAD1_TYPE / REGTEST_PAD2_TYPE=<type name> (AnalogController,
++  // NeGcon, JogCon, ...) choose the controller; drive it with bind[2].
++  const char* pad1_type = std::getenv("REGTEST_PAD1_TYPE");
++  {
++    // REGTEST_PAD2=1 connects a digital pad in port 2 (driven by the AI
++    // control verbs buttons2/release2); by default port 2 stays empty.
++    const char* pad2 = std::getenv("REGTEST_PAD2");
++    si.SetStringValue("Pad2", "Type",
++                      Controller::GetControllerInfo((pad2 && pad2[0] == '1') ? ControllerType::DigitalController :
++                                                                                ControllerType::None)
++                        .name);
++    const char* pad2_type = std::getenv("REGTEST_PAD2_TYPE");
++    if (pad2_type && Controller::GetControllerInfo(pad2_type))
++      si.SetStringValue("Pad2", "Type", pad2_type);
++  }
++  if (pad1_type && Controller::GetControllerInfo(pad1_type))
++    si.SetStringValue("Pad1", "Type", pad1_type);
++  // REGTEST_CARD1=none leaves slot 1 empty; a path is a shared card file.
++  if (const char* card1 = std::getenv("REGTEST_CARD1"); card1 && !std::strcmp(card1, "none"))
++  {
++    si.SetStringValue("MemoryCards", "Card1Type", Settings::GetMemoryCardTypeName(MemoryCardType::None));
++  }
++  else if (const char* card1 = std::getenv("REGTEST_CARD1"); card1 && card1[0])
++  {
++    si.SetStringValue("MemoryCards", "Card1Type", Settings::GetMemoryCardTypeName(MemoryCardType::Shared));
++    si.SetStringValue("MemoryCards", "Card1Path", card1);
++  }
++  else
++  {
++    si.SetStringValue("MemoryCards", "Card1Type", Settings::GetMemoryCardTypeName(MemoryCardType::NonPersistent));
++  }
+   si.SetStringValue("MemoryCards", "Card2Type", Settings::GetMemoryCardTypeName(MemoryCardType::None));
+   si.SetStringValue("ControllerPorts", "MultitapMode", Settings::GetMultitapModeName(MultitapMode::Disabled));
+   si.SetStringValue("Audio", "Backend", AudioStream::GetBackendName(AudioBackend::Null));
+@@ -102,7 +631,7 @@ bool RegTestHost::InitializeFoldersAndConfig(Error* error)
+   si.SetBoolValue("Logging", "LogToFile", false);
+   si.SetStringValue("Logging", "LogLevel", Settings::GetLogLevelName(Log::Level::Info));
+   si.SetBoolValue("Main", "ApplyGameSettings", false); // don't want game settings interfering
+-  si.SetBoolValue("BIOS", "PatchFastBoot", true);      // no point validating the bios intro..
++  si.SetBoolValue("BIOS", "PatchFastBoot", !s_slow_boot); // no point validating the bios intro.. (unless -slowboot)
+   si.SetFloatValue("Main", "EmulationSpeed", 0.0f);
+ 
+   // disable all sources
+@@ -323,7 +852,26 @@ void Host::PumpMessagesOnCoreThread()
+ {
+   RegTestHost::ProcessCoreThreadEvents();
+ 
+-  s_frames_remaining--;
++#ifdef ENABLE_GDB_SERVER
++  if (s_gdb_port.has_value())
++    GDBServer::Poll(0);
++#endif
++  if (s_ai_port.has_value())
++    AIControl::Poll(0);
++
++  if (System::IsPaused())
++    return;
++
++  if (s_ai_advance_remaining > 0)
++  {
++    s_ai_advance_remaining--;
++    if (s_ai_advance_remaining == 0)
++      System::PauseSystem(true);
++  }
++
++  if (s_frames_remaining > 0)
++    s_frames_remaining--;
++
+   if (s_frames_remaining == 0)
+   {
+     RegTestHost::DumpSystemStateHashes();
+@@ -446,7 +994,9 @@ void Host::DestroyAuxiliaryRenderWindow(AuxiliaryRenderWindowHandle handle, s32*
+ 
+ void Host::FrameDoneOnVideoThread(GPUBackend* gpu_backend, u32 frame_number)
+ {
+-  if (s_frame_dump_interval == 0 || (frame_number % s_frame_dump_interval) != 0 || !VideoPresenter::HasDisplayTexture())
++  const bool dump_frame = (s_frame_dump_interval != 0 && (frame_number % s_frame_dump_interval) == 0);
++  const bool capture_for_ai = AIControl::HasServer();
++  if ((!dump_frame && !capture_for_ai) || !VideoPresenter::HasDisplayTexture())
+     return;
+ 
+   // Need to take a copy of the display texture.
+@@ -488,6 +1038,31 @@ void Host::FrameDoneOnVideoThread(GPUBackend* gpu_backend, u32 frame_number)
+   // no more GPU calls
+   gpu_backend->RestoreDeviceContext();
+ 
++  if (capture_for_ai)
++  {
++    Error convert_error;
++    Image ai_image = image;
++    if (ai_image.GetFormat() != ImageFormat::RGBA8)
++    {
++      std::optional<Image> converted = ai_image.ConvertToRGBA8(&convert_error);
++      if (converted.has_value())
++        ai_image = std::move(converted.value());
++      else
++        ERROR_LOG("Failed to convert AI screenshot to RGBA8: {}", convert_error.GetDescription());
++    }
++
++    if (ai_image.IsValid())
++    {
++      ai_image.SetAllPixelsOpaque();
++      std::unique_lock lock(s_latest_frame_mutex);
++      s_latest_frame = std::move(ai_image);
++      s_latest_frame_number = frame_number;
++    }
++  }
++
++  if (!dump_frame)
++    return;
++
+   Error error;
+   const std::string path = RegTestHost::GetFrameDumpPath(frame_number);
+   auto fp = FileSystem::OpenManagedCFile(path.c_str(), "wb", &error);
+@@ -721,6 +1296,17 @@ void RegTestHost::DumpSystemStateHashes()
+     INFO_LOG("SPU RAM Hash: {}", SHA256Digest::DigestToString(SHA256Digest::GetDigest(SPU::GetRAM())));
+   }
+ 
++  // REGTEST_VRAM_OUT=path writes the final 1024x512 16-bit VRAM (raw, LE).
++  VideoThread::SyncThread(false);
++  if (const char* vram_out = std::getenv("REGTEST_VRAM_OUT"); vram_out && vram_out[0])
++  {
++    if (std::FILE* fp = std::fopen(vram_out, "wb"))
++    {
++      std::fwrite(g_vram, 1, VRAM_SIZE, fp);
++      std::fclose(fp);
++    }
++  }
++
+   INFO_LOG("VRAM Hash: {}", SHA256Digest::DigestToString(SHA256Digest::GetDigest(
+                               std::span<const u8>(reinterpret_cast<const u8*>(g_vram), VRAM_SIZE))));
+ }
+@@ -754,6 +1340,11 @@ void RegTestHost::PrintCommandLineHelp(const char* progname)
+   std::fprintf(stderr, "  -dumpdir: Set frame dump base directory (will be dumped to basedir/gametitle).\n");
+   std::fprintf(stderr, "  -dumpinterval: Dumps every N frames.\n");
+   std::fprintf(stderr, "  -frames: Sets the number of frames to execute.\n");
++  std::fprintf(stderr, "  -ai-port <port>: Starts the AI control server on 127.0.0.1:<port>.\n");
++  std::fprintf(stderr, "  -gdb <port>: Starts the GDB remote debugger on 127.0.0.1:<port>.\n");
++  std::fprintf(stderr, "  -start-paused: Pauses emulation immediately after boot.\n");
++  std::fprintf(stderr, "  -slowboot: Disables the BIOS fast-boot patch (full BIOS/license boot).\n");
++  std::fprintf(stderr, "  -wait-for-debugger: Waits paused until a GDB client connects.\n");
+   std::fprintf(stderr, "  -log <level>: Sets the log level. Defaults to verbose.\n");
+   std::fprintf(stderr, "  -console: Enables console logging output.\n");
+   std::fprintf(stderr, "  -pgxp: Enables PGXP.\n");
+@@ -827,6 +1418,51 @@ bool RegTestHost::ParseCommandLineParameters(int argc, char* argv[], std::option
+ 
+         continue;
+       }
++      else if (CHECK_ARG_PARAM("-gdb"))
++      {
++#ifdef ENABLE_GDB_SERVER
++        const u32 port = StringUtil::FromChars<u32>(argv[++i]).value_or(0);
++        if (port == 0 || port > 65535)
++        {
++          ERROR_LOG("Invalid GDB port specified: {}", argv[i]);
++          return false;
++        }
++
++        s_gdb_port = static_cast<u16>(port);
++        continue;
++#else
++        ERROR_LOG("GDB server support is not available in this build.");
++        return false;
++#endif
++      }
++      else if (CHECK_ARG_PARAM("-ai-port"))
++      {
++        const u32 port = StringUtil::FromChars<u32>(argv[++i]).value_or(0);
++        if (port == 0 || port > 65535)
++        {
++          ERROR_LOG("Invalid AI control port specified: {}", argv[i]);
++          return false;
++        }
++
++        s_ai_port = static_cast<u16>(port);
++        continue;
++      }
++      else if (CHECK_ARG("-start-paused"))
++      {
++        AutoBoot(autoboot)->override_start_paused = true;
++        continue;
++      }
++      else if (CHECK_ARG("-slowboot"))
++      {
++        s_slow_boot = true;
++        continue;
++      }
++      else if (CHECK_ARG("-wait-for-debugger"))
++      {
++        s_wait_for_debugger = true;
++        AutoBoot(autoboot)->override_start_paused = true;
++        continue;
++      }
+       else if (CHECK_ARG_PARAM("-log"))
+       {
+         std::optional<Log::Level> level = Settings::ParseLogLevelName(argv[++i]);
+@@ -981,6 +1617,12 @@ int main(int argc, char* argv[])
+   if (!RegTestHost::ParseCommandLineParameters(argc, argv, autoboot))
+     return EXIT_FAILURE;
+ 
++  // -slowboot is parsed above, after InitializeFoldersAndConfig() already set
++  // BIOS/PatchFastBoot from s_slow_boot's default (false); re-apply now that
++  // we know the real value.
++  if (s_slow_boot)
++    Core::GetBaseSettingsLayer()->SetBoolValue("BIOS", "PatchFastBoot", false);
++
+   if (!autoboot || autoboot->path.empty())
+   {
+     ERROR_LOG("No boot path specified.");
+@@ -996,9 +1638,24 @@ int main(int argc, char* argv[])
+     return EXIT_FAILURE;
+   }
+ 
++  int result = -1;
++
++#ifdef ENABLE_GDB_SERVER
++  if (s_gdb_port.has_value() && !GDBServer::Initialize(s_gdb_port.value()))
++  {
++    ERROR_LOG("Failed to initialize GDB server.");
++    goto cleanup;
++  }
++#endif
++
++  if (s_ai_port.has_value() && !AIControl::Initialize(s_ai_port.value()))
++  {
++    ERROR_LOG("Failed to initialize AI control server.");
++    goto cleanup;
++  }
++
+   RegTestHost::HookSignals();
+ 
+-  int result = -1;
+   INFO_LOG("Trying to boot '{}'...", autoboot->path);
+   if (!System::BootSystem(std::move(autoboot.value()), &error))
+   {
+@@ -1030,7 +1687,36 @@ int main(int argc, char* argv[])
+   {
+     const Timer::Value start_time = Timer::GetCurrentValue();
+ 
+-    System::Execute();
++#ifdef ENABLE_GDB_SERVER
++    if (s_wait_for_debugger)
++    {
++      while (!GDBServer::HasAnyClients())
++        GDBServer::Poll(100);
++
++      System::PauseSystem(true);
++    }
++#endif
++
++    while (System::IsValid() && s_frames_remaining > 0)
++    {
++#ifdef ENABLE_GDB_SERVER
++      if (s_gdb_port.has_value() && System::IsPaused())
++      {
++        GDBServer::Poll(100);
++        if (s_ai_port.has_value())
++          AIControl::Poll(0);
++        continue;
++      }
++#endif
++
++      if (s_ai_port.has_value() && System::IsPaused())
++      {
++        AIControl::Poll(100);
++        continue;
++      }
++
++      System::Execute();
++    }
+ 
+     const Timer::Value elapsed_time = Timer::GetCurrentValue() - start_time;
+     const double elapsed_time_ms = Timer::ConvertValueToMilliseconds(elapsed_time);
+@@ -1043,6 +1729,13 @@ int main(int argc, char* argv[])
+   result = 0;
+ 
+ cleanup:
++  if (s_ai_port.has_value())
++    AIControl::Shutdown();
++
++#ifdef ENABLE_GDB_SERVER
++  if (s_gdb_port.has_value())
++    GDBServer::Shutdown();
++#endif
+   RegTestHost::ProcessCoreThreadEvents();
+   Core::CoreThreadShutdown();
+   Core::ProcessShutdown();
