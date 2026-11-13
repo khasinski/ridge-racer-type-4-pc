@@ -164,12 +164,12 @@ static void TestList(const char *dir) {
 
 int main(int argc, char **argv) {
     const char *dir = argc > 1 ? argv[1] : "replay-file-test";
-    char replays[1024];
+    char prefs[1024], replays[1024];
 
     SDL_CreateDirectory(dir);
     SDL_SetEnvironmentVariable(SDL_GetEnvironment(), "RR4_REPLAY_DIR", "", true);
-    snprintf(replays, sizeof(replays), "%s/prefs.toml", dir);
-    CHECK(ReplayDirectory(replays, replays, sizeof(replays)));
+    snprintf(prefs, sizeof(prefs), "%s/prefs.toml", dir);
+    CHECK(ReplayDirectory(prefs, replays, sizeof(replays)));
     CHECK(strstr(replays, "/replays") != NULL);
     TestRoundTrip(replays);
     TestRefusals(replays);
