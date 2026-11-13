@@ -7,6 +7,7 @@
 # that ps/RSS does not show: a GPU leak once took runs past 100 GB while RSS
 # stayed at 200 MB. Use it for every scan, capture or test run, e.g.
 #   BIN="tools/port/run_capped.sh build/ridge-racer-type-4-pc" ./scan.sh ...
+# At most RR4_RUN_SLOTS (default 2) capped runs execute at once machine-wide.
 # On Linux it falls back to RSS from /proc. RR4_MEM_LOG=<file> appends
 # "<seconds> <MB>" for every check (the footprint over the run).
 limit=${RR4_MEM_LIMIT_MB:-6000}
@@ -14,9 +15,34 @@ interval=${RR4_MEM_INTERVAL:-1}
 log=${RR4_MEM_LOG:-}
 start=$(date +%s)
 
+# Machine-wide slots: at most RR4_RUN_SLOTS (default 2) capped runs at once,
+# shared by every agent and script; the others wait for a free slot.
+slots=${RR4_RUN_SLOTS:-2}
+slot_root=/tmp/rr4-run-slots
+mkdir -p "$slot_root"
+slot=
+while [ -z "$slot" ]; do
+    i=0
+    while [ $i -lt "$slots" ]; do
+        d="$slot_root/$i"
+        if mkdir "$d" 2>/dev/null; then
+            echo $$ > "$d/pid"; slot=$d; break
+        fi
+        owner=$(cat "$d/pid" 2>/dev/null)
+        # a slot whose owner died (or never wrote its pid) is free again
+        if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then
+            rm -rf "$d"
+            continue
+        fi
+        i=$((i + 1))
+    done
+    [ -z "$slot" ] && sleep 2
+done
+
 "$@" &
 pid=$!
-trap 'kill -9 $pid 2>/dev/null' INT TERM HUP
+trap 'kill -9 $pid 2>/dev/null; rm -rf "$slot"' INT TERM HUP
+trap 'rm -rf "$slot"' EXIT
 
 footprint_mb() {
     if command -v footprint >/dev/null 2>&1; then
