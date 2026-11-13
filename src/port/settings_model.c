@@ -535,6 +535,8 @@ void SettingsModelDiscChosen(SettingsModel *m, const char *path) {
         snprintf(m->status, sizeof(m->status), "That path is too long.");
         return;
     }
+    if (m->check_disc && !m->check_disc(path, m->status, sizeof(m->status)))
+        return;
     if (strcmp(m->prefs.disc, path)) {
         snprintf(m->prefs.disc, sizeof(m->prefs.disc), "%s", path);
         Changed(m);

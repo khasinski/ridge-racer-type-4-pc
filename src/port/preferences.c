@@ -14,6 +14,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
+#include "host_log.h"
 
 #define PREFS_FILE "ridge-racer-type-4.toml"
 #define PREFS_APP "Ridge Racer Type 4"
@@ -326,23 +333,51 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
     return 1; /* unknown sections stay harmless */
 }
 
+/* One line into line (without its end). Returns 0 at the end of the file,
+ * 1 for a line, 2 for a line longer than the buffer: its rest is skipped. */
+static int ReadLine(FILE *file, char *line, size_t size) {
+    size_t n;
+    int c;
+
+    if (!fgets(line, (int)size, file))
+        return 0;
+    n = strlen(line);
+    if (n && line[n - 1] == '\n')
+        return 1;
+    if (n + 1 < size)
+        return 1; /* the last line, without an end */
+    while ((c = fgetc(file)) != EOF && c != '\n')
+        ;
+    return 2;
+}
+
 int Rr4PrefsLoadFile(Rr4Prefs *prefs, const char *path) {
     FILE *file = Psyz_FileOpen(path, "r");
-    char line[RR4_PREFS_PATH_MAX + 256];
+    static char line[RR4_PREFS_PATH_MAX + 256];
     char section[64] = "";
     unsigned number = 0;
+    int got;
 
     if (!file)
         return 0;
-    while (fgets(line, sizeof(line), file)) {
-        char *s = Trim(line), *eq;
+    while ((got = ReadLine(file, line, sizeof(line))) != 0) {
+        char *s = line, *eq;
         ++number;
+        /* Windows editors start UTF-8 files with a byte order mark. */
+        if (number == 1 && (unsigned char)s[0] == 0xEF && (unsigned char)s[1] == 0xBB &&
+            (unsigned char)s[2] == 0xBF)
+            s += 3;
+        if (got == 2) {
+            Rr4Log("%s:%u: invalid preference (line too long)\n", path, number);
+            continue;
+        }
+        s = Trim(s);
         if (!*s || *s == '#')
             continue;
         if (*s == '[') {
             char *end = strchr(s, ']');
             if (!end || (size_t)(end - s - 1) >= sizeof(section)) {
-                fprintf(stderr, "%s:%u: invalid preference\n", path, number);
+                Rr4Log("%s:%u: invalid preference\n", path, number);
                 continue;
             }
             *end = '\0';
@@ -351,12 +386,12 @@ int Rr4PrefsLoadFile(Rr4Prefs *prefs, const char *path) {
         }
         eq = strchr(s, '=');
         if (!eq) {
-            fprintf(stderr, "%s:%u: invalid preference\n", path, number);
+            Rr4Log("%s:%u: invalid preference\n", path, number);
             continue;
         }
         *eq = '\0';
         if (!ParseValue(prefs, section, Trim(s), Trim(eq + 1)))
-            fprintf(stderr, "%s:%u: invalid preference\n", path, number);
+            Rr4Log("%s:%u: invalid preference\n", path, number);
     }
     fclose(file);
     return 1;
@@ -440,7 +475,17 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             SDL_GAMEPAD_BUTTON_COUNT, SDL_GAMEPAD_BUTTON_COUNT + 1);
     for (int i = 0; i < RR4_PREFS_BUTTONS; i++)
         fprintf(file, "%s = %d\n", kButtonKeys[i], p->buttons[i]);
-    failed = ferror(file);
+    /* On the disk before the rename replaces the old file: a crash or a
+     * power cut leaves the old preferences or the new ones, never an empty
+     * file. */
+    failed = ferror(file) || fflush(file) != 0;
+#ifdef _WIN32
+    if (!failed && _commit(_fileno(file)) != 0)
+        failed = 1;
+#else
+    if (!failed && fsync(fileno(file)) != 0)
+        failed = 1;
+#endif
     if (fclose(file))
         failed = 1;
     if (failed || !SDL_RenamePath(temporary, path)) {
@@ -496,14 +541,22 @@ static int PortableDirectory(const char *base, char *out, size_t size) {
     return 0;
 }
 
-static int ResolvePath(void) {
+static int MakeDirectory(const char *directory) {
+    if (SDL_CreateDirectory(directory))
+        return 1;
+    Rr4Log("ridge-racer-type-4-pc: cannot create %s: %s\n", directory, SDL_GetError());
+    return 0;
+}
+
+int Rr4PrefsResolve(void) {
     const char *base = SDL_GetBasePath();
     const char *override = SDL_getenv("RR4_CONFIG_HOME");
     char directory[RR4_PREFS_PATH_MAX];
 
     s_path[0] = '\0';
     if (override && *override) {
-        SDL_CreateDirectory(override);
+        if (!MakeDirectory(override))
+            return 0;
         snprintf(s_path, sizeof(s_path), "%s/" PREFS_FILE, override);
         return 1;
     }
@@ -522,15 +575,18 @@ static int ResolvePath(void) {
                 return 0;
             snprintf(directory, sizeof(directory), "%s/.config/ridge-racer-type-4", root);
         }
-        SDL_CreateDirectory(directory);
+        if (!MakeDirectory(directory))
+            return 0;
         snprintf(s_path, sizeof(s_path), "%s/" PREFS_FILE, directory);
         return 1;
     }
 #else
     {
-        char *pref = SDL_GetPrefPath("", PREFS_APP);
-        if (!pref)
+        char *pref = SDL_GetPrefPath("", PREFS_APP); /* created if missing */
+        if (!pref) {
+            Rr4Log("ridge-racer-type-4-pc: no user preferences directory: %s\n", SDL_GetError());
             return 0;
+        }
         snprintf(s_path, sizeof(s_path), "%s" PREFS_FILE, pref);
         SDL_free(pref);
         return 1;
@@ -539,25 +595,25 @@ static int ResolvePath(void) {
 }
 
 int Rr4PrefsLoad(Rr4Prefs *prefs) {
-    const char *base = SDL_GetBasePath();
-    char path[RR4_PREFS_PATH_MAX];
-
     *prefs = *Rr4PrefsDefaults();
-    if (base) {
-        snprintf(path, sizeof(path), "%s" PREFS_FILE, base);
-        Rr4PrefsLoadFile(prefs, path);
-#ifdef __APPLE__
-        if (strstr(base, ".app/Contents/Resources/")) {
-            snprintf(path, sizeof(path), "%s../../../" PREFS_FILE, base);
-            Rr4PrefsLoadFile(prefs, path);
-        }
-#endif
-    }
-    if (!base || strcmp(base, "./"))
-        Rr4PrefsLoadFile(prefs, PREFS_FILE);
-    if (!ResolvePath())
+    if (!Rr4PrefsResolve())
         return 0;
     Rr4PrefsLoadFile(prefs, s_path);
+    return 1;
+}
+
+int Rr4PrefsDirectory(char *out, size_t size) {
+    const char *slash = strrchr(s_path, '/'), *backslash = strrchr(s_path, '\\');
+
+    if (backslash && (!slash || backslash > slash))
+        slash = backslash;
+    if (!s_path[0] || !slash || (size_t)(slash - s_path + 1) >= size) {
+        if (size)
+            out[0] = '\0';
+        return 0;
+    }
+    memcpy(out, s_path, (size_t)(slash - s_path + 1));
+    out[slash - s_path + 1] = '\0';
     return 1;
 }
 

@@ -13,7 +13,7 @@ the same name as the tag; a fifth sums them:
 | `release-validation.yml` | all of the above | nothing published; build, tests and packaging only |
 
 The release workflows configure with `-DRR4_DIAGNOSTICS=OFF`, so the
-packages leave out the test and diagnostic hooks of `src/port/main.c`.
+packages leave out the test and diagnostic hooks of `src/port/diagnostics.c`.
 
 Every package contains `README.md`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`,
 `LICENSE.md`, `source-commit.txt` and the license texts of everything

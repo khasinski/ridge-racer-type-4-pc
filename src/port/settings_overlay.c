@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "disc_check.h"
+#include "host_log.h"
 #include "settings_model.h"
 #include "settings_raster.h"
 
@@ -43,45 +45,67 @@ static PsyzOverlayFrameCB s_prev_frame;
 
 /* ---- disc dialog ---- */
 
-typedef struct DiscDialog {
-    SDL_AtomicInt done;
-    char path[RR4_PREFS_PATH_MAX];
-} DiscDialog;
-
-static DiscDialog s_dialog;
-static int s_dialog_active;
+/* One native dialog at a time. Each gets a generation: its answer counts
+ * only while the host still waits for that generation, so a dialog left
+ * open when the panel closed cannot hand its path to a later panel. The
+ * callback may run on another thread; the path is written before the
+ * answered generation is published. */
+static SDL_AtomicInt s_dialog_generation; /* the dialog the host waits for */
+static SDL_AtomicInt s_dialog_answered;   /* generation of the last answer */
+static SDL_AtomicInt s_dialog_open;       /* a dialog of any generation is up */
+static char s_dialog_path[RR4_PREFS_PATH_MAX];
+static int s_dialog_wait; /* generation the panel waits for, or 0 */
 
 static void SDLCALL DiscChosen(void *userdata, const char *const *files, int filter) {
-    DiscDialog *dialog = userdata;
+    int generation = (int)(intptr_t)userdata;
     (void)filter;
-    dialog->path[0] = '\0';
-    if (files && files[0] && strlen(files[0]) < sizeof(dialog->path))
-        snprintf(dialog->path, sizeof(dialog->path), "%s", files[0]);
-    SDL_SetAtomicInt(&dialog->done, 1);
+    if (generation == SDL_GetAtomicInt(&s_dialog_generation)) {
+        s_dialog_path[0] = '\0';
+        if (files && files[0] && strlen(files[0]) < sizeof(s_dialog_path))
+            snprintf(s_dialog_path, sizeof(s_dialog_path), "%s", files[0]);
+        SDL_SetAtomicInt(&s_dialog_answered, generation);
+    }
+    SDL_SetAtomicInt(&s_dialog_open, 0);
 }
 
 static const SDL_DialogFileFilter kCueFilter[] = {{"Ridge Racer Type 4 (Europe) CUE image", "cue"}};
 
-static void StartDiscDialog(SDL_Window *parent, DiscDialog *dialog) {
-    SDL_SetAtomicInt(&dialog->done, 0);
-    dialog->path[0] = '\0';
-    SDL_ShowOpenFileDialog(DiscChosen, dialog, parent, kCueFilter, 1, NULL, false);
+/* The generation of the new dialog, or 0 while an earlier one is still up. */
+static int StartDiscDialog(SDL_Window *parent) {
+    int generation;
+
+    if (!SDL_CompareAndSwapAtomicInt(&s_dialog_open, 0, 1))
+        return 0;
+    generation = SDL_AddAtomicInt(&s_dialog_generation, 1) + 1;
+    SDL_ShowOpenFileDialog(DiscChosen, (void *)(intptr_t)generation, parent, kCueFilter, 1, NULL, false);
+    return generation;
 }
 
+static int DiscDialogAnswered(int generation) { return SDL_GetAtomicInt(&s_dialog_answered) == generation; }
+
+/* Nobody waits for the open dialog any more: its answer is dropped. */
+static void ForgetDiscDialog(void) { SDL_AddAtomicInt(&s_dialog_generation, 1); }
+
 int SettingsChooseDisc(char *out, size_t size) {
-    DiscDialog *dialog = &s_dialog;
+    int generation;
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
         return 0;
-    StartDiscDialog(NULL, dialog);
-    while (!SDL_GetAtomicInt(&dialog->done)) {
+    generation = StartDiscDialog(NULL);
+    if (!generation)
+        return 0;
+    while (!DiscDialogAnswered(generation)) {
         SDL_PumpEvents();
         SDL_Delay(10);
     }
-    if (!dialog->path[0] || strlen(dialog->path) >= size)
+    if (!s_dialog_path[0] || strlen(s_dialog_path) >= size)
         return 0;
-    snprintf(out, size, "%s", dialog->path);
+    snprintf(out, size, "%s", s_dialog_path);
     return 1;
+}
+
+static int CheckDisc(const char *path, char *message, size_t size) {
+    return Rr4DiscCheckImage(path, message, size) == RR4_DISC_OK;
 }
 
 /* ---- GPU presentation (Parasite Eve's settings overlay path) ---- */
@@ -702,17 +726,23 @@ static void RunPanel(void) {
     audio_paused = Psyz_AudioIsPaused();
     Psyz_AudioPause();
     SettingsModelOpen(&s_model, s_prefs, s_mounted);
+    s_model.check_disc = CheckDisc;
     s_stick_x = s_stick_y = 0;
     if (s_script_len)
         fprintf(stderr, "settings: open at present %ld vsync %d\n", s_presents, Psyz_VideoVSync(-1));
     while (s_model.open) {
-        if (s_model.choose_disc && !s_dialog_active) {
-            s_dialog_active = 1;
-            StartDiscDialog(use_gpu ? game : fallback_window, &s_dialog);
+        if (s_model.choose_disc && !s_dialog_wait) {
+            s_dialog_wait = StartDiscDialog(use_gpu ? game : fallback_window);
+            if (!s_dialog_wait) {
+                s_model.choose_disc = 0;
+                snprintf(s_model.status, sizeof(s_model.status),
+                         "A file dialog is still open. Close it, then choose again.");
+                s_model.dirty = 1;
+            }
         }
-        if (s_dialog_active && SDL_GetAtomicInt(&s_dialog.done)) {
-            s_dialog_active = 0;
-            SettingsModelDiscChosen(&s_model, s_dialog.path[0] ? s_dialog.path : NULL);
+        if (s_dialog_wait && DiscDialogAnswered(s_dialog_wait)) {
+            s_dialog_wait = 0;
+            SettingsModelDiscChosen(&s_model, s_dialog_path[0] ? s_dialog_path : NULL);
         }
         ApplyChanges();
         if (use_gpu) {
@@ -725,11 +755,14 @@ static void RunPanel(void) {
                 ProcessEvent(&event, fallback_window);
         }
     }
-    /* An open dialog still answers into s_dialog; the next panel ignores it. */
-    s_dialog_active = 0;
+    /* A dialog still open answers nobody. */
+    if (s_dialog_wait) {
+        ForgetDiscDialog();
+        s_dialog_wait = 0;
+    }
     ApplyChanges();
     if (s_model.edited && Rr4PrefsPath()[0] && !Rr4PrefsSave(s_prefs)) {
-        fprintf(stderr, "ridge-racer-type-4-pc: cannot save preferences to %s\n", Rr4PrefsPath());
+        Rr4Log("ridge-racer-type-4-pc: cannot save preferences to %s\n", Rr4PrefsPath());
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Ridge Racer Type 4",
                                  "Could not save preferences. Changes apply for this session.",
                                  fallback_window ? fallback_window : game);

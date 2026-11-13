@@ -13,6 +13,7 @@ option(BUILD_TESTING "Build native game tests" OFF)
 option(RR4_BUILD_GAME "Compile the game modules (src/main, src/overlays) into rr4_game" ON)
 option(RR4_MACOS_BUNDLE "Package the macOS application bundle (Ridge Racer Type 4.app)" OFF)
 option(RR4_EXPORT_SYMBOLS "Export the executable's globals for RR4_WATCH / RR4_POKE on Linux and Windows" OFF)
+option(RR4_DIAGNOSTICS "Build the RR4_* test and diagnostic hooks (src/port/diagnostics.c); off for releases" ON)
 include(CTest)
 
 set(PSYZ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/psyz)
@@ -64,9 +65,13 @@ if(RR4_BUILD_GAME)
     target_link_libraries(rr4_game PUBLIC psyz)
 endif()
 
-# Host services of the desktop build: preferences and the Escape settings
-# menu (model, CPU raster, SDL_GPU overlay glue), shared with the tests.
+# Host services of the desktop build: preferences, the log, memory card
+# directories, the disc check and the Escape settings menu (model, CPU
+# raster, SDL_GPU overlay glue), shared with the tests.
 add_library(rr4_host STATIC
+    src/port/disc_check.c
+    src/port/host_log.c
+    src/port/memory_cards.c
     src/port/preferences.c
     src/port/settings_model.c
     src/port/settings_raster.c
@@ -93,6 +98,12 @@ target_include_directories(ridge-racer-type-4-pc
 )
 target_compile_definitions(ridge-racer-type-4-pc PRIVATE __psyz)
 target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_host psyz)
+if(RR4_DIAGNOSTICS)
+    target_sources(ridge-racer-type-4-pc PRIVATE src/port/diagnostics.c src/port/diagnostics_parse.c)
+    target_compile_definitions(ridge-racer-type-4-pc PRIVATE RR4_DIAGNOSTICS=1)
+else()
+    target_compile_definitions(ridge-racer-type-4-pc PRIVATE RR4_DIAGNOSTICS=0)
+endif()
 if(RR4_BUILD_GAME)
     # The game: src/port/main.c mounts the disc and enters MainLoop.
     target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_game)
@@ -177,6 +188,39 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME host-files COMMAND rr4_host_files_test ${CMAKE_CURRENT_BINARY_DIR}/host-files-test)
     set_tests_properties(host-files PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
+    # Startup host services without game data: the disc identity check on
+    # synthetic images (European, USA, another game, no SYSTEM.CNF), the
+    # choice of disc with mount failures, the memory card directory and its
+    # migration, the log file and the preferences file rules.
+    add_executable(rr4_startup_test tests/port/startup_test.c)
+    target_include_directories(rr4_startup_test SYSTEM PRIVATE ${PSYZ_DIR}/psyz/include)
+    target_compile_definitions(rr4_startup_test PRIVATE __psyz)
+    target_link_libraries(rr4_startup_test PRIVATE rr4_host psyz)
+    if(MINGW)
+        target_link_options(rr4_startup_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME startup COMMAND rr4_startup_test ${CMAKE_CURRENT_BINARY_DIR}/startup-test)
+    set_tests_properties(startup PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy"
+        FIXTURES_SETUP startup-images)
+    # A headless run refuses another release's image (left by the startup
+    # test) with the reason, before the game starts.
+    add_test(NAME startup-other-release
+        COMMAND ridge-racer-type-4-pc "${CMAKE_CURRENT_BINARY_DIR}/startup-test/usa/usa.cue")
+    set_tests_properties(startup-other-release PROPERTIES
+        ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC="
+        FIXTURES_REQUIRED startup-images
+        PASS_REGULAR_EXPRESSION "USA release of Ridge Racer Type 4 \\(SCUS-94403\\); this port needs the European PAL disc SCES-01706")
+    # The RR4_* hook syntax (src/port/diagnostics_parse.c, also built when
+    # the hooks themselves are not).
+    add_executable(rr4_diagnostics_test tests/port/diagnostics_test.c src/port/diagnostics_parse.c)
+    target_include_directories(rr4_diagnostics_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/port
+        SYSTEM PRIVATE ${PSYZ_DIR}/psyz/include)
+    target_compile_definitions(rr4_diagnostics_test PRIVATE __psyz)
+    target_link_libraries(rr4_diagnostics_test PRIVATE psyz)
+    if(MINGW)
+        target_link_options(rr4_diagnostics_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME diagnostics COMMAND rr4_diagnostics_test)
     # A CUE path outside the Windows ANSI code page reaches PsyZ intact
     # (UTF-16 command line): the error names it in UTF-8.
     add_test(NAME startup-utf8-disc-path

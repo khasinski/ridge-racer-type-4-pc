@@ -53,6 +53,10 @@ typedef struct SettingsModel {
     int quit;               /* Quit game was chosen */
     int choose_disc;        /* the host should show the image dialog */
     const char *mounted;    /* image in the drive (host owned), or NULL */
+    /* Identifies a chosen image (Rr4DiscCheckImage): 0 refuses it with the
+     * message written to message. NULL (as SettingsModelOpen leaves it)
+     * accepts any CUE file. */
+    int (*check_disc)(const char *path, char *message, size_t size);
     char status[192];       /* replaces the row help until the next move */
 } SettingsModel;
 
@@ -72,7 +76,8 @@ void SettingsModelSelect(SettingsModel *model, int row);
  * for the other device are ignored. Returns 1 if consumed. */
 int SettingsModelCaptureKey(SettingsModel *model, int scancode);
 int SettingsModelCaptureButton(SettingsModel *model, int binding);
-/* The image dialog finished: path, or NULL when cancelled. */
+/* The image dialog finished: path, or NULL when cancelled. A CUE file that
+ * check_disc accepts becomes the image at the next start. */
 void SettingsModelDiscChosen(SettingsModel *model, const char *path);
 
 /* Returns, and forgets, whether prefs changed since the last call. */

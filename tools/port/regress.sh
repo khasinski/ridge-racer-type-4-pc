@@ -53,7 +53,7 @@ die() { echo "regress.sh: $*" >&2; exit 2; }
 # --- scenarios ----------------------------------------------------------
 # scenario <name>: sets frames, pads, pokes and extra (env assignments).
 # Pad and poke steps are anchored to modes (ModeGroup/ModeIndex), see
-# RR4_PAD_SCRIPT and RR4_POKE in src/port/main.c.
+# RR4_PAD_SCRIPT and RR4_POKE in src/port/diagnostics.c.
 boot='start@m2/4:100+4%100,start@m1/4:150'
 scenario() {
     pads='' pokes='' extra=''

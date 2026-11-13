@@ -12,9 +12,9 @@
  *   3. the per-user configuration directory (XDG_CONFIG_HOME or
  *      ~/.config/ridge-racer-type-4 on Linux, the SDL preference path on
  *      macOS and Windows).
- * A file next to the executable and one in the working directory are read
- * first, so the user file overrides them. Headless runs never read or write
- * preferences. */
+ * The first of these is the one file read and written; the others are
+ * ignored. Its directory also holds the memory cards (memory_cards.h) and
+ * the log (host_log.h). Headless runs never read or write preferences. */
 
 enum {
     RR4_PREFS_BUTTONS = 16, /* PsyZ pad bit order: L2 R2 L1 R1 ... Left */
@@ -111,10 +111,16 @@ int Rr4PrefsLoadFile(Rr4Prefs *prefs, const char *path);
 /* Writes prefs atomically (temporary file and rename). Returns 1 on success. */
 int Rr4PrefsSaveFile(const Rr4Prefs *prefs, const char *path);
 
-/* Resolves the preferences file as described above (creating its directory)
- * and loads the defaults, then every layer, into prefs. The chosen path is
- * kept for Rr4PrefsSave; returns 0 if no location could be determined. */
+/* Chooses the preferences file as described above, creating its
+ * directory. The path is kept for Rr4PrefsSave and Rr4PrefsPath; returns 0
+ * (and logs why) if no location could be determined or created. */
+int Rr4PrefsResolve(void);
+/* Resolves the file (Rr4PrefsResolve) and loads the defaults, then the
+ * file, into prefs. Returns 0 if there is no location. */
 int Rr4PrefsLoad(Rr4Prefs *prefs);
+/* The resolved file's directory with its trailing separator, or "" (and 0)
+ * before a location is resolved. */
+int Rr4PrefsDirectory(char *out, size_t size);
 int Rr4PrefsSave(const Rr4Prefs *prefs);
 const char *Rr4PrefsPath(void);
 

@@ -45,8 +45,11 @@ Enhancements are off by default, so the game looks and plays like the
 original.
 
 Settings are saved in `ridge-racer-type-4.toml` in your user configuration
-folder, or next to the executable if that file already exists there. Memory
-cards are kept as `bu00`/`bu10` folders.
+folder, or next to the executable if that file already exists there. The
+memory cards are kept as `bu00`/`bu10` folders in the same folder as that
+file, wherever the game is started from (cards an earlier version left in
+the working folder are copied there once). Each start also writes
+`ridge-racer-type-4.log` to that folder; please attach it to bug reports.
 
 ## Build
 
@@ -68,7 +71,7 @@ For development, testing and releases, see [contributing](CONTRIBUTING.md),
 [architecture](docs/ARCHITECTURE.md), [conventions](docs/CONVENTIONS.md) and
 [releasing](docs/RELEASING.md); known bugs and debt are tracked in
 [technical debt](docs/TECH_DEBT.md). Test and diagnostic options are listed at the
-top of `src/port/main.c`.
+top of `src/port/diagnostics.c`.
 
 This repository contains source only. Disc images and proprietary SDK files
 are not distributed.
