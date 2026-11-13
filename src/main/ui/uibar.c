@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "scratchpad.h"
 #include "rr/frame_storage_types.h"
 #include "rr/ui_bar.h"
@@ -21,7 +22,8 @@ void InitBadgeRow(s32 a0, s32 a1, s16 a2, s32 a3, u16 a4, u16 a5, u16 a6) {
     {
       z = s == 0;
       a6 = 0x16;
-      if (z)
+      /* The PAL release gives a row with status 0 an extent of 0x80. */
+      if (z && !RR_RELEASE_JP)
       {
         a4 = 0x80;
       }
@@ -41,7 +43,7 @@ SpritePacket *DrawBadgeTitleBar(GpuDmaTag *ordering,SpritePacket *cursor,s32 x,s
     s32 offset=4;
     s32 index=0;
     cursor=AddSpritePrim(ordering,cursor,x+6,y+5,
-                       &SelectionBarGlyphUvs[descriptor->glyph],0x7FFB,0);
+                       &SelectionBarGlyphUvs[descriptor->glyph],0x7FFB,RR_PAL_JP(0,1));
     cursor=GameQueueSprite(ordering,cursor,x,y,offset,24,20,72,0x7E3B);
     if(descriptor->count>0) {
         do {
@@ -80,7 +82,7 @@ void DrawBadgeRow(s32 index) {
         extent = BadgeRows[index].extent0E;
         height = extent - 22;
         order = &CurrentDrawBuf->buffer.ordering70.tags[1];
-        cursor = AddDrawAreaPrim(order, scratch->cursor, 0, 0, 320, 512);
+        cursor = AddDrawAreaPrim(order, scratch->cursor, 0, 0, 320, RR_PAL_JP(512, 480));
         cursor = AddDrawModePrim(order, cursor, 37);
         {
             void *call_cursor = cursor;

@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "psyq/libgte/rotmat.h"
@@ -173,7 +174,7 @@ void DrawTrackObjectModel(int modelIndex, int flashing) {
                         int y2 = work->projected58[2].xy.y;
                         int y3 = work->projected58[3].xy.y;
                         if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0) &&
-                            (y0 < 0x100 || y1 < 0x100 || y2 < 0x100 || y3 < 0x100)) {
+                            (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                             RR_GPU_ADD_PRIM(orderingBase + work->depth50 + quadCursor->orderingBias19,
                                             packetCursor, 9);
                             INTERP_TAG(packetCursor, quadCursor, 0);

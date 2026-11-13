@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/cpu_time.h"
 #include "game/ui/badge1.h"
 #include "types.h"
@@ -22,7 +23,7 @@ void *AddDrawAreaPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width
         rectangle.y = y;
     } else {
         bank = DrawBufIndex;
-        rectangle.y = (s32)((u32)y + ((u32)bank << 8));
+        rectangle.y = (s32)((u32)y + (u32)bank * (u32)RR_SCREEN_BOTTOM);
     }
     rectangle.w = width;
     rectangle.h = height;

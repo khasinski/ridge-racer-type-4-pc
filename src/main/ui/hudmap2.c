@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/save_slots.h"
 #include "rr/save_progress.h"
 #include "rr/menu_selection.h"
@@ -319,7 +320,8 @@ void CenterGlyphListX(short *a0, const UiUvRect *table)
     if (a0[2] >= 0) {
         do {
             glyph = *p++;
-            if (glyph >= 0x400) {
+            /* Extended glyphs exist only in the PAL release. */
+            if (glyph >= 0x400 && !RR_RELEASE_JP) {
                 e = &HudGlyphUvRects[(short)(glyph - 0x400)];
             } else {
                 e = &table[glyph];
@@ -432,6 +434,36 @@ void DrawGlyphList(s16 *stream,s32 color,s32 bank)
     x = *stream++;
     y = *stream++;
     if (bank == 0) { clut = 0x7F78; defaultPage = 0x3E; } else { clut = 0x7E38; defaultPage = 0x25; }
+    if (RR_RELEASE_JP) {
+        /* The Japanese release has no extended glyphs (0x400 and up, on
+         * texture page 0x25): one sprite a glyph, then one draw mode. */
+        sprite = (SpritePacketSignedClut *)RR_GPU_SCRATCH->cursor;
+        while (*stream >= 0) {
+            offset = *stream++ * 4;
+            if (bank == 0) uv = (UiUvRect*)((u8 *)CarHandlingResponseTable + offset);
+            else uv = (UiUvRect*)((u8 *)HudGlyphUvRects + offset);
+            sprite->tag.length = 4;
+            sprite->code = 0x66;
+            sprite->r = color; sprite->g = color; sprite->b = color;
+            sprite->x = x;
+            sprite->y = y;
+            sprite->w = uv->w;
+            sprite->h = uv->h;
+            sprite->u = uv->u;
+            sprite->v = uv->v;
+            sprite->clut = clut;
+            RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[0], sprite);
+            sprite++;
+            gap = *stream++;
+            x = x + (uv->w + gap);
+        }
+        mode = (GlyphCommand8 *)sprite;
+        mode->tag.length = 1;
+        mode->command = defaultPage | 0xE1000200;
+        RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[0], mode);
+        RR_GPU_SCRATCH->cursor = (u8 *)(mode + 1);
+        return;
+    }
     cachedGlyph = *(u16 *)stream;
     if (*stream >= 0) {
         basePage = defaultPage & 0xFFFF;
@@ -573,7 +605,7 @@ void EmitIconSpriteRow120(s32 index,s32 color) {
 }
 
 void EmitIconSpriteRow128(s32 index,s32 color) {
-    RR_ICON_SPRITE_BODY(128)
+    RR_ICON_SPRITE_BODY(RR_PAL_JP(128, 120))
 }
 
 /* Initial values of the globals this module owns. */

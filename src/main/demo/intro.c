@@ -1,3 +1,5 @@
+#include "game/ui/badge1.h"
+#include "rr/release.h"
 /* RODATA 0x80011270 0x2c */
 #include "rr/video_timing.h"
 #include "rr/cpu_time.h"
@@ -145,11 +147,14 @@ int IntroScriptStep(void) {
             RaceContext.fade3E0.f3F8 = 0;
             RaceContext.fade3E0.f3FC = 0x10;
             if (RaceContext.fade3E0.f430 == 0) {
-                PlaySfxBank2(1);
+                PlaySfxBank2(RR_RELEASE_JP ? RaceContext.fade3E0.f42C : 1);
                 RaceContext.fade3E0.f430 = 1;
             }
         }
-        RaceContext.fade3E0.f400 = 0xCE - (RaceContext.fade3E0.f3FC * 0x42) / 16;
+        if (RR_RELEASE_JP)
+            RaceContext.fade3E0.f400 = 0x68 - (RaceContext.fade3E0.f3FC * 0x28) / 16;
+        else
+            RaceContext.fade3E0.f400 = 0xCE - (RaceContext.fade3E0.f3FC * 0x42) / 16;
         break;
     case 3:
         RaceContext.fade3E0.f404 -= 8;
@@ -161,6 +166,9 @@ int IntroScriptStep(void) {
     }
 
     EmitFadeSprite(0, 0x2C, RaceContext.fade3E0.f400, RaceContext.fade3E0.f404);
+    /* The Japanese title logo has a second part 200 pixels to the right. */
+    if (RR_RELEASE_JP)
+        EmitFadeSprite(4, 0x2C, RaceContext.fade3E0.f400 + 200, RaceContext.fade3E0.f404);
 
     if (RaceContext.fade3E0.f410) {
         int c;
@@ -183,9 +191,9 @@ int IntroScriptStep(void) {
         sp28[0] = 0x10;
         sp28[2] = RaceContext.fade3E0.f412 * 18 + 0x10;
         for (i = 0; i < 2; i++) {
-            sp28[1] = sp28[3] = i * 40 + 0x172;
+            sp28[1] = sp28[3] = i * 40 + RR_PAL_JP(0x172, 0x190);
             AddLineF2Prim(sp28, sp30, 0, 10);
-            sp28[1] = sp28[3] = i * 40 + 0x173;
+            sp28[1] = sp28[3] = i * 40 + RR_PAL_JP(0x173, 0x191);
             AddLineF2Prim(sp28, sp30, 0, 10);
         }
     }
@@ -200,7 +208,10 @@ int IntroScriptStep(void) {
             v2 = RaceContext.fade3E0.f41A * 16;
         }
         v2 = (v2 * RaceContext.fade3E0.f404) / 256;
-        EmitFadeSprite(3, 0x42, 0x17C, v2);
+        if (RR_RELEASE_JP)
+            EmitFadeSprite(3, 0x4C, 0x19A, v2);
+        else
+            EmitFadeSprite(3, 0x42, 0x17C, v2);
     }
 
     if (RaceContext.fade3E0.f414) {
@@ -212,11 +223,11 @@ int IntroScriptStep(void) {
             v = RaceContext.fade3E0.f416 * 16;
         }
         v = (v * RaceContext.fade3E0.f404) / 256;
-        EmitFadeSprite(2, 0x68, 0x13C, v);
+        EmitFadeSprite(2, 0x68, RR_PAL_JP(0x13C, 0x162), v);
         if (RaceContext.fade3E0.f428 == 0) {
             v = (rsin((FrameCounter << 7) & 0xF80) * v) / 4096;
         }
-        EmitFadeSprite(1, 0x68, 0x13C, v);
+        EmitFadeSprite(1, 0x68, RR_PAL_JP(0x13C, 0x162), v);
     }
 
     switch (RaceContext.fade3E0.f408) {
@@ -238,12 +249,31 @@ int IntroScriptStep(void) {
     }
 
     UpdateFadeTint(RaceContext.fade3E0.f3EC);
+    if (RR_RELEASE_JP) {
+        /* One tile over the drawing area's height in the tint, then draw
+         * mode 5; the clear colour of the draw environments stays. */
+        GpuTilePacket *tile = (GpuTilePacket *)RR_GPU_SCRATCH->cursor;
+        tile->tag.length = 3;
+        tile->code = 0x60;
+        tile->x = 0;
+        tile->y = 0;
+        tile->w = 0x140;
+        tile->h = CurrentDrawBuf->buffer.environment00.draw00.clip.h;
+        tile->r = RaceContext.fade3E0.r3F0;
+        tile->g = RaceContext.fade3E0.g3F1;
+        tile->b = RaceContext.fade3E0.b3F2;
+        RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[703], tile);
+        RR_GPU_SCRATCH->cursor = (u8 *)(tile + 1);
+        RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[703],
+                                                 (GpuDrawModePacket *)RR_GPU_SCRATCH->cursor, 5);
+    } else {
     RR_GPU_SCRATCH->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200,
                                        RaceContext.fade3E0.r3F0, RaceContext.fade3E0.g3F1, RaceContext.fade3E0.b3F2);
     for (i = 0; i < 2; i++) {
         DrawBuffers[i].buffer.environment00.draw00.r = RaceContext.fade3E0.r3F0;
         DrawBuffers[i].buffer.environment00.draw00.g = RaceContext.fade3E0.g3F1;
         DrawBuffers[i].buffer.environment00.draw00.b = RaceContext.fade3E0.b3F2;
+    }
     }
 
     RaceContext.fade3E0.f3E4++;

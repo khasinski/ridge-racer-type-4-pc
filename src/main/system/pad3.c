@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "types.h"
 #include "rr/runtime_settings.h"
 #include "game/system/pad.h"
@@ -150,7 +151,15 @@ void PadPollPort(int a0)
 B:
   if (s0 == 2)
   {
-    s1->flag40 = 0;
+    if (RR_RELEASE_JP)
+    {
+      /* The Japanese release sets up the actuators here; the PAL one
+       * leaves the analog flag cleared instead. */
+      PadSetAct(s2, &s1->output19[0], 2);
+      PadSetActAlign(s2, PadDualShockActAlignCmd);
+    }
+    else
+      s1->flag40 = 0;
     s1->flag1B = 1;
     s1->changed1E = 0;
     return;

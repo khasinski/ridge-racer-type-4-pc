@@ -1,3 +1,5 @@
+#include "game/ui/badge1.h"
+#include "rr/release.h"
 #include "rr/cpu_time.h"
 #include "game/ui/uipart1.h"
 #include "rr/save_slots.h"
@@ -255,7 +257,10 @@ void UpdateMenuScript(void) {
         }
     }
     if (ModeGroup != 1) {
-        RR_GPU_SCRATCH->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, 0, 0, 0);
+        /* The Japanese release fills its 480 lines with one tile. */
+        RR_GPU_SCRATCH->cursor =
+        (RR_RELEASE_JP ? AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x1E0, 0, 0, 0)
+                      : AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, 0, 0, 0));
     }
 }
 

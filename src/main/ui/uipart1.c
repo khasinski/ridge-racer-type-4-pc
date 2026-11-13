@@ -1,3 +1,5 @@
+#include "game/ui/badge1.h"
+#include "rr/release.h"
 #include "rr/widescreen.h"
 #include "rr/video_timing.h"
 #include "game/camera/campath.h"
@@ -106,7 +108,10 @@ void UpdateScreenFade(int a0) {
         break;
     }
     {
-        RR_GPU_SCRATCH->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, sp.c[0], sp.c[1], sp.c[2]);
+        /* The Japanese release fills its 480 lines with one tile. */
+        RR_GPU_SCRATCH->cursor =
+        (RR_RELEASE_JP ? AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x1E0, sp.c[0], sp.c[1], sp.c[2])
+                      : AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, sp.c[0], sp.c[1], sp.c[2]));
     }
     DrawMenuFrame(a0 >> 2);
     if (MainMenuChoice != 6 && MainMenuChoice != 8) {
@@ -144,7 +149,9 @@ void DrawMenuFrame(int arg0) {
     if (MenuFrameState.b6 != arg0) {
         MenuFrameState.b7 = MenuFrameState.b6;
     }
-    y = 0x1C0;
+    /* The Japanese release draws the bottom bar 8 lines higher and all
+     * seven columns (the PAL release starts at the third). */
+    y = RR_PAL_JP(0x1C0, 0x1B8);
     MenuFrameState.b6 = arg0;
     s0 = MenuFrameState.s2;
     s6 = MenuFrameState.b6;
@@ -153,7 +160,7 @@ void DrawMenuFrame(int arg0) {
     switch (MenuFrameState.s0) {
     case 0:
         MenuFrameState.s12 = 0x38;
-        MenuFrameState.s1A = 0x1B8;
+        MenuFrameState.s1A = RR_PAL_JP(0x1B8, 0x1B0);
         MenuFrameState.s16 = MenuFrameState.s1E = 2;
         if (ScreenFadeState.phase == 2) {
             MenuFrameState.s0 = 1;
@@ -173,7 +180,7 @@ void DrawMenuFrame(int arg0) {
         v = (rsin((s0 << 10) / 20) * 0x20) / 0x1000;
         MenuFrameState.s16 = MenuFrameState.s1E = v * 2 + 2;
         MenuFrameState.s12 = 0x38 - v;
-        MenuFrameState.s1A = 0x1B8 - v;
+        MenuFrameState.s1A = RR_PAL_JP(0x1B8, 0x1B0) - v;
         if (s0 >= 20) {
             MenuFrameState.s0 = 3;
             MenuFrameState.s2 = 0;
@@ -217,7 +224,7 @@ void DrawMenuFrame(int arg0) {
 
     pc = UiTitleMaskVramRect;
     sp40 = (((sp38 + 1) & 3) << 5) | 0x1E;
-    a1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200);
+    a1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0));
     a1 = AddSpriteWithDrawMode(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 0x10, 0x24, 0x20, 0x10, 0, 0x20, sp40, 0x7F38, 1, (unsigned short)s7);
     s1 = 0;
     s4 = 0x30;
@@ -247,9 +254,9 @@ void DrawMenuFrame(int arg0) {
     a1 = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, sp40);
     a1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, MenuFrameState.s10, MenuFrameState.s12, MenuFrameState.s14, MenuFrameState.s16);
 
-    for (j = 2; j < 7; j++) {
+    for (j = RR_PAL_JP(2, 0); j < 7; j++) {
         s4 = BadgeTitleColumnX[j];
-        s5 = (j >= 2) ? 0x1BE : 0x1AA;
+        s5 = (j >= 2) ? RR_PAL_JP(0x1BE, 0x1B6) : RR_PAL_JP(0x1AA, 0x1A2);
         sp30 = BadgeTitleGlyphUvs[j];
         if ((unsigned int)(j - 3) < 2) {
             s2 = (PlayerControllers[ActivePlayerIndex & 1].protocol10 == 1);
@@ -288,17 +295,17 @@ void DrawMenuFrame(int arg0) {
     a1 = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, sp40);
     {
         int w;
-        for (j = 3; j < 7; j++) {
-            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, BadgeTitleBarX[j], (j >= 3) ? y : 0x1A8, 1, 0xC, col2, col2, col2);
+        for (j = RR_PAL_JP(3, 0); j < 7; j++) {
+            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, BadgeTitleBarX[j], (j >= 3) ? y : RR_PAL_JP(0x1A8, 0x1A0), 1, 0xC, col2, col2, col2);
         }
         w = 0x130;
         col3 = *pc;
-        a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 8, 0x1B8, w, 2, col3, col3, col3);
+        a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 8, RR_PAL_JP(0x1B8, 0x1B0), w, 2, col3, col3, col3);
         if (MenuFrameState.bD != 1) {
-            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 0xEE, 0x1C6, 0x16, 2, col3, col3, col3);
+            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 0xEE, RR_PAL_JP(0x1C6, 0x1BE), 0x16, 2, col3, col3, col3);
         }
         if (MenuFrameState.bC != 1) {
-            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 0xA8, 0x1C6, 0x12, 2, col3, col3, col3);
+            a1 = AddTileSemiTransPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, 0xA8, RR_PAL_JP(0x1C6, 0x1BE), 0x12, 2, col3, col3, col3);
         }
         a1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, MenuFrameState.s18, MenuFrameState.s1A, MenuFrameState.s1C, MenuFrameState.s1E);
         RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], a1, sp40);

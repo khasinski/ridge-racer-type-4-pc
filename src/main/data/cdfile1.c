@@ -16,6 +16,7 @@
 #include "rr/trig.h"
 #include "rr/gpu.h"
 #include "rr/gpu_scratch_types.h"
+#include "rr/release.h"
 
 s32 CdPosToInt(const u8 *location);
 extern const char NowLoadingFmt[];
@@ -51,15 +52,12 @@ int GetCarFileIndex(int a0, int a1, int a2, int a3) {
     return v + 0x152;
 }
 
+/* R4.BIN entry a1 of group a0. The group bases are the release's
+ * (rr/release.h): PAL 0x3A0, 0x292, 0x2D9, 0x384, 0x397 for groups 0..4. */
 int GetR4FileIndex(int a0, int a1) {
-    switch (a0) {
-    case 1: return a1 + 0x292;
-    case 2: return a1 + 0x2D9;
-    case 3: return a1 + 0x384;
-    case 4: return a1 + 0x397;
-    case 0: return a1 + 0x3A0;
-    }
-    return -1;
+    if ((unsigned)a0 > 4)
+        return -1;
+    return a1 + GameReleaseProfile->r4GroupBase[a0];
 }
 
 void LoadR4Directory(void)
@@ -118,11 +116,11 @@ void DrawLoadingTriangle(void)
     LoadingTriangleAngle = a;
     ActiveLoadingTriPacket = &LoadingIndicatorTriBuf[v];
     ActiveLoadingTriPacket->x0 = (rsin(a) >> 7) + 0x50;
-    ActiveLoadingTriPacket->y0 = (rcos(LoadingTriangleAngle) >> 7) + 0x80;
+    ActiveLoadingTriPacket->y0 = (rcos(LoadingTriangleAngle) >> 7) + RR_PAL_JP(0x80, 0x78);
     ActiveLoadingTriPacket->x1 = (rsin(LoadingTriangleAngle + 0x555) >> 7) + 0x50;
-    ActiveLoadingTriPacket->y1 = (rcos(LoadingTriangleAngle + 0x555) >> 7) + 0x80;
+    ActiveLoadingTriPacket->y1 = (rcos(LoadingTriangleAngle + 0x555) >> 7) + RR_PAL_JP(0x80, 0x78);
     ActiveLoadingTriPacket->x2 = (rsin(LoadingTriangleAngle - 0x555) >> 7) + 0x50;
-    ActiveLoadingTriPacket->y2 = (rcos(LoadingTriangleAngle - 0x555) >> 7) + 0x80;
+    ActiveLoadingTriPacket->y2 = (rcos(LoadingTriangleAngle - 0x555) >> 7) + RR_PAL_JP(0x80, 0x78);
     ActiveLoadingTriPacket->c1 = 0xFF00;
     ActiveLoadingTriPacket->c2 = 0xFF0000;
     ActiveLoadingTriPacket->w4 = 0x300000FF;

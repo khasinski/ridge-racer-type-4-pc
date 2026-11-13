@@ -1,5 +1,6 @@
 #include "rr/frame_interp.h"
 #include "rr/widescreen.h"
+#include "rr/release.h"
 #include <string.h>
 #include "rr/frame_storage_types.h"
 #include "rr/gpu.h"
@@ -109,7 +110,7 @@ const u32 *EmitRroRawTexturedQuads(const u32 *commands, RroRenderWork *work, s32
             RR_SXY_COPY(packet->words.xy1, work->projected50[1].word);
             RR_SXY_COPY(packet->words.xy2, work->projected50[2].word);
             RR_SXY_COPY(packet->words.xy3, work->projected50[3].word);
-            if (RroQuadOnScreen(work->projected50, 0x200)) {
+            if (RroQuadOnScreen(work->projected50, RR_PAL_JP(0x200, 0x1E0))) {
                 packet->words.color04 = 0x2F000000;
                 packet->words.uv0 = quad->uv08;
                 packet->words.uv1 = quad->uv0C;
@@ -138,7 +139,7 @@ const u32 *EmitRroLitGouraudQuads(const u32 *commands, RroRenderWork *work, s32 
             packet->xy14 = work->projected50[1].word;
             packet->xy1C = work->projected50[2].word;
             packet->xy24 = work->projected50[3].word;
-            if (RroQuadOnScreen(work->projected50, 0x200)) {
+            if (RroQuadOnScreen(work->projected50, RR_PAL_JP(0x200, 0x1E0))) {
                 const Vec3s8 *normals = RroScene.workNormals;
                 RR_GTE14_LWC2_V0_V1_V2(RroLowVertex(normals, quad->normals.words[0]),
                                        RroHighVertex(normals, quad->normals.words[0]),
@@ -189,7 +190,7 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
     u8 *cursor = RR_GPU_SCRATCH->cursor;
     s32 depthShift = RRO_SCENE->depthShift60;
     u32 restoreMask = MaskBitSetting | RRO_MASK_COMMAND;
-    s32 envVShift = CurrentDrawBuf->buffer.environment00.draw00.clip.h == 0x100 ? 6 : 7;
+    s32 envVShift = CurrentDrawBuf->buffer.environment00.draw00.clip.h == RR_PAL_JP(0x100, 0xF0) ? 6 : 7;
 
     RroStageQuad(work, &quad->vertices);
     while (count-- > 0) {
@@ -203,7 +204,7 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
             RR_SXY_COPY(e->reflected.body.xy2, work->projected50[2].word);
             RR_SXY_COPY(e->primary.body.xy3, work->projected50[3].word);
             RR_SXY_COPY(e->reflected.body.xy3, work->projected50[3].word);
-            if (RroQuadOnScreen(work->projected50, 0x200)) {
+            if (RroQuadOnScreen(work->projected50, RR_PAL_JP(0x200, 0x1E0))) {
                 const Vec3s8 *normals = RroScene.workNormals;
                 GpuDmaTag *head;
                 u32 control;
@@ -682,6 +683,7 @@ void EmitProjectedLitTrisGT3(const RroTrailPanelCommand *command, s32 count, Rro
     const RroProjectedVertex *base = work->projectedD0;
     const RroProjectedVertex *alternate = work->projectedD4;
     s32 secondaryColor = work->colors15C.palette.rgb160[1];
+    s32 yLimit = RR_SCREEN_BOTTOM;
     s32 winding = work->windingBC;
 
     while (count-- > 0) {
@@ -718,7 +720,7 @@ void EmitProjectedLitTrisGT3(const RroTrailPanelCommand *command, s32 count, Rro
                     y4 = (s16)(alternate[command->outer[1]].sxy >> 16);
                     y5 = (s16)(alternate[command->outer[2]].sxy >> 16);
                     if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0 || y4 >= 0 || y5 >= 0) &&
-                        (y0 < 0x100 || y1 < 0x100 || y2 < 0x100 || y3 < 0x100 || y4 < 0x100 || y5 < 0x100)) {
+                        (y0 < yLimit || y1 < yLimit || y2 < yLimit || y3 < yLimit || y4 < yLimit || y5 < yLimit)) {
                         GpuDmaTag *head = work->ordering6C + work->depth70 + command->orderingBias09;
                         GpuCommandPacket *mode;
                         int i;

@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/cpu_time.h"
 #include "rr/gpu_scratch_types.h"
 #include "rr/frame_storage_types.h"
@@ -117,11 +118,16 @@ void DrawAnimatedGlyph(s32 x, s32 y, s32 glyph, s32 clut, s16 *animation) {
     SpritePacketSignedClut *linkPacket;
 
     cursor = RR_GPU_SCRATCH->cursor;
-    row = glyph/32;
-    tileU=(glyph-row*32)*8;
+    /* The font page holds 32 glyphs 8 wide a row in the PAL release and 21
+     * glyphs 12 wide in the Japanese one; the rows past the tenth start 16
+     * lines lower. */
+    s32 perRow = RR_PAL_JP(32, 21);
+    s32 glyphW = RR_PAL_JP(8, 12);
+    row = glyph/perRow;
+    tileU=(glyph-row*perRow)*glyphW;
     baseV = row * 0x18;
     tileV = baseV;
-    if (glyph >= 0x140) {
+    if (glyph >= perRow * 10) {
         tileV = baseV + 0x10;
     }
     displacement = 0;
@@ -169,7 +175,7 @@ void DrawAnimatedGlyph(s32 x, s32 y, s32 glyph, s32 clut, s16 *animation) {
         sprites->u = (s8)tileU;
         sprites->v = tileV;
         sprites->y = (s16)((u32)y + yStep);
-        sprites->w = 8;
+        sprites->w = glyphW;
         sprites->h = 0x18;
         sprites->clut = clut;
         sprites++;
@@ -240,11 +246,11 @@ void DrawAnimatedText(int arg0, int arg1, MenuTextState *p, int arg3, int arg4) 
                 } else {
                     if ((int)(a2 & 0xFE00) <= 0) {
                         if (a2 == 0) {
-                            s2 += 7;
+                            s2 += RR_PAL_JP(7, 11);
                         } else {
                         L_call:
                             DrawAnimatedGlyph(arg0 + (short)s2, arg1 + (short)s4, a2 - 1, arg4, p->animation28[s7].halves);
-                            s2 += 7;
+                            s2 += RR_PAL_JP(7, 11);
                             if (s3 != 0) {
                                 s2 = 0;
                                 s4 += 0x1A;

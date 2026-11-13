@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "rr/menu_arena_state.h"
 #include "game/sound/sndvab.h"
@@ -151,7 +152,7 @@ void DialogueIntroModeUpdate(void)
         if (t == 1) {
             if (StepMenuCameraTransition(MENU_TRANSITION_ALL) == MENU_TRANSITION_ALL) {
                 ModeFrame = 0;
-                InitBadgeRow(0, 0xC, 0x130, 0x128, 0x6C, 0, 0);
+                InitBadgeRow(0, 0xC, 0x130, 0x128, RR_PAL_JP(0x6C, 0x58), 0, 0);
                 InitRect16Row(0, 0x10, 0x48, 0x120, 0x120, 0, 0);
                 InitImageRow(0, -1, 0, 0);
                 ModeGroup = t;
@@ -247,7 +248,7 @@ void DialogueModeUpdate(void) {
 
 void AddScreenBackdropTile(void) {
     GpuScratchPointers *g = RR_GPU_SCRATCH;
-    g->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[703], g->cursor, 0, 0, 0x140, 0x200, 0x20, 0x20, 0x20);
+    g->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[703], g->cursor, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0), 0x20, 0x20, 0x20);
 }
 
 /* Initial values of the globals this module owns. */

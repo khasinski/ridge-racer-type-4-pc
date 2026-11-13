@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/cpu_time.h"
 #include "rr/runtime_settings.h"
 #include "rr/scene_camera_state.h"
@@ -15,6 +16,7 @@
 #include "rr/bios_devices.h"
 #include "rr/library.h"
 #include "psyq/libsnd/vmcfg.h"
+static const UiUvRect HudCourseMapScaleTableJp[5];
 
 struct OptionsDefaultTail16 { int a[4]; };
 
@@ -43,7 +45,7 @@ void InitOptionsDefaults(void) {
     Options.volume31 = 0x10;
     Options.mono32 = 0;
     Options.screenX34 = 0;
-    Options.screenY38 = 0x10;
+    Options.screenY38 = RR_PAL_JP(0x10, 0);
 }
 
 void InitDemoFadeContext(int a0) {
@@ -53,7 +55,7 @@ void InitDemoFadeContext(int a0) {
     DemoFadeState *p = &RaceContext.fade3E0;
     v = OptionsDefaultTailData;
     PsyqBzero((char *)p, sizeof(*p));
-    p->f400 = 0xCE;
+    p->f400 = RR_PAL_JP(0xCE, 0x68);
     p->f42C = a0;
     p->scale3E8 = 0x100;
     RaceContext.streamResourceB0 = 0;
@@ -118,7 +120,7 @@ void EmitFadeSprite(s32 index, s32 x, s32 y, s32 intensity) {
         p = (GpuCommandPacket *)AddSpritePrim(
             ordering,
             (SpritePacket *)p,
-            x, y, &HudCourseMapScaleTable[index], 0x7F38,
+            x, y, &RR_PAL_JP(HudCourseMapScaleTable, HudCourseMapScaleTableJp)[index], 0x7F38,
             (scale * 2U) | 1U);
         mode = FadeSpriteDrawModes[selector];
         RR_GPU_SCRATCH->cursor = (u8 *)p;
@@ -132,4 +134,7 @@ void EmitFadeSprite(s32 index, s32 x, s32 y, s32 intensity) {
 u32 FadeSpriteDrawModes[4] = {0x2Bu, 0x2Cu, 0x4Bu, 0x4Cu};
 struct OptionsDefaultTail16 OptionsDefaultTailData = {.a = {2, 3, 1, 4}};
 UiUvRect HudCourseMapScaleTable[5] = {{.w = 0xE8, .h = 0x64}, {.v = 0xC8, .w = 8, .h = 0x18}, {.u = 8, .v = 0xC8, .w = 0x70, .h = 0x18}, {.v = 0xE0, .w = 0xBC, .h = 0x18}, {.w = 0xE8, .h = 0x48}};
+/* The Japanese release's title logo is 200 lines high and its third
+ * sprite 168 wide. */
+static const UiUvRect HudCourseMapScaleTableJp[5] = {{.w = 0xE8, .h = 0xC8}, {.v = 0xC8, .w = 8, .h = 0x18}, {.u = 8, .v = 0xC8, .w = 0x70, .h = 0x18}, {.v = 0xE0, .w = 0xA8, .h = 0x18}, {.w = 0xE8, .h = 0x48}};
 unsigned char HudPauseMenuTitleY[4] = {0xFF, 0xBD};

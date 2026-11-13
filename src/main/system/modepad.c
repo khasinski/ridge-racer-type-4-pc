@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "rr/runtime_settings.h"
 #include "game/system/pad.h"
@@ -31,7 +32,8 @@ void DrawModeSelectRows(void) {
     int i = 0;
     if (n > 0) {
         do {
-            if (i == 2) {
+            /* The PAL release greys out row 2 (VS) without a second pad. */
+            if (i == 2 && !RR_RELEASE_JP) {
                 if (PlayerControllers[1].protocol10 == -1) UiRows[2].half20 = 1;
                 else UiRows[2].half20 = 0;
             }
@@ -55,14 +57,16 @@ int ModeSelectMenuStep(void)
     }
     UiRows[MenuCursor].cells[0] = 0;
     StepMenuValue(0, 2, (char *)&MenuCursor, s1, 0);
-    StepMenuValue(3, 4, (char *)&Options.storyBranch3C, 5, 0);
-    if (MenuCursor == 2 && MainMenuSavedCursor == -1)
+    /* The PAL release's language (left/right) and its greyed-out VS row. */
+    if (!RR_RELEASE_JP)
+        StepMenuValue(3, 4, (char *)&Options.storyBranch3C, 5, 0);
+    if (!RR_RELEASE_JP && MenuCursor == 2 && MainMenuSavedCursor == -1)
         UiRows[2].cells[0] = 4;
     else
         UiRows[MenuCursor].cells[0] = 2;
     s2 = 0;
     if (MenuReturnSubmodeIndex != 0) {
-        if (UiRows[MenuCursor].half20 == 1) {
+        if (!RR_RELEASE_JP && UiRows[MenuCursor].half20 == 1) {
             PlaySfx(4);
             return s2;
         }

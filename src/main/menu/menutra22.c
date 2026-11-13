@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "types.h"
 #include "rr/frame_storage_types.h"
 #include "scratchpad.h"
@@ -67,9 +68,9 @@ void DrawCardMenuCommandRows(int a0, int a1) {
 
 void DrawSaveSlotTableHeader(int a0)
 {
-  DrawSmallFontString(0x28, 0xA0, StrName, 0x414);
-  DrawSmallFontString(0x68, 0xA0, TeamLabel, 0x414);
-  DrawSmallFontString(0xC2, 0xA0, StrMaker, 0x414);
+  DrawSmallFontString(0x28, 0xA0, StrName, RR_PAL_JP(0x414, 0x7800));
+  DrawSmallFontString(0x68, 0xA0, TeamLabel, RR_PAL_JP(0x414, 0x7800));
+  DrawSmallFontString(0xC2, 0xA0, StrMaker, RR_PAL_JP(0x414, 0x7800));
   RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[1], RR_GPU_SCRATCH->cursor, 0x20, (a0 << 5) + 0xB2, 0x104, 0xC, 0x80, 0x20, 0x20);
 }
 

@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "types.h"
 #include "rr/cpu_time.h"
 #include "rr/video_timing.h"
@@ -136,7 +137,12 @@ void PadUpdate(void) {
             states[i]->input00.fields.buttons = ~((ports[i]->data02 << 8) | ports[i]->data03);
             states[i]->edges08.fields.pressed = states[i]->input00.fields.buttons & ~states[i]->previous04;
             states[i]->released06 = states[i]->previous04 & (states[i]->input00.fields.buttons ^ states[i]->previous04);
-            states[i]->steering20 = ports[i]->analog04.bytes[2];
+            /* The Japanese release steers an analog pad with the d-pad, as
+             * a digital one; the PAL one with the left stick. */
+            if (RR_RELEASE_JP)
+                states[i]->steering20 = (((states[i]->input00.fields.buttons >> 13) & 1) - ((states[i]->input00.fields.buttons & 0x8000) ? 1 : 0)) * TwistRangeLimits[PadDigitalSteerSpeed] + 0x80;
+            else
+                states[i]->steering20 = ports[i]->analog04.bytes[2];
             states[i]->pressure22 = (states[i]->input00.fields.buttons & 0x40) ? 0x6A : 0;
             states[i]->pressure24 = (states[i]->input00.fields.buttons & 0x80) ? 0x6A : 0;
             states[i]->pressure26 = (states[i]->input00.fields.buttons & 4) ? 0x6A : 0;

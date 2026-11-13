@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "types.h"
 #include "rr/menu_selection.h"
 #include "scratchpad.h"
@@ -178,7 +179,9 @@ void StepRaceFrame(unsigned int gameMode)
       }
     }
   }
-  if (updateComProjections == 1)
+  /* The Japanese release projects the opponents in every mode but the
+   * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
+  if (RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1)
   {
     UpdateComCarTrackProjections();
   }
@@ -488,7 +491,10 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                                 if (cars[side]->stateTimer1A5 == 0) {
                                     SetCarImpactState(8, cars[side]);
                                 }
-                                if (cars[side ^ 1]->stateTimer1A5 == 0) {
+                                /* The Japanese release knocks the other car only
+                                 * in the two-player modes (GameModeType 2..4). */
+                                if ((!RR_RELEASE_JP || (u16)(GameModeType - 2) < 3) &&
+                                    cars[side ^ 1]->stateTimer1A5 == 0) {
                                     SetCarImpactState(8, cars[side ^ 1]);
                                 }
                                 if ((arg0 == &PlayerCars[0] || arg0 == &PlayerCars[1]) && arg0->stateTimer1A5 == 0x1E) {

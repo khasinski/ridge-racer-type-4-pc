@@ -11,6 +11,7 @@
 #include "rr/frame_loop.h"
 #include "rr/widescreen.h"
 #include "rr/video_timing.h"
+#include "rr/release.h"
 #include "rr/frame_interp.h"
 #include <psyz/gpu.h>
 #include <stdlib.h>
@@ -155,8 +156,10 @@ void MainLoop(void) {
     u32 bank;
     FrameStorage *frame;
     MainLoopStartupHook();
-    /* MODE_PAL; the NTSC release sets MODE_NTSC (in SystemInit). */
-    SetVideoMode(RR_PAL_NTSC(1, 0));
+    /* MODE_PAL, or MODE_NTSC for NTSC timing; the Japanese release sets
+     * MODE_NTSC in SystemInit. */
+    if (!RR_RELEASE_JP)
+        SetVideoMode(RR_PAL_NTSC(1, 0));
     ResetCallback();
     SystemInit();
     VSyncThreshold=128;

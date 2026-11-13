@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/widescreen.h"
 #include "game/sound/sndque.h"
 #include "rr/frame_storage_types.h"
@@ -40,8 +41,8 @@ void DrawRaceOverlaySprites(s32 a0)
                     c = 0x16;
                 }
                 if (SplitDeltaTimer == 0x3B && s2 < 2 && a0 == 0) SoundQueueEnqueue(c, 0);
-                RR_GPU_SCRATCH->cursor = (u8 *)GameQueueSprite(&CurrentDrawBuf->buffer.ordering70.tags[0], (SpritePacket *)RR_GPU_SCRATCH->cursor, 0x70, 0x60, 0xC, 0xC, s5, 0xA8, 0x7EF8);
-                DrawRaceTime(0x80, 0x60, s1, 0x7EF8, 1);
+                RR_GPU_SCRATCH->cursor = (u8 *)GameQueueSprite(&CurrentDrawBuf->buffer.ordering70.tags[0], (SpritePacket *)RR_GPU_SCRATCH->cursor, 0x70, RR_PAL_JP(0x60, 0x58), 0xC, 0xC, s5, 0xA8, 0x7EF8);
+                DrawRaceTime(0x80, RR_PAL_JP(0x60, 0x58), s1, 0x7EF8, 1);
             } else {
                 s3 = BestSplitTimes[SplitIndex];
                 s2 = SplitIndex;

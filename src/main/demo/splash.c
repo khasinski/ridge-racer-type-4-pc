@@ -4,16 +4,22 @@
 #include "rr/driver_control.h"
 #include "rr/badge_rows.h"
 #include "game/ui/badgespr.h"
+#include "rr/release.h"
 extern int SplashLogoAlpha;
 
 int SplashLogoUpdate(int a0) {
     GpuDmaTag *s5;
     void *cur;
     GpuScratchPointers *g = RR_GPU_SCRATCH;
-    g->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], g->cursor, 0, 0, 0x140, 0x200, 0, 0, 0);
+    /* The PAL release clears the whole screen behind the logo and turns the
+     * display on at the third frame; the Japanese release draws no clear and
+     * turns it on at the second. */
+    s32 displayOnFrame = RR_PAL_JP(3, 2);
+    if (!RR_RELEASE_JP)
+        g->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], g->cursor, 0, 0, 0x140, 0x200, 0, 0, 0);
     SplashLogoFrame = SplashLogoFrame + 1;
-    if (SplashLogoFrame >= 3) {
-        if (SplashLogoFrame == 3) {
+    if (SplashLogoFrame >= displayOnFrame) {
+        if (SplashLogoFrame == displayOnFrame) {
             SetDispMask(1);
             SplashLogoAlpha = 0;
         }

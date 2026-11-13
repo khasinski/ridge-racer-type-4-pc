@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/scene_camera_state.h"
 #include "rr/runtime_settings.h"
 #include "rr/menu_selection.h"
@@ -66,7 +67,8 @@ int LoadIntroSceneStep(void) {
         }
         return v;
     case 4:
-        g = Options.storyBranch3C << 2;
+        /* The PAL release has a team image set per language. */
+        g = RR_RELEASE_JP ? 0 : Options.storyBranch3C << 2;
         h = SelectedTeamIndex + 0x97;
         v = CdFileReadStart(GetR4FileIndex(2, g + h), LoadCursor);
         if (v != 0) {

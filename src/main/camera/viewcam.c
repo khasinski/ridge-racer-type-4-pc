@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "psyq/libgte/rotmatyxz.h"
 #include "rr/menu_selection.h"
 #include "psyq/libgte/gtemat5.h"
@@ -223,7 +224,7 @@ void SetupViewport(s32 viewport) {
         rectangle->h = top;
         coordinate = rectangle->y;
         if (DrawBufIndex != 0) {
-            coordinate += 0x100;
+            coordinate += RR_SCREEN_BOTTOM;
         }
         rectangle->y = coordinate;
     }

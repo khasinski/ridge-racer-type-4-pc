@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/sprite_emit.h"
 #include "rr/player_cars.h"
 #include "rr/menu_selection.h"
@@ -37,7 +38,7 @@ void DrawRaceTimesScreen(void) {
     char *b;
     int col, v;
     int sel;
-    RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
+    RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_PAL_JP(0x100, 0xF0));
     i = 0;
     sel = PlayerCars[0].control.dynamics94.steering.finish20; /* HudMapZoomMode 0x800AC1A0 */
     if (NumLaps > 0) {

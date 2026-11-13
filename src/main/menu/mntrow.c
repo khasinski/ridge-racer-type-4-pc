@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/system/pad.h"
 #include "rr/menu_text_state.h"
 #include "types.h"
@@ -258,7 +259,7 @@ void ModeSelectMenuUpdate(void) {
     }
     if (Dialogue->b4 == 1) {
         if (MenuReturnSubmodeIndex == 0) {
-            if (ModeFrame < 0x1F5) return;
+            if (ModeFrame < RR_PAL_JP(0x1F5, 0x12D)) return;
         }
         a2 = Dialogue->st;
         if (a2 == 4) {

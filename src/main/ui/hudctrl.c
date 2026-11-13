@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/widescreen.h"
 #include "game/system/pad.h"
 #include "scratchpad.h"
@@ -28,7 +29,7 @@ void DrawRaceMinimap(s32 arg0) {
     } else {
         var_s3 = CurrentDrawBuf->buffer.secondaryOrderingB70.tags;
         if (arg0 == 1) {
-            var_s4 = -0x80;
+            var_s4 = RR_PAL_JP(-0x80, -0x78);
         }
         if (LinkHostFlag >= 0) {
             {s32 step=((((u16)LinkHostFlag^1)<<16)>>15);step=step-1;var_s2=arg0+step;}
@@ -48,7 +49,7 @@ void DrawRaceMinimap(s32 arg0) {
                 s32 yNumerator=temp_a0->position20.words[2]; s32 xNumerator=temp_a0->position20.words[0];
                 s32 xValue;
                 xValue=WIDE_HUD_LEFT(xNumerator/1150+4);
-                yBase=var_s4+242;
+                yBase=var_s4+RR_PAL_JP(242, 226);
                 var_v0=yBase-yNumerator/1150;
                 var_a1 = AddSpritePrim(var_s3, var_a1, xValue, var_v0-4, glyph, clut, 0);
             }
@@ -60,9 +61,9 @@ void DrawRaceMinimap(s32 arg0) {
         s16 originX = (s16)WIDE_HUD_LEFT(8);
         do {
             s32 x = originX;
-            var_v0 = var_s4 + 0x3E;
+            var_v0 = var_s4 + RR_PAL_JP(0x3E, 0x36);
             if (var_s0_2 <= 0) {
-                var_v0 = var_s4 + 0xBE;
+                var_v0 = var_s4 + RR_PAL_JP(0xBE, 0xAE);
             }
             var_a1 = GameQueueSprite(var_s3, var_a1, x, var_v0, 0x34, 0x34, 0x4C, 0x6C, 0x1BD6);
             var_s0_2 += 1;
@@ -96,9 +97,9 @@ void DrawSteeringIndicator(GpuDmaTag *ordering, s32 layout) {
     u8 *shapeBase;
 
     player = 0;
-    baselineY = 0x70;
+    baselineY = RR_PAL_JP(0x70, 0x68);
     if (layout != 1) {
-        baselineY = 0xF0;
+        baselineY = RR_PAL_JP(0xF0, 0xE0);
         player = layout == 2;
     }
     inputBase = PlayerControllers;
@@ -171,7 +172,7 @@ void DrawSplitScreenDivider(int a0)
     p->tag.length = 3;
     p->code = 0x60;
     if (a0 == 0) {
-        p->y = 0x7E;
+        p->y = RR_PAL_JP(0x7E, 0x76);
         p->w = 0x140;
         p->x = 0;
         p->h = 4;
@@ -179,7 +180,7 @@ void DrawSplitScreenDivider(int a0)
         p->x = 0x9E;
         p->w = 4;
         p->y = 0;
-        p->h = 0x100;
+        p->h = RR_PAL_JP(0x100, 0xF0);
     }
     p->r = 8;
     p->g = 8;

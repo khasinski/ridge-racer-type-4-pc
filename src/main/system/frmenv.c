@@ -1,3 +1,5 @@
+#include "rr/release.h"
+#include "game/system/frmtask.h"
 #include "game/sound/cdpos.h"
 #include "rr/runtime_settings.h"
 #include "rr/menu_selection.h"
@@ -73,6 +75,9 @@ void SystemInit(void)
     int m;
 
     DebugPrintStub(StrTotalInitLog);
+    /* The Japanese release sets MODE_NTSC here (the PAL one in MainLoop). */
+    if (RR_RELEASE_JP)
+        SetVideoMode(0);
     CdInit();
     InitCdFileDirectory();
     SsInit();
@@ -181,11 +186,12 @@ void SetupDrawDispEnvs(s32 r,s32 g,s16 b,u32 flags) {
     center_x=160;
     temp=input>>1;
     interlace=temp&1;
+    /* Lines per field: 256 in the PAL release, 240 in the Japanese one. */
     temp=interlace+1;
-    height=temp<<8;
+    height=temp*GameReleaseProfile->screenHeight;
     center_y=height>>1;
     temp=1-interlace;
-    other_y=temp<<8;
+    other_y=temp*GameReleaseProfile->screenHeight;
     SetGeomOffset(center_x,center_y);
     SetGeomScreen(290);
     width=320;
@@ -213,9 +219,13 @@ loop:
         env->buffer.environment00.draw00.window=window;
         env->buffer.environment00.display5C.screen.x=(u16)Options.screenX34;
         env->buffer.environment00.display5C.screen.y=(u16)Options.screenY38;
-        env->buffer.environment00.display5C.display.h=height;
-        env->buffer.environment00.display5C.flags10.bytes.interlace=interlace;
-        env->buffer.environment00.display5C.screen.h=256;
+        /* The Japanese release keeps SetDefDispEnv's display height,
+         * non-interlaced flag and screen height. */
+        if(!RR_RELEASE_JP){
+            env->buffer.environment00.display5C.display.h=height;
+            env->buffer.environment00.display5C.flags10.bytes.interlace=interlace;
+            env->buffer.environment00.display5C.screen.h=256;
+        }
         if(loopRgb24) {
             env->buffer.environment00.display5C.flags10.bytes.rgb24=one;
             env->buffer.environment00.display5C.display.w=(env->buffer.environment00.display5C.display.w*2)/3;

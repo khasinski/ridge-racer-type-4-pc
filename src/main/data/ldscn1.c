@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/emblem_images.h"
 #include "rr/menu_arena_state.h"
 #include "rr/runtime_settings.h"
@@ -435,7 +436,7 @@ int LoadGlyphRowsStep(void) {
         LoadState = 1;
         GlyphRowCount = 4;
     case 1:
-        if (CdFileReadRange(GetR4FileIndex(1, 0x40), 0, 0xC0, LoadCursor)) {
+        if (CdFileReadRange(GetR4FileIndex(1, RR_PAL_JP(0x40, 0x60)), 0, 0xC0, LoadCursor)) {
             LoadState = 2;
         }
         break;
@@ -476,6 +477,17 @@ int LoadDialogueStep(void) {
         LoadState = 1;
         break;
     case 1:
+        if (RR_RELEASE_JP) {
+            /* Each scene's dialogue is a whole entry: 17 entries a team
+             * from 20 (two a Grand Prix stage), 97 outside the story. */
+            s2 = DialogueSceneMode == 1
+                     ? SelectionState.fields.copies[0].bytes[0] * 0x11 + SelectionState.fields.phase17 * 2 + 0x14
+                     : 0x61;
+            if (CdFileReadStart(GetR4FileIndex(1, s2), LoadDestCursor)) {
+                LoadState = 2;
+            }
+            break;
+        }
         if (DialogueSceneMode == 1) {
             s2 = 0x41;
             s1 = 0x14;
@@ -498,18 +510,30 @@ int LoadDialogueStep(void) {
         }
         break;
     case 3:
-        if (CdFileReadStart(GetR4FileIndex(1, 0x42), LoadDestCursor)) {
+        /* The Japanese release reads the scene's image list (the entry
+         * after its dialogue, 98 outside the story); the PAL one a single
+         * image. */
+        s2 = 0x42;
+        if (RR_RELEASE_JP)
+            s2 = DialogueSceneMode == 1
+                     ? SelectionState.fields.copies[0].bytes[0] * 0x11 + SelectionState.fields.phase17 * 2 + 0x15
+                     : 0x62;
+        if (CdFileReadStart(GetR4FileIndex(1, s2), LoadDestCursor)) {
             LoadState = 4;
         }
         break;
     case 4:
         if (CdFileBytesLoaded()) {
-            LoadTimImage((int *)LoadDestCursor);
+            if (RR_RELEASE_JP)
+                LoadTimList((int *)LoadDestCursor);
+            else
+                LoadTimImage((int *)LoadDestCursor);
             LoadState = 5;
         }
         break;
     case 5:
-        s2 = SelectionState.fields.copies[0].bytes[0] * 9 + 0x1C;
+        s2 = RR_RELEASE_JP ? SelectionState.fields.copies[0].bytes[0] * 0x11 + 0x24
+                           : SelectionState.fields.copies[0].bytes[0] * 9 + 0x1C;
         a0 = LoadIndex;
         s0 = DialogueAssetTable[Dialogue->b4 * 8 + a0];
         if (s0 != -1) {
@@ -569,7 +593,13 @@ int LoadMenuCarModelsStep(void) {
         LoadState = 1;
         LoadIndex = 0;
     case 1:
-        if (CdFileReadStart(GetR4FileIndex(1, 0x42), SharedWorkArena)) {
+        /* The Japanese release has an image per dialogue scene (entries
+         * 100, 102, 104) where the PAL one has a single image. */
+        if (RR_RELEASE_JP)
+            a1 = DialogueSceneMode == 2 ? 0x64 : DialogueSceneMode == 4 ? 0x68 : 0x66;
+        else
+            a1 = 0x42;
+        if (CdFileReadStart(GetR4FileIndex(1, a1), SharedWorkArena)) {
             LoadState = 2;
         }
         break;
@@ -582,6 +612,15 @@ int LoadMenuCarModelsStep(void) {
             CardDialogueStatePtr = (MenuTextState *)s;
             InitDialogueState((MenuTextState *)s);
     case 3:
+            if (RR_RELEASE_JP) {
+                /* The scene's whole dialogue table (entries 101, 103, 105);
+                 * the PAL release reads the language's offset from 68..70. */
+                a1 = DialogueSceneMode == 2 ? 0x65 : DialogueSceneMode == 4 ? 0x69 : 0x67;
+                if (CdFileReadStart(GetR4FileIndex(1, a1), SceneOffsetLookupBuf)) {
+                    LoadState = 4;
+                }
+                break;
+            }
             if (DialogueSceneMode == 2) {
                 a1 = 0x44;
             } else if (DialogueSceneMode == 4) {
@@ -615,7 +654,7 @@ int LoadTrackNodesStep(void) {
         LoadState = 1;
         TrackPreviewTick = 0;
     case 1:
-        if (CdFileReadStart(GetR4FileIndex(1, CourseIndex + 0x38), LoadCursor) != 0) {
+        if (CdFileReadStart(GetR4FileIndex(1, CourseIndex + RR_PAL_JP(0x38, 0x58)), LoadCursor) != 0) {
             LoadState = 2;
         }
         break;

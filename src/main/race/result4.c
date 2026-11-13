@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/system/pad.h"
 #include "rr/save_slots.h"
 #include "game/race/result4.h"
@@ -191,7 +192,7 @@ void NewCarModeUpdate(void) {
         }
     }
     if (Dialogue->b4 == 1) {
-        if (MenuReturnSubmodeIndex != 0 || (u32)ModeFrame >= 0x1F5U) {
+        if (MenuReturnSubmodeIndex != 0 || (u32)ModeFrame >= RR_PAL_JP(0x1F5U, 0x12DU)) {
             t = Dialogue->st;
             if (t == 4) {
                 Dialogue->b4 = 0x22;

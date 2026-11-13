@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/gfx/sprefct.h"
 #include "rr/save_progress.h"
 #include "rr/vehicle_table.h"
@@ -147,7 +148,7 @@ s32 DrawUiRow(s32 arg0) {
     }
 
     sp28 = UiRows[arg0].rect18;
-    s3 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], s3_init, 0, 0, 0x140, 0x200);
+    s3 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], s3_init, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0));
     s4 += 7;
 
     switch (s6) {

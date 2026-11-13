@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/car/carbound.h"
 #include "rr/save_slots.h"
 #include "scratchpad.h"
@@ -48,7 +49,7 @@ void DrawMenuCarPreviewScene(int a0) {
             UpdateBadgeRowAnim(s0);
             s0++;
         } while (s0 < 8);
-        s1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], s1, 0, 0, 0x140, 0x200);
+        s1 = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], s1, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0));
         s1 = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], s1, 0x24, 0x60, 0xF8, 2, 8, 8, 8);
         s1 = AddSpriteWithDrawMode(&CurrentDrawBuf->buffer.ordering70.tags[0], s1, BadgeRows[0].x04 + 0x18, BadgeRows[0].y06, 0x1C, 0x20, 0x7C, 0x3C, 0x4A, 0x2E29, 0, 0x80);
         s1 = AddSpriteWithDrawMode(&CurrentDrawBuf->buffer.ordering70.tags[0], s1, BadgeRows[0].x04 + 0x38, BadgeRows[0].y06, 0xA8, 0x20, 0, 0, 0x4A, 0x2E28, 1, 0x80);
@@ -64,7 +65,7 @@ void DrawMenuCarPreviewScene(int a0) {
             RR_GPU_SCRATCH->cursor = s1;
             BuildCameraMatrices();
             ScaleMatrixRow1(2, (MatrixWords32 *)SCRATCH_ROT_MATRIX);
-            SetGeomOffset(0xA0, 0x100);
+            SetGeomOffset(0xA0, RR_PAL_JP(0x100, 0xF0));
             SetGeomScreen(0x100);
             DrawMenuGridMesh(0, &CurrentDrawBuf->buffer.ordering70.tags[1], 1);
             s1 = RR_GPU_SCRATCH->cursor;

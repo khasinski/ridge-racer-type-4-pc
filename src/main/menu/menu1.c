@@ -1,3 +1,5 @@
+#include "game/ui/badge1.h"
+#include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "rr/menu_frame_state.h"
 #include "game/sound/sndvab.h"
@@ -185,7 +187,10 @@ void CarStandingsModeEnter(void)
         LoadCursor = MenuArenaBase;
     }
     MenuFrameState.s0 = 0;
-    RR_GPU_SCRATCH->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, 8, 8, 8);
+    /* The Japanese release fills its 480 lines with one tile. */
+    RR_GPU_SCRATCH->cursor =
+        (RR_RELEASE_JP ? AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x1E0, 8, 8, 8)
+                      : AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, 8, 8, 8));
     ModeGroup = 1;
     ModeIndex = 0x10;
     SubmodeState = 0;

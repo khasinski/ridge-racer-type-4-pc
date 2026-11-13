@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "game/sound/sndvab.h"
@@ -134,7 +135,8 @@ void TitleMenuInit(void)
   {
     SaveProgress.prefix.unlocks50.extraModeUnlocked50 = 1;
   }
-  CardDialogueStatePtr->b7 = 2;
+  if (!RR_RELEASE_JP)
+    CardDialogueStatePtr->b7 = 2;
   InitBadgeRow(0, 0xC, 0x130, 0x128, 0x58, 0, 0);
   BadgeRows->half02 = 1;
   _sio_control(1, 1, 0);
@@ -212,11 +214,15 @@ void TitleMenuUpdate(void)
             MenuCursor = 0;
             ResetLinkSioControl();
             SubmodeState = 2;
-            InitBadgeRow(0, 0x10, 0x1B6, 0x40, 0x22, 0, 0xF00);
-            BadgeRows->half02 = 1;
+            /* The PAL release's language badge row. */
+            if (!RR_RELEASE_JP) {
+                InitBadgeRow(0, 0x10, 0x1B6, 0x40, 0x22, 0, 0xF00);
+                BadgeRows->half02 = 1;
+            }
         }
-        /* 30 s to the attract demo (NTSC release: 900 frames). */
-        if (ScreenFrame >= (u32)RR_PAL_NTSC(0x2EE, 0x384))
+        /* 30 s to the attract demo (NTSC release: 900 frames, counted
+         * from the title's start in the Japanese release). */
+        if (RR_RELEASE_JP ? (u32)ModeFrame >= 0x384U : ScreenFrame >= (u32)RR_PAL_NTSC(0x2EE, 0x384))
             SubmodeState = 5;
         return;
     case 2:
@@ -228,7 +234,8 @@ void TitleMenuUpdate(void)
                 FadeCountdown = 0x40;
                 ResetScreenCounters();
                 StartDemoFadeIn(MainMenuChoice);
-                BadgeRows->state10 = 4;
+                if (!RR_RELEASE_JP)
+                    BadgeRows->state10 = 4;
             }
         }
         if (s0b != MenuCursor)
@@ -236,7 +243,8 @@ void TitleMenuUpdate(void)
         if (ScreenFrame >= (u32)RR_PAL_NTSC(0xBB8, 0xE10))
             SubmodeState = 5;
         DrawModeSelectRows();
-        UpdateBadgeRowAnim(0);
+        if (!RR_RELEASE_JP)
+            UpdateBadgeRowAnim(0);
         return;
     case 3:
         if (FadeCountdown <= 0) {
@@ -249,7 +257,8 @@ void TitleMenuUpdate(void)
             FadeCountdown = FadeCountdown - 1;
         }
         DrawModeSelectRows();
-        UpdateBadgeRowAnim(0);
+        if (!RR_RELEASE_JP)
+            UpdateBadgeRowAnim(0);
         return;
     case 5:
         _sio_control(1, 1, 0);

@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/frame_interp.h"
 /* RODATA 0x800100e4 0x20 */
 #include "rr/widescreen.h"
@@ -199,6 +200,10 @@ typedef struct {
 } SkySpritePacket;
 
 #define SKY_SCENERY_OT_BASE 702 /* PS1 byte offset 0xAF8 */
+/* Bottom of the screen for "some vertex on screen" tests: 256 lines in the
+ * PAL release, 240 in the Japanese one (the lit sky works in half lines). */
+#define SKY_Y_LIMIT RR_SCREEN_BOTTOM
+#define SKY_LIT_Y_LIMIT RR_PAL_JP(0x200, 0x1E0)
 #define SKY_LIT_OT_BASE 0x80    /* PS1 byte offset 0x200 */
 #define SKY_VERTEX(verts, index) ((const u32 *)((verts) + ((index) << 3)))
 #define SKY_DEPTH_SHIFT (*(s32 *)(SCRATCHPAD + 0x60))
@@ -285,7 +290,7 @@ static SkyTri *SkyEmitTriFT3(SkyTri *a0, SkyCtx *a1, int a2) {
                 v1 = a1->u.s.sy1;
                 a3 = a1->u.s.sy2;
                 if ((v0 >= 0 || v1 >= 0 || a3 >= 0) &&
-                    (v0 < 0x100 || v1 < 0x100 || a3 < 0x100)) {
+                    (v0 < SKY_Y_LIMIT || v1 < SKY_Y_LIMIT || a3 < SKY_Y_LIMIT)) {
                     SkyDepthCue3(a1, a0->c0, a0->c1, a0->c2);
                     pkt->color0 = Psyz_GteDataRead(20);
                     pkt->color1 = Psyz_GteDataRead(21);
@@ -350,7 +355,7 @@ static SkyQuad17528 *SkyEmitQuadG4(SkyQuad17528 *a0, SkyCtx *a1, int a2) {
                 a3 = a1->u.s.sy2;
                 t1 = a1->u.s.sy3;
                 if ((v1 >= 0 || t0 >= 0 || a3 >= 0 || t1 >= 0) &&
-                    (v1 < 0x100 || t0 < 0x100 || a3 < 0x100 || t1 < 0x100)) {
+                    (v1 < SKY_Y_LIMIT || t0 < SKY_Y_LIMIT || a3 < SKY_Y_LIMIT || t1 < SKY_Y_LIMIT)) {
                     SkyDepthCue3(a1, a0->c0, a0->c1, a0->c2);
                     pkt->color0 = Psyz_GteDataRead(20);
                     pkt->color1 = Psyz_GteDataRead(21);
@@ -407,7 +412,7 @@ static SkyQuad177E4 *SkyEmitQuadFT4(SkyQuad177E4 *a0, SkyCtx *a1, int a2) {
                 a3 = a1->u.s.sy2;
                 t1 = a1->u.s.sy3;
                 if ((v1 >= 0 || t0 >= 0 || a3 >= 0 || t1 >= 0) &&
-                    (v1 < 0x100 || t0 < 0x100 || a3 < 0x100 || t1 < 0x100)) {
+                    (v1 < SKY_Y_LIMIT || t0 < SKY_Y_LIMIT || a3 < SKY_Y_LIMIT || t1 < SKY_Y_LIMIT)) {
                     Psyz_GteDataWrite(8, (u32)a1->ir0);
                     SkyDepthCue1(a0->c0);
                     pkt->color = Psyz_GteDataRead(22);
@@ -465,7 +470,7 @@ static SkyTri17A90 *EmitSkyDepthCuedGT3(SkyTri17A90 *a0, SkyCtx *a1, int a2) {
                 v1 = a1->u.s.sy1;
                 a3 = a1->u.s.sy2;
                 if ((v0 >= 0 || v1 >= 0 || a3 >= 0) &&
-                    (v0 < 0x100 || v1 < 0x100 || a3 < 0x100)) {
+                    (v0 < SKY_Y_LIMIT || v1 < SKY_Y_LIMIT || a3 < SKY_Y_LIMIT)) {
                     SkyDepthCue3(a1, a0->c0, a0->c1, a0->c2);
                     pkt->color0 = Psyz_GteDataRead(20);
                     pkt->color1 = Psyz_GteDataRead(21);
@@ -580,14 +585,14 @@ static int SkyLitOnScreen3(const SkyLitCtx *a1) {
     return (a1->sxy140.s.sx0 >= 0 || a1->sxy140.s.sx1 >= 0 || a1->sxy140.s.sx2 >= 0) &&
            (a1->sxy140.s.sx0 < 0x140 || a1->sxy140.s.sx1 < 0x140 || a1->sxy140.s.sx2 < 0x140) &&
            (a1->sxy140.s.sy0 >= 0 || a1->sxy140.s.sy1 >= 0 || a1->sxy140.s.sy2 >= 0) &&
-           (a1->sxy140.s.sy0 < 0x200 || a1->sxy140.s.sy1 < 0x200 || a1->sxy140.s.sy2 < 0x200);
+           (a1->sxy140.s.sy0 < SKY_LIT_Y_LIMIT || a1->sxy140.s.sy1 < SKY_LIT_Y_LIMIT || a1->sxy140.s.sy2 < SKY_LIT_Y_LIMIT);
 }
 
 static int SkyLitOnScreen4(const SkyLitCtx *a1) {
     return (a1->sxy140.s.sx0 >= 0 || a1->sxy140.s.sx1 >= 0 || a1->sxy140.s.sx2 >= 0 || a1->sxy140.s.sx3 >= 0) &&
            (a1->sxy140.s.sx0 < 0x140 || a1->sxy140.s.sx1 < 0x140 || a1->sxy140.s.sx2 < 0x140 || a1->sxy140.s.sx3 < 0x140) &&
            (a1->sxy140.s.sy0 >= 0 || a1->sxy140.s.sy1 >= 0 || a1->sxy140.s.sy2 >= 0 || a1->sxy140.s.sy3 >= 0) &&
-           (a1->sxy140.s.sy0 < 0x200 || a1->sxy140.s.sy1 < 0x200 || a1->sxy140.s.sy2 < 0x200 || a1->sxy140.s.sy3 < 0x200);
+           (a1->sxy140.s.sy0 < SKY_LIT_Y_LIMIT || a1->sxy140.s.sy1 < SKY_LIT_Y_LIMIT || a1->sxy140.s.sy2 < SKY_LIT_Y_LIMIT || a1->sxy140.s.sy3 < SKY_LIT_Y_LIMIT);
 }
 
 static SkyLitTri14 *SkyEmitLitTriG3(SkyLitTri14 *a0, SkyLitCtx *a1) {

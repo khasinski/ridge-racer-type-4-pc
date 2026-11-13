@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "rr/save_slots.h"
 #include "rr/menu_selection.h"
@@ -175,8 +176,8 @@ void LinkWaitModeUpdate(void) {
             SubmodeState = 0;
         }
         DrawLinkEntryScreen((s16)LinkHostFlag);
-        AddPartialLine(&CurrentDrawBuf->buffer.ordering70.tags[0], 8, 0xF0, 0x138, 0xF0, ModeFrame * 8, 1, 8, 8, 8, 0);
-        AddPartialLine(&CurrentDrawBuf->buffer.ordering70.tags[0], 8, 0x10C, 0x138, 0x10C, ModeFrame * 8, 1, 8, 8, 8, 0);
+        AddPartialLine(&CurrentDrawBuf->buffer.ordering70.tags[0], 8, RR_PAL_JP(0xF0, 0xE0), 0x138, RR_PAL_JP(0xF0, 0xE0), ModeFrame * 8, 1, 8, 8, 8, 0);
+        AddPartialLine(&CurrentDrawBuf->buffer.ordering70.tags[0], 8, RR_PAL_JP(0x10C, 0xFC), 0x138, RR_PAL_JP(0x10C, 0xFC), ModeFrame * 8, 1, 8, 8, 8, 0);
         SetMenuFrameOptions(1, 1, 1);
         UpdateScreenFade(0x1003E);
     }
@@ -248,7 +249,7 @@ void LinkErrorModeUpdate(void) {
       _sio_control(1, 1, 0);
       g = RR_GPU_SCRATCH;
       new_var = g->cursor;
-      g->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], new_var, 0x78, 0x100, StrLinkError, 0x7F38, 0, 1), 0x78, 0x114, PressStartStr, 0x7F38, 0, 1), 0, 0, 0x140, 0x200, 0x80, 0, 0), 0x5E);
+      g->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], new_var, 0x78, RR_PAL_JP(0x100, 0xF0), StrLinkError, 0x7F38, 0, 1), 0x78, RR_PAL_JP(0x114, 0x104), PressStartStr, 0x7F38, 0, 1), 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0), 0x80, 0, 0), 0x5E);
       if (MenuReturnSubmodeIndex == 0)
     {
       if (ModeFrame < RR_PAL_NTSC(0xFBU, 0x12DU))
@@ -266,7 +267,7 @@ void LinkErrorModeUpdate(void) {
       FadeCountdown = ((unsigned short) FadeCountdown) - 1;
     }
       AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (0x20 - FadeCountdown) * 8, 0x45);
-      RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[1], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, (0x20 - FadeCountdown) * 4, 0, 0);
+      RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[1], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0), (0x20 - FadeCountdown) * 4, 0, 0);
       if (FadeCountdown <= 0)
     {
       ModeGroup = 1;
@@ -301,7 +302,7 @@ void LinkBattleEndModeUpdate(void)
     case 2:
       ModeFrame++;
       new_var = RR_GPU_SCRATCH->cursor;
-      RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], new_var, 0x78, 0x100, StrLinkBattleEnd, 0x7F38, 0, 1), 0x78, 0x114, PressStartText, 0x7F38, 0, 1), 0x3E);
+      RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], AddTextSprites(&CurrentDrawBuf->buffer.ordering70.tags[0], new_var, 0x78, RR_PAL_JP(0x100, 0xF0), StrLinkBattleEnd, 0x7F38, 0, 1), 0x78, RR_PAL_JP(0x114, 0x104), PressStartText, 0x7F38, 0, 1), 0x3E);
       if (MenuReturnSubmodeIndex == 0)
     {
       if (ModeFrame < RR_PAL_NTSC(0xFBU, 0x12DU))
@@ -358,7 +359,7 @@ void RaceAbortToMenuUpdate(void) {
         ModeIndex = 0x23;
         SubmodeState = 0;
     }
-    RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100, 8, 8, 8);
+    RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_PAL_JP(0x100, 0xF0), 8, 8, 8);
 }
 
 void InitPostRaceScreen(void) {

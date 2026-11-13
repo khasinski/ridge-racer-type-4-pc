@@ -1,3 +1,4 @@
+#include "rr/release.h"
 /* RODATA 0x800103e0 0x1c */
 #include "rr/widescreen.h"
 #include "types.h"
@@ -11,6 +12,8 @@
 #include "rr/race_setup.h"
 #include "game/ui/badge1.h"
 #include "rr/frame_loop.h"
+static const HudSpriteDef14 GlyphRowDefaultPresetsJp[4];
+static const HudSpriteDef14 UiRowDefaultPresetsJp[3];
 
 /* The bank-0/bank-1 ordering tables the HUD number targets point at:
  * full-screen layouts use each bank's primary table, split-screen layouts
@@ -32,29 +35,29 @@ void InitHudNumberTargets(int a0) {
     targets[0].heads[0] = DrawBuffers[0].buffer.ordering70.tags;
     targets[0].heads[1] = DrawBuffers[1].buffer.ordering70.tags;
     targets[0].number3.x = 0x106;
-    targets[0].number3.y = 0xE6;
+    targets[0].number3.y = RR_PAL_JP(0xE6, 0xD6);
     targets[0].digit.x = 0x122;
-    targets[0].digit.y = 0xDC;
+    targets[0].digit.y = RR_PAL_JP(0xDC, 0xCC);
     targets[0].x = 0x112;
-    targets[0].y = 0xCE;
+    targets[0].y = RR_PAL_JP(0xCE, 0xBE);
     return;
 splitScreen:
     targets[0].heads[0] = DrawBuffers[0].buffer.secondaryOrderingB70.tags;
     targets[0].heads[1] = DrawBuffers[1].buffer.secondaryOrderingB70.tags;
     targets[0].number3.x = 0xFC;
-    targets[0].number3.y = 0x58;
+    targets[0].number3.y = RR_PAL_JP(0x58, 0x50);
     targets[0].digit.x = 0x128;
-    targets[0].digit.y = 0x4A;
+    targets[0].digit.y = RR_PAL_JP(0x4A, 0x42);
     targets[0].x = 0xFC;
-    targets[0].y = 0x68;
+    targets[0].y = RR_PAL_JP(0x68, 0x60);
     targets[1].heads[0] = DrawBuffers[0].buffer.secondaryOrderingB70.tags;
     targets[1].heads[1] = DrawBuffers[1].buffer.secondaryOrderingB70.tags;
     targets[1].number3.x = 0xFC;
-    targets[1].number3.y = 0xD8;
+    targets[1].number3.y = RR_PAL_JP(0xD8, 0xC8);
     targets[1].digit.x = 0x122;
-    targets[1].digit.y = 0xCA;
+    targets[1].digit.y = RR_PAL_JP(0xCA, 0xBA);
     targets[1].x = 0xFC;
-    targets[1].y = 0xE8;
+    targets[1].y = RR_PAL_JP(0xE8, 0xD8);
 }
 
 /* Split layouts (a0 >= 2) draw four (two for a0 == 3) border sprites into
@@ -62,7 +65,7 @@ splitScreen:
 void DrawViewportBorderFrames(int a0) {
     SpritePacket *s0;
     GpuDmaTag *s2;
-    HudSpriteDef14 *preset;
+    const HudSpriteDef14 *preset;
     int s3, s5;
 
     s0 = (SpritePacket *)RR_GPU_SCRATCH->cursor;
@@ -70,7 +73,7 @@ void DrawViewportBorderFrames(int a0) {
         s2 = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
         s5 = 4;
         if (a0 == 3) s5 = 2;
-        preset = GlyphRowDefaultPresets;
+        preset = RR_PAL_JP(GlyphRowDefaultPresets, GlyphRowDefaultPresetsJp);
         for (s3 = 0; s3 < s5; s3++) {
             InitHudSpritePacket(s0, &preset[s3]);
             s0->x = (s16)WIDE_HUD_RIGHT(s0->x);
@@ -79,11 +82,11 @@ void DrawViewportBorderFrames(int a0) {
         }
     } else {
         s2 = &CurrentDrawBuf->buffer.ordering70.tags[0];
-        preset = UiRowDefaultPresets;
+        preset = RR_PAL_JP(UiRowDefaultPresets, UiRowDefaultPresetsJp);
         for (s3 = 0; s3 < 3; s3++) {
             InitHudSpritePacket(s0, &preset[s3]);
             /* Original compares against 3, which this branch never sees. */
-            if (a0 == 3) s0->y -= 0x80;
+            if (a0 == 3) s0->y -= RR_PAL_JP(0x80, 0x78);
             s0->x = (s16)WIDE_HUD_RIGHT(s0->x);
             RR_GPU_LINK(s2, s0);
             s0++;
@@ -188,6 +191,10 @@ void DrawHudNumber3(int a0, int a1)
 
 /* Initial values of the globals this module owns. */
 HudSpriteDef14 UiRowDefaultPresets[3] = {{.x00 = 0x120, .y02 = 0xEA, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x125, .y02 = 0xB6, .w04 = 0x14, .h06 = 0x20, .v0A = 0x48, .clut0C = 0x7F3B}, {.x00 = 0xEC, .y02 = 0xAC, .w04 = 0x4C, .h06 = 0x3C, .v0A = 0x6C, .clut0C = 0x7E78}};
+/* The Japanese release's values (SLPS-01800). */
+static const HudSpriteDef14 UiRowDefaultPresetsJp[3] = {{.x00 = 0x120, .y02 = 0xDA, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x125, .y02 = 0xA6, .w04 = 0x14, .h06 = 0x20, .v0A = 0x48, .clut0C = 0x7F3B}, {.x00 = 0xEC, .y02 = 0x9C, .w04 = 0x4C, .h06 = 0x3C, .v0A = 0x6C, .clut0C = 0x7E78}};
 HudSpriteDef14 GlyphRowDefaultPresets[4] = {{.x00 = 0x115, .y02 = 0x5C, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x11E, .y02 = 0x6C, .w04 = 0x14, .h06 = 0xC, .u08 = 0x14, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x115, .y02 = 0xDC, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x11E, .y02 = 0xEC, .w04 = 0x14, .h06 = 0xC, .u08 = 0x14, .v0A = 0xB4, .clut0C = 0x7EF8}};
+/* The Japanese release's values (SLPS-01800). */
+static const HudSpriteDef14 GlyphRowDefaultPresetsJp[4] = {{.x00 = 0x115, .y02 = 0x54, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x11E, .y02 = 0x64, .w04 = 0x14, .h06 = 0xC, .u08 = 0x14, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x115, .y02 = 0xCC, .w04 = 0x18, .h06 = 0xC, .u08 = 0x28, .v0A = 0xB4, .clut0C = 0x7EF8}, {.x00 = 0x11E, .y02 = 0xDC, .w04 = 0x14, .h06 = 0xC, .u08 = 0x14, .v0A = 0xB4, .clut0C = 0x7EF8}};
 HudQuadCorner UiBoxCornerOffsets[4] = {{.x = -32, .y = 1}, {.x = -32, .y = -1}, {.x = 2, .y = 2}, {.x = 2, .y = -2}};
 NumberTarget HudNumberTargets[2];

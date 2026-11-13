@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "rr/widescreen.h"
 #include "rr/race_frame_scratch.h"
@@ -125,7 +126,8 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                             f |= 0x10;
                         }
                     }
-                    if (PlayerControllers[idx].input00.fields.type == 0x73) {
+                    /* DualShock analog steering (class 0x80) is PAL-only. */
+                    if (!RR_RELEASE_JP && PlayerControllers[idx].input00.fields.type == 0x73) {
                         t5 = (PlayerControllers[idx].steering3C * 0x7F) / 128;
                         t3 = f | 0x80;
                     } else {

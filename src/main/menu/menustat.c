@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "game/sound/cdpos.h"
@@ -77,7 +78,7 @@ void CarStandingsModeUpdate(void) {
     case 5:
         FadeCountdown--;
         AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (0x20 - (short)FadeCountdown) << 3, 0x45);
-        RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200);
+        RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_PAL_JP(0x200, 0x1E0));
         if ((short)FadeCountdown <= 0) {
             if (SelectionState.fields.mode1A == 6) {
                 InitMenuArenas();
@@ -109,7 +110,10 @@ void CarStandingsModeUpdate(void) {
         sp[1] = 0xBD;
         sp[2] = 0;
     }
-    RR_GPU_SCRATCH->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, sp[0], sp[1], sp[2]);
+    /* The Japanese release fills its 480 lines with one tile. */
+    RR_GPU_SCRATCH->cursor =
+        (RR_RELEASE_JP ? AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x1E0, sp[0], sp[1], sp[2])
+                      : AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x200, sp[0], sp[1], sp[2]));
 }
 
 void *AddBadgeSpriteStrip(int a, GpuDmaTag *p, void *x, int y, int w, int z) {

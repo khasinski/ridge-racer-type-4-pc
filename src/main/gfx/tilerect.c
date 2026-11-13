@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "game/system/pad.h"
@@ -369,7 +370,7 @@ void DrawTrackObjectBillboard(int modelIndex) {
                         int y2 = work->projected34[2].xy.y;
                         int y3 = work->projected34[3].xy.y;
                         if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0) &&
-                            (y0 < 0x100 || y1 < 0x100 || y2 < 0x100 || y3 < 0x100)) {
+                            (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                             RR_GPU_ADD_PRIM(&(orderingBase + depthBucket)[quad->orderingBias19], packet, 9);
                             INTERP_TAG(packet, quad, 0);
                             packet++;
@@ -455,7 +456,7 @@ void DrawTrackObjectFlashQuads(int modelIndex) {
                             int y2 = work->projected24[2].xy.y;
                             int y3 = work->projected24[3].xy.y;
                             if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0) &&
-                                (y0 < 0x100 || y1 < 0x100 || y2 < 0x100 || y3 < 0x100)) {
+                                (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                                 RR_GPU_ADD_PRIM(&(orderingBase + work->depth1C)[quad->orderingBias19], packet, 9);
                                 INTERP_TAG(packet, quad, 0);
                                 packet++;
@@ -499,7 +500,7 @@ u8 *EmitModelTrisGT3(const TrackObjectLitWork *work, GpuDmaTag *head, u8 *packet
         y1 = x1 >> 16;
         y2 = x2 >> 16;
         if ((y0 >= 0 || y1 >= 0 || y2 >= 0) &&
-            (y0 < 0x100 || y1 < 0x100 || y2 < 0x100)) {
+            (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM)) {
             x0 = (s16)x0;
             x1 = (s16)x1;
             x2 = (s16)x2;

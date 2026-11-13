@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/track_lighting.h"
 #include "rr/menu_selection.h"
 #include "rr/load_cursor.h"
@@ -724,7 +725,7 @@ void SetupRenderer(s32 shift) {
     scratch->viewport6C.rect.w=320;
     scratch->viewport6C.rect.x=0;
     scratch->viewport6C.rect.y=0;
-    scratch->viewport6C.rect.h=256;
+    scratch->viewport6C.rect.h=GameReleaseProfile->screenHeight;
 }
 
 /* GTE INTPL of one light row: FC = far entry, IR = near entry, IR0 = blend. */
