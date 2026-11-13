@@ -147,17 +147,16 @@ endif()
 if(RR4_EXPORT_SYMBOLS)
     if(MINGW)
         target_link_options(ridge-racer-type-4-pc PRIVATE -Wl,--export-all-symbols)
-    elseif(MSVC)
-        # The linker exports what a .def file lists: CMake writes one with
-        # every global (functions and data) of the executable's own objects,
-        # which GetProcAddress then finds. It does not look into static
-        # libraries, so the game modules are compiled into the executable
-        # (their rr4_game copies stay unused).
-        if(RR4_BUILD_GAME)
-            target_sources(ridge-racer-type-4-pc PRIVATE ${RR4_GAME_SOURCES})
-        endif()
-        set_target_properties(ridge-racer-type-4-pc PROPERTIES
-            ENABLE_EXPORTS ON WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    elseif(MSVC AND RR4_BUILD_GAME)
+        # The linker exports what a .def file lists: one with every global
+        # of the game modules (functions, data and communal variables),
+        # written from rr4_game.lib before each link.
+        set(RR4_EXPORTS_DEF ${CMAKE_CURRENT_BINARY_DIR}/rr4_game_exports.def)
+        add_custom_command(TARGET ridge-racer-type-4-pc PRE_LINK
+            COMMAND ${CMAKE_COMMAND} -DLINKER=${CMAKE_LINKER} -DLIBRARY=$<TARGET_FILE:rr4_game>
+                -DOUT=${RR4_EXPORTS_DEF} -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/port/msvc_exports.cmake
+            VERBATIM)
+        target_link_options(ridge-racer-type-4-pc PRIVATE "/DEF:${RR4_EXPORTS_DEF}")
     elseif(NOT APPLE)
         set_target_properties(ridge-racer-type-4-pc PROPERTIES ENABLE_EXPORTS ON)
     endif()
