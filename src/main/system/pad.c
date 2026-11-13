@@ -25,7 +25,7 @@ extern char StrControllerNoErrorFmt[];
 extern char StrActuatorNoErrorFmt[];
 
 void PadUpdate(void) {
-    RR_CPU_CYCLES(6248); // DuckStation, per call, with the routines it calls
+    RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE);
 
     PadPort28 *ports[2] = { &PadPorts[0], &PadPorts[1] };
     ControllerState5C *states[2] = { &PlayerControllers[0], &PlayerControllers[1] };

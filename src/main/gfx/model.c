@@ -100,7 +100,7 @@ void SetFogNearFar(s32 a0, s32 a1, s32 a2) {
     GTE_CTC2_28(r1);
 }
 void InitTimTemplate(EmblemTimImage840 *image) {
-    RR_CPU_CYCLES(2129); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_INIT_TIM_TEMPLATE);
 
     u32 *words = image->words;
     int n;

@@ -93,7 +93,7 @@ void SpawnParticlePair(void)
 }
 
 void UpdateParticle(int a0) {
-    RR_CPU_CYCLES(103); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_PARTICLE);
 
     UiParticle20 *e = &ParticleSystem.entries2C[a0];
     int st = e->state04;
@@ -139,7 +139,7 @@ void UpdateParticle(int a0) {
 
 
 void DrawParticle(int a0) {
-    RR_CPU_CYCLES(2358); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_PARTICLE);
 
     GpuColorCommand c[4];
     GpuRectangleFields rect;

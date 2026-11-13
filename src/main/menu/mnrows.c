@@ -204,7 +204,7 @@ l428:
 }
 
 void UpdateMenuScript(void) {
-    RR_CPU_CYCLES(506); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_MENU_SCRIPT);
 
     s32 next_frame;
     s32 mode;

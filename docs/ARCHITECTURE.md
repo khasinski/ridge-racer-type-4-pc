@@ -202,7 +202,10 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      SDK calls, CD, card, SPU, GPU and interrupt handlers), measured on
      DuckStation; mode entries, `FrameCounter` and `rand` then match it
      field for field (splash, opening movie, title, attract, menus, Grand
-     Prix, Time Attack, Extra Trial). Fit costs to runs without GDB
+     Prix, Time Attack, Extra Trial). The costs are in two tables, PsyZ's
+     `src/timing_profile.h` (BIOS, SDK, devices, interrupts) and the game's
+     `include/rr/cpu_time.h` (`RR_CPU_CYCLES`), each value with how it was
+     fitted and the commit of its run. Fit costs to runs without GDB
      breakpoints: any breakpoint slows DuckStation's CPU by about 1%
      (`tools/port/duckstation.py` stepping and RAM reads do not). The
      memory card driver serves the ports on alternate vblanks, a sector

@@ -41,7 +41,7 @@ void *AddDrawModePrim(GpuDmaTag *ordering, GpuDrawModePacket *packet, u16 page) 
 
 void *AddTilePrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width,
                   s32 height, s32 red, s32 green, s32 blue) {
-    RR_CPU_CYCLES(205); // DuckStation, per call // with its AddPrim
+    RR_CPU_CYCLES(RR_CYCLES_ADD_TILE_PRIM);
     GpuTilePacket *tile = cursor;
     SetTile(tile);
     tile->x = x;
@@ -57,7 +57,7 @@ void *AddTilePrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width,
 
 void *AddTileGrid2x2(GpuDmaTag *ordering, void *cursor, int x, int y, int width,
                      int height, int red, int green, int blue) {
-    RR_CPU_CYCLES(321); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_ADD_TILE_GRID_2X2);
     int i = 0;
     int halfWidth = width / 2;
     int halfHeight = height / 2;

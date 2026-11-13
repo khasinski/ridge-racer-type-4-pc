@@ -56,14 +56,14 @@ void *AddTextSprites(GpuDmaTag *ordering, void *cursor, s32 screenX, s32 screenY
     SpritePacket *packet;
     SpritePacket *emitted;
     brightness = color >> 1;
-    RR_CPU_CYCLES(120); // DuckStation: 120 per call and 192 per glyph drawn
+    RR_CPU_CYCLES(RR_CYCLES_FONT_DRAW);
     if ((*text) != 0) {
         packet = cursor;
         do {
             glyph = (u8)*text - 0x20;
             text++;
             if (glyph != 0) {
-                RR_CPU_CYCLES(192);
+                RR_CPU_CYCLES(RR_CYCLES_FONT_GLYPH);
                 tileU = FontAtlasTileCoords[glyph * 2] << 3;
                 tileV = FontAtlasTileCoords[(glyph * 2) + 1] << 4;
                 SetSprt(cursor);

@@ -39,7 +39,7 @@ void SoundMasterFadeStep(void) {
 }
 
 void SoundUpdate(void) {
-    RR_CPU_CYCLES(1624); // DuckStation, per call outside races, with the routines it calls
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE);
 
     int slotIndex;
     AudioSlot620 *slot;

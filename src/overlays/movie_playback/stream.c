@@ -8,6 +8,7 @@
 #include "rr/overlay668_playback_step.h"
 #include "rr/overlay668_decode.h"
 #include "rr/cd.h"
+#include "rr/cpu_time.h"
 #include "rr/overlay668_display.h"
 #include "rr/overlay668_frame_submit.h"
 #include "rr/overlay668_frame_acquire.h"
@@ -215,7 +216,6 @@ void ovl668_on_mdec_slice_ready(void) {
  * slots are freed after it, and the MDEC callbacks run meanwhile. */
 #define VLC_FRAME_NS 1320000u
 #define VLC_WORD_NS 2550u
-void Psyz_SpendTime(unsigned ns);
 
 static void ovl668_spend_vlc_time(const StrCommandHeader *commands) {
     Psyz_SpendTime(VLC_FRAME_NS + VLC_WORD_NS * ovl668_mdec_buf_size(commands));

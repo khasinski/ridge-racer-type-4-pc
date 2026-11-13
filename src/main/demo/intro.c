@@ -37,7 +37,7 @@ int IntroScriptStep(void);
 void IntroInit(void);
 
 int IntroScriptStep(void) {
-    RR_CPU_CYCLES(1282); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_INTRO_SCRIPT_STEP);
 
     short sp28[4];
     unsigned char sp30[4];

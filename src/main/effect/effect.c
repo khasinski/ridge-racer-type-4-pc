@@ -11,7 +11,7 @@
 #include "psyq/libgpu/gpudisp.h"
 
 void UpdateParticles(void) {
-    RR_CPU_CYCLES(840); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_PARTICLES);
 
     GpuDrawModePacket *p;
     s32 i;

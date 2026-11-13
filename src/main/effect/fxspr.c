@@ -15,7 +15,7 @@ extern const char HudPauseMenuItemCounts[13][16];
 extern unsigned int OverlayTextSpriteUv;
 void DrawIntroRippleSprites(void)
 {
-    RR_CPU_CYCLES(2198); // DuckStation, per call
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_INTRO_RIPPLES);
 
   int l[2];
   short h[2];
