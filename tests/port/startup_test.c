@@ -15,6 +15,13 @@
  * the startup-other-release test. Run with PSYZ_HEADLESS=1
  * SDL_AUDIODRIVER=dummy. */
 
+#ifdef _WIN32
+#include <direct.h>
+#define chdir _chdir
+#else
+#include <unistd.h>
+#endif
+
 #include <SDL3/SDL.h>
 #include <psyz.h>
 #include <psyz/cd.h>
@@ -24,12 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#include <direct.h>
-#define chdir _chdir
-#else
-#include <unistd.h>
-#endif
 
 #include "disc_check.h"
 #include "host_log.h"
@@ -363,6 +364,11 @@ static int ReadText(const char *path, char *out, size_t size) {
     n = fread(out, 1, size - 1, f);
     out[n] = '\0';
     fclose(f);
+    /* text files (the log) end their lines in CR LF on Windows */
+    for (char *from = out, *to = out;; from++) {
+        if (*from != '\r' && !(*to++ = *from))
+            break;
+    }
     return 1;
 }
 

@@ -1,3 +1,14 @@
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE /* fileno under -std=c11 */
+#endif
+/* The platform's I/O headers before PsyZ's, whose libapi names (open,
+ * close, ...) are macros. */
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
 #include "preferences.h"
 
 #include <SDL3/SDL.h>
@@ -14,11 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
 
 #include "host_log.h"
 
