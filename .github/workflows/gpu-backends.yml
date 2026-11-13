@@ -8,7 +8,9 @@ name: GPU backends
 # primitive streams drawn by the GPU rasterizer at 1x..4x against the CPU
 # rasterizer, full and decimated) must pass on each, and the log must name
 # the backend that drew them. The CPU rasterizer (PSYZ_HEADLESS=1) runs the
-# same gpu::* tests for reference. Failed golden images are uploaded.
+# same gpu::* tests and must pass them all except CPU_KNOWN_FAILURES, which
+# are run on their own and reported (a notice) once they pass, so the list
+# can shrink. Failed golden images are uploaded.
 #
 # The game itself needs a disc image, so it is only built here; game frames
 # are compared on a developer machine (RR4_CAPTURE_AT with PSYZ_HEADLESS=1
@@ -30,6 +32,11 @@ env:
   SDL_AUDIODRIVER: dummy
   SDL_AUDIO_DRIVER: dummy
   CI: 1
+  # gpu::* tests that fail on the CPU rasterizer (docs/TECH_DEBT.md P9): the
+  # crop test asks for its own SDL_GPU device, move_image_internal_res needs
+  # the GPU rasterizer's internal resolution.
+  CPU_KNOWN_FAILURES: >-
+    gpu::presentation_crop_is_stable_across_field_buffers,gpu::move_image_internal_res
 
 jobs:
   vulkan-lavapipe:
@@ -79,15 +86,28 @@ jobs:
           set -o pipefail
           ../../../../build/psyz-tests/psyz_tests --verbose 2>&1 | tee vulkan.log
           grep -q 'SDL_GPU with driver vulkan' vulkan.log
-      - name: gpu tests on the CPU rasterizer (reference, informational)
+      - name: gpu tests on the CPU rasterizer (all but the known failures)
         if: success() || failure()
-        continue-on-error: true
         working-directory: third_party/psyz/psyz/tests
         env:
           PSYZ_HEADLESS: "1"
         run: |
           set -o pipefail
-          ../../../../build/psyz-tests/psyz_tests --verbose '--filter=gpu::*' 2>&1 | tee cpu.log
+          exclude=$(printf '%s' "$CPU_KNOWN_FAILURES" | tr -d ' ' | sed 's/^/-/; s/,/,-/g')
+          ../../../../build/psyz-tests/psyz_tests --verbose "--filter=gpu::*,${exclude}" 2>&1 | tee cpu.log
+      - name: Known CPU rasterizer failures (reported, not gating)
+        if: success() || failure()
+        working-directory: third_party/psyz/psyz/tests
+        env:
+          PSYZ_HEADLESS: "1"
+        run: |
+          for t in $(printf '%s' "$CPU_KNOWN_FAILURES" | tr ',' ' '); do
+            if ../../../../build/psyz-tests/psyz_tests --verbose "--filter=$t" >> cpu-known.log 2>&1; then
+              echo "::notice::$t passes on the CPU rasterizer now; remove it from CPU_KNOWN_FAILURES."
+            else
+              echo "$t: still fails (known)"
+            fi
+          done
       - name: Upload failures
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -150,15 +170,28 @@ jobs:
           set -o pipefail
           ../../../../build/psyz-tests/psyz_tests.exe --verbose 2>&1 | tee d3d12.log
           grep -q 'SDL_GPU with driver direct3d12' d3d12.log
-      - name: gpu tests on the CPU rasterizer (reference, informational)
+      - name: gpu tests on the CPU rasterizer (all but the known failures)
         if: success() || failure()
-        continue-on-error: true
         working-directory: third_party/psyz/psyz/tests
         env:
           PSYZ_HEADLESS: "1"
         run: |
           set -o pipefail
-          ../../../../build/psyz-tests/psyz_tests.exe --verbose '--filter=gpu::*' 2>&1 | tee cpu.log
+          exclude=$(printf '%s' "$CPU_KNOWN_FAILURES" | tr -d ' ' | sed 's/^/-/; s/,/,-/g')
+          ../../../../build/psyz-tests/psyz_tests.exe --verbose "--filter=gpu::*,${exclude}" 2>&1 | tee cpu.log
+      - name: Known CPU rasterizer failures (reported, not gating)
+        if: success() || failure()
+        working-directory: third_party/psyz/psyz/tests
+        env:
+          PSYZ_HEADLESS: "1"
+        run: |
+          for t in $(printf '%s' "$CPU_KNOWN_FAILURES" | tr ',' ' '); do
+            if ../../../../build/psyz-tests/psyz_tests.exe --verbose "--filter=$t" >> cpu-known.log 2>&1; then
+              echo "::notice::$t passes on the CPU rasterizer now; remove it from CPU_KNOWN_FAILURES."
+            else
+              echo "$t: still fails (known)"
+            fi
+          done
       - name: Upload failures
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -211,15 +244,28 @@ jobs:
         run: |
           set -o pipefail
           ../../../../build/psyz-tests/psyz_tests --verbose '--filter=gpu::*' 2>&1 | tee metal-copy.log
-      - name: gpu tests on the CPU rasterizer (reference, informational)
+      - name: gpu tests on the CPU rasterizer (all but the known failures)
         if: success() || failure()
-        continue-on-error: true
         working-directory: third_party/psyz/psyz/tests
         env:
           PSYZ_HEADLESS: "1"
         run: |
           set -o pipefail
-          ../../../../build/psyz-tests/psyz_tests --verbose '--filter=gpu::*' 2>&1 | tee cpu.log
+          exclude=$(printf '%s' "$CPU_KNOWN_FAILURES" | tr -d ' ' | sed 's/^/-/; s/,/,-/g')
+          ../../../../build/psyz-tests/psyz_tests --verbose "--filter=gpu::*,${exclude}" 2>&1 | tee cpu.log
+      - name: Known CPU rasterizer failures (reported, not gating)
+        if: success() || failure()
+        working-directory: third_party/psyz/psyz/tests
+        env:
+          PSYZ_HEADLESS: "1"
+        run: |
+          for t in $(printf '%s' "$CPU_KNOWN_FAILURES" | tr ',' ' '); do
+            if ../../../../build/psyz-tests/psyz_tests --verbose "--filter=$t" >> cpu-known.log 2>&1; then
+              echo "::notice::$t passes on the CPU rasterizer now; remove it from CPU_KNOWN_FAILURES."
+            else
+              echo "$t: still fails (known)"
+            fi
+          done
       - name: Upload failures
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

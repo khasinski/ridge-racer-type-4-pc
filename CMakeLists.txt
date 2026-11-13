@@ -94,8 +94,7 @@ target_include_directories(ridge-racer-type-4-pc
 target_compile_definitions(ridge-racer-type-4-pc PRIVATE __psyz)
 target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_host psyz)
 if(RR4_BUILD_GAME)
-    # src/port/main.c does not enter MainLoop yet, so the archive is built and
-    # linked but contributes no objects until the host entry calls the game.
+    # The game: src/port/main.c mounts the disc and enters MainLoop.
     target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_game)
 endif()
 if(APPLE AND RR4_MACOS_BUNDLE)

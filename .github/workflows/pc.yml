@@ -67,6 +67,9 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - name: Keep LF line endings
+        shell: bash
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: false
@@ -93,13 +96,32 @@ jobs:
           ctest --test-dir build --output-on-failure --no-tests=error
           ./build/ridge-racer-type-4-pc.exe 2>&1 | tee startup.log || true
           grep -q 'usage: ' startup.log
-      - name: PsyZ host file tests (memory cards, disc images, UTF-8 paths)
+      # The whole suite, like the MSVC job: host files (memory cards, disc
+      # images, UTF-8 paths) and the GPU tests on D3D12 (WARP) with a
+      # hidden window.
+      - name: PsyZ tests (MinGW, D3D12)
+        env:
+          CI: 1
+          PSYZ_HEADLESS: gpu
+          SDL_VIDEODRIVER: offscreen
+          SDL_AUDIO_DRIVER: dummy
+          SDL_GPU_DRIVER: direct3d12
         run: |
+          set -o pipefail
           cmake -S third_party/psyz/psyz/tests -B build/psyz-tests -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build/psyz-tests --parallel 4
           cd third_party/psyz/psyz/tests
-          ../../../../build/psyz-tests/psyz_tests.exe --verbose \
-            '--filter=bu::*,truncation::*,path_adjustment::*,card_utf8::*,libcd::*'
+          ../../../../build/psyz-tests/psyz_tests.exe --verbose 2>&1 | tee mingw.log
+          grep -q 'SDL_GPU with driver direct3d12' mingw.log
+      - name: Upload PsyZ test failures
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mingw-failures
+          path: |
+            third_party/psyz/psyz/tests/expected/*.actual.png
+            third_party/psyz/psyz/tests/mingw.log
+          if-no-files-found: ignore
 
   # MSVC (cl.exe) keeps PsyZ free of GCC/Clang-only constructs: Parasite Eve
   # and PsyZ itself build it with Visual Studio. The PsyZ suite runs on the

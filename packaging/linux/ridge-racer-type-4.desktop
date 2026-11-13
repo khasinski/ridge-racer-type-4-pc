@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ridge Racer Type 4
+Comment=Native PC port of Ridge Racer Type 4 (needs your own PAL disc image)
+Exec=ridge-racer-type-4-pc %f
+Icon=ridge-racer-type-4
+Terminal=false
+Categories=Game;ArcadeGame;
+MimeType=application/x-cue;

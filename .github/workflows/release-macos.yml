@@ -1,10 +1,15 @@
 name: Release macOS arm64
-run-name: Release ${{ inputs.version || github.ref_name }} (macOS arm64)
+run-name: ${{ inputs.dry_run && 'Dry run' || 'Release' }} ${{ inputs.version || github.ref_name }} (macOS arm64)
 
 # Builds "Ridge Racer Type 4.app", signs it with the Developer ID from the
 # repository secrets (ad-hoc without them), notarizes and staples it, and
 # attaches Ridge-Racer-Type-4-<version>-macos-arm64.zip to the release
-# <version>. See docs/RELEASING.md.
+# <version>. Only a notarized build is attached: without the MACOS_* secrets
+# the release keeps the zip notarized on a Mac (docs/RELEASING.md, "Local
+# build, signing and notarization"). A manual rebuild runs on the tag itself,
+# so the tag's own workflow and packaging/ scripts build it:
+#   gh workflow run release-macos.yml --ref <version>
+# dry_run builds and packages any ref without touching a release.
 
 on:
   push:
@@ -13,9 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release tag to attach the package to (e.g. 0.1)
-        required: true
+        description: Release tag (default the ref the run is on; must be that tag unless dry_run)
+        required: false
         type: string
+      dry_run:
+        description: Build and package only; attach nothing
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -34,9 +44,17 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 60
     steps:
+      - name: Check the ref
+        env:
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          # The tag's own workflow and staging scripts build a release.
+          if [ "$DRY_RUN" != true ] && [ "$GITHUB_REF" != "refs/tags/$VERSION" ]; then
+            echo "::error::Release $VERSION must run on its tag: gh workflow run release-macos.yml --ref $VERSION (this run is on $GITHUB_REF)"
+            exit 1
+          fi
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.version) || github.ref }}
           submodules: false
       - name: Fetch PsyZ and SDL
         run: |
@@ -45,12 +63,13 @@ jobs:
       - name: Configure
         run: >-
           cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
-          -DRR4_MACOS_BUNDLE=ON -DBUILD_TESTING=ON
+          -DRR4_MACOS_BUNDLE=ON -DBUILD_TESTING=ON -DRR4_DIAGNOSTICS=OFF
       - name: Build
         run: cmake --build build/release --parallel 4
       - name: Unit tests (no game data)
         run: ctest --test-dir build/release --output-on-failure --no-tests=error
       - name: Sign and notarize
+        id: sign
         env:
           CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
@@ -61,6 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           app="build/release/Ridge Racer Type 4.app"
+          echo "notarized=false" >> "$GITHUB_OUTPUT"
           if [ -z "${CERT_P12:-}" ]; then
             echo "::warning::No Developer ID configured; signing ad-hoc (not notarized)."
             codesign --force --sign - "$app"
@@ -108,6 +128,7 @@ jobs:
           xcrun stapler staple "$app"
           xcrun stapler validate "$app"
           spctl -a -vv "$app"
+          echo "notarized=true" >> "$GITHUB_OUTPUT"
       - name: Package
         run: |
           set -euo pipefail
@@ -131,7 +152,12 @@ jobs:
           name: Ridge-Racer-Type-4-${{ env.VERSION }}-macos-arm64
           path: dist/*.zip
           if-no-files-found: error
+      - name: Keep the release's macOS package
+        if: ${{ !inputs.dry_run && steps.sign.outputs.notarized != 'true' }}
+        run: |
+          echo "::warning::This build is not notarized, so it is not attached: the release keeps its macOS zip (notarize and upload it on a Mac, docs/RELEASING.md)."
       - name: Attach to the release
+        if: ${{ !inputs.dry_run && steps.sign.outputs.notarized == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

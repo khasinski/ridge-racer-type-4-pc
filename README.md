@@ -15,6 +15,8 @@ Join the [Discord server](https://discord.gg/hbGvPbFguk) for release updates and
 ## Play
 
 Download the game from [GitHub Releases](https://github.com/khasinski/ridge-racer-type-4-pc/releases).
+On Linux, take the `.AppImage` (make it executable and start it) or the
+`.tar.gz` with the same executable.
 See the [changelog](CHANGELOG.md) for changes.
 
 You need your own **European (PAL) CUE/BIN image** of the game. Game data is

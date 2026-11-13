@@ -1,7 +1,7 @@
 name: Release validation (no publication)
 
 # Builds, tests and packages exactly like the release workflows on all three
-# platforms, without signing secrets and without touching any release.
+# platforms (the Linux tarball directory and AppImage), without signing secrets and without touching any release.
 # Run it by hand before tagging, or let it run when packaging changes.
 
 on:
@@ -62,9 +62,9 @@ jobs:
       - name: Configure
         run: |
           if [ "$RUNNER_OS" = macOS ]; then
-            cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DRR4_MACOS_BUNDLE=ON -DBUILD_TESTING=ON
+            cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DRR4_MACOS_BUNDLE=ON -DBUILD_TESTING=ON -DRR4_DIAGNOSTICS=OFF
           else
-            cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+            cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DRR4_DIAGNOSTICS=OFF
           fi
       - name: Build
         run: cmake --build build/release --parallel 4
@@ -88,6 +88,17 @@ jobs:
             packaging/stage.sh "dist/${package}" build/release
           fi
           test -f "dist/${package}/source-commit.txt"
+          cat "dist/${package}/source-commit.txt"
+      - name: AppImage
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          package="Ridge-Racer-Type-4-${VERSION}-${{ matrix.name }}"
+          arch="${{ matrix.name }}"
+          packaging/linux/appimage.sh "dist/${package}" "${arch#linux-}" "dist/${package}.AppImage"
+          APPIMAGE_EXTRACT_AND_RUN=1 "dist/${package}.AppImage" > appimage-startup.log 2>&1 || true
+          cat appimage-startup.log
+          grep -q 'usage: ' appimage-startup.log
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: validation-${{ matrix.name }}
@@ -123,7 +134,7 @@ jobs:
       - name: Configure
         run: >-
           cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_TESTING=ON
+          -DBUILD_TESTING=ON -DRR4_DIAGNOSTICS=OFF
       - name: Build
         run: cmake --build build/release --parallel 4
       - name: Unit tests (no game data)

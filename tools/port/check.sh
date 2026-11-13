@@ -8,11 +8,18 @@
 # A second pass compiles the same files for 64-bit Windows (LLP64: long is
 # 32 bits, pointers 64) with Clang's MinGW target, so code that keeps a
 # pointer or a 64-bit size in long / unsigned long fails here on macOS and
-# Linux too. It needs Clang (CC, default cc) and the MinGW-w64 headers
-# (x86_64-w64-mingw32-gcc on PATH, or RR4_MINGW_SYSROOT); without them it
-# is skipped. RR4_CHECK_LLP64=0 skips it, =1 makes a missing toolchain fail.
+# Linux too. It needs the MinGW-w64 headers (x86_64-w64-mingw32-gcc on PATH,
+# or RR4_MINGW_SYSROOT); without them it is skipped. RR4_CHECK_LLP64=0
+# skips it, =1 makes a missing toolchain fail.
+#
+# Both passes need Clang (-Wno-everything, -ferror-limit, --target): CC
+# defaults to clang, and any other compiler is refused.
 cd "$(dirname "$0")/../.." || exit 1
-CC=${CC:-cc}
+CC=${CC:-clang}
+if ! $CC --version 2> /dev/null | grep -qi clang; then
+  echo "check.sh: CC=$CC is not Clang; the check uses Clang-only flags (set CC=clang)" >&2
+  exit 2
+fi
 CFLAGS="-std=c11 -c -o /dev/null -D__psyz -Iinclude -isystem third_party/psyz/psyz/include
  -fno-strict-aliasing -fwrapv -Wno-everything -Wint-conversion -Wpointer-to-int-cast
  -Wint-to-pointer-cast -Wimplicit-function-declaration -Wincompatible-pointer-types

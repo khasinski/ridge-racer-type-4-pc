@@ -17,13 +17,30 @@ the original 32-bit layout and reports:
 
 usage: sweep_layout.py <decomp-root> [--json out.json]
 Requires the libclang Python binding (pip install clang) and libclang.
+LIBCLANG=<path to libclang.dylib / libclang.so / libclang.dll> picks the
+library; without it the sweep tries the Xcode Command Line Tools, Xcode and
+the usual Linux LLVM locations, then the binding's own search.
 """
 import bisect, glob, json, os, re, sys
 from multiprocessing import Pool
 import clang.cindex as ci
 
-LIBCLANG = os.environ.get('LIBCLANG', '/Library/Developer/CommandLineTools/usr/lib/libclang.dylib')
-ci.Config.set_library_file(LIBCLANG)
+def find_libclang():
+    if os.environ.get('LIBCLANG'):
+        return os.environ['LIBCLANG']
+    candidates = [
+        '/Library/Developer/CommandLineTools/usr/lib/libclang.dylib',
+        '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib',
+    ]
+    candidates += sorted(glob.glob('/usr/lib/llvm-*/lib/libclang.so*'), reverse=True)
+    candidates += sorted(glob.glob('/usr/lib*/libclang.so*'), reverse=True)
+    candidates += sorted(glob.glob('/usr/lib/x86_64-linux-gnu/libclang*.so*'), reverse=True)
+    return next((c for c in candidates if os.path.exists(c)), None)
+
+
+LIBCLANG = find_libclang()
+if LIBCLANG:
+    ci.Config.set_library_file(LIBCLANG)
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 ARGS = ['-std=c11', '-D__psyz', '-I' + ROOT + '/include', '-isystem',
         ROOT + '/third_party/psyz/psyz/include', '-w']
