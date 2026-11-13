@@ -17,6 +17,7 @@
 #include "host_log.h"
 #include "settings_model.h"
 #include "settings_raster.h"
+#include "settings_replays.h"
 
 /* SDL's precompiled sprite shaders (SPIR-V, MSL, DXIL), as Parasite Eve. */
 #include "tri_texture.vert.dxil.h"
@@ -759,6 +760,7 @@ static void RunPanel(void) {
     SettingsModelOpen(&s_model, s_prefs, s_mounted);
     MarkUnavailable(&s_model);
     s_model.check_disc = CheckDisc;
+    SettingsReplaysFill(&s_model);
     s_stick_x = s_stick_y = 0;
     if (s_script_len)
         fprintf(stderr, "settings: open at present %ld vsync %d\n", s_presents, Psyz_VideoVSync(-1));
@@ -786,6 +788,7 @@ static void RunPanel(void) {
             s_dialog_wait = 0;
             SettingsModelDiscChosen(&s_model, s_dialog_path[0] ? s_dialog_path : NULL);
         }
+        SettingsReplaysRun(&s_model);
         ApplyChanges();
         if (use_gpu) {
             RefreshGpu();

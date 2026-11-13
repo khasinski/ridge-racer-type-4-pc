@@ -174,7 +174,7 @@ enum {
 static const char *const kLinkModeNames[] = {"Off", "Host", "Join"};
 
 static const char *const kPageNames[SETTINGS_PAGE_COUNT] = {"Graphics", "Controls", "Audio", "Disc",
-                                                            "Link cable"};
+                                                            "Link cable", "Replays"};
 
 const char *SettingsPageName(int page) {
     return page >= 0 && page < SETTINGS_PAGE_COUNT ? kPageNames[page] : "";
@@ -197,6 +197,50 @@ static const ChoiceSetting *PageChoices(int page, int *count) {
     return NULL;
 }
 
+/* Replays page: Save replay, then one row per file (or a note when none). */
+static int ReplayRows(const SettingsModel *m) {
+    return 1 + (m->replay_count > 0 ? m->replay_count : 1);
+}
+
+static void ActivateReplayRow(SettingsModel *m) {
+    if (!m->replays_available)
+        return;
+    if (m->row == 0) {
+        if (m->replay_can_save) {
+            m->replay_request = SETTINGS_REPLAY_SAVE;
+        } else {
+            snprintf(m->status, sizeof(m->status), "%s", m->replay_save_help);
+        }
+    } else if (m->row - 1 < m->replay_count) {
+        m->replay_index = m->row - 1;
+        m->replay_request = SETTINGS_REPLAY_LOAD;
+    }
+    m->dirty = 1;
+}
+
+static void ReplayRowView(const SettingsModel *m, int row, SettingsRowView *v) {
+    if (row == 0) {
+        v->kind = 0;
+        v->label = "Save replay";
+        v->help = !m->replays_available ? "Replays are not available in this build."
+                  : m->replay_can_save   ? "Save the last race's replay to the replays folder."
+                                         : m->replay_save_help;
+        return;
+    }
+    if (m->replay_count <= 0) {
+        v->kind = 3;
+        v->label = "No saved replays";
+        v->value = "";
+        v->help = "Saved replays appear here. Enter plays one.";
+        return;
+    }
+    v->kind = 0;
+    v->label = m->replays[row - 1].label;
+    v->value = m->replays[row - 1].value;
+    v->help = m->replays[row - 1].help;
+    v->danger = !m->replays[row - 1].ok;
+}
+
 int SettingsContentRows(const SettingsModel *m) {
     int count;
     switch (m->page) {
@@ -206,6 +250,8 @@ int SettingsContentRows(const SettingsModel *m) {
         return DISC_ROWS;
     case SETTINGS_PAGE_LINK:
         return LINK_ROWS;
+    case SETTINGS_PAGE_REPLAYS:
+        return ReplayRows(m);
     default:
         PageChoices(m->page, &count);
         return count;
@@ -295,6 +341,11 @@ static void ResetPage(SettingsModel *m) {
     Rr4Prefs before = m->prefs;
     Rr4Prefs *p = &m->prefs;
 
+    if (m->page == SETTINGS_PAGE_REPLAYS) {
+        snprintf(m->status, sizeof(m->status), "Nothing to restore: saved replays stay in the replays folder.");
+        m->dirty = 1;
+        return;
+    }
     switch (m->page) {
     case SETTINGS_PAGE_GRAPHICS:
         p->scale = d->scale;
@@ -437,6 +488,9 @@ static void Activate(SettingsModel *m) {
             m->dirty = 1;
         }
         break;
+    case SETTINGS_PAGE_REPLAYS:
+        ActivateReplayRow(m);
+        break;
     case SETTINGS_PAGE_DISC:
         if (m->row == DISC_ROW_NEXT) {
             m->choose_disc = 1;
@@ -485,6 +539,8 @@ static void Step(SettingsModel *m, int direction) {
             StepLinkMode(m, direction);
         return;
     }
+    if (m->page == SETTINGS_PAGE_REPLAYS)
+        return;
     StepChoice(m, m->row, direction);
 }
 
@@ -782,6 +838,9 @@ void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
         }
         v->help = help;
         return;
+    case SETTINGS_PAGE_REPLAYS:
+        ReplayRowView(m, row, v);
+        return;
     default: {
         int count;
         const ChoiceSetting *s = PageChoices(m->page, &count);
@@ -897,7 +956,7 @@ void SettingsModelPointer(SettingsModel *m, float x, float y, int click) {
         SettingsModelSelect(m, row);
         if (!click)
             return;
-        if (row < SettingsContentRows(m) && m->page != SETTINGS_PAGE_DISC &&
+        if (row < SettingsContentRows(m) && m->page != SETTINGS_PAGE_DISC && m->page != SETTINGS_PAGE_REPLAYS &&
             (m->page != SETTINGS_PAGE_LINK || row == LINK_ROW_MODE) &&
             (m->page != SETTINGS_PAGE_CONTROLS || row < CONTROL_ROW_DEVICE))
             Step(m, x < SettingsValueCentre() ? -1 : 1);

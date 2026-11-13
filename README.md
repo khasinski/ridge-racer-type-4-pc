@@ -46,6 +46,10 @@ correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
 original.
 
+**Escape > Replays** saves the replay of the last race (Time Attack, Grand
+Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
+file, and plays a saved one from the title screen (or while one plays).
+
 ### Link battle over the network
 
 The game's two-console link cable mode works over a network: the serial

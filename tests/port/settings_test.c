@@ -249,10 +249,38 @@ static void TestAudioAndDisc(void) {
     /* The mounted image is unaffected. */
     SettingsModelRow(&m, 0, &v);
     CHECK(!strcmp(v.value, "Ridge Racer Type 4 (Europe).cue"));
-    /* Then Link cable, and the next page wraps to Graphics; Quit game
-     * closes and quits. */
+    /* Then Link cable. */
     Do(&m, SETTINGS_PAGE_NEXT, 1);
     CHECK(m.page == SETTINGS_PAGE_LINK);
+    /* Replays: without a replay session the page says so and asks for
+     * nothing; with replays listed, Enter asks the host to save or play. */
+    Do(&m, SETTINGS_PAGE_NEXT, 1);
+    CHECK(m.page == SETTINGS_PAGE_REPLAYS);
+    CHECK(SettingsContentRows(&m) == 2);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == 0);
+    m.replays_available = 1;
+    m.replay_can_save = 0;
+    snprintf(m.replay_save_help, sizeof(m.replay_save_help), "No replay yet.");
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == 0 && !strcmp(m.status, "No replay yet."));
+    m.replay_can_save = 1;
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == SETTINGS_REPLAY_SAVE);
+    m.replay_request = 0;
+    m.replay_count = 2;
+    snprintf(m.replays[1].label, sizeof(m.replays[1].label), "Time Attack, course 1");
+    m.replays[1].ok = 1;
+    CHECK(SettingsContentRows(&m) == 3);
+    Do(&m, SETTINGS_DOWN, 2);
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!strcmp(v.label, "Time Attack, course 1"));
+    Do(&m, SETTINGS_RIGHT, 1); /* no choice to step */
+    CHECK(m.replay_request == 0);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == SETTINGS_REPLAY_LOAD && m.replay_index == 1);
+    m.replay_request = 0;
+    /* Next page wraps to Graphics; Quit game closes and quits. */
     Do(&m, SETTINGS_PAGE_NEXT, 1);
     CHECK(m.page == SETTINGS_PAGE_GRAPHICS);
     SettingsModelSelect(&m, SettingsRowCount(&m) - 1);

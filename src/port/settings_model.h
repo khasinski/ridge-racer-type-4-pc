@@ -15,6 +15,7 @@ enum {
     SETTINGS_PAGE_AUDIO,
     SETTINGS_PAGE_DISC,
     SETTINGS_PAGE_LINK,
+    SETTINGS_PAGE_REPLAYS,
     SETTINGS_PAGE_COUNT,
     /* Rows after a page's content: restore page defaults, resume, quit. */
     SETTINGS_ACTION_ROWS = 3,
@@ -51,6 +52,21 @@ enum {
     SETTINGS_DEVICE_CONTROLLER = 1,
 };
 
+/* Replays page: Save replay, then the saved replays (Enter plays one). The
+ * host lists them (SettingsReplayOps, settings_replays.h) and carries out
+ * the request the page leaves in replay_request. */
+enum {
+    SETTINGS_REPLAYS_MAX = 64,
+    SETTINGS_REPLAY_SAVE = 1, /* replay_request: save the last replay */
+    SETTINGS_REPLAY_LOAD = 2, /* load replays[replay_index] */
+};
+typedef struct SettingsReplayRow {
+    char label[64];
+    char value[48];
+    char help[192];
+    int ok; /* readable by this build */
+} SettingsReplayRow;
+
 typedef struct SettingsModel {
     Rr4Prefs prefs;         /* what the game runs with while open */
     int open;
@@ -79,6 +95,14 @@ typedef struct SettingsModel {
     char link_brief[48];    /* the connection, as the host last reported it */
     char link_status[192];
     char status[192];       /* replaces the row help until the next move */
+    /* Replays page, filled by the host. */
+    int replays_available;  /* the host lists and saves replays */
+    int replay_can_save;
+    char replay_save_help[192];
+    int replay_count;
+    SettingsReplayRow replays[SETTINGS_REPLAYS_MAX];
+    int replay_request;     /* SETTINGS_REPLAY_*, for the host */
+    int replay_index;
 } SettingsModel;
 
 void SettingsModelOpen(SettingsModel *model, const Rr4Prefs *prefs, const char *mounted);

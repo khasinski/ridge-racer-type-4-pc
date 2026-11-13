@@ -67,6 +67,7 @@
 #include "link.h"
 #include "preferences.h"
 #include "settings_overlay.h"
+#include "replay_session.h"
 #if RR4_DIAGNOSTICS
 #include "diagnostics.h"
 #endif
@@ -304,6 +305,7 @@ int main(int argc, char **argv) {
             Rr4Log("ridge-racer-type-4-pc: %s (%s)\n", GameReleaseProfile->name, GameReleaseProfile->productCode);
         Rr4LinkStart(&prefs, ntsc, GameReleaseProfile->productCode);
     }
+    ReplaySessionInstall(interactive ? Rr4PrefsPath() : "");
     chained_vsync = Psyz_SetVSyncCb(host_vsync);
     s_interactive = interactive;
     Psyz_VideoSetFailureCallback(video_failed);
