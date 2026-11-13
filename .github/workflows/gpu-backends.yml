@@ -16,8 +16,9 @@ name: GPU backends
 # with PSYZ_GPU=off) PsyZ falls back to the CPU rasterizer presented by an
 # SDL renderer: the no-vulkan job and the last Metal steps run the gpu::*
 # tests that way (all but CPU_KNOWN_FAILURES) and check the log names the
-# fallback. The Metal job also runs the whole suite without framebuffer
-# fetch (PSYZ_GPU_FETCH=0, the copy path of D3D12 and Vulkan).
+# fallback. The Metal job also runs the gpu::* tests without framebuffer
+# fetch (PSYZ_GPU_FETCH=0, the copy path of D3D12 and Vulkan) and checks
+# each log names the blend path it tested.
 #
 # The game itself needs a disc image, so it is only built here; game frames
 # are compared on a developer machine (RR4_CAPTURE_AT with PSYZ_HEADLESS=1
@@ -306,7 +307,7 @@ jobs:
           ../../../../build/psyz-tests/psyz_tests --verbose 2>&1 | tee metal.log
           grep -q 'SDL_GPU with driver metal' metal.log
           grep -q 'SDL_GPU semi-transparency: framebuffer fetch' metal.log
-      - name: PsyZ tests on Metal without framebuffer fetch (the copy path of D3D12 and Vulkan)
+      - name: gpu tests on Metal without framebuffer fetch (the copy path of D3D12 and Vulkan)
         if: success() || failure()
         working-directory: third_party/psyz/psyz/tests
         env:
@@ -314,7 +315,7 @@ jobs:
           PSYZ_GPU_FETCH: "0"
         run: |
           set -o pipefail
-          ../../../../build/psyz-tests/psyz_tests --verbose 2>&1 | tee metal-copy.log
+          ../../../../build/psyz-tests/psyz_tests --verbose '--filter=gpu::*' 2>&1 | tee metal-copy.log
           grep -q 'SDL_GPU semi-transparency: target copies' metal-copy.log
       - name: gpu tests without an SDL GPU device (PSYZ_GPU=off, the CPU rasterizer fallback)
         if: success() || failure()
