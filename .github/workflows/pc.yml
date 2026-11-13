@@ -183,3 +183,64 @@ jobs:
             third_party/psyz/psyz/tests/expected/*.actual.png
             msvc-build.log
           if-no-files-found: ignore
+
+  # The shader headers PsyZ compiles in are rebuilt from their GLSL and must
+  # come out byte for byte as committed (check_shaders.cmake only compares
+  # the GLSL hashes they record, in every format, at configure time).
+  # SPIR-V and MSL here; DXIL, which needs the Windows SDK's dxc, in
+  # shaders-dxil.
+  shaders:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: false
+      - name: Fetch PsyZ
+        run: git submodule update --init third_party/psyz
+      - name: Install glslang and SPIRV-Cross
+        run: |
+          brew install glslang spirv-cross
+          glslangValidator --version | head -1
+          spirv-cross --revision
+      - name: Rebuild the SPIR-V and MSL headers
+        working-directory: third_party/psyz/psyz/src/platform/shaders
+        run: |
+          SKIP_DXIL=1 sh build_shaders.sh
+          git status --short .
+          git diff --stat --exit-code -- '*_spv.h' '*_msl.h'
+
+  shaders-dxil:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Keep LF line endings
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: false
+      - uses: msys2/setup-msys2@61f9e5e925871ba6c9e3e8da24ede83ea27fa91f # v2.27.0
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            vim
+            mingw-w64-ucrt-x86_64-glslang
+            mingw-w64-ucrt-x86_64-spirv-cross
+      - name: Fetch PsyZ
+        shell: bash
+        run: git submodule update --init third_party/psyz
+      - name: Rebuild the DXIL headers
+        shell: msys2 {0}
+        run: |
+          set -eu
+          git config --global --add safe.directory '*'
+          dxc_dir=$(ls -d "/c/Program Files (x86)/Windows Kits/10/bin/"10.*/x64 | sort -V | tail -1)
+          export PATH="$dxc_dir:$PATH"
+          dxc --version || true
+          glslangValidator --version | head -1
+          spirv-cross --revision
+          cd third_party/psyz/psyz/src/platform/shaders
+          sh build_shaders.sh
+          git status --short .
+          git diff --stat --exit-code -- '*_dxil.h'

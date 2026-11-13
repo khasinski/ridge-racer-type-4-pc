@@ -75,7 +75,22 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      Semi-transparent primitives blend in the shader with their destination
      pixel: on Apple GPUs (Metal) read from the colour attachment
      (framebuffer fetch), elsewhere from a copy of the target made before
-     the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal).
+     the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal). The
+     probe for framebuffer fetch asks SDL's own Metal device, which on a Mac
+     with two GPUs need not be the system default one.
+   - **Fallback without SDL GPU:** when no SDL GPU device can be created
+     (Linux without a Vulkan driver, Windows without a usable D3D12 device,
+     or its resources fail; `PSYZ_GPU=off` forces it) the CPU rasterizer
+     draws, as at 1x, and an SDL renderer (SDL's own choice, its software
+     renderer last) presents the display area at the game's aspect. The
+     GPU-only options (internal resolution, widescreen, antialiasing,
+     texture filtering, geometry correction, frame interpolation) are off
+     and greyed out in the Escape menu with a note naming the renderer
+     (`Psyz_VideoGetFeatures`); the Settings panel opens in a window of its
+     own, as without the GPU overlay. Only when neither can start, or the
+     GPU fails during the run, PsyZ calls the host's failure callback
+     (`Psyz_VideoSetFailureCallback`): the game shows the message in a
+     message box and quits (headless runs log it).
    - **GPU memory:** SDL keeps every buffer it cycles in (a buffer written
      while the GPU still reads it) and never frees them, so PsyZ cycles
      rarely. Batches go one after another into one vertex/index buffer and
@@ -188,7 +203,14 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      frames show there, a hole or the background through a gap, measured on
      coarse depth grids of the opaque primitives) is not shown: the frame
      before stays for that field. Off, nothing is tagged and every value is
-     the original one.
+     the original one. The PsyZ side is `frame_interp.h` (state, tuned
+     thresholds and the `PSYZ_INTERP_*` diagnostics) and
+     `frame_interp_impl.h`, included by `sdl3_gpu.c`. Its tables do not
+     depend on where ASLR puts the game's data: packet addresses are hashed
+     by their offset in the executable's image and the identity table never
+     drops a live identity, and the car identities are their records in
+     `PlayerCars` / `ComCars`, so a scripted run draws the same midpoints
+     every time.
 
    - **Video timing (PAL / NTSC):** the PAL release is the NTSC game with
      every value that counts frames converted to 25 frames a second: frame

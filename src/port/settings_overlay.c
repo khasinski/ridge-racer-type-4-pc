@@ -104,6 +104,19 @@ int SettingsChooseDisc(char *out, size_t size) {
     return 1;
 }
 
+/* What the renderer cannot draw greys out in the Graphics page. */
+static void MarkUnavailable(SettingsModel *model) {
+    static char note[256];
+    unsigned features = Psyz_VideoGetFeatures();
+    const unsigned all = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_ANTIALIASING | SETTINGS_FEATURE_FILTERING |
+                         SETTINGS_FEATURE_GEOMETRY | SETTINGS_FEATURE_WIDESCREEN | SETTINGS_FEATURE_INTERPOLATION;
+
+    model->unavailable = all & ~features;
+    snprintf(note, sizeof(note), "Needs the SDL GPU renderer. This run draws with the %s.",
+             Psyz_VideoGetRendererName());
+    model->unavailable_note = note;
+}
+
 static int CheckDisc(const char *path, char *message, size_t size) {
     return Rr4DiscCheckImage(path, message, size) == RR4_DISC_OK;
 }
@@ -726,6 +739,7 @@ static void RunPanel(void) {
     audio_paused = Psyz_AudioIsPaused();
     Psyz_AudioPause();
     SettingsModelOpen(&s_model, s_prefs, s_mounted);
+    MarkUnavailable(&s_model);
     s_model.check_disc = CheckDisc;
     s_stick_x = s_stick_y = 0;
     if (s_script_len)

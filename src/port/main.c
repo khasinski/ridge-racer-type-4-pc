@@ -148,6 +148,17 @@ static void alert(void *context, const char *message) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Ridge Racer Type 4", message, NULL);
 }
 
+/* Nothing can draw: no SDL GPU device and no SDL renderer to fall back to,
+ * or the GPU failed during the run (Psyz_VideoSetFailureCallback). */
+static int s_interactive;
+static void video_failed(const char *message) {
+    if (s_interactive)
+        alert(NULL, message);
+    else
+        Rr4Log("ridge-racer-type-4-pc: %s\n", message);
+    exit(1);
+}
+
 static Rr4DiscStatus check_disc(void *context, const char *cue, char *message, size_t size) {
     Rr4DiscStatus status;
     (void)context;
@@ -291,6 +302,8 @@ int main(int argc, char **argv) {
             Rr4Log("ridge-racer-type-4-pc: %s (%s)\n", GameReleaseProfile->name, GameReleaseProfile->productCode);
     }
     chained_vsync = Psyz_SetVSyncCb(host_vsync);
+    s_interactive = interactive;
+    Psyz_VideoSetFailureCallback(video_failed);
     MainLoop();
     return 0;
 }

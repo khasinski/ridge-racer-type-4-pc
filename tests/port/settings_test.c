@@ -98,6 +98,34 @@ static void TestGraphicsPage(void) {
     CHECK(!m.open && !m.quit);
 }
 
+/* A renderer without the GPU enhancements greys their rows out: they keep
+ * their value, do not change and say why. */
+static void TestUnavailable(void) {
+    SettingsModel m;
+    SettingsRowView v;
+    Rr4Prefs prefs = *Rr4PrefsDefaults();
+
+    prefs.scale = 4;
+    SettingsModelOpen(&m, &prefs, NULL);
+    m.unavailable = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_INTERPOLATION;
+    m.unavailable_note = "Needs the SDL GPU renderer.";
+    SettingsModelRow(&m, 0, &v); /* internal resolution */
+    CHECK(v.disabled && !strcmp(v.value, "4x") && !strcmp(v.help, m.unavailable_note));
+    Do(&m, SETTINGS_RIGHT, 1);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.prefs.scale == 4 && !SettingsModelTakeChanged(&m));
+    CHECK(!strcmp(SettingsModelHelp(&m), m.unavailable_note));
+    Do(&m, SETTINGS_DOWN, 1); /* display mode: no GPU feature */
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!v.disabled);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.fullscreen == 1);
+    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* frame interpolation */
+    CHECK(v.disabled && !strcmp(v.label, "Frame interpolation"));
+    SettingsModelRow(&m, SettingsContentRows(&m) - 2, &v); /* geometry correction */
+    CHECK(!v.disabled);
+}
+
 static void TestControlsPage(void) {
     SettingsModel m;
     const Rr4Prefs *d = Rr4PrefsDefaults();
@@ -419,6 +447,7 @@ int main(int argc, char **argv) {
     Rr4PrefsCaptureDefaults();
     TestDefaults();
     TestGraphicsPage();
+    TestUnavailable();
     TestControlsPage();
     TestAudioAndDisc();
     TestPointer();

@@ -21,6 +21,17 @@ enum {
     SETTINGS_VISIBLE_ROWS = 9,
 };
 
+/* Graphics enhancements the renderer may lack (SettingsModel.unavailable),
+ * with the values of PsyZ's PSYZ_VIDEO_FEATURE_*. */
+enum {
+    SETTINGS_FEATURE_UPSCALE = 1 << 0,
+    SETTINGS_FEATURE_ANTIALIASING = 1 << 1,
+    SETTINGS_FEATURE_FILTERING = 1 << 2,
+    SETTINGS_FEATURE_GEOMETRY = 1 << 3,
+    SETTINGS_FEATURE_WIDESCREEN = 1 << 4,
+    SETTINGS_FEATURE_INTERPOLATION = 1 << 5,
+};
+
 typedef enum SettingsAction {
     SETTINGS_NONE = 0,
     SETTINGS_UP,
@@ -42,6 +53,11 @@ enum {
 typedef struct SettingsModel {
     Rr4Prefs prefs;         /* what the game runs with while open */
     int open;
+    /* SETTINGS_FEATURE_* the renderer cannot draw (set by the host after
+     * SettingsModelOpen): their rows are greyed out, keep their value and
+     * show unavailable_note as help. */
+    unsigned unavailable;
+    const char *unavailable_note;
     int page;
     int row;                /* selected row of the page */
     int scroll;             /* first visible content row */
@@ -92,6 +108,7 @@ typedef struct SettingsRowView {
     const char *help;
     int danger;
     int capturing;
+    int disabled; /* the renderer lacks it: shown greyed, not changed */
 } SettingsRowView;
 void SettingsModelRow(const SettingsModel *model, int row, SettingsRowView *view);
 /* Help for the selected row (or the status message). */

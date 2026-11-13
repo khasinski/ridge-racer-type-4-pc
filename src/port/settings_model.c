@@ -16,13 +16,16 @@ typedef struct ChoiceSetting {
     void (*set)(Rr4Prefs *p, int index);
     int clamp; /* stops at the ends instead of wrapping (volume) */
     int next_start; /* takes effect when the game starts again */
+    unsigned feature; /* SETTINGS_FEATURE_* the renderer must have */
 } ChoiceSetting;
 
 #define ACCESSORS(Name, read, write)                               \
     static int Get##Name(const Rr4Prefs *p) { return (read); }     \
     static void Set##Name(Rr4Prefs *p, int i) { write; }
 #define SETTING(label, help, names, Name) \
-    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0}
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0, 0}
+#define GPU_SETTING(label, help, names, Name, feature) \
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0, feature}
 
 static const char *const kSwitchNames[] = {"Off", "On"};
 
@@ -66,26 +69,32 @@ static const char *const kInterpolationNames[] = {"Off (original)", "60 Hz"};
 ACCESSORS(Interpolation, p->frame_interpolation != 0, p->frame_interpolation = i)
 
 static const ChoiceSetting kGraphics[] = {
-    SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
-            kScaleNames, Scale),
+    GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
+            kScaleNames, Scale,
+            SETTINGS_FEATURE_UPSCALE),
     SETTING("Display mode", "Window or fullscreen (F4). Fullscreen 50 Hz sets a display that has the mode (most 120 Hz ones) to the game's own rate (60 Hz with NTSC video timing) for the smoothest motion.",
             kWindowNames, Fullscreen),
     SETTING("VSync", "Auto uses display sync on 60 Hz screens. Off paces the game's fields (50 Hz PAL, 60 Hz NTSC) with a limiter.",
             kVsyncNames, Vsync),
     {"Video timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
-    SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
-            kAspectNames, Aspect),
+    GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
+            kAspectNames, Aspect,
+            SETTINGS_FEATURE_WIDESCREEN),
     SETTING("Dithering", "Original: PlayStation 15-bit colour, dithered on shaded polygons. Off: smooth full-colour shading.",
             kDitherNames, Dither),
-    SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
-            kAntialiasNames, Antialiasing),
-    SETTING("Texture filtering", "Experimental. Bilinear filtering for 3D textures.",
-            kFilterNames, Filtering),
-    SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
-            kSwitchNames, Geometry),
-    SETTING("Frame interpolation", "Experimental. Presents in-between frames; game timing stays original.",
-            kInterpolationNames, Interpolation),
+    GPU_SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
+            kAntialiasNames, Antialiasing,
+            SETTINGS_FEATURE_ANTIALIASING),
+    GPU_SETTING("Texture filtering", "Experimental. Bilinear filtering for 3D textures.",
+            kFilterNames, Filtering,
+            SETTINGS_FEATURE_FILTERING),
+    GPU_SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
+            kSwitchNames, Geometry,
+            SETTINGS_FEATURE_GEOMETRY),
+    GPU_SETTING("Frame interpolation", "Experimental. Presents in-between frames; game timing stays original.",
+            kInterpolationNames, Interpolation,
+            SETTINGS_FEATURE_INTERPOLATION),
 };
 
 static const char *const kVolumeNames[] = {
@@ -319,6 +328,11 @@ static void StepChoice(SettingsModel *m, int row, int direction) {
     if (!settings || row < 0 || row >= count)
         return;
     s = &settings[row];
+    if (s->feature & m->unavailable) {
+        snprintf(m->status, sizeof(m->status), "%s", m->unavailable_note ? m->unavailable_note : "Not available.");
+        m->dirty = 1;
+        return;
+    }
     index = s->get(&m->prefs);
     if (s->clamp) {
         next = index + direction;
@@ -636,6 +650,10 @@ void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
         v->label = s[row].label;
         v->value = s[row].names[index];
         v->help = s[row].help;
+        if (s[row].feature & m->unavailable) {
+            v->disabled = 1;
+            v->help = m->unavailable_note ? m->unavailable_note : "Not available.";
+        }
         return;
     }
     }

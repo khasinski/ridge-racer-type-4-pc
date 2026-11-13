@@ -22,11 +22,6 @@ matching source. Per its top-level `LICENSE`:
   (`decomp/LICENSE`).
 - `psyz/include` and `psyz/src/psyq` are listed as unlicensed.
 
-### AMD FidelityFX Super Resolution 1.0
-
-PsyZ's upscaler (`psyz/src/platform/fsr1/third_party/fsr1/`) is Copyright (c)
-2021 Advanced Micro Devices, Inc., under the **MIT License** (`LICENSE.txt`).
-
 ## SDL 3
 
 [SDL](https://libsdl.org/) 3.4 (`external/SDL` in PsyZ), statically linked,
