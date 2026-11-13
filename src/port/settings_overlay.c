@@ -1,4 +1,5 @@
 #include "settings_overlay.h"
+#include "link.h"
 
 #include <SDL3/SDL.h>
 #include <psyz.h>
@@ -526,7 +527,24 @@ static void ProcessEvent(const SDL_Event *e, SDL_Window *window) {
             SettingsModelClose(&s_model);
         }
         return;
+    case SDL_EVENT_TEXT_INPUT:
+        SettingsModelTextInput(&s_model, e->text.text);
+        return;
     case SDL_EVENT_KEY_DOWN:
+        if (s_model.editing) {
+            if (e->key.scancode == SDL_SCANCODE_V && (e->key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI))) {
+                char *paste = SDL_GetClipboardText();
+                SettingsModelTextInput(&s_model, paste);
+                SDL_free(paste);
+            } else if (e->key.scancode == SDL_SCANCODE_ESCAPE) {
+                SettingsModelDo(&s_model, SETTINGS_BACK);
+            } else if (e->key.scancode == SDL_SCANCODE_RETURN || e->key.scancode == SDL_SCANCODE_KP_ENTER) {
+                SettingsModelDo(&s_model, SETTINGS_ACTIVATE);
+            } else if (e->key.scancode == SDL_SCANCODE_BACKSPACE) {
+                SettingsModelDo(&s_model, SETTINGS_CLEAR);
+            }
+            return;
+        }
         if (s_model.capturing) {
             if (e->key.scancode == SDL_SCANCODE_ESCAPE)
                 SettingsModelDo(&s_model, SETTINGS_BACK);
@@ -745,6 +763,16 @@ static void RunPanel(void) {
     if (s_script_len)
         fprintf(stderr, "settings: open at present %ld vsync %d\n", s_presents, Psyz_VideoVSync(-1));
     while (s_model.open) {
+        SDL_Window *typing = use_gpu ? game : fallback_window;
+        char brief[48], status[192];
+        Rr4LinkStatus(brief, sizeof(brief), status, sizeof(status));
+        SettingsModelSetLinkStatus(&s_model, brief, status);
+        if (s_model.editing != SDL_TextInputActive(typing)) {
+            if (s_model.editing)
+                SDL_StartTextInput(typing);
+            else
+                SDL_StopTextInput(typing);
+        }
         if (s_model.choose_disc && !s_dialog_wait) {
             s_dialog_wait = StartDiscDialog(use_gpu ? game : fallback_window);
             if (!s_dialog_wait) {
@@ -774,6 +802,8 @@ static void RunPanel(void) {
         ForgetDiscDialog();
         s_dialog_wait = 0;
     }
+    if (SDL_TextInputActive(use_gpu ? game : fallback_window))
+        SDL_StopTextInput(use_gpu ? game : fallback_window);
     ApplyChanges();
     if (s_model.edited && Rr4PrefsPath()[0] && !Rr4PrefsSave(s_prefs)) {
         Rr4Log("ridge-racer-type-4-pc: cannot save preferences to %s\n", Rr4PrefsPath());

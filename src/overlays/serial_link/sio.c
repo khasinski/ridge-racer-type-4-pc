@@ -69,7 +69,7 @@ void ovl667_init_sio_session(u32 configuration) {
     ovl667_sync_retry_state=0;
     ovl667_remote_pause_bits=0;
     ovl667_local_pause_bits=0;
-    ((u8 *)&ovl667_pending_pause_bits)[0]=0;
+    ovl667_pending_pause_bits=0;
     do {
         *(u32 *)first=0;
         *(u32 *)second=0;
@@ -142,6 +142,28 @@ s32 ovl667_send_race_packet(void) {
     return 1;
 }
 
+/* The ring slot both ends step with: the other end's latest packet, the
+ * one before it when that end is a slot ahead, and a slot of our own back
+ * when we are two ahead. Host fix: the original compared the "ahead" cases
+ * without wrapping the slot numbers modulo 8, so across the wrap (7 to 0)
+ * they fell through to the latest packet and the two ends stepped with
+ * different slots: the race desynced. On the console a cable and aligned
+ * vblanks keep the ends in step and these cases do not come up; on the
+ * host, thread scheduling and the network make them common. */
+static void ovl667_select_active_slot(void) {
+    if (ovl667_tx_slot_index == ovl667_rx_slot_index) {
+        ovl667_active_slot_index = (ovl667_rx_slot_index + 7) & 7;
+    } else if (ovl667_rx_slot_index == ((ovl667_tx_slot_index + 1) & 7)) {
+        ovl667_active_slot_index = ovl667_tx_slot_index;
+        ovl667_sync_retry_state = 3;
+    } else if (ovl667_tx_slot_index == ((ovl667_rx_slot_index + 2) & 7)) {
+        ovl667_active_slot_index = ovl667_rx_slot_index;
+        ovl667_tx_slot_index = (ovl667_rx_slot_index + 9) & 7;
+    } else {
+        ovl667_active_slot_index = ovl667_rx_slot_index;
+    }
+}
+
 s32 ovl667_poll_race_packet(void) {
     u8 checksum;
     u32 i;
@@ -160,15 +182,7 @@ s32 ovl667_poll_race_packet(void) {
             else ovl667_remote_error_code = 1;
         }
         ovl667_rx_slot_index = ovl667_rx_staging_packet.packet.flags00;
-        if (ovl667_tx_slot_index == ovl667_rx_slot_index) {
-            ovl667_active_slot_index = (ovl667_rx_slot_index + 7) & 7;
-        } else if (ovl667_rx_slot_index == ovl667_tx_slot_index + 1) {
-            ovl667_active_slot_index = ovl667_tx_slot_index;
-            ovl667_sync_retry_state = 3;
-        } else if (ovl667_tx_slot_index == ovl667_rx_slot_index + 2) {
-            ovl667_active_slot_index = ovl667_rx_slot_index;
-            ovl667_tx_slot_index = (ovl667_rx_slot_index + 9) & 7;
-        } else ovl667_active_slot_index = ovl667_rx_slot_index;
+        ovl667_select_active_slot();
         ovl667_rx_packet_ring.packets[ovl667_rx_slot_index] = ovl667_rx_staging_packet.packet;
         FileRead(LinkReadHandle, &ovl667_rx_staging_packet.packet, 12);
         return 1;
@@ -199,17 +213,7 @@ void ovl667_receive_peer_inputs(void) {
             ovl667_rx_packet_count = (ovl667_rx_packet_count + 1U);
         } else {
             ovl667_rx_miss_count = (ovl667_rx_miss_count + 1U);
-            if (ovl667_tx_slot_index == ovl667_rx_slot_index) {
-                ovl667_active_slot_index = (ovl667_rx_slot_index + 7) & 7;
-            } else if (ovl667_rx_slot_index == ovl667_tx_slot_index + 1) {
-                ovl667_active_slot_index = ovl667_tx_slot_index;
-                ovl667_sync_retry_state = 3;
-            } else if (ovl667_tx_slot_index == ovl667_rx_slot_index + 2) {
-                ovl667_active_slot_index = ovl667_rx_slot_index;
-                ovl667_tx_slot_index = (ovl667_rx_slot_index + 9) & 7;
-            } else {
-                ovl667_active_slot_index = ovl667_rx_slot_index;
-            }
+            ovl667_select_active_slot();
         }
         LinkRemoteCarInputs.cars[0] = ovl667_rx_packet_ring.packets[ovl667_active_slot_index].first04;
         LinkRemoteCarInputs.cars[1] = ovl667_rx_packet_ring.packets[ovl667_active_slot_index].second08;
@@ -230,7 +234,7 @@ void ovl667_transmit_local_inputs(void) {
                 LinkLocalCarInputs.cars[1] = LinkPendingCarInputs.cars[1];
                 ovl667_tx_packet_count = (ovl667_tx_packet_count + 1U);
                 ovl667_tx_slot_index = (ovl667_tx_slot_index + 1) & 7;
-                ovl667_local_pause_bits = ((u8 *)&ovl667_pending_pause_bits)[0];
+                ovl667_local_pause_bits = ovl667_pending_pause_bits;
                 if (ovl667_sync_retry_state == state) ovl667_sync_retry_state = 0;
                 ovl667_tx_stage = 0;
             } else ovl667_tx_stage = 2;
@@ -241,7 +245,7 @@ void ovl667_transmit_local_inputs(void) {
                 LinkLocalCarInputs.cars[1] = LinkPendingCarInputs.cars[1];
                 ovl667_tx_packet_count = (ovl667_tx_packet_count + 1U);
                 ovl667_tx_slot_index = (ovl667_tx_slot_index + 1) & 7;
-                ovl667_local_pause_bits = ((u8 *)&ovl667_pending_pause_bits)[0];
+                ovl667_local_pause_bits = ovl667_pending_pause_bits;
                 if (ovl667_sync_retry_state == 1) ovl667_sync_retry_state = 0;
                 ovl667_tx_stage = 0;
             } else {

@@ -14,6 +14,7 @@ enum {
     SETTINGS_PAGE_CONTROLS,
     SETTINGS_PAGE_AUDIO,
     SETTINGS_PAGE_DISC,
+    SETTINGS_PAGE_LINK,
     SETTINGS_PAGE_COUNT,
     /* Rows after a page's content: restore page defaults, resume, quit. */
     SETTINGS_ACTION_ROWS = 3,
@@ -73,6 +74,10 @@ typedef struct SettingsModel {
      * message written to message. NULL (as SettingsModelOpen leaves it)
      * accepts any CUE file. */
     int (*check_disc)(const char *path, char *message, size_t size);
+    int editing;            /* Link cable page: typing into the row */
+    char edit[256];         /* the text being typed */
+    char link_brief[48];    /* the connection, as the host last reported it */
+    char link_status[192];
     char status[192];       /* replaces the row help until the next move */
 } SettingsModel;
 
@@ -95,6 +100,15 @@ int SettingsModelCaptureButton(SettingsModel *model, int binding);
 /* The image dialog finished: path, or NULL when cancelled. A CUE file that
  * check_disc accepts becomes the image at the next start. */
 void SettingsModelDiscChosen(SettingsModel *model, const char *path);
+
+/* While editing a text row (Link cable page): typed UTF-8 text; only the
+ * characters of an address or port are taken. Returns 1 if consumed.
+ * SETTINGS_ACTIVATE keeps the text, SETTINGS_BACK drops it and
+ * SETTINGS_CLEAR deletes the last character. */
+int SettingsModelTextInput(SettingsModel *model, const char *text);
+/* The host's view of the link connection for the Link cable page: a short
+ * value ("Connected, 0.4 ms") and the whole line for the help. */
+void SettingsModelSetLinkStatus(SettingsModel *model, const char *brief, const char *status);
 
 /* Returns, and forgets, whether prefs changed since the last call. */
 int SettingsModelTakeChanged(SettingsModel *model);

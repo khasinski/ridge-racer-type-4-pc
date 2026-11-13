@@ -75,6 +75,7 @@ add_library(rr4_host STATIC
     src/port/disc_check.c
     src/port/host_log.c
     src/port/memory_cards.c
+    src/port/link.c
     src/port/preferences.c
     src/port/settings_model.c
     src/port/settings_raster.c
@@ -87,7 +88,7 @@ target_include_directories(rr4_host
         ${PSYZ_DIR}/psyz/include
         ${PSYZ_DIR}/external/SDL/src/render/gpu/shaders
 )
-target_compile_definitions(rr4_host PRIVATE __psyz)
+target_compile_definitions(rr4_host PRIVATE __psyz RR4_VERSION="${PROJECT_VERSION}")
 target_link_libraries(rr4_host PUBLIC psyz)
 
 add_executable(ridge-racer-type-4-pc

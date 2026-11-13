@@ -64,6 +64,7 @@
 #include "disc_check.h"
 #include "host_log.h"
 #include "memory_cards.h"
+#include "link.h"
 #include "preferences.h"
 #include "settings_overlay.h"
 #if RR4_DIAGNOSTICS
@@ -225,6 +226,7 @@ int main(int argc, char **argv) {
      * PSYZ_AUDIO_CLOCK=video; another PSYZ_AUDIO_CLOCK value keeps the host
      * clock. Set before any SDL call and before PsyZ reads it (kernel and
      * audio initialisation). */
+    Rr4LinkPrepareEnv(); /* a link run keeps the host clock */
     if (!interactive && !getenv("PSYZ_AUDIO_CLOCK"))
         set_env("PSYZ_AUDIO_CLOCK", "video");
 #ifdef _WIN32
@@ -300,6 +302,7 @@ int main(int argc, char **argv) {
         Psyz_GpuSetNtscPalPicture(ntsc && !RR_RELEASE_JP);
         if (interactive)
             Rr4Log("ridge-racer-type-4-pc: %s (%s)\n", GameReleaseProfile->name, GameReleaseProfile->productCode);
+        Rr4LinkStart(&prefs, ntsc, GameReleaseProfile->productCode);
     }
     chained_vsync = Psyz_SetVSyncCb(host_vsync);
     s_interactive = interactive;

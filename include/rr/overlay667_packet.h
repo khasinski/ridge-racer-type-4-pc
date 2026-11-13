@@ -21,7 +21,8 @@ typedef union {
 } Overlay667SerialRing;
 extern Overlay667SerialStorage ovl667_tx_staging_packet,ovl667_rx_staging_packet;
 extern u8 ovl667_tx_slot_index,ovl667_checksum_error_flag;
-extern s32 RaceState,ovl667_pending_pause_bits;
+extern s32 RaceState;
+extern u8 ovl667_pending_pause_bits;
 /* BIOS B0 service35: write count bytes, returning the transferred count. */
 #include "rr/bios_events.h"
 s32 ovl667_send_race_packet(void);
@@ -41,8 +42,7 @@ void ovl667_init_sio_session(u32 configuration);
  * Serial services may mutate globals; every later ring access stays in0..7. */
 s32 ovl667_poll_race_packet(void);
 /* Receive selection and transmit retry state machines. Counter increments wrap
- * modulo2^32. Payloads and state are reread after the serial service returns.
- * The transmitted phase is the low byte of the little-endian EEC word. */
+ * modulo2^32. Payloads and state are reread after the serial service returns. */
 void ovl667_receive_peer_inputs(void);
 void ovl667_transmit_local_inputs(void);
 RR_ASSERT_SIZE(Overlay667SerialPacket,12);

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "link.h"
 #include "preferences.h"
 #include "settings_model.h"
 #include "settings_raster.h"
@@ -248,12 +249,103 @@ static void TestAudioAndDisc(void) {
     /* The mounted image is unaffected. */
     SettingsModelRow(&m, 0, &v);
     CHECK(!strcmp(v.value, "Ridge Racer Type 4 (Europe).cue"));
-    /* Next page wraps to Graphics; Quit game closes and quits. */
+    /* Then Link cable, and the next page wraps to Graphics; Quit game
+     * closes and quits. */
+    Do(&m, SETTINGS_PAGE_NEXT, 1);
+    CHECK(m.page == SETTINGS_PAGE_LINK);
     Do(&m, SETTINGS_PAGE_NEXT, 1);
     CHECK(m.page == SETTINGS_PAGE_GRAPHICS);
     SettingsModelSelect(&m, SettingsRowCount(&m) - 1);
     Do(&m, SETTINGS_ACTIVATE, 1);
     CHECK(!m.open && m.quit && m.edited);
+}
+
+/* Link cable: Off / Host / Join, the port and address typed in, the
+ * connection status from the host; RR4_LINK values. */
+static void TestLinkPage(const char *dir) {
+    SettingsModel m;
+    SettingsRowView v;
+    Rr4Prefs q;
+    char path[1024], address[64];
+    int mode;
+    unsigned port;
+
+    SettingsModelOpen(&m, Rr4PrefsDefaults(), NULL);
+    SettingsModelSwitchPage(&m, SETTINGS_PAGE_LINK);
+    CHECK(SettingsContentRows(&m) == 4);
+    SettingsModelRow(&m, 0, &v);
+    CHECK(!strcmp(v.label, "Link cable") && !strcmp(v.value, "Off"));
+    SettingsModelRow(&m, 1, &v);
+    CHECK(!strcmp(v.value, "47400"));
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.link_mode == RR4_LINK_HOST && SettingsModelTakeChanged(&m));
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.link_mode == RR4_LINK_JOIN && strstr(m.status, "address"));
+    Do(&m, SETTINGS_LEFT, 2);
+    CHECK(m.prefs.link_mode == RR4_LINK_OFF);
+    /* the port: digits only, kept on Enter, refused when out of range */
+    Do(&m, SETTINGS_DOWN, 1);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.editing && !strcmp(m.edit, "47400"));
+    Do(&m, SETTINGS_CLEAR, 5);
+    CHECK(SettingsModelTextInput(&m, "12x34"));
+    CHECK(!strcmp(m.edit, "1234"));
+    SettingsModelRow(&m, 1, &v);
+    CHECK(v.capturing && !strcmp(v.value, "1234_"));
+    Do(&m, SETTINGS_DOWN, 1); /* typing: the selection stays */
+    CHECK(m.row == 1);
+    SettingsModelTakeChanged(&m);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(!m.editing && m.prefs.link_port == 1234 && SettingsModelTakeChanged(&m));
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    Do(&m, SETTINGS_CLEAR, 4);
+    SettingsModelTextInput(&m, "0");
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.prefs.link_port == 1234 && strstr(m.status, "65535"));
+    /* the address: Escape drops the typing */
+    Do(&m, SETTINGS_DOWN, 1);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    SettingsModelTextInput(&m, "192.168.1.20 ");
+    Do(&m, SETTINGS_BACK, 1);
+    CHECK(m.open && !m.editing && m.prefs.link_address[0] == '\0');
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    SettingsModelTextInput(&m, "racer.local");
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(!strcmp(m.prefs.link_address, "racer.local"));
+    /* the status row shows what the host reports */
+    SettingsModelSetLinkStatus(&m, "Connected, 0.4 ms", "Connected to 192.168.1.20, round trip 0.4 ms");
+    SettingsModelRow(&m, 3, &v);
+    CHECK(v.kind == 3 && !strcmp(v.value, "Connected, 0.4 ms") && strstr(v.help, "round trip"));
+    /* the page's defaults */
+    SettingsModelSelect(&m, SettingsContentRows(&m));
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.prefs.link_mode == RR4_LINK_OFF && m.prefs.link_port == 47400 && !m.prefs.link_address[0]);
+
+    /* [link] round trip */
+    q = *Rr4PrefsDefaults();
+    q.link_mode = RR4_LINK_JOIN;
+    q.link_port = 47999;
+    snprintf(q.link_address, sizeof(q.link_address), "fe80::1%%en0");
+    snprintf(path, sizeof(path), "%s/link.toml", dir);
+    CHECK(Rr4PrefsSaveFile(&q, path));
+    m.prefs = *Rr4PrefsDefaults();
+    CHECK(Rr4PrefsLoadFile(&m.prefs, path));
+    CHECK(m.prefs.link_mode == RR4_LINK_JOIN && m.prefs.link_port == 47999 &&
+          !strcmp(m.prefs.link_address, "fe80::1%en0"));
+
+    CHECK(Rr4LinkParse("host", &mode, address, sizeof(address), &port) && mode == RR4_LINK_HOST && port == 47400);
+    CHECK(Rr4LinkParse("host:5000", &mode, address, sizeof(address), &port) && port == 5000);
+    CHECK(!Rr4LinkParse("host:0", &mode, address, sizeof(address), &port));
+    CHECK(Rr4LinkParse("join:127.0.0.1:47411", &mode, address, sizeof(address), &port) &&
+          mode == RR4_LINK_JOIN && !strcmp(address, "127.0.0.1") && port == 47411);
+    CHECK(Rr4LinkParse("join:racer.local", &mode, address, sizeof(address), &port) &&
+          !strcmp(address, "racer.local") && port == 47400);
+    CHECK(Rr4LinkParse("join:[::1]:6000", &mode, address, sizeof(address), &port) &&
+          !strcmp(address, "::1") && port == 6000);
+    CHECK(Rr4LinkParse("join:fe80::2", &mode, address, sizeof(address), &port) && !strcmp(address, "fe80::2"));
+    CHECK(Rr4LinkParse("off", &mode, address, sizeof(address), &port) && mode == RR4_LINK_OFF);
+    CHECK(!Rr4LinkParse("join:", &mode, address, sizeof(address), &port));
+    CHECK(!Rr4LinkParse("client", &mode, address, sizeof(address), &port));
 }
 
 static void TestPointer(void) {
@@ -450,6 +542,7 @@ int main(int argc, char **argv) {
     TestUnavailable();
     TestControlsPage();
     TestAudioAndDisc();
+    TestLinkPage(dir);
     TestPointer();
     TestPrefsFile(dir);
     TestApply();

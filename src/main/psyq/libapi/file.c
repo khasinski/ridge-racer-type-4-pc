@@ -4,10 +4,13 @@
  * host I/O completes inside the call, but an FASYNC card transfer raises its
  * SwCARD end-of-I/O event only when the BIOS would have finished the last
  * sector, and a synchronous one or a file creation returns after that time.
- * The "sio:" link cable device has no peer on the host: it opens, but
- * nothing is ever sent or received. */
+ * The "sio:" link cable device is PsyZ libcomb's driver (Psyz_CombRead /
+ * Psyz_CombWrite): its serial port reaches the other console over the
+ * network when the link is set up (psyz/link.h), otherwise nothing is ever
+ * received and a synchronous transfer runs into the game's wait callback. */
 #include <kernel.h>
 #include <romio.h>
+#include <psyz/link.h>
 #include <psyz/system.h>
 #include "rr/bios_events.h"
 #include "rr/serial_handles.h"
@@ -73,7 +76,8 @@ s32 FileOpen(const char *name, s32 mode) {
         return -1;
     }
     if (FileIsDevice(name, "sio:")) {
-        FileHandles[descriptor] = (FileHandle){FILE_KIND_LINK, -1, 0, 0, 0};
+        FileHandles[descriptor] =
+            (FileHandle){FILE_KIND_LINK, -1, 0, 0, (mode & FILE_MODE_ASYNC) != 0};
         return descriptor;
     }
     int host = psyz_open(name, mode);
@@ -105,7 +109,7 @@ s32 FileRead(s32 descriptor, void *buffer, s32 count) {
         return -1;
     }
     if (file->kind == FILE_KIND_LINK) {
-        return 0;
+        return (s32)Psyz_CombRead(buffer, count, file->async);
     }
     return FileTransferDone(file, psyz_read(file->host, buffer, count));
 }
@@ -116,7 +120,7 @@ s32 FileWrite(s32 descriptor, const void *buffer, s32 count) {
         return -1;
     }
     if (file->kind == FILE_KIND_LINK) {
-        return 0;
+        return (s32)Psyz_CombWrite(buffer, count, file->async);
     }
     return FileTransferDone(
         file, psyz_write(file->host, (char *)buffer, count));

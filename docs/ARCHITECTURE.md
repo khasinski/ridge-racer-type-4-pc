@@ -283,6 +283,37 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      store order and missed vblanks with two pads (VS, `docs/TECH_DEBT.md`
      F1), and the sequencer timer's phase, which the boot timeline before
      SsStart sets (F6).
+   - **Link cable over the network:** the link battle's serial port (SIO1)
+     is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
+     driver ported from the decompilation (`_sio_control`, the `sio:`
+     device's synchronous and asynchronous transfers, the interrupt
+     handler) over a model of the port's registers, whose other end is the
+     other player's game over TCP (`link_net.c`, `psyz/link.h`;
+     `src/port/link.c` sets it up from the Escape menu or `RR4_LINK`). Bytes
+     take their character time at the programmed rate (20.8 us at the
+     game's 529 kbit/s), the transmitter waits for CTS, the FIFO holds 8
+     bytes; each pass of the driver's busy waits takes its PS1 time on the
+     real-time clock too, so the game's wait callbacks time out as on the
+     console (about 24 ms in the race, 94 ms in the menus). The receiver
+     announces each read (where it starts and ends, its packet size), so
+     the DTR toggles that acknowledge the sender's packets and the RTS
+     drop at the read's end follow at once from the sender's own bytes, as
+     on the cable; everything else crosses the network's latency. Received
+     bytes enter the FIFO at their emulated arrival times and the RX
+     interrupt drains each completed packet then, so a host thread that
+     runs late cannot overrun it (an overrun loses a packet, and the race
+     protocol then desyncs). The race protocol (`serial_link/sio.c`) steps
+     the race only with both ends' inputs for a frame, one packet in flight
+     each way, so a round trip longer than a frame slows the race (40 ms:
+     half speed, 100 ms: a seventh) and seven missed frames end it with the
+     game's link error; the menus' synchronous exchanges time out from
+     about 90 ms. When one end falls a slot behind (a late packet, a host
+     thread that ran late), the protocol steps both ends with the same
+     earlier slot; the original compared those slots without wrapping them
+     modulo 8 and desynced the race across the wrap, which a cable and
+     aligned vblanks never let happen on the console (fixed in
+     `ovl667_select_active_slot`). Two games on one machine race a whole
+     race step for step identically (`RR4_LINK`, `PSYZ_HEADLESS=gpu`).
 
 ## Repository layout
 

@@ -1,5 +1,6 @@
 /* The game links the link cable driver under its early libsio names; they
- * are PsyZ libcomb (AddCOMB/_comb_control), which reports no connected peer. */
+ * are PsyZ libcomb (AddCOMB/_comb_control), the same driver on a serial
+ * port whose cable runs over the network (psyz/link.h), or to nothing. */
 #include <libcomb.h>
 #include "psyq/libsio/siostart.h"
 #include "rr/driver_control.h"

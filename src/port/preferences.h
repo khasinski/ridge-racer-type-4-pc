@@ -52,6 +52,15 @@ typedef enum Rr4PadType {
 /* Host axis response for an emulated analog input, DuckStation's terms:
  * dead zone and saturation as fractions of the travel, the travelled part
  * raised to e^linearity (0 linear), then times scaling. */
+/* The link cable over the network (PsyZ psyz/link.h). */
+typedef enum Rr4LinkPref {
+    RR4_LINK_OFF = 0,
+    RR4_LINK_HOST = 1, /* wait for the other player on link_port */
+    RR4_LINK_JOIN = 2, /* connect to link_address:link_port */
+} Rr4LinkPref;
+
+enum { RR4_LINK_DEFAULT_PORT = 47400, RR4_LINK_ADDRESS_MAX = 256 };
+
 typedef struct Rr4AxisPref {
     float deadzone, saturation, linearity, scaling;
 } Rr4AxisPref;
@@ -83,6 +92,10 @@ typedef struct Rr4Prefs {
     int pad_type[2];  /* Rr4PadType of pad 1 and pad 2 */
     int force_feedback; /* gamepad rumble for the game's motors */
     Rr4AxisPref axes[RR4_AXES];
+    /* [link] */
+    int link_mode; /* Rr4LinkPref */
+    unsigned link_port;
+    char link_address[RR4_LINK_ADDRESS_MAX];
     /* [disc] */
     char disc[RR4_PREFS_PATH_MAX];
     /* [keyboard] SDL scancodes, [controller] SDL gamepad buttons (plus
