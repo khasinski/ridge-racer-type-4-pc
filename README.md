@@ -19,7 +19,9 @@ On Linux, take the `.AppImage` (make it executable and start it) or the
 `.tar.gz` with the same executable.
 See the [changelog](CHANGELOG.md) for changes.
 
-You need your own **European (PAL) CUE/BIN image** of the game. Game data is
+You need your own **European (PAL) or Japanese CUE/BIN image** of the game
+(SCES-01706 or SLPS-01800; the Japanese release runs at 60 Hz with its own
+picture, text and saves, see [docs/REGIONS.md](docs/REGIONS.md)). Game data is
 not included. Keep the CUE file next to its BIN file.
 
 Start the game and choose the CUE file, or pass it on the command line:

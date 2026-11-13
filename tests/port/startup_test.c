@@ -75,9 +75,8 @@ static void TestSystemCnf(void) {
     CHECK(Rr4DiscClassify("SCES_017.06", message, sizeof(message)) == RR4_DISC_OK && !message[0]);
     CHECK(Rr4DiscClassify("SCUS_944.03", message, sizeof(message)) == RR4_DISC_OTHER_RELEASE);
     CHECK(strstr(message, "This is the USA release") && strstr(message, "SCUS-94403") &&
-          strstr(message, "this port needs the European PAL disc SCES-01706"));
-    CHECK(Rr4DiscClassify("SLPS_018.00", message, sizeof(message)) == RR4_DISC_OTHER_RELEASE);
-    CHECK(strstr(message, "Japanese release") != NULL);
+          strstr(message, "this port needs the European PAL disc SCES-01706 or the Japanese disc SLPS-01800"));
+    CHECK(Rr4DiscClassify("SLPS_018.00", message, sizeof(message)) == RR4_DISC_OK && !message[0]);
     CHECK(Rr4DiscClassify("SLUS_007.77", message, sizeof(message)) == RR4_DISC_OTHER_GAME);
     CHECK(strstr(message, "not Ridge Racer Type 4") && strstr(message, "SLUS-00777"));
     CHECK(Rr4DiscClassify(NULL, message, sizeof(message)) == RR4_DISC_NOT_PLAYSTATION);

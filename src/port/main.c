@@ -2,8 +2,10 @@
  * runs the original game loop (MainLoop, src/main/system/frmtask.c).
  *
  * The disc is argv[1], else RR4_DISC, else (interactive runs) the saved
- * image or one chosen in a file dialog. Only the European PAL release
- * (SCES-01706) is accepted (disc_check.h): an interactive run explains any
+ * image or one chosen in a file dialog. The European PAL release
+ * (SCES-01706) and the Japanese one (SLPS-01800, which selects the game's
+ * Japanese release profile, rr/release.h) are accepted (disc_check.h): an
+ * interactive run explains any
  * other image or one that does not open, forgets it if it was the saved
  * one and asks again; a headless run prints why and exits with status 1.
  *

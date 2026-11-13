@@ -3,15 +3,18 @@
 The port runs the PAL release (SCES-01706, `SCES_017.06`). This page
 records how the other releases differ, measured on the disc images, and the
 state of the Japanese release's support (below, "Japanese release:
-status"). The disc check still accepts only the PAL boot file; diagnostic
-builds run the Japanese disc with `RR4_UNVERIFIED_RELEASE=1`.
+status"). The disc check accepts the PAL and the Japanese boot files
+(`src/port/disc_check.c`); the Japanese release was enabled once a Time
+Attack race from the boot matched DuckStation. Diagnostic builds can run a
+release with a profile that is not enabled yet with
+`RR4_UNVERIFIED_RELEASE=1`.
 
 ## Images examined
 
 | Release | Image | Boot file | Result |
 | --- | --- | --- | --- |
 | PAL (Europe) | Redump `Ridge Racer Type 4 (Europe) (En,Fr,De,Es,It)` | `SCES_017.06` | supported |
-| NTSC-J | Redump `R4 - Ridge Racer Type 4 (Japan, Asia)` | `SLPS_018.00` | compared below |
+| NTSC-J | Redump `R4 - Ridge Racer Type 4 (Japan, Asia)` | `SLPS_018.00` | supported (status below) |
 | NTSC-J JogCon bundle | Redump `R4 - Ridge Racer Type 4 (Japan, Asia) (R4 + JogCon)` | `SLPS_018.00` | the same disc: only the two ISO directory sectors (LBA 22–23, file timestamps) differ |
 | NTSC-U (SCUS-94403) | none available | `SCUS_944.03` (expected) | not examined |
 | Bonus discs (JP *Ridge Racer Turbo* / PAL *Hi-Spec Demo*) | not R4 | | separate programs with their own executable; out of scope |
@@ -265,8 +268,7 @@ toolchain (spimdisasm + m2c on `SLPS_018.00` and the JP overlay images).
   splash 286 fields before DuckStation does (BIOS and executable load), as
   for PAL.
 - Verification of each mode (GP, Extra Trial, VS, garage, records, options,
-  replay, card save/load) field for field, then enabling `SLPS_018.00` in
-  `src/port/disc_check.c`.
+  replay, card save/load) field for field.
 - JP course textures in VRAM lines 480..511 (with the 240-line buffers they
   no longer collide; not yet checked visually in every course).
 

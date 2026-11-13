@@ -6,15 +6,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SUPPORTED_DISC "the European PAL disc SCES-01706"
+#define SUPPORTED_DISC "the European PAL disc SCES-01706 or the Japanese disc SLPS-01800"
 
-/* Ridge Racer Type 4 discs by boot file. Only the European release is
- * playable; another release becomes playable by marking it supported here
- * once the port handles its data. */
+/* Ridge Racer Type 4 discs by boot file. The European and Japanese
+ * releases are playable (the game's release profiles, rr/release.h);
+ * another release becomes playable by marking it supported here once the
+ * port handles its data. */
 static const Rr4DiscRelease kReleases[] = {
     {"SCES_017.06", "European PAL release", 1},
     {"SCUS_944.03", "USA release", 0},
-    {"SLPS_018.00", "Japanese release", 0}, /* also the JogCon bundle */
+    {"SLPS_018.00", "Japanese release", 1}, /* also the JogCon bundle */
 };
 
 const Rr4DiscRelease *Rr4DiscFindRelease(const char *boot) {

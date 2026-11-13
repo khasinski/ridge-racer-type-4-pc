@@ -231,7 +231,7 @@ if(BUILD_TESTING)
     set_tests_properties(startup-other-release PROPERTIES
         ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC="
         FIXTURES_REQUIRED startup-images
-        PASS_REGULAR_EXPRESSION "USA release of Ridge Racer Type 4 \\(SCUS-94403\\); this port needs the European PAL disc SCES-01706")
+        PASS_REGULAR_EXPRESSION "USA release of Ridge Racer Type 4 \\(SCUS-94403\\); this port needs the European PAL disc SCES-01706 or the Japanese disc SLPS-01800")
     # The RR4_* hook syntax (src/port/diagnostics_parse.c, also built when
     # the hooks themselves are not).
     add_executable(rr4_diagnostics_test tests/port/diagnostics_test.c src/port/diagnostics_parse.c)
