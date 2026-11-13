@@ -5,6 +5,7 @@
 #include "game/sound/sndevt.h"
 #include "game/sound/sndmain.h"
 #include "rr/menu_overlay_runtime.h"
+#include "rr/cpu_time.h"
 
 typedef struct {
     s32 unk00[2];
@@ -18,6 +19,7 @@ void SoundListenerUpdate(void)
     ListenerScratch *g = (ListenerScratch *)SCRATCHPAD;
     AudioState *b = &SoundState;
     if (b->active18B8 != 0) {
+        RR_CPU_CYCLES(RR_CYCLES_SOUND_LISTENER);
         switch (b->mode18C0) {
         case 0:
             if (b->submode18C2 == 0) {

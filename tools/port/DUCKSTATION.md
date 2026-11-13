@@ -87,3 +87,14 @@ Environment:
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
 card slot 2 are empty, audio goes to the null backend and the renderer is
 software.
+
+## Timing a call
+
+A GDB breakpoint, and single-stepping, switch DuckStation from its
+recompiler to its interpreter, whose clocks differ per routine by -45% to
++20%; the reference runs use the recompiler. `ds_calltime.py` measures
+calls there without breakpoints: it writes a timing stub into kernel RAM
+the game leaves unused and points each function at it, then prints the
+clocks of each call (`ds_calltime.py 2000 2200 PadUpdate PsyqBzero:tail:arg=a1`,
+through `run_capped.sh`; its docstring has the options). `DUMMYBP=1` sets a
+never-hit breakpoint, for the same run on the interpreter.
