@@ -119,7 +119,12 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      the packets are unchanged: at Nx the original whole-pixel vertices
      leave the T-junction cracks between differently subdivided course tiles
      that fall between the PS1's samples at 1x (as in DuckStation upscaling
-     without PGXP); geometry correction is the watertight mode.
+     without PGXP); geometry correction is the watertight mode. The precise
+     vertices are kept in a set-associative cache by address (262,144
+     entries, a race frame stores about 40,000); its sets are taken from the
+     offset of the address in the executable's image, so which vertex a
+     full set would drop does not change with ASLR from run to run (it
+     did: a rare hairline seam on the car or the road, TECH_DEBT H16).
    - **Widescreen 16:9 (hor+, square pixels):** the projection is
      unchanged; a full-width race view (`include/rr/widescreen.h`, set up in
      `camera/viewcam.c`) culls `WideMargin()` pixels past both screen sides,
