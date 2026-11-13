@@ -76,6 +76,20 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      pixel: on Apple GPUs (Metal) read from the colour attachment
      (framebuffer fetch), elsewhere from a copy of the target made before
      the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal).
+   - **GPU memory:** SDL keeps every buffer it cycles in (a buffer written
+     while the GPU still reads it) and never frees them, so PsyZ cycles
+     rarely. Batches go one after another into one vertex/index buffer and
+     its transfer buffer (`RingReserve`), VRAM uploads into one upload
+     buffer (`UploadMap`); only a wrap cycles them, and it submits the work
+     with a fence and waits for the fence three wraps before. Presents keep
+     two frames in flight (`SubmitFrame`). A waited fence is released after
+     the next submit: SDL's Metal backend frees a finished command buffer
+     (and its hold on the buffers it used) in a later submit, and a fence
+     released before that was taken by the very next command buffer, so the
+     old one never looked finished. A frame's command buffer is submitted
+     every 256 descriptors on every backend. At 8x with antialiasing a race
+     and its replay stay at about 2.6 GB (physical footprint, including GPU
+     memory) instead of growing past 10 GB.
    - **Geometry correction:** the renderers store every projected vertex
      through `RR_GTE_STORE_SXY` / `RR_SXY_COPY` (`include/rr_asm.h`), so
      PsyZ finds the precise projection of each packet vertex by its address
@@ -146,10 +160,18 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      where it shares their vertex: its own continued motion does not know
      how the view moved this frame (a camera jolt against a wall), and a
      new face's pose in this frame is not where its neighbours are in the
-     midpoint. These neighbours are found within one batch of queued
-     primitives, which holds a whole race frame. A vertex of a finer
-     subdivision that lies on an edge of a coarser neighbour in both
-     frames, to the precision of the projection (a T-junction), is put on
+     midpoint. The midpoint keeps its geometry for the whole frame and
+     places these vertices, the T-junctions and the outlines below once
+     the frame is complete (`InterpMidpointSync`, at
+     `Psyz_GpuPrepareInterpolatedBlank`), then draws it, so how the
+     frame's primitives were split into batches (drawing-state changes,
+     texture feedback, a full buffer) makes no difference; it draws
+     earlier only when something would change what it samples or draws
+     over (a VRAM write to its texture pages or drawing area, a full CLUT
+     cache or store), and `PSYZ_INTERP_STATS` counts such splits. A
+     vertex of a finer subdivision that lies on an edge of a coarser
+     neighbour in both frames, to the precision of the projection (a
+     T-junction), is put on
      that edge's midpoint, so the midpoint is as watertight as the frames.
      An outline (a line the course renderer draws along a tile's edges, at
      whole pixels and behind the tile) is drawn into the midpoint as a quad
