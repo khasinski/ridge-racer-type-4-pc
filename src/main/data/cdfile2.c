@@ -817,6 +817,7 @@ void *CdActiveReadBuffer;
 s32 CdFileBytesRead;
 s32 CdFileSyncResult;
 u8 CdCmdParamScratch;
-CdFileEntry CdFileTable[950];
+/* R4.BIN has 950 entries in the PAL release and 969 in the Japanese one. */
+CdFileEntry CdFileTable[RR_R4_ENTRIES_MAX];
 const s16 *CdStreamSectorCursor;
 s32 *TrackSkyTable;

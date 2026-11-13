@@ -1,3 +1,5 @@
+#include <string.h>
+#include "rr/release.h"
 #include "rr/emblem_images.h"
 #include "game/race/ranking.h"
 #include "rr/save_slots.h"
@@ -31,6 +33,48 @@ extern char StrCardMagicCrd0[];
 extern GpuRectangle SavedEmblemPixelRect;
 
 
+enum { SAVE_OPTIONS_END = 0x33C, SAVE_PAL_WORDS = 0x6A9, SAVE_JP_WORDS = 0x6A8 };
+
+void SaveDataToRelease(void) {
+    u32 *words = ((GameSaveData1AA8 *)SaveBuffer)->words;
+    u8 *bytes = (u8 *)words;
+    u32 checksum = 0;
+    int i;
+
+    if (!RR_RELEASE_JP)
+        return;
+    memmove(bytes + SAVE_OPTIONS_END - 4, bytes + SAVE_OPTIONS_END, SAVE_PAL_WORDS * 4 - SAVE_OPTIONS_END);
+    for (i = 0; i < SAVE_JP_WORDS; i++)
+        checksum += words[i];
+    words[SAVE_JP_WORDS] = checksum;
+    words[SAVE_PAL_WORDS] = 0;
+}
+
+/* A Japanese save is moved to the PAL layout with the current language
+ * word inserted and a PAL checksum that holds only if its own did. */
+void SaveDataFromRelease(void) {
+    GameSaveData1AA8 *gameSave = (GameSaveData1AA8 *)SaveBuffer;
+    u32 *words = gameSave->words;
+    u8 *bytes = (u8 *)words;
+    u32 checksum = 0;
+    s32 valid;
+    u32 language;
+    int i;
+
+    if (!RR_RELEASE_JP)
+        return;
+    for (i = 0; i < SAVE_JP_WORDS; i++)
+        checksum += words[i];
+    valid = checksum == words[SAVE_JP_WORDS];
+    memmove(bytes + SAVE_OPTIONS_END, bytes + SAVE_OPTIONS_END - 4, SAVE_JP_WORDS * 4 - (SAVE_OPTIONS_END - 4));
+    language = (u32)Options.storyBranch3C;
+    memcpy(bytes + SAVE_OPTIONS_END - 4, &language, 4);
+    checksum = 0;
+    for (i = 0; i < SAVE_PAL_WORDS; i++)
+        checksum += words[i];
+    gameSave->fields.checksum1AA4 = valid ? checksum : checksum + 1;
+}
+
 int ApplySaveData(int mode) {
     int result = 0;
     GameSaveData1AA8 *gameSave;
@@ -47,6 +91,7 @@ int ApplySaveData(int mode) {
     case 1:
     case 0x30:
     default:
+        SaveDataFromRelease();
         gameSave = (GameSaveData1AA8 *)SaveBuffer;
         checksum = 0;
         for (i = 0; (u32)i < 0x6A9U; i++) {
@@ -86,6 +131,7 @@ int ApplySaveData(int mode) {
         }
         break;
     case 2:
+        SaveDataFromRelease();
         gameSave = (GameSaveData1AA8 *)SaveBuffer;
         checksum = 0;
         for (i = 0; (u32)i < 0x6A9U; i++) {
@@ -166,7 +212,9 @@ void BuildCardHeaderStatic(CardFileHeader280 *header, const char *title,
     int frameIndex;
     header->magic00[0] = 0x53;
     header->magic00[1] = 0x43;
-    header->iconMode02 = 0x11;
+    /* The Japanese release's icon is animated: three frames. */
+    s32 frames = RR_PAL_JP(1, 3);
+    header->iconMode02 = RR_PAL_JP(0x11, 0x13);
     header->blockCount03 = 1;
     PsyqSprintf((s8 *)header->title04, (const s8 *)StrFmtPercentS, title);
     header->flags50[0] = 1;
@@ -179,7 +227,7 @@ void BuildCardHeaderStatic(CardFileHeader280 *header, const char *title,
     StoreImage(&SavedEmblemPixelRect, header->palette60);
     DrawSync(0);
     frameIndex = 0;
-    while (frameIndex < 1) {
+    while (frameIndex < frames) {
         SavedEmblemPixelRect.rect.x = imageX;
         SavedEmblemPixelRect.rect.y = imageY;
         SavedEmblemPixelRect.rect.w = 4;
@@ -188,6 +236,10 @@ void BuildCardHeaderStatic(CardFileHeader280 *header, const char *title,
         DrawSync(0);
         frameIndex++;
         imageX = (u32)imageX + 4U;
+    }
+    if (RR_RELEASE_JP) {
+        header->payload80.frames[3] = *extra;
+        return;
     }
     header->payload80.single.extra[0] = *extra;
     header->payload80.single.extra[1] = *extra;

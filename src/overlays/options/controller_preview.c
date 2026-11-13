@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay665_menu.h"
 #include "game/system/pad.h"
 #include "rr/menu_pulse.h"
@@ -17,7 +18,7 @@ void ovl665_init_controller_options(void) {
     InitUiRow(7,200,120,28,32,0,0,1,0,108);
     ScreenFadeState.phase=2;
     InitBadgeRow(0,16,96,76,40,0,0xD01);
-    ovl665_saved_stereo_mode=0;
+    if(!RR_RELEASE_JP)ovl665_saved_stereo_mode=0;
     BadgeRows[0].half02=1;
     ovl665_options_state.view74.position00.words[2]=0;
     ovl665_options_state.view74.position00.words[1]=0;

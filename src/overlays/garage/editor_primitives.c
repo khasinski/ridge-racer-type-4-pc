@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay662_draw_area.h"
 #include "rr/overlay662_garage.h"
@@ -20,7 +21,7 @@ u8 *ovl662_emit_draw_area(GpuDmaTag *ordering, void *cursor, u32 x, u32 y, u32 w
     if (DrawBuffers[0].environment.display5C.display.y == DrawBuffers[1].environment.display5C.display.y) {
         rect.y = py;
     } else {
-        rect.y = py + ((u32)DrawBufIndex * 256U);
+        rect.y = py + ((u32)DrawBufIndex * (u32)RR_SCREEN_BOTTOM);
     }
     rect.w = w;
     rect.h = h;

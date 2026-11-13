@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "game/ui/uipart1.h"
@@ -949,7 +950,9 @@ case 0x27:
     }
     BuildScaledCameraMatrices();
     SetupViewport(6);
-    SetGeomOffset(0xA0, 0xC0);
+    /* The centre of the 480-line (Japanese release) or 512-line screen,
+     * less 64. */
+    SetGeomOffset(0xA0, RR_PAL_JP(0xC0, 0xB0));
     temp_a0_4 = G->s66;
     G->sA4 = 0;
     if (temp_a0_4 != 0) {
@@ -1013,14 +1016,21 @@ case 0x27:
         RR_GPU_SCRATCH->cursor = (u8 *)temp_t1;
         DrawMenuGridMesh(0, RR_GPU_SCRATCH->order + 1, 1);
     }
-    H->half02 = 1;
+    /* The PAL release's language badge row and dialogue reset. */
+    if (!RR_RELEASE_JP)
+        H->half02 = 1;
     UpdateBadgeRowAnim(0);
-    K->b4 = 0U;
+    if (!RR_RELEASE_JP)
+        K->b4 = 0U;
     UpdateDialogue(H->x04 + 0xA, H->y06 + 0x28, CardDialogueStatePtr);
     UpdateScreenFade(0x1001C);
 }
 
 void EmitSpriteGrid(u32 intensity, SpriteGridClock *state) {
+    EmitSpriteGridTick(intensity, &state->tick0E);
+}
+
+void EmitSpriteGridTick(u32 intensity, u16 *tick) {
     u32 color = intensity;
     u32 hi, middle;
     s32 row, x, phase, index;
@@ -1034,13 +1044,13 @@ void EmitSpriteGrid(u32 intensity, SpriteGridClock *state) {
     color |= hi;
 
     packet = (GpuSpriteCommand *)RR_GPU_SCRATCH->cursor;
-    state->tick0E++;
-    phase = state->tick0E;
+    (*tick)++;
+    phase = *tick;
     for (row = 0; row < 144; row += 48) {
         for (x = 0; x < 130; x += 26) {
             index = (phase / 4) & 15;
             if (index == 15) index = 0;
-            packet->words.position = ((row + 0xB0) << 16) | (x + 172);
+            packet->words.position = ((row + 0xB0) << 16) | (x + RR_PAL_JP(172, 168));
             packet->words.color.word = color;
             packet->words.size = 0x180010;
             packet->words.uv = index * 16 + 0x2F29A400U;

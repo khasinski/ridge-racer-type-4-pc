@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay668_camera.h"
 #include "game/system/pad.h"
@@ -48,10 +49,14 @@ void ovl668_init_epilogue_credits(void) {
     SetSceneOverlayColor(0, 144, 144, 144);
     SetSceneOverlayEnabled(1);
     MaskBitSetting = 1;
+    if (RR_RELEASE_JP)
+        return;
     EpilogueCreditScrollY = 16000;
     ovl668_credit_scroll_sixths = 0;
     EpilogueCreditScrollStep = ovl668_credit_scroll_speeds[(Options.storyBranch3C * 4U + SelectedTeamIndex)];
 }
+
+void ovl668_draw_credit_page(s32 page, s32 brightness);
 
 void ovl668_update_epilogue_credits(void) {
     s32 temp_a1;
@@ -128,6 +133,52 @@ EpilogueCameraWork78 *ctx;
             break;
         }
         temp_v1 = RaceContext.work444.epilogue.phase4AC;
+        if (RR_RELEASE_JP) {
+            /* Credit pages: fade in 9 a frame to 160, hold 134 frames, fade
+             * out 10 a frame and wait to 150 frames, twelve pages. */
+            EpilogueCameraWork78 *e = &RaceContext.work444.epilogue;
+            switch (temp_v1) {
+            case 1:
+                e->reserved4B0 += 9;
+                e->counter4B4++;
+                if (e->reserved4B0 >= 0xA0) {
+                    e->reserved4B0 = 0xA0;
+                    e->counter4B4 = 0;
+                    e->phase4AC++;
+                }
+                break;
+            case 2:
+                if (++e->counter4B4 >= 0x86) {
+                    e->phase4AC++;
+                    if (e->reserved4B8 == 0xB)
+                        e->phase4AC = 5;
+                }
+                break;
+            case 3:
+                e->counter4B4++;
+                e->reserved4B0 -= 10;
+                if (e->reserved4B0 <= 0) {
+                    e->reserved4B0 = 0;
+                    if (e->counter4B4 >= 0x96) {
+                        e->counter4B4 = 0;
+                        e->phase4AC = 1;
+                        e->reserved4B8++;
+                    }
+                    if (e->reserved4B8 >= 0xC)
+                        e->phase4AC = 0;
+                }
+                break;
+            case 4:
+                if (++e->counter4B4 >= 0) {
+                    e->counter4B4 = 0;
+                    e->phase4AC = 1;
+                }
+                break;
+            }
+            if (temp_v1 >= 1 && temp_v1 <= 5 && e->reserved4B0 > 0)
+                ovl668_draw_credit_page(e->reserved4B8, e->reserved4B0);
+            temp_v1 = 0;
+        }
         if (temp_v1 != 0) {
             if (temp_v1 == 1) {
                 var_s0 = 0;
@@ -144,7 +195,8 @@ EpilogueCameraWork78 *ctx;
                 for(;var_s0<62;var_s0++)ovl668_draw_credit_band(var_s0,160);
             }
         }
-        if ((PlayerControllers[0].edges08.fields.pressed & 0x800) && (RaceContext.work444.epilogue.mode4A8 == 0)) {
+        if ((RR_RELEASE_JP ? (Pad0Buttons & 0x800) : (PlayerControllers[0].edges08.fields.pressed & 0x800)) &&
+            (RaceContext.work444.epilogue.mode4A8 == 0)) {
             RaceContext.work444.epilogue.mode4A8 = 2;
             CdAudioFade(0, RR_PAL_NTSC(0x15, 0x1A));
         }

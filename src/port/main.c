@@ -16,7 +16,8 @@
  *
  * Every build reads:
  *   RR4_DISC=file      the CUE image when argv has none
- *   RR4_VIDEO=pal|ntsc video timing for the run, over the preferences
+ *   RR4_VIDEO=pal|ntsc video timing of the PAL release for the run, over
+ *                      the preferences (the Japanese release is NTSC)
  *   RR4_CONFIG_HOME=d  the preferences directory (preferences.h)
  *   PSYZ_HEADLESS runs default to PSYZ_AUDIO_CLOCK=video: unpaced fields
  *                      would otherwise race the wall-clock sequencer tick
@@ -57,6 +58,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rr/video_timing.h"
+#include "rr/release.h"
 #include "disc_check.h"
 #include "host_log.h"
 #include "memory_cards.h"
@@ -145,8 +147,25 @@ static void alert(void *context, const char *message) {
 }
 
 static Rr4DiscStatus check_disc(void *context, const char *cue, char *message, size_t size) {
+    Rr4DiscStatus status;
     (void)context;
-    return Rr4DiscCheckImage(cue, message, size);
+    status = Rr4DiscCheckImage(cue, message, size);
+#if RR4_DIAGNOSTICS
+    /* RR4_UNVERIFIED_RELEASE=1: also run a release the game has a profile
+     * for but that is not verified yet (rr/release.h), for its tests. */
+    if (status == RR4_DISC_OTHER_RELEASE && getenv("RR4_UNVERIFIED_RELEASE") &&
+        atoi(getenv("RR4_UNVERIFIED_RELEASE"))) {
+        char boot[64];
+        if (Rr4DiscImageBoot(cue, boot, sizeof(boot)) == RR4_DISC_OK && RrReleaseForBootFile(boot)) {
+            Rr4Log("ridge-racer-type-4-pc: running the unverified %s (%s)\n",
+                   RrReleaseForBootFile(boot)->name, RrReleaseForBootFile(boot)->productCode);
+            if (message && size)
+                message[0] = '\0';
+            status = RR4_DISC_OK;
+        }
+    }
+#endif
+    return status;
 }
 
 static int mount_disc(void *context, const char *cue) {
@@ -250,15 +269,24 @@ int main(int argc, char **argv) {
     Rr4DiagnosticsInit(&prefs, interactive);
 #endif
     {
-        /* Video timing for the whole run (rr/video_timing.h): the
-         * preference, or RR4_VIDEO=pal / ntsc (also headless). NTSC keeps
-         * the PAL release's 256-line picture whole at NTSC field timing. */
+        /* The release of the mounted disc (rr/release.h, from its
+         * SYSTEM.CNF), and the video timing for the whole run
+         * (rr/video_timing.h): the preference, or RR4_VIDEO=pal / ntsc (also
+         * headless). NTSC timing keeps the PAL release's 256-line picture
+         * whole at NTSC field timing; the Japanese release always runs at
+         * NTSC timing with its own 240-line picture. */
         const char *video = getenv("RR4_VIDEO");
         int ntsc = prefs.video_timing == RR4_VIDEO_NTSC;
+        char boot[64];
+        const RrReleaseProfile *release = NULL;
+        if (Rr4DiscImageBoot(mounted, boot, sizeof(boot)) == RR4_DISC_OK)
+            release = RrReleaseForBootFile(boot);
         if (video && *video)
             ntsc = !strcmp(video, "ntsc");
-        VideoTimingNtsc = ntsc;
-        Psyz_GpuSetNtscPalPicture(ntsc);
+        ntsc = RrReleaseSelect(release ? release->release : RR_RELEASE_PAL, ntsc);
+        Psyz_GpuSetNtscPalPicture(ntsc && !RR_RELEASE_JP);
+        if (interactive)
+            Rr4Log("ridge-racer-type-4-pc: %s (%s)\n", GameReleaseProfile->name, GameReleaseProfile->productCode);
     }
     chained_vsync = Psyz_SetVSyncCb(host_vsync);
     MainLoop();

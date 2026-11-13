@@ -182,10 +182,12 @@ void DialogueModeUpdate(void) {
         UpdateDialoguePanel();
     }
     UpdateDialogueBox();
-    if (Dialogue->st == 4 || (Pad0Buttons & 0x800)) {
+    /* The PAL release also lets Start skip the dialogue. */
+    if (Dialogue->st == 4 || (!RR_RELEASE_JP && (Pad0Buttons & 0x800))) {
         s0 = BadgeRows[Dialogue->s16].state10;
         if (s0 == 3) {
-            if (PlayerControllers[0].action28 != 0 || (PlayerControllers[0].edges08.fields.pressed & 0x800)) {
+            if (RR_RELEASE_JP ? MenuReturnSubmodeIndex != 0
+                              : (PlayerControllers[0].action28 != 0 || (PlayerControllers[0].edges08.fields.pressed & 0x800))) {
                 PlaySfx(1);
                 SetMenuFrameOptions(0, 1, 0);
                 tab = BadgeRows;

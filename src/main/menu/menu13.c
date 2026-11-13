@@ -1,3 +1,4 @@
+#include "rr/release.h"
 /* RODATA 0x800105b0 0x18 */
 #include "game/system/pad.h"
 #include "types.h"
@@ -51,14 +52,19 @@ void UpdateDialogue(int a0, int a1, MenuTextState *s) {
         s->b1F = 0;
         s->s14 = 0;
         s->b8 = v;
-        for (i = 199; i >= 0; i--) {
+        /* The Japanese release animates up to 64 glyphs (PAL 200). */
+        for (i = RR_PAL_JP(199, 63); i >= 0; i--) {
             s->animation28[i].word = 0;
         }
         break;
     case 1:
         if (s->i18 >= s->sC) {
+            /* The Japanese release waits for a page with b7 2. */
+            if (RR_RELEASE_JP && s->b7 != 0 && s->b7 != 1) {
+                goto call1;
+            }
             if (s->b7 == 1) {
-                DrawDialogueContinueMark(a0 + 0x10D, a1 + 0x58);
+                DrawDialogueContinueMark(a0 + RR_PAL_JP(0x10D, 0x10F), a1 + RR_PAL_JP(0x58, 0x32));
                 if (MenuReturnSubmodeIndex == 0) {
                     goto call1;
                 }
@@ -71,7 +77,7 @@ void UpdateDialogue(int a0, int a1, MenuTextState *s) {
             if (s->sE <= s->s10) {
                 if (s->s12 < s->bA - s->bB) {
                     s->s12 = s->s12 + 1;
-                } else if (s->s12 == s->bA - s->bB) {
+                } else if (!RR_RELEASE_JP && s->s12 == s->bA - s->bB) {
                     if (s->b7 < 2) {
                         s->i18 = s->sC;
                     }
@@ -107,7 +113,7 @@ call1:
             s->p = r;
             s->s12 = 0;
             s->bB = w;
-            for (i = 199; i >= 0; i--) {
+            for (i = RR_PAL_JP(199, 63); i >= 0; i--) {
                 s->animation28[i].word = 0;
             }
             s->i18 = 0;

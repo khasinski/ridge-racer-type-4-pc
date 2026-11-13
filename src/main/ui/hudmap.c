@@ -78,14 +78,15 @@ void DrawRaceStartSignalSprite(int a0) {
     if ((RaceState - 1) < 3U) {
         p = RR_GPU_SCRATCH->cursor;
         if (a0 > 0) {
-            a3 = ((a0 - 1) << 7) + 0x38;
+            /* Split screen halves of 120 lines in the Japanese release. */
+            a3 = RR_RELEASE_JP ? (a0 - 1) * 120 + 0x34 : ((a0 - 1) << 7) + 0x38;
             if (a0 == 1) {
                 s0 = &CurrentDrawBuf->buffer.ordering70.tags[0];
             } else {
                 s0 = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
             }
         } else {
-            a3 = 0x78;
+            a3 = RR_PAL_JP(0x78, 0x70);
             s0 = &CurrentDrawBuf->buffer.ordering70.tags[0];
         }
         RR_GPU_SCRATCH->cursor = AddDrawModePrim(s0, AddSpritePrim(s0, p, 0x6A, a3, &HudSignalLightUv, 0x7EF8, 0), 0x3E);

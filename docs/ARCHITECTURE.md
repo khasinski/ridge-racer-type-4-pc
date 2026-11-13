@@ -219,6 +219,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      NTSC-timing splash lasts 314 fields against the Japanese release's
      291.
 
+   - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
+     a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and
+     `RR_PAL_JP(pal, jp)` choose the Japanese release's (SLPS-01800) code and
+     data next to the PAL code in the original modules, and `*Jp` tables sit
+     next to the PAL tables they replace. The Japanese release runs at NTSC
+     timing with its own 240-line picture, R4.BIN map, text, saves and
+     passwords (`docs/REGIONS.md`). With the PAL disc every value is the
+     original one.
+
    - **PS1 time model:** the game and PsyZ spend the PS1 time of the work
      that decides on which field something happens (CPU routines, BIOS and
      SDK calls, CD, card, SPU, GPU and interrupt handlers), measured on

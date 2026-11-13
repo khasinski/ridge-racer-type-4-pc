@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/runtime_settings.h"
 #include "rr/menu_frame_state.h"
@@ -149,7 +150,17 @@ void ovl665_update_controller_options(s32 player) {
     changed = 0;
     switch (ST.step0C) {
     case 0:
-        if (ovl665_saved_stereo_mode == 0) {
+        if (RR_RELEASE_JP) {
+            /* No analog-mode wait in the Japanese release: a neGcon-class
+             * pad is switched once and the page opens at once. */
+            if (PlayerControllers[player].flag40 == 1 && ST.ready2C == 0) {
+                if (PlayerControllers[player].input00.fields.type == 0xE3) {
+                    ST.ready2C = 1;
+                } else if (PadGetState(player << 4) == 6) {
+                    PadSetMainMode(player << 4, 1, 0);
+                }
+            }
+        } else if (ovl665_saved_stereo_mode == 0) {
             if (PlayerControllers[player].flag40 == 1) {
                 if (ST.ready2C == 0) {
                     if (PlayerControllers[player].input00.fields.type != 0xE3) {
@@ -169,7 +180,7 @@ void ovl665_update_controller_options(s32 player) {
         if (LoadTrophyModelStep() == 0) {
             break;
         }
-        if (ovl665_saved_stereo_mode == 0) {
+        if (!RR_RELEASE_JP && ovl665_saved_stereo_mode == 0) {
             break;
         }
         kind = ovl665_detect_controller_kind(player);
@@ -233,7 +244,7 @@ void ovl665_update_controller_options(s32 player) {
             }
             switch (ST.kind18) {
             case 1:
-                if (PlayerControllers[player].kind1C != 0) {
+                if (RR_RELEASE_JP || PlayerControllers[player].kind1C != 0) {
                     UiRows[5].cells[0] = 1;
                     UiRows[Options.pulse[player].disabled02 + 6].cells[0] = 0;
                     StepMenuValue(player * 4, 2, &Options.pulse[player].disabled02, 2, 0);
@@ -399,7 +410,7 @@ void ovl665_update_controller_options(s32 player) {
         for (i = 0; i < 5; i++) {
             DrawUiRow(i);
         }
-        if (ST.kind18 == 1 && PlayerControllers[player].kind1C != 0) {
+        if (ST.kind18 == 1 && (RR_RELEASE_JP || PlayerControllers[player].kind1C != 0)) {
             for (i = 5; i < 8; i++) {
                 DrawUiRow(i);
             }

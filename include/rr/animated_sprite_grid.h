@@ -12,6 +12,9 @@ typedef struct {GpuDmaTag tag;u32 command;} GpuSingleCommandPacket;
  * sprite. Raw intensity bits are OR-packed without clamping. Each list insertion
  * clears the ordering-head high byte. Finishes with command E100022A. */
 void EmitSpriteGrid(u32 intensity,SpriteGridClock *state);
+/* EmitSpriteGrid with the clock at tick (the Japanese release's frame task
+ * keeps it at +0x2C and draws the grid 4 pixels further left). */
+void EmitSpriteGridTick(u32 intensity,u16 *tick);
 
 RR_ASSERT_SIZE(SpriteGridClock, 16);
 RR_ASSERT_OFFSET(SpriteGridClock, tick0E, 14);

@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/widescreen.h"
 #include "scratchpad.h"
 #include "rr/menu_selection.h"
@@ -17,7 +18,7 @@ void DrawLapCounter(int a0, int a1) {
         s4 = &CurrentDrawBuf->buffer.ordering70.tags[0];
     } else {
         s4 = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
-        s5 = ((a0 - 1) << 7) + 0xC;
+        s5 = (a0 - 1) * RR_PAL_JP(128, 120) + 0xC;
     }
     a = RR_GPU_SCRATCH->cursor;
     i = 0;

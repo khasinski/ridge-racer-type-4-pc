@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "rr/menu_selection.h"
 #include "rr/save_slots.h"
@@ -13,6 +14,13 @@
 extern char StrStarSpacePrefix[];
 extern char LapTimeTemplateStr[];
 extern u8 *MenuTextTemplates[];
+
+/* Template 7 reads " CAR&COURSE CHANGE" in the Japanese release. */
+static const u8 *MenuTextTemplate(s32 index) {
+    if (RR_RELEASE_JP && index == 7)
+        return (const u8 *)" CAR&COURSE CHANGE";
+    return MenuTextTemplates[index];
+}
 extern char *MenuTransmissionLabels[];
 extern char *MenuBlankLabelStr;
 extern s16 ReverseCourse;
@@ -44,8 +52,8 @@ void SetMenuTextRow(s32 row, s32 position, s32 phase, s32 style, s32 label) {
         MenuTextRows[row].rendering.y = (s16)position * 28 + 0x60;
         MenuTextRows[row].rendering.clut = 0x2638;
         if (label >= 0) {
-            while (MenuTextTemplates[templateIndex][column] != 0) {
-                MenuTextRows[row].rendering.text[column] = MenuTextTemplates[templateIndex][column];
+            while (MenuTextTemplate(templateIndex)[column] != 0) {
+                MenuTextRows[row].rendering.text[column] = MenuTextTemplate(templateIndex)[column];
                 column++;
             }
         } else {
@@ -130,7 +138,7 @@ void SetMenuTextRow(s32 row, s32 position, s32 phase, s32 style, s32 label) {
         case 31:
             MenuTextRows[row].rendering.clut = 0x2639;
             MenuTextRows[row].rendering.flags = 2;
-            MenuTextRows[row].rendering.text[0] = MenuTextTemplates[templateIndex][0];
+            MenuTextRows[row].rendering.text[0] = MenuTextTemplate(templateIndex)[0];
             MenuTextRows[row].rendering.text[1] = 0;
             break;
         }

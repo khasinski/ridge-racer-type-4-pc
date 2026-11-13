@@ -176,6 +176,14 @@ Rr4DiscStatus Rr4DiscCheckImage(const char *cue, char *message, size_t size) {
     return Rr4DiscClassify(status == RR4_DISC_OK ? boot : NULL, message, size);
 }
 
+Rr4DiscStatus Rr4DiscImageBoot(const char *cue, char *boot, size_t size) {
+    if (boot && size)
+        boot[0] = '\0';
+    if (!cue || !*cue)
+        return RR4_DISC_UNREADABLE;
+    return Rr4DiscReadBoot(ReadImageSector, (void *)cue, boot, size);
+}
+
 /* ---- the image the game starts with ---- */
 
 const char *Rr4DiscSelect(const Rr4DiscHost *host, Rr4Prefs *prefs, const char *requested,

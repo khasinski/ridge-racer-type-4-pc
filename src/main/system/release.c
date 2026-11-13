@@ -1,5 +1,7 @@
 #include "rr/release.h"
 
+#include "game/menu/menumode.h"
+
 #include <ctype.h>
 
 /* rr/release.h. The values are measured on the two discs
@@ -60,5 +62,6 @@ s32 RrReleaseSelect(RrRelease release, s32 ntscTiming) {
     GameRelease = profile->release;
     GameReleaseProfile = profile;
     VideoTimingNtsc = profile->ntsc || ntscTiming;
+    MenuModeSelectRelease();
     return VideoTimingNtsc;
 }

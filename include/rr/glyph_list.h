@@ -5,7 +5,12 @@
 #include "rr/ui_bar.h"
 typedef GpuCommandPacket GlyphCommand8;
 typedef struct {SpritePacketSignedClut sprite;GlyphCommand8 mode;} GlyphPacket28;
-extern UiUvRect CarHandlingResponseTable[50],HudGlyphUvRects[40];
+extern UiUvRect CarHandlingResponseTablePal[50],HudGlyphUvRectsPal[40];
+extern const UiUvRect CarHandlingResponseTableJp[50],HudGlyphUvRectsJp[40];
+/* Two glyphs of each font differ in the Japanese release, which has no
+ * extended glyphs (HudGlyphUvRects 27..39 are PAL-only). */
+#define CarHandlingResponseTable RR_PAL_JP(CarHandlingResponseTablePal, CarHandlingResponseTableJp)
+#define HudGlyphUvRects RR_PAL_JP(HudGlyphUvRectsPal, HudGlyphUvRectsJp)
 /* Readable signed16 x/y, then glyph/gap pairs and a negative terminator.
  * Bank0 selects primary glyph0..49; every nonzero bank selects0..39.
  * Glyph0x400..0x427 always selects the secondary40-entry font. Each glyph

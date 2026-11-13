@@ -16,6 +16,9 @@ typedef struct {
 RR_ASSERT_SIZE(MenuStateEntry8, 0x8);
 
 extern MenuStateEntry8 MenuStateTable[];
+/* RrReleaseSelect: the release's card file names. */
+void MenuModeSelectRelease(void);
+extern const MenuStateEntry8 MenuStateTableJp[68]; /* the Japanese release's values */
 extern unsigned char CardPollTransitionTable[];
 extern char *CardTargetFileNames[3];
 extern unsigned short SavedMenuStateIndex;

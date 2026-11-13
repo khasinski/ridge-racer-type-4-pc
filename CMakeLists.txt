@@ -179,6 +179,14 @@ if(BUILD_TESTING)
     set_tests_properties(settings PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
     # Memory card saves through the game's file services, preferences and a
     # synthetic disc image under a non-ASCII (UTF-8) directory.
+    # Release profiles (rr/release.h): identification and their constants.
+    add_executable(rr4_release_test tests/port/release_test.c)
+    target_compile_definitions(rr4_release_test PRIVATE __psyz)
+    target_link_libraries(rr4_release_test PRIVATE rr4_game psyz)
+    if(MINGW)
+        target_link_options(rr4_release_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME release COMMAND rr4_release_test)
     add_executable(rr4_host_files_test tests/port/host_files_test.c)
     target_include_directories(rr4_host_files_test SYSTEM PRIVATE ${PSYZ_DIR}/psyz/include)
     target_compile_definitions(rr4_host_files_test PRIVATE __psyz)

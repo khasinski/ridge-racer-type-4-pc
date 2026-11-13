@@ -122,9 +122,9 @@ void SubmitRaceHudPackets(int a0) {
     RR_GPU_SCRATCH->cursor = (u8 *)s1;
     if (a0 >= 2) {
         area.x = 0;
-        area.y = DrawBufIndex << 8;
+        area.y = DrawBufIndex * RR_SCREEN_BOTTOM;
         area.w = 0x140;
-        area.h = 0x100;
+        area.h = RR_SCREEN_BOTTOM;
         SetDrawArea(s1, &area);
         RR_GPU_LINK(s0, s1);
         RR_GPU_SCRATCH->cursor = (u8 *)(s1 + 1);

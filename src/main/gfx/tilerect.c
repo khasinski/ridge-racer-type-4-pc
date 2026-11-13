@@ -146,7 +146,174 @@ void TileRectSceneModeEnter(void) {
     SubmodeState = 0;
 }
 
+/* The Japanese release's scene (SLPS-01800): ten preset sprites fading in
+ * one after another (0x25..0x2E) and a fade tile, in a 0x74-byte record. */
+typedef struct {
+    MatrixWords32 matrix00;
+    Vec3sFields8 unk20;
+    char unk28[0x08];
+    int unk30;
+    int unk34;
+    int w38;
+    short s3C;
+    short level3E[10];
+    short step52[10];
+    short fade66, fade68, fade6A;
+    short light6C, light6E;
+    short interp70;
+} TileRectSceneJp;
+
+static void TileRectSceneModeUpdateJp(void) {
+    static const s16 starts[10] = {8, 0x20, 0x34, 0x40, 0x4C, 0x58, 0x64, 0x70, 0x7C, 0x94};
+    TileRectSceneJp *p;
+    GpuRectangleFields sp10;
+    int s1, i;
+
+    UpdateScreenFade(0x1000C);
+    if (FadeCountdown != 0) {
+        FadeCountdown += 4;
+        if (FadeCountdown >= 0x100) {
+            ResetScreenCounters();
+            ModeGroup = 1;
+            ModeIndex = 0xB;
+            SubmodeState = 0;
+        }
+    }
+
+    switch (TileRectUploadPhase) {
+    case 0:
+        if (CdFileReadStart(GetR4FileIndex(0, SelectionState.fields.reserved10[2] + 1), LoadCursor) == 0) {
+            return;
+        }
+        TileRectUploadPhase = 1;
+    case 1:
+        if (CdFileBytesLoaded() == 0) {
+            return;
+        }
+        LoadTimList(LoadCursor);
+        TileRectUploadPhase = 2;
+    case 2:
+        if (CdFileReadStart(GetR4FileIndex(0, 0x14), LoadCursor) == 0) {
+            return;
+        }
+        TileRectUploadPhase = 3;
+    case 3:
+        if (CdFileBytesLoaded() == 0) {
+            return;
+        }
+        LoadTimImage(LoadCursor);
+        TileRectUploadPhase = 4;
+    case 4:
+        if (CdFileReadStart(GetR4FileIndex(0, SelectionState.fields.reserved10[2] + 0xA), LoadCursor) == 0) {
+            return;
+        }
+        TileRectUploadPhase = 5;
+    case 5:
+        s1 = CdFileBytesLoaded();
+        if (s1 == 0) {
+            return;
+        }
+        SkyCommandListPtr = (u8 *)LoadCursor;
+        TileRectScene = (S_8010BF70 *)(LoadCursor = (u8 *)LoadCursor + s1);
+        LoadCursor = (char *)TileRectScene + 0x74;
+        SetupRenderer(3);
+        p = (TileRectSceneJp *)TileRectScene;
+        p->unk20 = TileRectDefaultAngles;
+        PsyqMemset(p->unk28, 0, 0x10);
+        TileRectUploadPhase = 6;
+        p->fade66 = 0x100;
+        p->light6E = 0x40;
+        p->w38 = 0;
+        p->s3C = 0;
+        for (i = 0; i < 10; i++) {
+            p->level3E[i] = 0;
+            p->step52[i] = 0;
+        }
+        p->fade68 = 0;
+        p->fade6A = 0;
+        p->light6C = 0;
+        p->interp70 = 0x1000;
+        p->s3C = 0;
+    case 6:
+        p = (TileRectSceneJp *)TileRectScene;
+        if (p->s3C < 0xB4) {
+            for (i = 0; i < 10; i++) {
+                if (p->s3C == starts[i]) {
+                    p->step52[i] = 4;
+                }
+            }
+            if (p->s3C == 0x88) {
+                p->fade6A = 0x200;
+            }
+            break;
+        }
+        SetMenuFrameOptions(1, 1, 0);
+        TileRectUploadPhase = 7;
+    case 7:
+        p = (TileRectSceneJp *)TileRectScene;
+        if (FadeCountdown == 0 && MenuReturnSubmodeIndex != 0) {
+            FadeCountdown = 4;
+            for (i = 9; i >= 0; i--) {
+                p->step52[i] = -4;
+            }
+            p->fade6A = -4;
+            p->light6E = -0x40;
+        }
+        break;
+    }
+
+    p = (TileRectSceneJp *)TileRectScene;
+    p->s3C++;
+    p->unk20.y -= 4;
+    for (i = 0; i < 10; i++) {
+        RampValueToLimit((unsigned short *)&p->level3E[i], &p->step52[i], 0x80);
+    }
+    RampValuePairTo4096((unsigned short *)&p->fade66, (unsigned short *)&p->fade68, &p->fade6A);
+
+    if (p->interp70 != 0) {
+        int ir2;
+
+        if (p->interp70 / 32 != 0) {
+            p->interp70 -= p->interp70 / 32;
+        } else if (p->interp70 >= 3) {
+            p->interp70 -= 2;
+        } else {
+            p->interp70 = 0;
+        }
+        /* INTPL as in the PAL scene: IR1 lands in the word at 0x30. */
+        Psyz_GteDataWrite(8, (u16)p->interp70);
+        Psyz_GteDataWrite(9, 0x720);
+        Psyz_GteCtrlWrite(21, 0);
+        Psyz_GteDataWrite(10, 0x90);
+        Psyz_GteCtrlWrite(22, 0xFF);
+        Psyz_GteCommand(0x0980011);
+        p->unk30 = Psyz_GteDataRead(9);
+        ir2 = Psyz_GteDataRead(10);
+        TileRectSkyHorizonY = ir2;
+    }
+
+    for (i = 0; i < 10; i++) {
+        EmitPresetSprite(p->level3E[i], 0x25 + i);
+    }
+    EmitTileRectCommand(1, 0xE1000229);
+    EmitFadeTile(p->fade66, p->fade68, 0x01080020, 0xD8);
+    RampValueTo4096((unsigned short *)&p->light6C, &p->light6E);
+
+    if (p->light6C != 0) {
+        SetSineLightColors(p->light6C);
+        BuildCameraMatrices();
+        RotMatrix(&p->unk20, &p->matrix00);
+        sp10 = TileRectCaptureVramRect;
+        RenderSkyToRect(p->unk28, (S_8010BF70 *)p, &sp10, TileRectSkyHorizonY);
+    }
+    EmitTileRectCommand(703, 0xE6000001);
+}
+
 void TileRectSceneModeUpdate(void) {
+    if (RR_RELEASE_JP) {
+        TileRectSceneModeUpdateJp();
+        return;
+    }
     GpuRectangleFields sp10;
     int s1;
 

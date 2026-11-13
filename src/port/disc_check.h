@@ -57,6 +57,11 @@ Rr4DiscStatus Rr4DiscReadBoot(Rr4DiscSectorReader read, void *context, char *boo
  * anything but RR4_DISC_OK. */
 Rr4DiscStatus Rr4DiscCheckImage(const char *cue, char *message, size_t size);
 
+/* The boot file of a CUE image's SYSTEM.CNF ("" when it has none), read as
+ * Rr4DiscCheckImage reads it; the game's release profile follows it
+ * (rr/release.h RrReleaseForBootFile). */
+Rr4DiscStatus Rr4DiscImageBoot(const char *cue, char *boot, size_t size);
+
 /* ---- the image the game starts with ---- */
 
 typedef struct Rr4DiscHost {

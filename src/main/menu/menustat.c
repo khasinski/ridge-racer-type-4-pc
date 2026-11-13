@@ -121,7 +121,7 @@ void *AddBadgeSpriteStrip(int a, GpuDmaTag *p, void *x, int y, int w, int z) {
     int s1 = y;
     int i = 0;
     do {
-        signed char *q = &BadgeStripPatterns[i + a * 8];
+        const signed char *q = &BadgeStripPatterns[i + a * 8];
         int v = *q;
         const UiUvRect *e;
         int s0, d, c0, c1, c3;

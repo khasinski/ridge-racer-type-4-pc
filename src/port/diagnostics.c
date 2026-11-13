@@ -122,8 +122,10 @@
  *                      off; interactive runs keep them as the preferences
  *                      have them. With PSYZ_HEADLESS=gpu the captures show
  *                      them.
- * Also handled elsewhere: RR4_SETTINGS_SCRIPT (settings_overlay.h), and in
- * every build RR4_DISC, RR4_VIDEO, RR4_CONFIG_HOME and the PSYZ_* variables
+ * Also handled elsewhere: RR4_SETTINGS_SCRIPT (settings_overlay.h),
+ * RR4_UNVERIFIED_RELEASE=1 (main.c: also run a disc of a release the game
+ * has a profile for that is not verified yet, rr/release.h), and in every
+ * build RR4_DISC, RR4_VIDEO, RR4_CONFIG_HOME and the PSYZ_* variables
  * (main.c). */
 
 #if defined(__linux__) && !defined(_GNU_SOURCE)

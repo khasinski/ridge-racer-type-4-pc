@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/player_cars.h"
 #include "game/system/pad.h"
@@ -167,8 +168,11 @@ void ovl660_update_results(void) {
                 MenuTextRows[42].bytes[28] = 34;
                 EncodeRecordPassword(SelectedCourseChoice, ready, TotalRaceTime, ovl660_result_kind, Options.storyBranch3C,
                               &MenuTextRows[42].bytes[29]);
-                MenuTextRows[42].bytes[42] = 34;
-                ovl660_result_transition = 2;
+                /* The Japanese password is one character shorter and is
+                 * encoded again every frame. */
+                MenuTextRows[42].bytes[RR_PAL_JP(42, 41)] = 34;
+                if (!RR_RELEASE_JP)
+                    ovl660_result_transition = 2;
             } else if (ovl660_result_transition == 0 && (PlayerControllers[0].input00.word & 0x900000) == 0x900000) {
                 ovl660_result_transition = 1;
             }
