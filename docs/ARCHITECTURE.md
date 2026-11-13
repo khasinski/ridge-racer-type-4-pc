@@ -172,8 +172,10 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      every value that counts frames converted to 25 frames a second: frame
      counts to 5/6 (countdown, fades, timers, attract and intro scripts,
      camera keys, credits, music cue frames), frames-to-time conversions
-     `/25` instead of `/30`, per-frame rates (engine RPM smoothing). Physics,
-     AI and car data are the NTSC per-frame values. `include/rr/video_timing.h`
+     `/25` instead of `/30`, per-frame rates (engine RPM smoothing). Physics
+     and AI are mostly the NTSC per-frame code, and so are the car records,
+     except 34 that the PAL release retuned, which NTSC timing keeps
+     (`docs/REGIONS.md` lists the exceptions). `include/rr/video_timing.h`
      (`VideoTimingNtsc`, `RR_PAL_NTSC(pal, ntsc)`) keeps the PAL value and
      adds, at each such place, the value of the NTSC release (SLPS-01800,
      compared function by function with the PAL executable and overlays).
