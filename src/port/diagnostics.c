@@ -70,9 +70,9 @@
  *                      signed), e.g. "TitleSceneStage:2,FadeCountdown:2".
  *                      RR4_WATCH and RR4_POKE find the names among the
  *                      executable's exported symbols: macOS builds export
- *                      them, Linux and Windows builds only when configured
- *                      with -DRR4_EXPORT_SYMBOLS=ON (otherwise no name is
- *                      found).
+ *                      them, Linux and Windows builds (GCC, Clang, MinGW,
+ *                      MSVC) with -DRR4_EXPORT_SYMBOLS=ON, the default when
+ *                      the hooks are built (otherwise no name is found).
  *                      name+offset reads a member at a byte offset (decimal
  *                      or 0x hex) into the object, e.g. "SoundState+9904".
  *                      RR4_TRACE_RAND=1 also prints the BIOS rand() state
@@ -191,8 +191,9 @@ static const char *path_env(const char *name) {
 }
 
 /* Address of a global for RR4_WATCH / RR4_POKE. The executable exports its
- * symbols on macOS; on Linux and Windows only a build configured with
- * -DRR4_EXPORT_SYMBOLS=ON (-rdynamic, --export-all-symbols) has them. */
+ * symbols on macOS; on Linux and Windows a build with RR4_EXPORT_SYMBOLS
+ * (-rdynamic, --export-all-symbols, or MSVC's generated .def file) has
+ * them. */
 static void *find_symbol(const char *name) {
 #ifdef _WIN32
     return (void *)(uintptr_t)GetProcAddress(GetModuleHandleW(NULL), name);

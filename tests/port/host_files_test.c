@@ -4,7 +4,7 @@
  *   - a memory card save through the game's BIOS file services
  *     (src/main/psyq/libapi/file.c): create, write, reopen, seek, read back,
  *     list with firstfile and erase, with bytes a text-mode stream would
- *     translate;
+ *     translate; formatting a card;
  *   - the preferences file round trip;
  *   - mounting a small synthetic CUE/BIN disc image.
  * No game data is needed. The working directory is argv[1] (created). Run
@@ -111,6 +111,33 @@ static void TestCardSave(void) {
     CHECK(FileOpen(name, BIOS_FREAD) < 0);
 }
 
+/* Formatting a card (the game's _card_format) empties its directory on
+ * every host, Windows included. */
+static void TestCardFormat(void) {
+    static unsigned char block[128];
+    struct DIRENTRY entry;
+    const char *names[] = {"bu00:" CARD_FILE, "bu00:BESCES-01706RR4"};
+
+    for (int i = 0; i < 2; i++) {
+        int fd = FileOpen(names[i], BIOS_FCREAT | (1 << 16));
+        CHECK(fd >= 0);
+        if (fd >= 0)
+            CHECK(FileClose(fd) == fd);
+        fd = FileOpen(names[i], BIOS_FWRITE);
+        CHECK(fd >= 0);
+        if (fd >= 0) {
+            CHECK(FileWrite(fd, block, sizeof(block)) == (int)sizeof(block));
+            CHECK(FileClose(fd) == fd);
+        }
+    }
+    CHECK(firstfile((char *)"bu00:", &entry) == &entry);
+    CHECK(format((char *)"bu00:") == 1);
+    CHECK(firstfile((char *)"bu00:", &entry) == NULL);
+    CHECK(FileOpen(names[0], BIOS_FREAD) < 0 && FileOpen(names[1], BIOS_FREAD) < 0);
+    /* the card itself (its directory) stays */
+    CHECK(format((char *)"bu00:") == 1);
+}
+
 static void TestPreferences(void) {
     static Rr4Prefs saved, loaded;
     const char *path = UTF8_NAME ".toml";
@@ -177,6 +204,7 @@ int main(int argc, char **argv) {
     Psyz_CardSetInstantTiming(1);
 
     TestCardSave();
+    TestCardFormat();
     TestPreferences();
     TestDiscImage();
 

@@ -12,8 +12,11 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(BUILD_TESTING "Build native game tests" OFF)
 option(RR4_BUILD_GAME "Compile the game modules (src/main, src/overlays) into rr4_game" ON)
 option(RR4_MACOS_BUNDLE "Package the macOS application bundle (Ridge Racer Type 4.app)" OFF)
-option(RR4_EXPORT_SYMBOLS "Export the executable's globals for RR4_WATCH / RR4_POKE on Linux and Windows" OFF)
 option(RR4_DIAGNOSTICS "Build the RR4_* test and diagnostic hooks (src/port/diagnostics.c); off for releases" ON)
+# RR4_WATCH / RR4_POKE find globals by name among the executable's exports.
+# macOS executables export them anyway; elsewhere this option does, by
+# default whenever the hooks are built.
+option(RR4_EXPORT_SYMBOLS "Export the executable's globals for RR4_WATCH / RR4_POKE on Linux and Windows" ${RR4_DIAGNOSTICS})
 include(CTest)
 
 set(PSYZ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/psyz)
@@ -144,7 +147,18 @@ endif()
 if(RR4_EXPORT_SYMBOLS)
     if(MINGW)
         target_link_options(ridge-racer-type-4-pc PRIVATE -Wl,--export-all-symbols)
-    elseif(NOT APPLE AND NOT MSVC)
+    elseif(MSVC)
+        # The linker exports what a .def file lists: CMake writes one with
+        # every global (functions and data) of the executable's own objects,
+        # which GetProcAddress then finds. It does not look into static
+        # libraries, so the game modules are compiled into the executable
+        # (their rr4_game copies stay unused).
+        if(RR4_BUILD_GAME)
+            target_sources(ridge-racer-type-4-pc PRIVATE ${RR4_GAME_SOURCES})
+        endif()
+        set_target_properties(ridge-racer-type-4-pc PROPERTIES
+            ENABLE_EXPORTS ON WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    elseif(NOT APPLE)
         set_target_properties(ridge-racer-type-4-pc PROPERTIES ENABLE_EXPORTS ON)
     endif()
 endif()
@@ -236,6 +250,21 @@ if(BUILD_TESTING)
     set_tests_properties(startup-utf8-disc-path PROPERTIES
         ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC="
         PASS_REGULAR_EXPRESSION "cannot open disc image .*Zoë 日本/missing\\.cue")
+    # RR4_WATCH finds the game's globals by name (exported symbols: macOS,
+    # or RR4_EXPORT_SYMBOLS with GCC, Clang, MinGW and MSVC). The synthetic
+    # European image of the startup test reaches the first VSync before the
+    # game reads a file.
+    if(RR4_DIAGNOSTICS AND RR4_BUILD_GAME AND (APPLE OR RR4_EXPORT_SYMBOLS))
+        add_test(NAME diagnostics-watch-symbols
+            COMMAND ridge-racer-type-4-pc
+                "${CMAKE_CURRENT_BINARY_DIR}/startup-test/eu/Ridge Racer Type 4 (Europe).cue")
+        set_tests_properties(diagnostics-watch-symbols PROPERTIES
+            ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC=;RR4_FRAME_LIMIT=1;RR4_TRACE=1;RR4_WATCH=ModeGroup:2,FrameCounter,NoSuchGlobal"
+            FIXTURES_REQUIRED startup-images
+            TIMEOUT 120
+            PASS_REGULAR_EXPRESSION "vsync 1 frame [0-9]+ mode [0-9]+/[0-9]+ sub [0-9]+ ModeGroup=[0-9]+ FrameCounter=[0-9]+"
+            FAIL_REGULAR_EXPRESSION "no symbol (ModeGroup|FrameCounter)")
+    endif()
     # Startup without a disc image: a headless run prints its usage.
     add_test(NAME startup-usage COMMAND ridge-racer-type-4-pc)
     set_tests_properties(startup-usage PROPERTIES
