@@ -1,6 +1,6 @@
 #!/bin/sh
-# Regenerate the application icons from the 1024x1024 source PNG:
-#   packaging/icon/ridge-racer-type-4.png        source (alpha outside the badge)
+# Regenerate the application icons from the source PNG:
+#   packaging/icon/ridge-racer-type-4.png        source artwork
 #   packaging/macos/RidgeRacerType4.icns         macOS bundle icon (iconutil)
 #   packaging/windows/ridge-racer-type-4.ico     Windows executable icon
 # Requires sips and iconutil (macOS) and ImageMagick (magick).
@@ -20,3 +20,4 @@ iconutil -c icns "$iconset" -o packaging/macos/RidgeRacerType4.icns
 
 magick "$src" -define icon:auto-resize=256,128,64,48,32,24,16 \
     packaging/windows/ridge-racer-type-4.ico
+magick "$src" -resize 1024x1024 packaging/linux/ridge-racer-type-4.png

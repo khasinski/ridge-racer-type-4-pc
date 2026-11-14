@@ -12,3 +12,4 @@ third_party/psyz/external/SDL/src/hidapi/LICENSE.txt
 third_party/psyz/external/SDL/src/hidapi/LICENSE-bsd.txt
 third_party/psyz/external/SDL/src/video/yuv2rgb/LICENSE
 src/port/fonts/OFL-IBMPlex.txt
+packaging/icon/OFL-Orbitron.txt

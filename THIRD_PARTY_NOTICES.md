@@ -61,5 +61,9 @@ file).
 
 ## Application icon
 
-The application icon (`packaging/icon/`) is original artwork made for this
-port; it contains no game artwork or logos.
+The application icon (`packaging/icon/`) was contributed by
+[amame-a](https://github.com/amame-a) in
+[issue #2](https://github.com/khasinski/ridge-racer-type-4-pc/issues/2).
+Its lettering uses Orbitron, Copyright 2018 The Orbitron Project Authors,
+with Reserved Font Name "Orbitron", under the **SIL Open Font License 1.1**
+(`packaging/icon/OFL-Orbitron.txt`).

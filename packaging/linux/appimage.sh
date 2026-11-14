@@ -65,8 +65,8 @@ mkdir -p "$app/usr/bin" "$app/usr/share/applications" \
 cp "$package/ridge-racer-type-4-pc" "$app/usr/bin/"
 cp "$root/packaging/linux/ridge-racer-type-4.desktop" "$app/"
 cp "$root/packaging/linux/ridge-racer-type-4.desktop" "$app/usr/share/applications/"
-cp "$root/packaging/icon/ridge-racer-type-4.png" "$app/ridge-racer-type-4.png"
-cp "$root/packaging/icon/ridge-racer-type-4.png" "$app/usr/share/icons/hicolor/1024x1024/apps/"
+cp "$root/packaging/linux/ridge-racer-type-4.png" "$app/ridge-racer-type-4.png"
+cp "$root/packaging/linux/ridge-racer-type-4.png" "$app/usr/share/icons/hicolor/1024x1024/apps/"
 ln -s ridge-racer-type-4.png "$app/.DirIcon"
 # Documentation, notices, licenses and source-commit.txt from stage.sh.
 (cd "$package" && find . -type f ! -name ridge-racer-type-4-pc ! -name ridge-racer-type-4.png \
