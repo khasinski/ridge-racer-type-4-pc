@@ -113,6 +113,9 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - name: Keep LF line endings
+        shell: bash
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: false
@@ -146,7 +149,11 @@ jobs:
           mkdir -p "dist/${package}"
           cp build/release/ridge-racer-type-4-pc.exe "dist/${package}/"
           strip "dist/${package}/ridge-racer-type-4-pc.exe"
+          git diff --exit-code
+          git diff --cached --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
           packaging/stage.sh "dist/${package}" build/release
+          test "$(head -1 "dist/${package}/source-commit.txt")" = "$(git rev-parse HEAD)"
           # Everything but Windows system DLLs is linked statically.
           objdump -p "dist/${package}/ridge-racer-type-4-pc.exe" | grep 'DLL Name'
           if objdump -p "dist/${package}/ridge-racer-type-4-pc.exe" | grep 'DLL Name' \
