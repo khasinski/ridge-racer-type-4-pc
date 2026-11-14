@@ -220,7 +220,8 @@ if(BUILD_TESTING)
     # Release profiles (rr/release.h): identification and their constants.
     add_executable(rr4_release_test tests/port/release_test.c)
     target_compile_definitions(rr4_release_test PRIVATE __psyz)
-    target_link_libraries(rr4_release_test PRIVATE rr4_game psyz)
+    # Windows exports pull in the renderer too, including host preferences.
+    target_link_libraries(rr4_release_test PRIVATE rr4_game rr4_host psyz)
     if(MINGW)
         target_link_options(rr4_release_test PRIVATE ${RR4_MINGW_STATIC})
     endif()
