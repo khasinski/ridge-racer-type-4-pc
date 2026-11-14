@@ -2,13 +2,19 @@
 #define RR_BADGE_ROWS_H
 
 #include "rr/ui_bar.h"
+#include "rr/release.h"
 #include "rr/icon_sprites.h"
 
 #include "rr/badge_row_types.h"
 
 extern BadgeRow1C *BadgeRows;
-extern s8 BadgeStripPatterns[];
-extern UiUvRect BadgeGlyphUvTable[];
+extern s8 BadgeStripPatternsPal[];
+extern UiUvRect BadgeGlyphUvTablePal[];
+extern const s8 BadgeStripPatternsJp[152];
+extern const UiUvRect BadgeGlyphUvTableJp[37];
+/* The Japanese release's badge strips and glyphs. */
+#define BadgeStripPatterns RR_PAL_JP(BadgeStripPatternsPal, BadgeStripPatternsJp)
+#define BadgeGlyphUvTable RR_PAL_JP(BadgeGlyphUvTablePal, BadgeGlyphUvTableJp)
 
 
 /* The helpers thread full packet pointers. Coordinate arguments remain wide

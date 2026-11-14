@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "game/system/pad.h"
 #include "game/gfx/gtepoly1.h"
 #include "game/math/rotmat.h"
@@ -28,6 +29,8 @@
 #include "rr/widescreen.h"
 #include <math.h>
 #include <psyz/video.h>
+static const GpuRectangleFields CarCameraSpringStiffnessJp[4];
+static const GpuRectangleFields CarCameraPitchOffsetsJp[2][4];
 
 
 
@@ -98,7 +101,7 @@ static u8 *EmitWideSceneOverlayQuad(u8 *cursor, const SpritePacket *sprite, u16 
 
 void EmitSceneOverlaySprites(s32 a0, s32 a1, u8 *a2, s32 a3, s32 a4) {
     s32 i;
-    GpuRectangleFields *uv;
+    const GpuRectangleFields *uv;
     SpritePacket *s2;
     GpuCommandPacket *page;
     GpuDrawModePacket *s0;
@@ -123,11 +126,11 @@ void EmitSceneOverlaySprites(s32 a0, s32 a1, u8 *a2, s32 a3, s32 a4) {
         s2->r = a2[0];
         s2->g = a2[1];
         s2->b = a2[2];
-        s2->x = CarCameraSpringStiffness[i].x;
-        s2->y = CarCameraSpringStiffness[i].y;
-        s2->w = CarCameraSpringStiffness[i].w;
-        s2->h = CarCameraSpringStiffness[i].h;
-        uv = &CarCameraPitchOffsets[a0][i];
+        s2->x = RR_PAL_JP(CarCameraSpringStiffness, CarCameraSpringStiffnessJp)[i].x;
+        s2->y = RR_PAL_JP(CarCameraSpringStiffness, CarCameraSpringStiffnessJp)[i].y;
+        s2->w = RR_PAL_JP(CarCameraSpringStiffness, CarCameraSpringStiffnessJp)[i].w;
+        s2->h = RR_PAL_JP(CarCameraSpringStiffness, CarCameraSpringStiffnessJp)[i].h;
+        uv = RR_RELEASE_JP ? &CarCameraPitchOffsetsJp[a0][i] : &CarCameraPitchOffsets[a0][i];
         s2->u = uv->x;
         s2->v = uv->y;
         y = uv->h;
@@ -300,5 +303,8 @@ void TransformPoint(const MatrixWords32 *rotation, const Vec3i *origin,
 VectorWords16 UnitScaleVector = {.vector = {.x = 4096, .y = 4096, .z = 4096}};
 GpuRectangleFields CarCameraSpringStiffness[4] = {{.w = 256}, {.w = 256, .h = 256}, {.x = 256, .w = 64}, {.x = 256, .w = 64, .h = 256}};
 GpuRectangleFields CarCameraPitchOffsets[2][4] = {{{.y = 256}, {.h = 256}, {.y = 256, .w = 256}, {.w = 256, .h = 256}}, {{0}, {0}, {.w = 256}, {.w = 256}}};
+/* The Japanese release's values (SLPS-01800). */
+static const GpuRectangleFields CarCameraSpringStiffnessJp[4] = {{.w = 0x100, .h = 0x10}, {.y = 0x10, .w = 0x100, .h = 0xE0}, {.x = 0x100, .w = 0x40, .h = 0x10}, {.x = 0x100, .y = 0x10, .w = 0x40, .h = 0xE0}};
+static const GpuRectangleFields CarCameraPitchOffsetsJp[2][4] = {{{.y = 0xF0}, {.h = 0x100}, {.y = 0xF0, .w = 0x100}, {.w = 0x100, .h = 0x100}}, {{}, {.y = 0x10}, {.w = 0x100}}};
 int ReplayCamBankWeights[4] = {461824, 494864, 133120, 458752};
 short SelectedMakerCarIndex;

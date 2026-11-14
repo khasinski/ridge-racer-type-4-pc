@@ -6,10 +6,12 @@
 #include "rr/channel_pitch.h"
 #include "rr/audio_loop.h"
 #include "rr/audio_pan.h"
+#include "rr/cpu_time.h"
 
 extern u16 MenuCarTextureFileOffsets[];
 
 void UpdateSoundSlot(int slotIndex) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SOUND_SLOT);
     AudioSlot620 *slot = &SoundState.slots38[slotIndex];
     u16 spread = 0;
     int voice, programIndex;

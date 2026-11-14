@@ -90,6 +90,9 @@ void LoadR4Directory(void)
     count=*directory++;
     sector=base+*directory++;
     entry=CdFileTable;
+    if(count>RR_R4_ENTRIES_MAX) {
+        count=RR_R4_ENTRIES_MAX;
+    }
     while(i<count) {
         CdIntToPos(sector,entry->location.c);
         next=base+*directory++;

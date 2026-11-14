@@ -75,7 +75,22 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      Semi-transparent primitives blend in the shader with their destination
      pixel: on Apple GPUs (Metal) read from the colour attachment
      (framebuffer fetch), elsewhere from a copy of the target made before
-     the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal).
+     the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal). The
+     probe for framebuffer fetch asks SDL's own Metal device, which on a Mac
+     with two GPUs need not be the system default one.
+   - **Fallback without SDL GPU:** when no SDL GPU device can be created
+     (Linux without a Vulkan driver, Windows without a usable D3D12 device,
+     or its resources fail; `PSYZ_GPU=off` forces it) the CPU rasterizer
+     draws, as at 1x, and an SDL renderer (SDL's own choice, its software
+     renderer last) presents the display area at the game's aspect. The
+     GPU-only options (internal resolution, widescreen, antialiasing,
+     texture filtering, geometry correction, frame interpolation) are off
+     and greyed out in the Escape menu with a note naming the renderer
+     (`Psyz_VideoGetFeatures`); the Settings panel opens in a window of its
+     own, as without the GPU overlay. Only when neither can start, or the
+     GPU fails during the run, PsyZ calls the host's failure callback
+     (`Psyz_VideoSetFailureCallback`): the game shows the message in a
+     message box and quits (headless runs log it).
    - **GPU memory:** SDL keeps every buffer it cycles in (a buffer written
      while the GPU still reads it) and never frees them, so PsyZ cycles
      rarely. Batches go one after another into one vertex/index buffer and
@@ -104,7 +119,12 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      the packets are unchanged: at Nx the original whole-pixel vertices
      leave the T-junction cracks between differently subdivided course tiles
      that fall between the PS1's samples at 1x (as in DuckStation upscaling
-     without PGXP); geometry correction is the watertight mode.
+     without PGXP); geometry correction is the watertight mode. The precise
+     vertices are kept in a set-associative cache by address (262,144
+     entries, a race frame stores about 40,000); its sets are taken from the
+     offset of the address in the executable's image, so which vertex a
+     full set would drop does not change with ASLR from run to run (it
+     did: a rare hairline seam on the car or the road, TECH_DEBT H16).
    - **Widescreen 16:9 (hor+, square pixels):** the projection is
      unchanged; a full-width race view (`include/rr/widescreen.h`, set up in
      `camera/viewcam.c`) culls `WideMargin()` pixels past both screen sides,
@@ -188,7 +208,14 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      frames show there, a hole or the background through a gap, measured on
      coarse depth grids of the opaque primitives) is not shown: the frame
      before stays for that field. Off, nothing is tagged and every value is
-     the original one.
+     the original one. The PsyZ side is `frame_interp.h` (state, tuned
+     thresholds and the `PSYZ_INTERP_*` diagnostics) and
+     `frame_interp_impl.h`, included by `sdl3_gpu.c`. Its tables do not
+     depend on where ASLR puts the game's data: packet addresses are hashed
+     by their offset in the executable's image and the identity table never
+     drops a live identity, and the car identities are their records in
+     `PlayerCars` / `ComCars`, so a scripted run draws the same midpoints
+     every time.
 
    - **Video timing (PAL / NTSC):** the PAL release is the NTSC game with
      every value that counts frames converted to 25 frames a second: frame
@@ -219,6 +246,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      NTSC-timing splash lasts 314 fields against the Japanese release's
      291.
 
+   - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
+     a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and
+     `RR_PAL_JP(pal, jp)` choose the Japanese release's (SLPS-01800) code and
+     data next to the PAL code in the original modules, and `*Jp` tables sit
+     next to the PAL tables they replace. The Japanese release runs at NTSC
+     timing with its own 240-line picture, R4.BIN map, text, saves and
+     passwords (`docs/REGIONS.md`). With the PAL disc every value is the
+     original one.
+
    - **PS1 time model:** the game and PsyZ spend the PS1 time of the work
      that decides on which field something happens (CPU routines, BIOS and
      SDK calls, CD, card, SPU, GPU and interrupt handlers), measured on
@@ -227,9 +263,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      Prix, Time Attack, Extra Trial). The costs are in two tables, PsyZ's
      `src/timing_profile.h` (BIOS, SDK, devices, interrupts) and the game's
      `include/rr/cpu_time.h` (`RR_CPU_CYCLES`), each value with how it was
-     fitted and the commit of its run. Fit costs to runs without GDB
-     breakpoints: any breakpoint slows DuckStation's CPU by about 1%
-     (`tools/port/duckstation.py` stepping and RAM reads do not). The
+     fitted and the commit of its run. Measure costs on DuckStation's
+     recompiler, the CPU mode of the reference runs: a GDB breakpoint or
+     single-stepping switches it to its interpreter, whose clocks differ
+     by -45% to +20% per routine (SoundUpdate 1648 against 1105, PadStartCom
+     1606 against 1317), while frame advances and RAM reads and writes
+     (`tools/port/duckstation.py`) keep the recompiler.
+     `tools/port/ds_calltime.py` times calls without breakpoints: it
+     patches a stub that reads root counter 0 at the call and its return
+     into RAM. The
      memory card driver serves the ports on alternate vblanks, a sector
      transfer ends 266k clocks after its vblank, and file I/O takes a turn
      per frame; the interlace field flips at line 0 and the displayed field
@@ -239,10 +281,44 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      as CPU time with the interrupts on top (StGetNext), so a second pad's
      libpad exchange (4.8k clocks a vblank) lengthens them; DrawOTag waits
      for the list DMA over the table's empty head (61 clocks a node).
-     Still open: with two pads (VS) the title after a skipped movie starts
-     a field late, and the sound sequencer's timer runs 7.5 ms (0.375
-     field) ahead of DuckStation's, whose phase comes from the console's
-     boot before the game.
+     A LIBCD polling wait (CdSync(0), CdReady(0)) takes the interrupt
+     handlers that come meanwhile within the wait, so a CdControlB(CdlPause)
+     returns as the drive finishes; the wait CD_cw makes for the previous
+     command keeps them owed, as DuckStation does. Still open: libpad's
+     store order and missed vblanks with two pads (VS, `docs/TECH_DEBT.md`
+     F1), and the sequencer timer's phase, which the boot timeline before
+     SsStart sets (F6).
+   - **Link cable over the network:** the link battle's serial port (SIO1)
+     is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
+     driver ported from the decompilation (`_sio_control`, the `sio:`
+     device's synchronous and asynchronous transfers, the interrupt
+     handler) over a model of the port's registers, whose other end is the
+     other player's game over TCP (`link_net.c`, `psyz/link.h`;
+     `src/port/link.c` sets it up from the Escape menu or `RR4_LINK`). Bytes
+     take their character time at the programmed rate (20.8 us at the
+     game's 529 kbit/s), the transmitter waits for CTS, the FIFO holds 8
+     bytes; each pass of the driver's busy waits takes its PS1 time on the
+     real-time clock too, so the game's wait callbacks time out as on the
+     console (about 24 ms in the race, 94 ms in the menus). The receiver
+     announces each read (where it starts and ends, its packet size), so
+     the DTR toggles that acknowledge the sender's packets and the RTS
+     drop at the read's end follow at once from the sender's own bytes, as
+     on the cable; everything else crosses the network's latency. Received
+     bytes enter the FIFO at their emulated arrival times and the RX
+     interrupt drains each completed packet then, so a host thread that
+     runs late cannot overrun it (an overrun loses a packet, and the race
+     protocol then desyncs). The race protocol (`serial_link/sio.c`) steps
+     the race only with both ends' inputs for a frame, one packet in flight
+     each way, so a round trip longer than a frame slows the race (40 ms:
+     half speed, 100 ms: a seventh) and seven missed frames end it with the
+     game's link error; the menus' synchronous exchanges time out from
+     about 90 ms. When one end falls a slot behind (a late packet, a host
+     thread that ran late), the protocol steps both ends with the same
+     earlier slot; the original compared those slots without wrapping them
+     modulo 8 and desynced the race across the wrap, which a cable and
+     aligned vblanks never let happen on the console (fixed in
+     `ovl667_select_active_slot`). Two games on one machine race a whole
+     race step for step identically (`RR4_LINK`, `PSYZ_HEADLESS=gpu`).
 
 ## Repository layout
 

@@ -1,3 +1,4 @@
+#include "game/data/savedat.h"
 #include "rr/emblem_images.h"
 #include "game/race/ranking.h"
 #include "rr/save_slots.h"
@@ -69,6 +70,7 @@ void BuildSaveData(int mode) {
             checksum += gameSave->words[i];
         }
         gameSave->fields.checksum1AA4 = checksum;
+        SaveDataToRelease();
         break;
     case 6:
         gameSave = (GameSaveData1AA8 *)SaveBuffer;

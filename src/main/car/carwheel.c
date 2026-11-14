@@ -18,6 +18,7 @@
 #include "game/race/raceinit.h"
 #include "game/car/carwheel.h"
 #include "rr/race_setup.h"
+#include "rr/player_cars.h"
 #include "game/race/racemai2.h"
 #include "game/math/rotmat.h"
 
@@ -447,9 +448,22 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
     DrawWheelTrailEffects(arg0, 0, 0, 0, slot_idx, 0, 0);
 }
 
-/* Frame interpolation: each car is one object, its parts are pieces. */
+/* Frame interpolation: each car is one object, its parts are pieces. The
+ * identity is the car's record in PlayerCars or ComCars (another car, as a
+ * preview's, by its offset from PlayerCars), never its host address: ASLR
+ * moves that between runs, and the midpoint's identity table then drops
+ * and keeps other identities each run. */
 static u32 InterpCarId(const RaceVehicle *car) {
-    return (u32)(((uintptr_t)car >> 4) & 0xFFFF) << 8;
+    const uintptr_t at = (uintptr_t)car, players = (uintptr_t)PlayerCars, coms = (uintptr_t)ComCars;
+    u32 index;
+
+    if (at >= players && at < players + sizeof(PlayerCars))
+        index = (u32)((at - players) / sizeof(*car));
+    else if (at >= coms && at < coms + sizeof(ComCars))
+        index = 2 + (u32)((at - coms) / sizeof(*car));
+    else
+        index = 13 + (u32)(((at - players) >> 4) % 0xFFF0u);
+    return index << 8;
 }
 
 void DrawPreviewCar(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {

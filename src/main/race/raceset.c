@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include <string.h>
 #include "rr/save_slots.h"
 #include "rr/menu_selection.h"
@@ -105,7 +106,8 @@ void UpdateLapTiming(RaceVehicle *arg0) {
             }
             LatchedSplitTime = SplitTimes[SplitIndex];
             LatchedBestSplitTime = BestSplitTimes[SplitIndex];
-            LatchedSplitIndex = SplitIndex;
+            /* The Japanese release latches the index after resetting it. */
+            LatchedSplitIndex = RR_PAL_JP(SplitIndex, 0);
             SplitIndex = 0;
             LapVoicePending = 0;
             if (BestLapTime > LapTimes[s0->dynamics94.steering.count22 - 2]) {
@@ -186,7 +188,8 @@ check_split:
         if (SplitDistanceWord(SplitIndex) + TrackLength * (s0->dynamics94.steering.count22 - 1) <= arg0->second + arg0->first) {
             if (GameModeType == 0) {
                 SplitDeltaTimer = 0x3C;
-                LatchedSplitIndex = SplitIndex;
+                /* The Japanese release latches the next split's index. */
+                LatchedSplitIndex = SplitIndex + RR_PAL_JP(0, 1);
                 LatchedSplitTime = SplitTimeWord(SplitIndex);
                 LatchedBestSplitTime = BestSplitTimeWord(SplitIndex);
                 SplitIndex += 1;
@@ -226,7 +229,8 @@ void UpdateRaceRanking(void)
         RankEntry8 *a1 = RankTable[j];
         int a0 = a2->score00;
         int v1 = a1->score00;
-        if (a0 < v1 || (a0 == v1 && a1->carIndex04 == 0))
+        /* The PAL release ranks the player car (index 0) first on a tie. */
+        if (a0 < v1 || (!RR_RELEASE_JP && a0 == v1 && a1->carIndex04 == 0))
         {
           RankTable[j] = a2;
           RankTable[j - 1] = a1;

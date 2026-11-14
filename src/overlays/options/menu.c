@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay665_visual.h"
 #include "scratchpad.h"
@@ -45,7 +46,9 @@ void ovl665_init_menu(void) {
     SetupRenderer(5);
     InitUiRow(0,94,96,112,32,0,0,1,8,19);
     InitUiRow(1,94,136,112,32,0,0,1,9,19);
-    InitUiRow(2,94,176,112,32,0,0,1,1,25);
+    /* The Japanese release's third row (screen adjust) is a type 0 row
+     * with label 112. */
+    InitUiRow(2,94,176,112,32,0,0,1,RR_PAL_JP(1,0),RR_PAL_JP(25,112));
     InitUiRow(3,94,216,112,32,0,0,1,1,20);
     InitUiRow(4,94,256,112,32,0,0,1,1,21);
     InitUiRow(5,94,296,112,32,0,0,1,1,18);

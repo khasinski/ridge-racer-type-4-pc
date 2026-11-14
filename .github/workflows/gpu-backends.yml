@@ -12,6 +12,14 @@ name: GPU backends
 # are run on their own and reported (a notice) once they pass, so the list
 # can shrink. Failed golden images are uploaded.
 #
+# Without an SDL GPU device (Linux without a Vulkan driver, forced on macOS
+# with PSYZ_GPU=off) PsyZ falls back to the CPU rasterizer presented by an
+# SDL renderer: the no-vulkan job and the last Metal steps run the gpu::*
+# tests that way (all but CPU_KNOWN_FAILURES) and check the log names the
+# fallback. The Metal job also runs the gpu::* tests without framebuffer
+# fetch (PSYZ_GPU_FETCH=0, the copy path of D3D12 and Vulkan) and checks
+# each log names the blend path it tested.
+#
 # The game itself needs a disc image, so it is only built here; game frames
 # are compared on a developer machine (RR4_CAPTURE_AT with PSYZ_HEADLESS=1
 # and PSYZ_HEADLESS=gpu, see src/port/main.c).
@@ -113,6 +121,69 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: vulkan-${{ strategy.job-index }}
+          path: |
+            third_party/psyz/psyz/tests/expected/*.actual.png
+            third_party/psyz/psyz/tests/*.log
+          if-no-files-found: ignore
+
+  # No Vulkan driver (no ICD installed): SDL_CreateGPUDevice fails and PsyZ
+  # falls back to the CPU rasterizer presented by an SDL renderer.
+  no-vulkan:
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: ${{ fromJSON(inputs.refs) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SDL_VIDEODRIVER: offscreen
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ matrix.ref }}
+          submodules: false
+      - name: Install dependencies (SDL, no Vulkan driver)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libxtst-dev libxinerama-dev \
+            libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev \
+            libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libvulkan-dev \
+            libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev \
+            libdbus-1-dev
+          sudo apt-get remove -y mesa-vulkan-drivers || true
+          ls /usr/share/vulkan/icd.d /etc/vulkan/icd.d 2>/dev/null || true
+      - name: Fetch PsyZ and SDL
+        run: |
+          git submodule update --init third_party/psyz
+          git -C third_party/psyz submodule update --init external/SDL
+          git -C third_party/psyz log --oneline -1
+      - name: Build the game (release configuration)
+        run: |
+          cmake -S . -B build/game -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/game --parallel 4
+      - name: Build the PsyZ tests
+        run: |
+          cmake -S third_party/psyz/psyz/tests -B build/psyz-tests -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/psyz-tests --parallel 4
+      - name: gpu tests without a Vulkan driver (the CPU rasterizer fallback)
+        working-directory: third_party/psyz/psyz/tests
+        env:
+          PSYZ_HEADLESS: gpu
+          VK_ICD_FILENAMES: /nonexistent.json
+          VK_DRIVER_FILES: /nonexistent.json
+        run: |
+          set -o pipefail
+          exclude=$(printf '%s' "$CPU_KNOWN_FAILURES" | tr -d ' ' | sed 's/^/-/; s/,/,-/g')
+          ../../../../build/psyz-tests/psyz_tests --verbose "--filter=gpu::*,${exclude}" 2>&1 | tee fallback.log
+          grep -q 'no SDL GPU device (SDL_CreateGPUDevice' fallback.log
+          grep -q 'CPU rasterizer, presented by SDL renderer' fallback.log
+      - name: Upload failures
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: no-vulkan-${{ strategy.job-index }}
           path: |
             third_party/psyz/psyz/tests/expected/*.actual.png
             third_party/psyz/psyz/tests/*.log
@@ -235,6 +306,7 @@ jobs:
           set -o pipefail
           ../../../../build/psyz-tests/psyz_tests --verbose 2>&1 | tee metal.log
           grep -q 'SDL_GPU with driver metal' metal.log
+          grep -q 'SDL_GPU semi-transparency: framebuffer fetch' metal.log
       - name: gpu tests on Metal without framebuffer fetch (the copy path of D3D12 and Vulkan)
         if: success() || failure()
         working-directory: third_party/psyz/psyz/tests
@@ -244,6 +316,19 @@ jobs:
         run: |
           set -o pipefail
           ../../../../build/psyz-tests/psyz_tests --verbose '--filter=gpu::*' 2>&1 | tee metal-copy.log
+          grep -q 'SDL_GPU semi-transparency: target copies' metal-copy.log
+      - name: gpu tests without an SDL GPU device (PSYZ_GPU=off, the CPU rasterizer fallback)
+        if: success() || failure()
+        working-directory: third_party/psyz/psyz/tests
+        env:
+          PSYZ_HEADLESS: gpu
+          PSYZ_GPU: "off"
+        run: |
+          set -o pipefail
+          exclude=$(printf '%s' "$CPU_KNOWN_FAILURES" | tr -d ' ' | sed 's/^/-/; s/,/,-/g')
+          ../../../../build/psyz-tests/psyz_tests --verbose "--filter=gpu::*,${exclude}" 2>&1 | tee fallback.log
+          grep -q 'no SDL GPU device (turned off by PSYZ_GPU=off)' fallback.log
+          grep -q 'CPU rasterizer, presented by SDL renderer' fallback.log
       - name: gpu tests on the CPU rasterizer (all but the known failures)
         if: success() || failure()
         working-directory: third_party/psyz/psyz/tests

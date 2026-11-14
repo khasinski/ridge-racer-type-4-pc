@@ -12,8 +12,11 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(BUILD_TESTING "Build native game tests" OFF)
 option(RR4_BUILD_GAME "Compile the game modules (src/main, src/overlays) into rr4_game" ON)
 option(RR4_MACOS_BUNDLE "Package the macOS application bundle (Ridge Racer Type 4.app)" OFF)
-option(RR4_EXPORT_SYMBOLS "Export the executable's globals for RR4_WATCH / RR4_POKE on Linux and Windows" OFF)
 option(RR4_DIAGNOSTICS "Build the RR4_* test and diagnostic hooks (src/port/diagnostics.c); off for releases" ON)
+# RR4_WATCH / RR4_POKE find globals by name among the executable's exports.
+# macOS executables export them anyway; elsewhere this option does, by
+# default whenever the hooks are built.
+option(RR4_EXPORT_SYMBOLS "Export the executable's globals for RR4_WATCH / RR4_POKE on Linux and Windows" ${RR4_DIAGNOSTICS})
 include(CTest)
 
 set(PSYZ_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/psyz)
@@ -72,6 +75,7 @@ add_library(rr4_host STATIC
     src/port/disc_check.c
     src/port/host_log.c
     src/port/memory_cards.c
+    src/port/link.c
     src/port/preferences.c
     src/port/replay_file.c
     src/port/settings_model.c
@@ -87,7 +91,7 @@ target_include_directories(rr4_host
         ${PSYZ_DIR}/psyz/include
         ${PSYZ_DIR}/external/SDL/src/render/gpu/shaders
 )
-target_compile_definitions(rr4_host PRIVATE __psyz)
+target_compile_definitions(rr4_host PRIVATE __psyz RR4_VERSION="${PROJECT_VERSION}")
 target_link_libraries(rr4_host PUBLIC psyz)
 
 add_executable(ridge-racer-type-4-pc
@@ -149,7 +153,17 @@ endif()
 if(RR4_EXPORT_SYMBOLS)
     if(MINGW)
         target_link_options(ridge-racer-type-4-pc PRIVATE -Wl,--export-all-symbols)
-    elseif(NOT APPLE AND NOT MSVC)
+    elseif(MSVC AND RR4_BUILD_GAME)
+        # The linker exports what a .def file lists: one with every global
+        # of the game modules (functions, data and communal variables),
+        # written from rr4_game.lib before each link.
+        set(RR4_EXPORTS_DEF ${CMAKE_CURRENT_BINARY_DIR}/rr4_game_exports.def)
+        add_custom_command(TARGET ridge-racer-type-4-pc PRE_LINK
+            COMMAND ${CMAKE_COMMAND} -DLINKER=${CMAKE_LINKER} -DLIBRARY=$<TARGET_FILE:rr4_game>
+                -DOUT=${RR4_EXPORTS_DEF} -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/port/msvc_exports.cmake
+            VERBATIM)
+        target_link_options(ridge-racer-type-4-pc PRIVATE "/DEF:${RR4_EXPORTS_DEF}")
+    elseif(NOT APPLE)
         set_target_properties(ridge-racer-type-4-pc PROPERTIES ENABLE_EXPORTS ON)
     endif()
 endif()
@@ -203,6 +217,14 @@ if(BUILD_TESTING)
     set_tests_properties(course-view PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
     # Memory card saves through the game's file services, preferences and a
     # synthetic disc image under a non-ASCII (UTF-8) directory.
+    # Release profiles (rr/release.h): identification and their constants.
+    add_executable(rr4_release_test tests/port/release_test.c)
+    target_compile_definitions(rr4_release_test PRIVATE __psyz)
+    target_link_libraries(rr4_release_test PRIVATE rr4_game psyz)
+    if(MINGW)
+        target_link_options(rr4_release_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME release COMMAND rr4_release_test)
     add_executable(rr4_host_files_test tests/port/host_files_test.c)
     target_include_directories(rr4_host_files_test SYSTEM PRIVATE ${PSYZ_DIR}/psyz/include)
     target_compile_definitions(rr4_host_files_test PRIVATE __psyz)
@@ -233,7 +255,7 @@ if(BUILD_TESTING)
     set_tests_properties(startup-other-release PROPERTIES
         ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC="
         FIXTURES_REQUIRED startup-images
-        PASS_REGULAR_EXPRESSION "USA release of Ridge Racer Type 4 \\(SCUS-94403\\); this port needs the European PAL disc SCES-01706")
+        PASS_REGULAR_EXPRESSION "USA release of Ridge Racer Type 4 \\(SCUS-94403\\); this port needs the European PAL disc SCES-01706 or the Japanese disc SLPS-01800")
     # The RR4_* hook syntax (src/port/diagnostics_parse.c, also built when
     # the hooks themselves are not).
     add_executable(rr4_diagnostics_test tests/port/diagnostics_test.c src/port/diagnostics_parse.c)
@@ -252,6 +274,21 @@ if(BUILD_TESTING)
     set_tests_properties(startup-utf8-disc-path PROPERTIES
         ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC="
         PASS_REGULAR_EXPRESSION "cannot open disc image .*Zoë 日本/missing\\.cue")
+    # RR4_WATCH finds the game's globals by name (exported symbols: macOS,
+    # or RR4_EXPORT_SYMBOLS with GCC, Clang, MinGW and MSVC). The synthetic
+    # European image of the startup test reaches the first VSync before the
+    # game reads a file.
+    if(RR4_DIAGNOSTICS AND RR4_BUILD_GAME AND (APPLE OR RR4_EXPORT_SYMBOLS))
+        add_test(NAME diagnostics-watch-symbols
+            COMMAND ridge-racer-type-4-pc
+                "${CMAKE_CURRENT_BINARY_DIR}/startup-test/eu/Ridge Racer Type 4 (Europe).cue")
+        set_tests_properties(diagnostics-watch-symbols PROPERTIES
+            ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy;RR4_DISC=;RR4_FRAME_LIMIT=1;RR4_TRACE=1;RR4_WATCH=ModeGroup:2,FrameCounter,NoSuchGlobal"
+            FIXTURES_REQUIRED startup-images
+            TIMEOUT 120
+            PASS_REGULAR_EXPRESSION "vsync 1 frame [0-9]+ mode [0-9]+/[0-9]+ sub [0-9]+ ModeGroup=[0-9]+ FrameCounter=[0-9]+"
+            FAIL_REGULAR_EXPRESSION "no symbol (ModeGroup|FrameCounter)")
+    endif()
     # Startup without a disc image: a headless run prints its usage.
     add_test(NAME startup-usage COMMAND ridge-racer-type-4-pc)
     set_tests_properties(startup-usage PROPERTIES

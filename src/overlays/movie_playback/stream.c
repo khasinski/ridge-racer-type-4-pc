@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay668_resource.h"
 #include "rr/overlay668_playback_init.h"
@@ -33,7 +34,9 @@ void ovl668_resolve_stream_file(s32 arg0, StrCdFileInfo *arg1, u32 *arg2) {
     *arg2 = entry->sectors;
     RaceContext.streamStartBC = arg1->location;
     RaceContext.streamCurrentC0 = RaceContext.streamStartBC;
-    v0 = (*arg2 / 6) - 20;
+    /* Sectors a frame: 6 in the PAL release's streams (25 frames a second),
+     * 5 in the Japanese release's (30). */
+    v0 = (*arg2 / RR_PAL_JP(6, 5)) - 20;
     RaceContext.streamFrameLimitC8 = v0;
     RaceContext.streamFrameBudgetCC = v0 * 2;
 }
@@ -255,11 +258,11 @@ u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config) {
   playback=RaceContext.streamStateB8;
   rectangle.rect.x=0;rectangle.rect.y=0;
   rectangle.rect.w=(s32)(playback->width00*3U)/2;
-  rectangle.rect.h=512;
+  rectangle.rect.h=RR_PAL_JP(512, 480);
   ClearImage(&rectangle,0,0,0);
  }
- config->rectangles[0].y=DrawBuffers[0].environment.display5C.display.y+(s32)(256U-((StrPlaybackState*)RaceContext.streamStateB8)->height04)/2;
- config->rectangles[1].y=DrawBuffers[1].environment.display5C.display.y+(s32)(256U-((StrPlaybackState*)RaceContext.streamStateB8)->height04)/2;
+ config->rectangles[0].y=DrawBuffers[0].environment.display5C.display.y+(s32)((u32)RR_SCREEN_BOTTOM-((StrPlaybackState*)RaceContext.streamStateB8)->height04)/2;
+ config->rectangles[1].y=DrawBuffers[1].environment.display5C.display.y+(s32)((u32)RR_SCREEN_BOTTOM-((StrPlaybackState*)RaceContext.streamStateB8)->height04)/2;
  config->rectangles[1].w=(s32)(((StrPlaybackState*)RaceContext.streamStateB8)->width00*3U)/2;
  config->rectangles[0].w=config->rectangles[1].w;
  config->rectangles[1].h=((StrPlaybackState*)RaceContext.streamStateB8)->height04;

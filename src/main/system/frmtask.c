@@ -1,3 +1,4 @@
+#include <string.h>
 #include "rr/gpu_address.h"
 #include "game/ui/uipart1.h"
 #include "game/sound/cdpos.h"
@@ -60,6 +61,95 @@ void ResetFrmTaskState(void) {
     FadeCountdown = -1;
 }
 
+/* The Japanese release's frame task (SLPS-01800): eight preset sprites
+ * (0x2F..0x36) fade in at their frames, the sprite grid from the start and
+ * a fade tile from frame 0x70; at frame 0x9C it waits for a button. */
+static void FrmTaskModeUpdateJp(void) {
+    FrameTaskFieldsJp *st;
+    GpuScratchPointers *scratch;
+    GpuCommandPacket *packet;
+    s32 i;
+
+    switch (FrmTaskState) {
+    case FRAME_TASK_READ_START:
+        if (CdFileReadStart(GetR4FileIndex(0, 0x15), LoadCursor)) {
+            FrmTaskState = FRAME_TASK_READ_WAIT;
+        }
+        return;
+    case FRAME_TASK_READ_WAIT:
+        if (CdFileBytesLoaded()) {
+            FrmTaskState = FRAME_TASK_SETUP;
+        }
+        return;
+    case FRAME_TASK_SETUP:
+        CdAudioInit();
+        CdAudioSelectTrack(0, 0x24);
+        CdAudioBeginPlay(0);
+        LoadTimList((s32 *)LoadCursor);
+        FrmTaskState = FRAME_TASK_REVEAL;
+        st = (FrameTaskFieldsJp *)LoadCursor;
+        ActiveFrameTaskScript = (FrameTaskState *)st;
+        LoadCursor = (u8 *)st + 0x2E;
+        memset(st, 0, sizeof(*st));
+        st->ramp[8] = 8;
+        st->fade26 = 0x100;
+        /* fallthrough */
+    case FRAME_TASK_REVEAL:
+        st = (FrameTaskFieldsJp *)ActiveFrameTaskScript;
+        if (st->frame < 0x9C) {
+            switch (st->frame) {
+            case 0x08: st->ramp[0] = 4; break;
+            case 0x20: st->ramp[1] = 4; break;
+            case 0x34: st->ramp[2] = 4; break;
+            case 0x40: st->ramp[3] = 4; break;
+            case 0x4C: st->ramp[4] = 4; break;
+            case 0x58: st->ramp[5] = 4; break;
+            case 0x64: st->ramp[6] = 4; break;
+            case 0x70: st->fade2A = 0x200; break;
+            case 0x7C: st->ramp[7] = 4; break;
+            }
+            break;
+        }
+        FrmTaskState = FRAME_TASK_FADE;
+        /* fallthrough */
+    case FRAME_TASK_FADE:
+        SetMenuFrameOptions(1, 1, 0);
+        if (FadeCountdown > 0) {
+            FadeCountdown--;
+            AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (0x40 - FadeCountdown) * 4, 0x45);
+            if (FadeCountdown == 0) {
+                ModeGroup = 1;
+                ModeIndex = 3;
+                SubmodeState = 0;
+            }
+        } else if (MenuReturnSubmodeIndex) {
+            FadeCountdown = 0x40;
+            CdAudioFade(0, 0x40);
+        }
+        break;
+    default:
+        return;
+    }
+    st = (FrameTaskFieldsJp *)ActiveFrameTaskScript;
+    for (i = 0; i < 9; i++) {
+        RampValueToLimit((u16 *)&st->intensity[i], &st->ramp[i], 0x80);
+    }
+    RampValuePairTo4096((u16 *)&st->fade26, (u16 *)&st->fade28, &st->fade2A);
+    for (i = 0; i < 8; i++) {
+        EmitPresetSprite(st->intensity[i], 0x2F + i);
+    }
+    EmitSpriteGridTick(st->intensity[8], &st->spriteTick);
+    EmitFadeTile(st->fade26, st->fade28, 0xE80020, 0xF0);
+    scratch = RR_GPU_SCRATCH;
+    packet = (GpuCommandPacket *)scratch->cursor;
+    packet->command = 0xE100022A;
+    RR_GPU_ADD_PRIM(scratch->order, packet, 1);
+    scratch->order->length = 0;
+    scratch->cursor += sizeof(GpuCommandPacket);
+    UpdateScreenFade(0x1000C);
+    st->frame++;
+}
+
 void FrmTaskModeUpdate(void) {
     FrameTaskFields *rampState;
     FrameTaskState *initialState;
@@ -69,6 +159,10 @@ void FrmTaskModeUpdate(void) {
     GpuCommandPacket *packet;
     int fileIndex;
 
+    if (RR_RELEASE_JP) {
+        FrmTaskModeUpdateJp();
+        return;
+    }
     switch (FrmTaskState) {
     case FRAME_TASK_READ_START:
         fileIndex = GetR4FileIndex(0, 0x15);

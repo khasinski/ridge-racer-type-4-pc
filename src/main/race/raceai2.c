@@ -110,11 +110,12 @@ void DrawLinkEntryScreen(s32 mode) {
         row=RaceTimeRemaining/RR_PAL_NTSC(50, 60);
         text[0]=row/10+48;
         text[1]=row%10+48;
-        DrawBigFontString(44,244,text);
-        DrawBigFontString(32,244,SecondsUntilCloseText);
+        /* 16 lines higher on the 240-line screen of the Japanese release. */
+        DrawBigFontString(44,RR_PAL_JP(244,228),text);
+        DrawBigFontString(32,RR_PAL_JP(244,228),SecondsUntilCloseText);
         /* The 20 s entry window (NTSC release: 600 frames). */
         remaining=((u32)RR_PAL_NTSC(500, 600)-RaceTimeRemaining);
-        DrawBigFontString(((s32)(remaining * 0x100U)/RR_PAL_NTSC(500, 600))+32,224,StrLinkProgressBarGlyph);
+        DrawBigFontString(((s32)(remaining * 0x100U)/RR_PAL_NTSC(500, 600))+32,RR_PAL_JP(224,208),StrLinkProgressBarGlyph);
     }
 }
 

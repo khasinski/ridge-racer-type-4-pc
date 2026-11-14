@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/video_timing.h"
 #include "rr/projection_state.h"
 #include "game/menu/menu8.h"
@@ -192,8 +193,9 @@ void DrawStartCountdown(GpuDmaTag *ordering, s32 frame) {
                 top = -(tick * 128) / rate;
             }
         } else {
-            RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(ordering, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
-            top = 0x40;
+            /* Split screen: the lower half (Japanese release: 240 lines). */
+            RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(ordering, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, RR_SCREEN_BOTTOM);
+            top = RR_PAL_JP(0x40, 0x38);
         }
         cursor = AddDrawModePrim(ordering, (GpuDrawModePacket *)RR_GPU_SCRATCH->cursor, 5);
         if (phase == 1) {

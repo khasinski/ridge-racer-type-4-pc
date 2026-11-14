@@ -7,7 +7,8 @@
 
 /* Which disc a CUE image holds, and choosing the one the game starts with.
  *
- * The port runs the European PAL release (SCES-01706). Other releases have
+ * The port runs the European PAL release (SCES-01706) and the Japanese one
+ * (SLPS-01800, docs/REGIONS.md). Other releases have
  * different files at different places in R4.BIN and on the disc, which shows
  * as broken textures or a hang, so an image is identified by the boot file
  * its SYSTEM.CNF names ("BOOT = cdrom:\SCES_017.06;1") before it is mounted.
@@ -56,6 +57,11 @@ Rr4DiscStatus Rr4DiscReadBoot(Rr4DiscSectorReader read, void *context, char *boo
  * drive keeps its disc and position). message gets what a player sees for
  * anything but RR4_DISC_OK. */
 Rr4DiscStatus Rr4DiscCheckImage(const char *cue, char *message, size_t size);
+
+/* The boot file of a CUE image's SYSTEM.CNF ("" when it has none), read as
+ * Rr4DiscCheckImage reads it; the game's release profile follows it
+ * (rr/release.h RrReleaseForBootFile). */
+Rr4DiscStatus Rr4DiscImageBoot(const char *cue, char *boot, size_t size);
 
 /* ---- the image the game starts with ---- */
 

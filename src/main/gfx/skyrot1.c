@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "psyq/libgte/rotmat.h"
 #include "rr/rro_model.h"
 #include "game/gfx/model.h"
@@ -59,6 +60,9 @@ void DrawRotatingSky(void)
     MatrixWords32 sp18;
     int t;
     sp10 = RotatingSkyDefaultColor;
+    /* The Japanese release's rectangle starts 16 lines higher. */
+    if (RR_RELEASE_JP)
+        sp10.y = 72;
     IntroSceneStatePtr->uA8 += 0x20;
     sp18.w[4] = 0x1000;
     sp18.w[2] = 0x1000;

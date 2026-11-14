@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay665_calibration.h"
 #include "game/system/pad.h"
@@ -11,7 +12,8 @@ void ovl665_init_screen_adjust(void)
     InitBadgeRow(0, 12, 304, 296, 88, 0, 0);
     BadgeRows[0].half02 = 1;
     SetMenuFrameOptions(1, 1, 0);
-    DebugPrintStub(ovl665_screen_offset_debug_fmt, Options.screenX34, Options.screenY38);
+    if (!RR_RELEASE_JP)
+        DebugPrintStub(ovl665_screen_offset_debug_fmt, Options.screenX34, Options.screenY38);
 }
 
 void ovl665_update_screen_adjust(void) {
@@ -34,13 +36,14 @@ void ovl665_update_screen_adjust(void) {
         if(PlayerControllers[0].edges08.fields.repeat&0x2000)Options.screenX34=(Options.screenX34+1U);
         if(PlayerControllers[0].edges08.fields.repeat&0x1000)Options.screenY38=(Options.screenY38-2U);
         if(PlayerControllers[0].edges08.fields.repeat&0x4000)Options.screenY38=(Options.screenY38+2U);
-        if(Options.screenX34 < -10)Options.screenX34=-10;
-        if(Options.screenX34 >=11)Options.screenX34=10;
+        /* The Japanese release allows x -15..15 and y 0..16, default 0. */
+        if(Options.screenX34 < RR_PAL_JP(-10,-15))Options.screenX34=RR_PAL_JP(-10,-15);
+        if(Options.screenX34 >=RR_PAL_JP(11,16))Options.screenX34=RR_PAL_JP(10,15);
         if(Options.screenY38<0)Options.screenY38=0;
-        if(Options.screenY38>=33)Options.screenY38=32;
+        if(Options.screenY38>=RR_PAL_JP(33,17))Options.screenY38=RR_PAL_JP(32,16);
         if(PlayerControllers[0].edges08.fields.pressed&0x800) {
             Options.screenX34=0;
-            Options.screenY38=16;
+            Options.screenY38=RR_PAL_JP(16,0);
         } else if(PlayerControllers[0].action30) {
             PlaySfx(1);
             BadgeRows[0].state10=4;

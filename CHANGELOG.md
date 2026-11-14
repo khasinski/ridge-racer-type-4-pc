@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The **Japanese release** (R4 - Ridge Racer Type 4, SLPS-01800, also the
+  JogCon bundle) runs from its own disc: 60 Hz, its 240-line picture,
+  Japanese text, R4.BIN layout, card saves (`BISLPSP01800RR4_*`) and record
+  passwords. A Time Attack race matches the console (DuckStation) field for
+  field; the other modes are ported from its executable but not yet
+  compared (docs/REGIONS.md).
 - **Escape > Controls** chooses the controller each pad emulates: digital pad
   (default, as before), DualShock (analog left stick steering), neGcon
   (stick twist, analog I/II from the triggers) or JogCon (stick turns the

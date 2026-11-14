@@ -167,7 +167,19 @@ enum {
     DISC_ROWS = 2,
 };
 
-static const char *const kPageNames[SETTINGS_PAGE_COUNT] = {"Graphics", "Controls", "Audio", "Disc", "Replays"};
+/* Link cable: the cable's end, the port, the host to join, the connection. */
+enum {
+    LINK_ROW_MODE = 0,
+    LINK_ROW_PORT = 1,
+    LINK_ROW_ADDRESS = 2,
+    LINK_ROW_STATUS = 3,
+    LINK_ROWS = 4,
+};
+
+static const char *const kLinkModeNames[] = {"Off", "Host", "Join"};
+
+static const char *const kPageNames[SETTINGS_PAGE_COUNT] = {"Graphics", "Controls", "Audio", "Disc",
+                                                            "Link cable", "Replays"};
 
 const char *SettingsPageName(int page) {
     return page >= 0 && page < SETTINGS_PAGE_COUNT ? kPageNames[page] : "";
@@ -241,6 +253,8 @@ int SettingsContentRows(const SettingsModel *m) {
         return CONTROL_ROW_BINDINGS + RR4_PREFS_BUTTONS;
     case SETTINGS_PAGE_DISC:
         return DISC_ROWS;
+    case SETTINGS_PAGE_LINK:
+        return LINK_ROWS;
     case SETTINGS_PAGE_REPLAYS:
         return ReplayRows(m);
     default:
@@ -268,6 +282,7 @@ void SettingsModelOpen(SettingsModel *m, const Rr4Prefs *prefs, const char *moun
 
 void SettingsModelClose(SettingsModel *m) {
     m->capturing = 0;
+    m->editing = 0;
     m->open = 0;
     m->dirty = 1;
 }
@@ -317,6 +332,7 @@ void SettingsModelSwitchPage(SettingsModel *m, int page) {
     m->row = 0;
     m->scroll = 0;
     m->capturing = 0;
+    m->editing = 0;
     m->status[0] = '\0';
     m->dirty = 1;
 }
@@ -364,6 +380,11 @@ static void ResetPage(SettingsModel *m) {
     case SETTINGS_PAGE_DISC:
         p->disc[0] = '\0';
         break;
+    case SETTINGS_PAGE_LINK:
+        p->link_mode = d->link_mode;
+        p->link_port = d->link_port;
+        snprintf(p->link_address, sizeof(p->link_address), "%s", d->link_address);
+        break;
     default:
         break;
     }
@@ -409,6 +430,41 @@ static void StepChoice(SettingsModel *m, int row, int direction) {
     Changed(m);
 }
 
+static void StepLinkMode(SettingsModel *m, int direction) {
+    int mode = m->prefs.link_mode >= RR4_LINK_OFF && m->prefs.link_mode <= RR4_LINK_JOIN ? m->prefs.link_mode : 0;
+    mode = (mode + direction + 3) % 3;
+    m->prefs.link_mode = mode;
+    m->status[0] = '\0';
+    if (mode == RR4_LINK_JOIN && !m->prefs.link_address[0])
+        snprintf(m->status, sizeof(m->status), "Enter the host's address below to join it.");
+    Changed(m);
+}
+
+/* Enter on a text row: keep a valid port or address. */
+static void CommitEdit(SettingsModel *m) {
+    m->editing = 0;
+    m->dirty = 1;
+    if (m->row == LINK_ROW_PORT) {
+        unsigned long port = 0;
+        const char *c = m->edit;
+        for (; *c >= '0' && *c <= '9' && port <= 65535; c++)
+            port = port * 10 + (unsigned long)(*c - '0');
+        if (*c || port < 1 || port > 65535) {
+            snprintf(m->status, sizeof(m->status), "A port is a number from 1 to 65535.");
+            return;
+        }
+        if (m->prefs.link_port != (unsigned)port) {
+            m->prefs.link_port = (unsigned)port;
+            Changed(m);
+        }
+        return;
+    }
+    if (strcmp(m->prefs.link_address, m->edit)) {
+        snprintf(m->prefs.link_address, sizeof(m->prefs.link_address), "%s", m->edit);
+        Changed(m);
+    }
+}
+
 static void Activate(SettingsModel *m) {
     int content = SettingsContentRows(m);
 
@@ -448,6 +504,19 @@ static void Activate(SettingsModel *m) {
             m->dirty = 1;
         }
         break;
+    case SETTINGS_PAGE_LINK:
+        if (m->row == LINK_ROW_MODE) {
+            StepLinkMode(m, 1);
+        } else if (m->row == LINK_ROW_PORT || m->row == LINK_ROW_ADDRESS) {
+            m->editing = 1;
+            if (m->row == LINK_ROW_PORT)
+                snprintf(m->edit, sizeof(m->edit), "%u", m->prefs.link_port);
+            else
+                snprintf(m->edit, sizeof(m->edit), "%s", m->prefs.link_address);
+            m->status[0] = '\0';
+            m->dirty = 1;
+        }
+        break;
     default:
         StepChoice(m, m->row, 1);
         break;
@@ -469,6 +538,11 @@ static void Step(SettingsModel *m, int direction) {
     if (m->page == SETTINGS_PAGE_DISC) {
         if (m->row == DISC_ROW_NEXT)
             Activate(m);
+        return;
+    }
+    if (m->page == SETTINGS_PAGE_LINK) {
+        if (m->row == LINK_ROW_MODE)
+            StepLinkMode(m, direction);
         return;
     }
     if (m->page == SETTINGS_PAGE_REPLAYS)
@@ -502,6 +576,18 @@ void SettingsModelDo(SettingsModel *m, SettingsAction action) {
 
     if (!m->open)
         return;
+    if (m->editing) {
+        if (action == SETTINGS_ACTIVATE) {
+            CommitEdit(m);
+        } else if (action == SETTINGS_BACK) {
+            m->editing = 0;
+            m->dirty = 1;
+        } else if (action == SETTINGS_CLEAR && m->edit[0]) {
+            m->edit[strlen(m->edit) - 1] = '\0';
+            m->dirty = 1;
+        }
+        return;
+    }
     if (m->capturing) {
         if (action == SETTINGS_BACK) {
             m->capturing = 0;
@@ -620,6 +706,34 @@ void SettingsModelDiscChosen(SettingsModel *m, const char *path) {
     snprintf(m->status, sizeof(m->status), "%.120s is used from the next start.", BaseName(path));
 }
 
+int SettingsModelTextInput(SettingsModel *m, const char *text) {
+    size_t n;
+    if (!m->open || !m->editing || !text)
+        return 0;
+    n = strlen(m->edit);
+    for (; *text; text++) {
+        char c = *text;
+        int ok = m->row == LINK_ROW_PORT ? (c >= '0' && c <= '9')
+                                         : ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') ||
+                                            (c >= 'A' && c <= 'Z') || c == '.' || c == '-' || c == ':' ||
+                                            c == '[' || c == ']' || c == '_' || c == '%');
+        if (ok && n + 1 < (m->row == LINK_ROW_PORT ? 6 : sizeof(m->edit)))
+            m->edit[n++] = c;
+    }
+    m->edit[n] = '\0';
+    m->dirty = 1;
+    return 1;
+}
+
+void SettingsModelSetLinkStatus(SettingsModel *m, const char *brief, const char *status) {
+    if (!brief || !status || (!strcmp(m->link_brief, brief) && !strcmp(m->link_status, status)))
+        return;
+    snprintf(m->link_brief, sizeof(m->link_brief), "%s", brief);
+    snprintf(m->link_status, sizeof(m->link_status), "%s", status);
+    if (m->page == SETTINGS_PAGE_LINK)
+        m->dirty = 1;
+}
+
 /* ---- views ---- */
 
 void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
@@ -682,6 +796,39 @@ void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
             v->help = help;
         }
         return;
+    case SETTINGS_PAGE_LINK: {
+        static char value[160];
+        int mode = m->prefs.link_mode >= RR4_LINK_OFF && m->prefs.link_mode <= RR4_LINK_JOIN ? m->prefs.link_mode : 0;
+        v->kind = 1;
+        if (row == LINK_ROW_MODE) {
+            v->label = "Link cable";
+            v->value = kLinkModeNames[mode];
+            v->help = "The two-console link battle over the network. Host waits for the other player, "
+                      "Join connects to the host. It shows in the main menu once both are there.";
+        } else if (row == LINK_ROW_PORT || row == LINK_ROW_ADDRESS) {
+            int port = row == LINK_ROW_PORT;
+            v->kind = 2; /* typed, not stepped */
+            v->label = port ? "Port" : "Host address";
+            v->capturing = m->editing && row == m->row;
+            if (v->capturing)
+                snprintf(value, sizeof(value), "%.150s_", m->edit);
+            else if (port)
+                snprintf(value, sizeof(value), "%u", m->prefs.link_port);
+            else
+                snprintf(value, sizeof(value), "%.150s", m->prefs.link_address[0] ? m->prefs.link_address : "None");
+            v->value = value;
+            v->help = v->capturing ? "Type, then Enter keeps it and Escape cancels. Ctrl+V pastes."
+                      : port ? "TCP port the host waits on and the other player connects to. Enter edits."
+                             : "Name or IP address of the host to join. Enter edits.";
+        } else {
+            v->kind = 3;
+            v->label = "Status";
+            v->value = m->link_brief[0] ? m->link_brief : "Off";
+            snprintf(help, sizeof(help), "%.240s", m->link_status[0] ? m->link_status : "Off: no cable.");
+            v->help = help;
+        }
+        return;
+    }
     case SETTINGS_PAGE_DISC:
         v->kind = row == DISC_ROW_NEXT ? 1 : 3;
         if (row == DISC_ROW_MOUNTED) {
@@ -793,7 +940,7 @@ float SettingsValueCentre(void) {
 void SettingsModelPointer(SettingsModel *m, float x, float y, int click) {
     int rows = SettingsRowCount(m);
 
-    if (!m->open || m->capturing)
+    if (!m->open || m->capturing || m->editing)
         return;
     if (x < 0.0f || y < 0.0f || x > (float)SETTINGS_PANEL_W || y > (float)SettingsDesignHeight(m)) {
         if (click)
@@ -816,6 +963,7 @@ void SettingsModelPointer(SettingsModel *m, float x, float y, int click) {
         if (!click)
             return;
         if (row < SettingsContentRows(m) && m->page != SETTINGS_PAGE_DISC && m->page != SETTINGS_PAGE_REPLAYS &&
+            (m->page != SETTINGS_PAGE_LINK || row == LINK_ROW_MODE) &&
             (m->page != SETTINGS_PAGE_CONTROLS || row < CONTROL_ROW_DEVICE))
             Step(m, x < SettingsValueCentre() ? -1 : 1);
         else

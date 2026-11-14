@@ -1,7 +1,10 @@
+#include "rr/release.h"
 #include "rr/overlay668_track_project.h"
 #include "rr/overlay668_camera.h"
 #include "psyq/libgte/gtemat5.h"
 #include "types.h"
+#include "rr/ui_bar.h"
+#include "game/ui/badgeprim.h"
 #include "rr/frame_storage_types.h"
 #include "psyq/libgpu/gpudisp.h"
 #include "psyq/libgpu/gpuenv.h"
@@ -242,7 +245,7 @@ void ovl668_emit_letterbox_pass(s32 mode) {
 
     switch (mode) {
     case 0:
-        SetDefDrawEnv(&env, 0, (DrawBufIndex * 256U) | 40, 320, 160);
+        SetDefDrawEnv(&env, 0, RR_RELEASE_JP ? DrawBufIndex * 240U + 40 : (DrawBufIndex * 256U) | 40, 320, 160);
         packet = (StrDrawEnvPacket *)RR_GPU_SCRATCH->cursor;
         SetDrawEnv((void *)packet, &env);
         RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[703], packet);
@@ -250,7 +253,7 @@ void ovl668_emit_letterbox_pass(s32 mode) {
         RR_GPU_SCRATCH->cursor = (u8 *)packet;
         break;
     case 1:
-        SetDefDrawEnv(&env, 0, DrawBufIndex * 256U, 320, 256);
+        SetDefDrawEnv(&env, 0, DrawBufIndex * (u32)RR_SCREEN_BOTTOM, 320, RR_SCREEN_BOTTOM);
         packet = (StrDrawEnvPacket *)RR_GPU_SCRATCH->cursor;
         SetDrawEnv((void *)packet, &env);
         RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[0], packet);
@@ -281,5 +284,24 @@ void ovl668_emit_letterbox_pass(s32 mode) {
         packet++;
         RR_GPU_SCRATCH->cursor = (u8 *)packet;
         break;
+    }
+}
+
+/* The Japanese release's credits are twelve pages of two sprites (248 and
+ * 56 wide, 15 lines, from the 0x35/0x36 texture pages), shown in turn at
+ * y 100 with a brightness, instead of the PAL release's scrolling bands. */
+void ovl668_draw_credit_page(s32 page, s32 brightness) {
+    UiUvRect rects[2] = {{0, 0, 248, 15}, {0, 0, 56, 15}};
+    GpuCommandPacket *mode;
+    s32 i, x = 8;
+
+    for (i = 0; i < 2; i++, x += 248) {
+        rects[i].v = page * 16;
+        mode = AddSpritePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, x, 100,
+                             &rects[i], 0x7014, (brightness << 1) | 1);
+        RR_GPU_SCRATCH->cursor = (u8 *)mode;
+        mode->command = (ovl668_credit_tpages[i] & 0x9FF) | 0xE1000200;
+        RR_GPU_ADD_PRIM(&CurrentDrawBuf->buffer.ordering70.tags[0], mode, 1);
+        RR_GPU_SCRATCH->cursor = (u8 *)(mode + 1);
     }
 }

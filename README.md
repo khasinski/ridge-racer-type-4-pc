@@ -19,7 +19,9 @@ On Linux, take the `.AppImage` (make it executable and start it) or the
 `.tar.gz` with the same executable.
 See the [changelog](CHANGELOG.md) for changes.
 
-You need your own **European (PAL) CUE/BIN image** of the game. Game data is
+You need your own **European (PAL) or Japanese CUE/BIN image** of the game
+(SCES-01706 or SLPS-01800; the Japanese release runs at 60 Hz with its own
+picture, text and saves, see [docs/REGIONS.md](docs/REGIONS.md)). Game data is
 not included. Keep the CUE file next to its BIN file.
 
 Start the game and choose the CUE file, or pass it on the command line:
@@ -50,6 +52,35 @@ Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
 file, and plays a saved one from the title screen (or while one plays).
 Replay files require a compatible build and the same PAL/NTSC video timing.
 Serial link races are not saved.
+
+**Escape > Replays** saves the replay of the last race (Time Attack, Grand
+Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
+file, and plays a saved one from the title screen (or while one plays).
+
+### Link battle over the network
+
+The game's two-console link cable mode works over a network: the serial
+port's bytes and handshake lines travel over TCP, and the game's own link
+protocol runs on top. Both players need the same version of the port and
+the same video timing (PAL or NTSC).
+
+1. One player opens **Escape > Link cable**, sets it to **Host** and lets
+   the other player know their address. The default port is 47400 (TCP);
+   over the internet, forward it on the host's router.
+2. The other player sets **Join**, enters the host's address under **Host
+   address** (Ctrl+V pastes) and, if it was changed, the port.
+3. The status line shows **Connected** with the round trip time. In the
+   main menu a new last entry appears once both games are there; when one
+   player chooses it, the other follows.
+
+The game's protocol was made for a cable: the race advances one step per
+exchange, and the menus wait about 0.1 s for an answer. On a LAN it plays
+exactly like the cable. With 40 ms round trip the race runs at half speed,
+with 100 ms at about a seventh, and from about 90 ms round trip the menus'
+exchanges end in the game's link error. Opening the Escape menu during a
+link session pauses this game, so the other player gets the link error.
+For scripts, `RR4_LINK=host[:port]` or `RR4_LINK=join:address[:port]` set
+the link without the menu.
 
 Settings are saved in `ridge-racer-type-4.toml` in your user configuration
 folder, or next to the executable if that file already exists there. The

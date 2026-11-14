@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/scene_camera_state.h"
 #include "game/gfx/dispenv.h"
 #include "psyq/libgte/gtemat5.h"
@@ -49,7 +50,7 @@ L1:
         *q = CodeCharsToByte(t0, t1);
         q++;
     }
-    if (i < 6) goto L1;
+    if (i < RR_PAL_JP(6, 5)) goto L1;
     q = a0;
     i = 0;
     k = ((unsigned char)c % 11) & 0xFF;
@@ -62,7 +63,15 @@ L1:
         *t = AddOrSubtractByte(*t, *r, 1);
         if (k >= 11) k = 0;
         i++;
-    } while (i < 6);
+    } while (i < RR_PAL_JP(6, 5));
+    if (RR_RELEASE_JP) {
+        if ((unsigned char)c != (u8)ChecksumBytes(a0, 5)) return -1;
+        XorBytes37(a0, 5);
+        v = ((a0[4] & 0xF) << 16) + (a0[3] << 8) + a0[2];
+        if (v > 0x927BF) return -1;
+        if ((u32)((a0[1] << 4) + (a0[0] >> 4)) >= 0x280) return -1;
+        return 0;
+    }
     a0[5] = a0[5] & 0xF;
     if ((unsigned char)c != (u8)ChecksumBytes(a0, 6)) return -1;
     XorBytes37(a0, 6);
@@ -83,6 +92,17 @@ int EncodeRecordPassword(int a0, int a1, int a2, int a3, int a4, char *a5) {
     a0 &= 0xF;
     s0 |= a0;
     PasswordBytes[0] = s0;
+    if (RR_RELEASE_JP) {
+        a2 = a2 * 4 + a3;
+        PasswordBytes[1] = s0 >> 8;
+        PasswordBytes[2] = a2;
+        PasswordBytes[3] = a2 >> 8;
+        PasswordBytes[4] = a2 >> 16;
+        EncodePasswordCode(PasswordBytes, PasswordChars);
+        PasswordChars[0xC] = 0;
+        strcpy(a5, (const char *)PasswordChars);
+        return 0;
+    }
     r = PsyqRand();
     a2 = a2 * 4 + a3;
     PasswordBytes[1] = (s0 >> 8) + (r & ~0x3F);
@@ -100,6 +120,15 @@ int DecodeRecordPassword(int *a, int *b, int *c, int *d, int *e, const char *f) 
     unsigned t;
     strcpy((char *)PasswordChars, f);
     if (ValidateRecordPassword(PasswordBytes, PasswordChars) == 0) {
+        if (RR_RELEASE_JP) {
+            /* No language in the Japanese password: *e is left as it is. */
+            *a = PasswordBytes[0] & 0xF;
+            *b = PasswordBytes[1] * 16 + (PasswordBytes[0] >> 4);
+            t = (PasswordBytes[4] << 16) + (PasswordBytes[3] << 8) + PasswordBytes[2];
+            *c = t >> 2;
+            *d = t & 3;
+            return 0;
+        }
         *a = PasswordBytes[0] & 0xF;
         *b = (PasswordBytes[1] * 16 + (PasswordBytes[0] >> 4)) & 0x3FF;
         t = (PasswordBytes[4] << 16) + (PasswordBytes[3] << 8) + PasswordBytes[2];

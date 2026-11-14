@@ -42,6 +42,9 @@ typedef struct RrReleaseProfile {
     s16 r4Entries; /* entries in the R4.BIN directory */
 } RrReleaseProfile;
 
+/* Entries of the largest R4.BIN directory (the Japanese release's). */
+#define RR_R4_ENTRIES_MAX 969
+
 /* The running release (RR_RELEASE_PAL until the host selects one). */
 extern RrRelease GameRelease;
 extern const RrReleaseProfile *GameReleaseProfile;

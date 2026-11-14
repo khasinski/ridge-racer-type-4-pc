@@ -6,7 +6,6 @@ third_party/psyz/LICENSE
 third_party/psyz/decomp/LICENSE
 third_party/psyz/psyz/src/platform/LICENSE
 third_party/psyz/psyz/src/psyz/LICENSE
-third_party/psyz/psyz/src/platform/fsr1/third_party/fsr1/LICENSE.txt
 third_party/psyz/external/SDL/LICENSE.txt
 third_party/psyz/external/SDL/src/hidapi/LICENSE.txt
 third_party/psyz/external/SDL/src/hidapi/LICENSE-bsd.txt

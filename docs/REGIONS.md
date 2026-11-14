@@ -1,16 +1,20 @@
 # Other releases (NTSC-J, NTSC-U)
 
-The port runs the PAL release (SCES-01706, `SCES_017.06`) only. This page
-records how the other releases differ, measured on the disc images, and what
-supporting them would take. Nothing here is supported yet; the disc check
-accepts only the PAL boot file.
+The port runs the PAL release (SCES-01706, `SCES_017.06`). This page
+records how the other releases differ, measured on the disc images, and the
+state of the Japanese release's support (below, "Japanese release:
+status"). The disc check accepts the PAL and the Japanese boot files
+(`src/port/disc_check.c`); the Japanese release was enabled once a Time
+Attack race from the boot matched DuckStation. Diagnostic builds can run a
+release with a profile that is not enabled yet with
+`RR4_UNVERIFIED_RELEASE=1`.
 
 ## Images examined
 
 | Release | Image | Boot file | Result |
 | --- | --- | --- | --- |
 | PAL (Europe) | Redump `Ridge Racer Type 4 (Europe) (En,Fr,De,Es,It)` | `SCES_017.06` | supported |
-| NTSC-J | Redump `R4 - Ridge Racer Type 4 (Japan, Asia)` | `SLPS_018.00` | compared below |
+| NTSC-J | Redump `R4 - Ridge Racer Type 4 (Japan, Asia)` | `SLPS_018.00` | supported (status below) |
 | NTSC-J JogCon bundle | Redump `R4 - Ridge Racer Type 4 (Japan, Asia) (R4 + JogCon)` | `SLPS_018.00` | the same disc: only the two ISO directory sectors (LBA 22–23, file timestamps) differ |
 | NTSC-U (SCUS-94403) | none available | `SCUS_944.03` (expected) | not examined |
 | Bonus discs (JP *Ridge Racer Turbo* / PAL *Hi-Spec Demo*) | not R4 | | separate programs with their own executable; out of scope |
@@ -182,6 +186,91 @@ bases:
 - XA audio: the same channel layout and sector counts (channel 1 has 6 more
   sectors in JP). Groups 3, 4 and 0 (sound banks and the rest) are
   byte-identical apart from one group-0 entry. `FILE.DAT` is identical.
+
+## Japanese release: status
+
+The release profile (`include/rr/release.h`, `src/main/system/release.c`)
+is selected from the mounted disc's `SYSTEM.CNF` (`Rr4DiscImageBoot`,
+`src/port/main.c`): `GameRelease`, `RR_RELEASE_JP` and `RR_PAL_JP(pal, jp)`
+choose the Japanese release's code and data next to the PAL code, in the
+original modules. The Japanese release implies `VideoTimingNtsc` (its frame
+rate values are those behind `RR_PAL_NTSC`) and shows its own 240-line
+picture (`Psyz_GpuSetNtscPalPicture` stays off). `tests/port/release_test.c`
+covers the profiles. With the PAL disc every value is the original one; the
+regression scenarios (`tools/port/regress.sh`: attract, TA, GP, VS) are
+identical to the commit before each change.
+
+The Japanese executable is compared and decompiled with the decomp's
+toolchain (spimdisasm + m2c on `SLPS_018.00` and the JP overlay images).
+
+### Ported
+
+- **R4.BIN map**: the directory table holds the Japanese release's 969
+  entries (`RR_R4_ENTRIES_MAX`; 950 overran into the next globals);
+  `GetR4FileIndex` group bases per release; glyph rows (96),
+  track nodes (+88), the menu dialogue image and table per scene
+  (100..105), Grand Prix dialogue as whole entries (17 a team from 20) with
+  image lists, team image sets without languages.
+- **240-line picture**: display/draw environments (no PAL screen height or
+  interlace override), `SetupRenderer`, viewports and capture rectangles,
+  culling bounds of every renderer (RRO, lit triangles, sky, track objects),
+  HUD and menu positions, full-screen tiles and fades (one 320x480 tile for
+  the PAL 2x2 grid), split-screen HUD, loading triangle, movie frame
+  placement.
+- **Boot and front end**: splash (no PAL clear, display on at the second
+  frame), `SetVideoMode` in `SystemInit`, intro script and the two-part
+  title logo, title and mode select without languages, menu frame (seven
+  columns), dialogue (64 animated glyphs, continue mark, no Start skip),
+  frame task (eight sprites), tile-rect scene (ten sprites), options
+  (screen adjust range, menu image, row 2, controller pages without the
+  analog-mode wait).
+- **Text**: glyph lists without extended glyphs, 12-pixel animated glyphs (21
+  a row), the glyph/badge/font UV tables, race opening overlay (its own
+  glyph lists and element timing), menu text template 7.
+- **Data tables** that differ: preset sprites, HUD presets, menu state
+  defaults, trophy map, CD XA track table, card titles (Shift JIS) and
+  icons, viewport and capture rectangles.
+- **Saves and passwords**: card files `BISLPSP01800RR4_GAME` etc., animated
+  three-frame card icon, the save without the PAL language word (checksum of
+  0x6A8 words at 0x1AA0, converted to the PAL layout in `SaveBuffer`),
+  five-byte record passwords.
+- **Race logic and input**: opponent projections and collision knock-back by
+  `GameModeType`, ranking without the PAL tie rule, split latch, no
+  DualShock steering class (an analog pad steers with the d-pad), actuators
+  set up at pad state 2, TA results password line.
+- **Movie**: streams of 5 sectors a frame (the frame limit; the PAL release
+  has 6), epilogue credits as twelve sprite pages, letterbox passes.
+
+### Verified against DuckStation (JP disc, ports 47500/47501)
+
+- **Time Attack race**: from the race's entry (rand set to DuckStation's at
+  that field, as for the PAL comparisons) FrameCounter, RaceState, the player
+  car's distance and rand are identical on every field for 2987 fields
+  (about 1490 frames, accelerating with the digital pad into the walls of
+  the first course). The race load (1/36 to 1/53) takes 636 fields on both.
+- **Front end**: splash, opening movie, title, mode select, the Time Attack
+  car and course menus reach every mode in the same order. VRAM outside the
+  display (all textures, CLUTs and fonts the Japanese release loads) is
+  identical to DuckStation's on the title menu; the menu picture is
+  identical apart from its animated streaks and cursor, which are a few
+  fields out of phase (below).
+- **Mode entries**: the port reaches each mode 1 to 6 fields earlier than
+  DuckStation after the splash: one splash frame takes three fields one
+  frame earlier on DuckStation than in the port (290 against 291 splash
+  fields), the movie skip and the title are 1 and 2 fields early, and the
+  menus add one each. The PAL release matches DuckStation here; the
+  difference is in the time of the Japanese release's loads (other files
+  and sizes) and is not found yet.
+
+### Remaining
+
+- Field timing of the front end (above); the port's boot reaches the
+  splash 286 fields before DuckStation does (BIOS and executable load), as
+  for PAL.
+- Verification of each mode (GP, Extra Trial, VS, garage, records, options,
+  replay, card save/load) field for field.
+- JP course textures in VRAM lines 480..511 (with the 240-line buffers they
+  no longer collide; not yet checked visually in every course).
 
 ## What exists today
 

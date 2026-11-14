@@ -28,6 +28,10 @@
 #include "rr/animated_glyph.h"
 #include "rr/widescreen.h"
 #include <psyz/video.h>
+static GpuRectangleFields CourseSelectPreviewUvsJp[2][7];
+static const s16 CourseSelectLabelPosYJp[8];
+static const s16 CourseSelectMapCoordsYJp[8];
+static const s16 ViewOffsetYJp[8];
 /* PsyZ libgte ScaleMatrix(MATRIX *, VECTOR *); MatrixWords32 shares MATRIX. */
 extern MatrixWords32 *ScaleMatrix(MatrixWords32 *matrix, s32 *scale);
 
@@ -199,21 +203,21 @@ void SetupViewport(s32 viewport) {
     packet = RR_GPU_SCRATCH->cursor;
     ActiveViewportIndex = viewport;
     isMirror = (viewport == 1);
-    SetGeomOffset(ViewOffsetX[viewport], ViewOffsetY[viewport]);
+    SetGeomOffset(ViewOffsetX[viewport], RR_PAL_JP(ViewOffsetY, ViewOffsetYJp)[viewport]);
     SetGeomScreen(ViewScreenH[viewport]);
     scene->viewport6C.rect.x = CourseSelectMapCoordsX[viewport];
-    coordinate = CourseSelectMapCoordsY[viewport];
+    coordinate = RR_PAL_JP(CourseSelectMapCoordsY, CourseSelectMapCoordsYJp)[viewport];
     if (isMirror) {
         coordinate = (s32)((u32)coordinate + (u32)RearViewMirrorY);
     }
     scene->viewport6C.rect.y = coordinate;
     scene->viewport6C.rect.w = CourseSelectLabelPosX[viewport];
-    coordinate = CourseSelectLabelPosY[viewport];
+    coordinate = RR_PAL_JP(CourseSelectLabelPosY, CourseSelectLabelPosYJp)[viewport];
     if (isMirror) {
         coordinate = (s32)((u32)coordinate + (u32)RearViewMirrorY);
     }
     scene->viewport6C.rect.h = coordinate;
-    rectangle = &CourseSelectPreviewUvs[DrawBufIndex][viewport];
+    rectangle = &RR_PAL_JP(CourseSelectPreviewUvs, CourseSelectPreviewUvsJp)[DrawBufIndex][viewport];
     if (!isMirror) {
         scene->renderFlags64 = 0;
     } else {
@@ -401,12 +405,20 @@ int GetViewTrackNode(const s32 *position, s32 player) {
 /* Initial values of the globals this module owns. */
 s16 ViewOffsetX[8] = {160, 160, 160, 160, 80, 240, 160};
 s16 ViewOffsetY[8] = {128, 32, 64, 192, 128, 128, 256};
+/* The Japanese release's values (SLPS-01800). */
+static const s16 ViewOffsetYJp[8] = {0x78, 0x20, 0x3C, 0xB4, 0x78, 0x78, 0xF0, 0};
 s32 ViewScreenH[7] = {290, 320, 290, 290, 290, 290, 290};
 u16 CourseSelectMapCoordsX[8] = {0, 0x62, 0, 0, 0, 0xA0};
 s16 CourseSelectMapCoordsY[8] = {0, 0, 0, 128};
+/* The Japanese release's values (SLPS-01800). */
+static const s16 CourseSelectMapCoordsYJp[8] = {0, 0, 0, 0x78, 0, 0, 0, 0};
 u16 CourseSelectLabelPosX[8] = {0x140, 0xDE, 0x140, 0x140, 0xA0, 0x140, 0x140};
 s16 CourseSelectLabelPosY[8] = {256, 28, 128, 256, 256, 256, 512};
+/* The Japanese release's values (SLPS-01800). */
+static const s16 CourseSelectLabelPosYJp[8] = {0xF0, 0x1C, 0x78, 0xF0, 0xF0, 0xF0, 0x1E0, 0};
 GpuRectangleFields CourseSelectPreviewUvs[2][7] = {{{.w = 320, .h = 256}, {.x = 98, .y = 18, .w = 124, .h = 28}, {.w = 320, .h = 128}, {.y = 128, .w = 320, .h = 128}, {.w = 160, .h = 256}, {.x = 160, .w = 160, .h = 256}, {.w = 320, .h = 512}}, {{.y = 256, .w = 320, .h = 256}, {.x = 98, .y = 274, .w = 124, .h = 28}, {.y = 256, .w = 320, .h = 128}, {.y = 384, .w = 320, .h = 128}, {.y = 256, .w = 160, .h = 256}, {.x = 160, .y = 256, .w = 160, .h = 256}, {.w = 320, .h = 512}}};
+/* The Japanese release's values (SLPS-01800): 240-line buffers. */
+static GpuRectangleFields CourseSelectPreviewUvsJp[2][7] = {{{.w = 320, .h = 240}, {.x = 98, .y = 18, .w = 124, .h = 28}, {.w = 320, .h = 120}, {.y = 120, .w = 320, .h = 120}, {.w = 160, .h = 240}, {.x = 160, .w = 160, .h = 240}, {.w = 320, .h = 480}}, {{.y = 240, .w = 320, .h = 240}, {.x = 98, .y = 258, .w = 124, .h = 28}, {.y = 240, .w = 320, .h = 120}, {.y = 360, .w = 320, .h = 120}, {.y = 240, .w = 160, .h = 240}, {.x = 160, .y = 240, .w = 160, .h = 240}, {.w = 320, .h = 480}}};
 int BackColorR;
 s32 WideMarginX;
 s32 ActiveViewportIndex;

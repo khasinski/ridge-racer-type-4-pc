@@ -1,3 +1,4 @@
+#include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/screen_tiles.h"
 #include "rr/overlay662_available_cars.h"
@@ -122,7 +123,7 @@ void ovl662_draw_car_slot_bars(s32 selected)
     result = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], cursor, 0x39);
     RR_GPU_SCRATCH->cursor = result;
     if (ovl662_car_slot_statuses[(SelectionRows.choice.bytes[2] % 20) & 255] == 2) {
-        result = AddSpritePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], result, 142, 256,
+        result = AddSpritePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], result, 142, RR_PAL_JP(256, 240),
                               &ovl662_car_slot_bar_uv, 0x7CBB, 0);
         RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], result, 0x38);
     }

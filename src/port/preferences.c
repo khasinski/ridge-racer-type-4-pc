@@ -10,6 +10,7 @@
 #endif
 
 #include "preferences.h"
+#include "link.h"
 
 #include <SDL3/SDL.h>
 #include <psyz.h>
@@ -88,6 +89,7 @@ void Rr4PrefsCaptureDefaults(void) {
     s_defaults.vsync = RR4_VSYNC_AUTO;
     s_defaults.volume = 100;
     s_defaults.force_feedback = 1;
+    s_defaults.link_port = RR4_LINK_DEFAULT_PORT;
     for (int i = 0; i < RR4_AXES; i++) {
         s_defaults.axes[i].saturation = 1.0f;
         s_defaults.axes[i].scaling = 1.0f;
@@ -320,6 +322,30 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
         }
         return 1;
     }
+    if (!strcmp(section, "link")) {
+        if (!strcmp(key, "mode")) {
+            static const char *const modes[] = {"off", "host", "join"};
+            char mode[16];
+            if (!ParseString(value, mode, sizeof(mode)))
+                return 0;
+            for (int i = 0; i < 3; i++) {
+                if (!strcmp(mode, modes[i])) {
+                    p->link_mode = i;
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        if (!strcmp(key, "port")) {
+            if (!ParseInt(value, &v) || v < 1 || v > 65535)
+                return 0;
+            p->link_port = (unsigned)v;
+            return 1;
+        }
+        if (!strcmp(key, "address"))
+            return ParseString(value, p->link_address, sizeof(p->link_address));
+        return 1;
+    }
     if (!strcmp(section, "keyboard") || !strcmp(section, "controller")) {
         int keyboard = !strcmp(section, "keyboard");
         for (int i = 0; i < RR4_PREFS_BUTTONS; i++) {
@@ -477,7 +503,12 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
         fprintf(file, "%s_deadzone = %g\n%s_saturation = %g\n%s_linearity = %g\n%s_scaling = %g\n",
                 kAxisKeys[i], p->axes[i].deadzone, kAxisKeys[i], p->axes[i].saturation, kAxisKeys[i],
                 p->axes[i].linearity, kAxisKeys[i], p->axes[i].scaling);
-    fputs("\n[disc]\nimage = ", file);
+    fprintf(file, "\n# Link cable over the network: mode off, host (wait on port) or join\n"
+                  "# (connect to address:port)\n[link]\nmode = \"%s\"\nport = %u\naddress = ",
+            p->link_mode == RR4_LINK_HOST ? "host" : p->link_mode == RR4_LINK_JOIN ? "join" : "off",
+            p->link_port);
+    WriteString(file, p->link_address);
+    fputs("\n\n[disc]\nimage = ", file);
     WriteString(file, p->disc);
     fputs("\n\n# SDL scancodes\n[keyboard]\n", file);
     for (int i = 0; i < RR4_PREFS_BUTTONS; i++)
@@ -690,6 +721,7 @@ void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
     Psyz_VideoSetFullscreenFieldRate(p->fullscreen_field_rate != 0);
     if (window_ready)
         Psyz_SetFullscreen_SDL3(p->fullscreen != 0);
+    Rr4LinkApply(p);
 }
 
 /* ---- names ---- */

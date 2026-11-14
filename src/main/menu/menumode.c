@@ -1,3 +1,5 @@
+#include <string.h>
+#include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "game/data/cardchk.h"
 #include "game/menu/loadmenu.h"
@@ -19,6 +21,7 @@ extern short CardTransferMode;
 extern char CardTargetFileName[];
 extern char CardFileNameTemplate[];
 extern char CardSaveFileName[];
+extern u8 D_800115A4[];
 extern unsigned char TeamSelectLogoPolys[][4];
 extern unsigned char CardPortPollStatus[];
 extern short CardPromptChoices[];
@@ -86,7 +89,7 @@ void StepCardPortSelection(void) {
     MenuStateEntry8 *p;
     signed char sb;
 
-    base = MenuStateTable;
+    base = RR_RELEASE_JP ? (MenuStateEntry8 *)MenuStateTableJp : MenuStateTable;
     p = base + MenuStateIndex;
     idx = p->tableIdx04;
     c = p->promptIdx06;
@@ -181,6 +184,19 @@ void UpdateCardMenuRowStates(void) {
     a0 = 1;
 cf0:
     CardSaveStep(a0, 0);
+}
+
+/* The card files of the Japanese release are BISLPSP01800RR4_GAME and so
+ * on (the PAL release's BESCESP01706...): saves do not carry over. */
+void MenuModeSelectRelease(void) {
+    static const char product[] = "BISLPSP01800";
+    if (!RR_RELEASE_JP)
+        return;
+    memcpy(D_800115A4, product, 12);
+    memcpy(D_800115A4 + 24, product, 12);
+    memcpy(D_800115A4 + 48, product, 12);
+    memcpy(CardSaveFileName, product, 12);
+    memcpy(CardFileNameTemplate, product, 12);
 }
 
 /* Initial values of the globals this module owns. */
