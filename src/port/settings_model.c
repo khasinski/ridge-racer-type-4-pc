@@ -16,13 +16,16 @@ typedef struct ChoiceSetting {
     void (*set)(Rr4Prefs *p, int index);
     int clamp; /* stops at the ends instead of wrapping (volume) */
     int next_start; /* takes effect when the game starts again */
+    unsigned feature; /* SETTINGS_FEATURE_* the renderer must have */
 } ChoiceSetting;
 
 #define ACCESSORS(Name, read, write)                               \
     static int Get##Name(const Rr4Prefs *p) { return (read); }     \
     static void Set##Name(Rr4Prefs *p, int i) { write; }
 #define SETTING(label, help, names, Name) \
-    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0}
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0, 0}
+#define GPU_SETTING(label, help, names, Name, feature) \
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0, feature}
 
 static const char *const kSwitchNames[] = {"Off", "On"};
 
@@ -66,26 +69,32 @@ static const char *const kInterpolationNames[] = {"Off (original)", "60 Hz"};
 ACCESSORS(Interpolation, p->frame_interpolation != 0, p->frame_interpolation = i)
 
 static const ChoiceSetting kGraphics[] = {
-    SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
-            kScaleNames, Scale),
+    GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
+            kScaleNames, Scale,
+            SETTINGS_FEATURE_UPSCALE),
     SETTING("Display mode", "Window or fullscreen (F4). Fullscreen 50 Hz sets a display that has the mode (most 120 Hz ones) to the game's own rate (60 Hz with NTSC video timing) for the smoothest motion.",
             kWindowNames, Fullscreen),
     SETTING("VSync", "Auto uses display sync on 60 Hz screens. Off paces the game's fields (50 Hz PAL, 60 Hz NTSC) with a limiter.",
             kVsyncNames, Vsync),
     {"Video timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
-    SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
-            kAspectNames, Aspect),
+    GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
+            kAspectNames, Aspect,
+            SETTINGS_FEATURE_WIDESCREEN),
     SETTING("Dithering", "Original: PlayStation 15-bit colour, dithered on shaded polygons. Off: smooth full-colour shading.",
             kDitherNames, Dither),
-    SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
-            kAntialiasNames, Antialiasing),
-    SETTING("Texture filtering", "Experimental. Bilinear filtering for 3D textures.",
-            kFilterNames, Filtering),
-    SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
-            kSwitchNames, Geometry),
-    SETTING("Frame interpolation", "Experimental. Presents in-between frames; game timing stays original.",
-            kInterpolationNames, Interpolation),
+    GPU_SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
+            kAntialiasNames, Antialiasing,
+            SETTINGS_FEATURE_ANTIALIASING),
+    GPU_SETTING("Texture filtering", "Experimental. Bilinear filtering for 3D textures.",
+            kFilterNames, Filtering,
+            SETTINGS_FEATURE_FILTERING),
+    GPU_SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
+            kSwitchNames, Geometry,
+            SETTINGS_FEATURE_GEOMETRY),
+    GPU_SETTING("Frame interpolation", "Experimental. Presents in-between frames; game timing stays original.",
+            kInterpolationNames, Interpolation,
+            SETTINGS_FEATURE_INTERPOLATION),
 };
 
 static const char *const kVolumeNames[] = {
@@ -153,7 +162,7 @@ enum {
     DISC_ROWS = 2,
 };
 
-static const char *const kPageNames[SETTINGS_PAGE_COUNT] = {"Graphics", "Controls", "Audio", "Disc"};
+static const char *const kPageNames[SETTINGS_PAGE_COUNT] = {"Graphics", "Controls", "Audio", "Disc", "Replays"};
 
 const char *SettingsPageName(int page) {
     return page >= 0 && page < SETTINGS_PAGE_COUNT ? kPageNames[page] : "";
@@ -176,6 +185,50 @@ static const ChoiceSetting *PageChoices(int page, int *count) {
     return NULL;
 }
 
+/* Replays page: Save replay, then one row per file (or a note when none). */
+static int ReplayRows(const SettingsModel *m) {
+    return 1 + (m->replay_count > 0 ? m->replay_count : 1);
+}
+
+static void ActivateReplayRow(SettingsModel *m) {
+    if (!m->replays_available)
+        return;
+    if (m->row == 0) {
+        if (m->replay_can_save) {
+            m->replay_request = SETTINGS_REPLAY_SAVE;
+        } else {
+            snprintf(m->status, sizeof(m->status), "%s", m->replay_save_help);
+        }
+    } else if (m->row - 1 < m->replay_count) {
+        m->replay_index = m->row - 1;
+        m->replay_request = SETTINGS_REPLAY_LOAD;
+    }
+    m->dirty = 1;
+}
+
+static void ReplayRowView(const SettingsModel *m, int row, SettingsRowView *v) {
+    if (row == 0) {
+        v->kind = 0;
+        v->label = "Save replay";
+        v->help = !m->replays_available ? "Replays are not available in this build."
+                  : m->replay_can_save   ? "Save the last race's replay to the replays folder."
+                                         : m->replay_save_help;
+        return;
+    }
+    if (m->replay_count <= 0) {
+        v->kind = 3;
+        v->label = "No saved replays";
+        v->value = "";
+        v->help = "Saved replays appear here. Enter plays one.";
+        return;
+    }
+    v->kind = 0;
+    v->label = m->replays[row - 1].label;
+    v->value = m->replays[row - 1].value;
+    v->help = m->replays[row - 1].help;
+    v->danger = !m->replays[row - 1].ok;
+}
+
 int SettingsContentRows(const SettingsModel *m) {
     int count;
     switch (m->page) {
@@ -183,6 +236,8 @@ int SettingsContentRows(const SettingsModel *m) {
         return CONTROL_ROW_BINDINGS + RR4_PREFS_BUTTONS;
     case SETTINGS_PAGE_DISC:
         return DISC_ROWS;
+    case SETTINGS_PAGE_REPLAYS:
+        return ReplayRows(m);
     default:
         PageChoices(m->page, &count);
         return count;
@@ -270,6 +325,11 @@ static void ResetPage(SettingsModel *m) {
     Rr4Prefs before = m->prefs;
     Rr4Prefs *p = &m->prefs;
 
+    if (m->page == SETTINGS_PAGE_REPLAYS) {
+        snprintf(m->status, sizeof(m->status), "Nothing to restore: saved replays stay in the replays folder.");
+        m->dirty = 1;
+        return;
+    }
     switch (m->page) {
     case SETTINGS_PAGE_GRAPHICS:
         p->scale = d->scale;
@@ -319,6 +379,11 @@ static void StepChoice(SettingsModel *m, int row, int direction) {
     if (!settings || row < 0 || row >= count)
         return;
     s = &settings[row];
+    if (s->feature & m->unavailable) {
+        snprintf(m->status, sizeof(m->status), "%s", m->unavailable_note ? m->unavailable_note : "Not available.");
+        m->dirty = 1;
+        return;
+    }
     index = s->get(&m->prefs);
     if (s->clamp) {
         next = index + direction;
@@ -367,6 +432,9 @@ static void Activate(SettingsModel *m) {
             m->dirty = 1;
         }
         break;
+    case SETTINGS_PAGE_REPLAYS:
+        ActivateReplayRow(m);
+        break;
     case SETTINGS_PAGE_DISC:
         if (m->row == DISC_ROW_NEXT) {
             m->choose_disc = 1;
@@ -397,6 +465,8 @@ static void Step(SettingsModel *m, int direction) {
             Activate(m);
         return;
     }
+    if (m->page == SETTINGS_PAGE_REPLAYS)
+        return;
     StepChoice(m, m->row, direction);
 }
 
@@ -621,6 +691,9 @@ void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
         }
         v->help = help;
         return;
+    case SETTINGS_PAGE_REPLAYS:
+        ReplayRowView(m, row, v);
+        return;
     default: {
         int count;
         const ChoiceSetting *s = PageChoices(m->page, &count);
@@ -636,6 +709,10 @@ void SettingsModelRow(const SettingsModel *m, int row, SettingsRowView *v) {
         v->label = s[row].label;
         v->value = s[row].names[index];
         v->help = s[row].help;
+        if (s[row].feature & m->unavailable) {
+            v->disabled = 1;
+            v->help = m->unavailable_note ? m->unavailable_note : "Not available.";
+        }
         return;
     }
     }
@@ -732,7 +809,7 @@ void SettingsModelPointer(SettingsModel *m, float x, float y, int click) {
         SettingsModelSelect(m, row);
         if (!click)
             return;
-        if (row < SettingsContentRows(m) && m->page != SETTINGS_PAGE_DISC &&
+        if (row < SettingsContentRows(m) && m->page != SETTINGS_PAGE_DISC && m->page != SETTINGS_PAGE_REPLAYS &&
             (m->page != SETTINGS_PAGE_CONTROLS || row < CONTROL_ROW_DEVICE))
             Step(m, x < SettingsValueCentre() ? -1 : 1);
         else

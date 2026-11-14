@@ -14,11 +14,23 @@ enum {
     SETTINGS_PAGE_CONTROLS,
     SETTINGS_PAGE_AUDIO,
     SETTINGS_PAGE_DISC,
+    SETTINGS_PAGE_REPLAYS,
     SETTINGS_PAGE_COUNT,
     /* Rows after a page's content: restore page defaults, resume, quit. */
     SETTINGS_ACTION_ROWS = 3,
     /* Content rows shown at once; longer pages scroll. */
     SETTINGS_VISIBLE_ROWS = 9,
+};
+
+/* Graphics enhancements the renderer may lack (SettingsModel.unavailable),
+ * with the values of PsyZ's PSYZ_VIDEO_FEATURE_*. */
+enum {
+    SETTINGS_FEATURE_UPSCALE = 1 << 0,
+    SETTINGS_FEATURE_ANTIALIASING = 1 << 1,
+    SETTINGS_FEATURE_FILTERING = 1 << 2,
+    SETTINGS_FEATURE_GEOMETRY = 1 << 3,
+    SETTINGS_FEATURE_WIDESCREEN = 1 << 4,
+    SETTINGS_FEATURE_INTERPOLATION = 1 << 5,
 };
 
 typedef enum SettingsAction {
@@ -39,9 +51,29 @@ enum {
     SETTINGS_DEVICE_CONTROLLER = 1,
 };
 
+/* Replays page: Save replay, then the saved replays (Enter plays one). The
+ * host lists them (SettingsReplayOps, settings_replays.h) and carries out
+ * the request the page leaves in replay_request. */
+enum {
+    SETTINGS_REPLAYS_MAX = 64,
+    SETTINGS_REPLAY_SAVE = 1, /* replay_request: save the last replay */
+    SETTINGS_REPLAY_LOAD = 2, /* load replays[replay_index] */
+};
+typedef struct SettingsReplayRow {
+    char label[64];
+    char value[48];
+    char help[192];
+    int ok; /* readable by this build */
+} SettingsReplayRow;
+
 typedef struct SettingsModel {
     Rr4Prefs prefs;         /* what the game runs with while open */
     int open;
+    /* SETTINGS_FEATURE_* the renderer cannot draw (set by the host after
+     * SettingsModelOpen): their rows are greyed out, keep their value and
+     * show unavailable_note as help. */
+    unsigned unavailable;
+    const char *unavailable_note;
     int page;
     int row;                /* selected row of the page */
     int scroll;             /* first visible content row */
@@ -58,6 +90,14 @@ typedef struct SettingsModel {
      * accepts any CUE file. */
     int (*check_disc)(const char *path, char *message, size_t size);
     char status[192];       /* replaces the row help until the next move */
+    /* Replays page, filled by the host. */
+    int replays_available;  /* the host lists and saves replays */
+    int replay_can_save;
+    char replay_save_help[192];
+    int replay_count;
+    SettingsReplayRow replays[SETTINGS_REPLAYS_MAX];
+    int replay_request;     /* SETTINGS_REPLAY_*, for the host */
+    int replay_index;
 } SettingsModel;
 
 void SettingsModelOpen(SettingsModel *model, const Rr4Prefs *prefs, const char *mounted);
@@ -92,6 +132,7 @@ typedef struct SettingsRowView {
     const char *help;
     int danger;
     int capturing;
+    int disabled; /* the renderer lacks it: shown greyed, not changed */
 } SettingsRowView;
 void SettingsModelRow(const SettingsModel *model, int row, SettingsRowView *view);
 /* Help for the selected row (or the status message). */

@@ -34,6 +34,7 @@
 #include "game/course/trkintp2.h"
 #include "rr/screen_tiles.h"
 #include "game/sound/cdplay.h"
+#include "rr/replay_host.h"
 
 extern s16 FadeCountdown;
 
@@ -198,6 +199,8 @@ void MainLoop(void) {
         SoundUpdate();
         WideBeginFrame();
         InterpBeginFrame();
+        if (ReplayHost)
+            ReplayHost->frame();
         ModeFuncTable[ModeGroup][ModeIndex]();
         DrawSync(0);
         /* The frame drawn last is shown at the next VSync(0); a frame of two

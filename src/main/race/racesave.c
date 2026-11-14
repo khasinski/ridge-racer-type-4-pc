@@ -35,6 +35,7 @@
 #include "game/sound/sndctrl.h"
 #include "game/gfx/gtepoly1.h"
 #include "game/menu/mnchoice.h"
+#include "rr/replay_host.h"
 #include "game/sound/sndslot.h"
 
 
@@ -306,6 +307,8 @@ void CheckRaceFinish(RaceVehicle *vehicle) {
 }
 
 void ReplayModeEnter(void) {
+    if (ReplayHost)
+        ReplayHost->enter();
     SoundInitForRace();
     SelectReplayBgmTrack();
     AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], 0xFF, 0x25);
@@ -339,7 +342,8 @@ void ReplayModeUpdate(void) {
     if (FadeCountdown >= 0) {
         if (FadeCountdown == 0) {
             SetReverbDepthBoth(0);
-            FinishRace();
+            if (!ReplayHost || !ReplayHost->finish())
+                FinishRace();
         }
         t = (unsigned short)FadeCountdown - 1;
         FadeCountdown = t;
@@ -393,3 +397,4 @@ s16 PlayerThrottleLoad[2];
 PadButtonMap30 PadButtonMap[2];
 s32 ReplayLength;
 int ReplayFocusCarIndex;
+const ReplayHostHooks *ReplayHost;

@@ -243,6 +243,8 @@ static void PaintRow(const Painter *p, int row) {
     baseline = mid + 6.0f * s;
     label = selected ? kText : WithAlpha(kText, 0.82f);
     SettingsModelRow(p->model, row, &v);
+    if (v.disabled)
+        label = WithAlpha(kMuted, 0.55f);
     if (selected) {
         FillRoundRect(p->surface, (SETTINGS_PAD / 2) * s, top + 3.0f * s, (SETTINGS_PANEL_W - SETTINGS_PAD) * s,
                       (SETTINGS_ROW_H - 6) * s, 9.0f * s, WithAlpha(kAccent, 0.16f));
@@ -254,7 +256,9 @@ static void PaintRow(const Painter *p, int row) {
     if (!v.value)
         return;
     FitText(v.value, 17.0f * s, (SETTINGS_VALUE_W - 40) * s, fit, sizeof(fit));
-    if (v.kind == 1) {
+    if (v.disabled) {
+        DrawText(p->surface, centre, baseline, 17.0f * s, fit, WithAlpha(kMuted, 0.55f), ALIGN_CENTRE);
+    } else if (v.kind == 1) {
         Color chevron = selected ? kAccent : WithAlpha(kMuted, 0.75f);
         DrawChevron(p->surface, centre - reach, mid, 5.0f * s, -1, 2.0f * s, chevron);
         DrawChevron(p->surface, centre + reach, mid, 5.0f * s, 1, 2.0f * s, chevron);

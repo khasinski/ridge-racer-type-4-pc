@@ -44,6 +44,12 @@ correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
 original.
 
+**Escape > Replays** saves the replay of the last race (Time Attack, Grand
+Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
+file, and plays a saved one from the title screen (or while one plays).
+Replay files require a compatible build and the same PAL/NTSC video timing.
+Serial link races are not saved.
+
 Settings are saved in `ridge-racer-type-4.toml` in your user configuration
 folder, or next to the executable if that file already exists there. The
 memory cards are kept as `bu00`/`bu10` folders in the same folder as that

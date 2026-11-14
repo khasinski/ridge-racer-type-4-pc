@@ -73,7 +73,9 @@ add_library(rr4_host STATIC
     src/port/host_log.c
     src/port/memory_cards.c
     src/port/preferences.c
+    src/port/replay_file.c
     src/port/settings_model.c
+    src/port/settings_replays.c
     src/port/settings_raster.c
     src/port/settings_overlay.c
 )
@@ -107,6 +109,8 @@ endif()
 if(RR4_BUILD_GAME)
     # The game: src/port/main.c mounts the disc and enters MainLoop.
     target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_game)
+    # Replay files: the game side of saving and loading replays.
+    target_sources(ridge-racer-type-4-pc PRIVATE src/port/replay_session.c)
 endif()
 if(APPLE AND RR4_MACOS_BUNDLE)
     # "Ridge Racer Type 4.app": icon, documentation and the license texts of
@@ -177,6 +181,16 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME settings COMMAND rr4_settings_test ${CMAKE_CURRENT_BINARY_DIR}/settings-test)
     set_tests_properties(settings PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
+    # Replay files: format, checksums, refusals and the replays folder.
+    add_executable(rr4_replay_file_test tests/port/replay_file_test.c)
+    target_include_directories(rr4_replay_file_test SYSTEM PRIVATE ${PSYZ_DIR}/psyz/include)
+    target_compile_definitions(rr4_replay_file_test PRIVATE __psyz)
+    target_link_libraries(rr4_replay_file_test PRIVATE rr4_host psyz)
+    if(MINGW)
+        target_link_options(rr4_replay_file_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME replay-file COMMAND rr4_replay_file_test ${CMAKE_CURRENT_BINARY_DIR}/replay-file-test)
+    set_tests_properties(replay-file PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
     # Memory card saves through the game's file services, preferences and a
     # synthetic disc image under a non-ASCII (UTF-8) directory.
     add_executable(rr4_host_files_test tests/port/host_files_test.c)

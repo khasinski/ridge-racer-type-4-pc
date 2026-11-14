@@ -62,6 +62,7 @@
 #include "memory_cards.h"
 #include "preferences.h"
 #include "settings_overlay.h"
+#include "replay_session.h"
 #if RR4_DIAGNOSTICS
 #include "diagnostics.h"
 #endif
@@ -260,6 +261,7 @@ int main(int argc, char **argv) {
         VideoTimingNtsc = ntsc;
         Psyz_GpuSetNtscPalPicture(ntsc);
     }
+    ReplaySessionInstall(interactive ? Rr4PrefsPath() : "");
     chained_vsync = Psyz_SetVSyncCb(host_vsync);
     MainLoop();
     return 0;

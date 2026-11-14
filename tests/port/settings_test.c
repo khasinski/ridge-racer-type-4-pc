@@ -98,6 +98,34 @@ static void TestGraphicsPage(void) {
     CHECK(!m.open && !m.quit);
 }
 
+/* A renderer without the GPU enhancements greys their rows out: they keep
+ * their value, do not change and say why. */
+static void TestUnavailable(void) {
+    SettingsModel m;
+    SettingsRowView v;
+    Rr4Prefs prefs = *Rr4PrefsDefaults();
+
+    prefs.scale = 4;
+    SettingsModelOpen(&m, &prefs, NULL);
+    m.unavailable = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_INTERPOLATION;
+    m.unavailable_note = "Needs the SDL GPU renderer.";
+    SettingsModelRow(&m, 0, &v); /* internal resolution */
+    CHECK(v.disabled && !strcmp(v.value, "4x") && !strcmp(v.help, m.unavailable_note));
+    Do(&m, SETTINGS_RIGHT, 1);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.prefs.scale == 4 && !SettingsModelTakeChanged(&m));
+    CHECK(!strcmp(SettingsModelHelp(&m), m.unavailable_note));
+    Do(&m, SETTINGS_DOWN, 1); /* display mode: no GPU feature */
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!v.disabled);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.fullscreen == 1);
+    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* frame interpolation */
+    CHECK(v.disabled && !strcmp(v.label, "Frame interpolation"));
+    SettingsModelRow(&m, SettingsContentRows(&m) - 2, &v); /* geometry correction */
+    CHECK(!v.disabled);
+}
+
 static void TestControlsPage(void) {
     SettingsModel m;
     const Rr4Prefs *d = Rr4PrefsDefaults();
@@ -220,6 +248,34 @@ static void TestAudioAndDisc(void) {
     /* The mounted image is unaffected. */
     SettingsModelRow(&m, 0, &v);
     CHECK(!strcmp(v.value, "Ridge Racer Type 4 (Europe).cue"));
+    /* Replays: without a replay session the page says so and asks for
+     * nothing; with replays listed, Enter asks the host to save or play. */
+    Do(&m, SETTINGS_PAGE_NEXT, 1);
+    CHECK(m.page == SETTINGS_PAGE_REPLAYS);
+    CHECK(SettingsContentRows(&m) == 2);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == 0);
+    m.replays_available = 1;
+    m.replay_can_save = 0;
+    snprintf(m.replay_save_help, sizeof(m.replay_save_help), "No replay yet.");
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == 0 && !strcmp(m.status, "No replay yet."));
+    m.replay_can_save = 1;
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == SETTINGS_REPLAY_SAVE);
+    m.replay_request = 0;
+    m.replay_count = 2;
+    snprintf(m.replays[1].label, sizeof(m.replays[1].label), "Time Attack, course 1");
+    m.replays[1].ok = 1;
+    CHECK(SettingsContentRows(&m) == 3);
+    Do(&m, SETTINGS_DOWN, 2);
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!strcmp(v.label, "Time Attack, course 1"));
+    Do(&m, SETTINGS_RIGHT, 1); /* no choice to step */
+    CHECK(m.replay_request == 0);
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.replay_request == SETTINGS_REPLAY_LOAD && m.replay_index == 1);
+    m.replay_request = 0;
     /* Next page wraps to Graphics; Quit game closes and quits. */
     Do(&m, SETTINGS_PAGE_NEXT, 1);
     CHECK(m.page == SETTINGS_PAGE_GRAPHICS);
@@ -419,6 +475,7 @@ int main(int argc, char **argv) {
     Rr4PrefsCaptureDefaults();
     TestDefaults();
     TestGraphicsPage();
+    TestUnavailable();
     TestControlsPage();
     TestAudioAndDisc();
     TestPointer();
