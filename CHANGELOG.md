@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Escape > Graphics > Draw distance** offers Original (default) or
+  Extended (2x). The extended view draws additional course scenery and
+  doubles the renderer's depth range, including mirrors and split screen.
+  It costs more CPU and GPU time and is saved in the desktop preferences.
+- The application icon now uses [amame-a's contribution](https://github.com/khasinski/ridge-racer-type-4-pc/issues/2),
+  with matching macOS, Windows and Linux icons and the Orbitron font notice.
+
 - The **Japanese release** (R4 - Ridge Racer Type 4, SLPS-01800, also the
   JogCon bundle) runs from its own disc: 60 Hz, its 240-line picture,
   Japanese text, R4.BIN layout, card saves (`BISLPSP01800RR4_*`) and record

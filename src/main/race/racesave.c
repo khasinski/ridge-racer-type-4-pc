@@ -342,8 +342,14 @@ void ReplayModeUpdate(void) {
     if (FadeCountdown >= 0) {
         if (FadeCountdown == 0) {
             SetReverbDepthBoth(0);
-            if (!ReplayHost || !ReplayHost->finish())
-                FinishRace();
+            if (ReplayHost && ReplayHost->finish()) {
+                /* The host restored the title's race setup. Do not step
+                 * that setup as if it were still this replay: its cars
+                 * have not been loaded yet. Finish the fade and yield. */
+                AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], 0xFF, 0x45);
+                return;
+            }
+            FinishRace();
         }
         t = (unsigned short)FadeCountdown - 1;
         FadeCountdown = t;

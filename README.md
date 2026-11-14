@@ -53,10 +53,6 @@ file, and plays a saved one from the title screen (or while one plays).
 Replay files require a compatible build and the same PAL/NTSC video timing.
 Serial link races are not saved.
 
-**Escape > Replays** saves the replay of the last race (Time Attack, Grand
-Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
-file, and plays a saved one from the title screen (or while one plays).
-
 ### Link battle over the network
 
 The game's two-console link cable mode works over a network: the serial
