@@ -27,6 +27,9 @@
 #include <string.h>
 
 #include "host_log.h"
+#include "rr/draw_distance.h"
+
+int ExtendedDrawDistance;
 
 #define PREFS_FILE "ridge-racer-type-4.toml"
 #define PREFS_APP "Ridge Racer Type 4"
@@ -262,6 +265,8 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
             return ParseFlag(value, &p->texture_filtering);
         if (!strcmp(key, "geometry_correction"))
             return ParseFlag(value, &p->geometry_correction);
+        if (!strcmp(key, "extended_draw_distance"))
+            return ParseFlag(value, &p->extended_draw_distance);
         if (!strcmp(key, "frame_interpolation"))
             return ParseFlag(value, &p->frame_interpolation);
         if (!strcmp(key, "widescreen")) {
@@ -447,7 +452,8 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             "antialiasing = %s\n"
             "texture_filtering = %s\n"
             "geometry_correction = %s\n"
-            "frame_interpolation = %s\n\n"
+            "frame_interpolation = %s\n"
+            "extended_draw_distance = %s\n\n"
             "[audio]\n"
             "volume = %u\n"
             "mute = %s\n\n"
@@ -464,7 +470,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             p->aspect_ratio == RR4_ASPECT_WIDESCREEN ? "widescreen" : "classic",
             Bool(p->disable_dithering),
             Bool(p->antialiasing), Bool(p->texture_filtering),
-            Bool(p->geometry_correction), Bool(p->frame_interpolation),
+            Bool(p->geometry_correction), Bool(p->frame_interpolation), Bool(p->extended_draw_distance),
             p->volume, Bool(p->mute), Rr4PadTypeKey(p->pad_type[0]), Rr4PadTypeKey(p->pad_type[1]),
             Bool(p->force_feedback));
     for (int i = 0; i < RR4_AXES; i++)
@@ -650,6 +656,7 @@ void Rr4ApplyWidescreen(int enabled) {
 void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
     static const PsyzVsyncMode kVsync[] = {PSYZ_VSYNC_AUTO, PSYZ_VSYNC_ON, PSYZ_VSYNC_OFF};
 
+    ExtendedDrawDistance = p->extended_draw_distance != 0;
     Psyz_VideoSetInternalResolution(p->scale >= 1 ? p->scale : 1);
     Psyz_VideoSetDitheringMode(p->disable_dithering ? PSYZ_DITHER_OFF : PSYZ_DITHER_AUTO);
     Psyz_VideoSetAntialiasing(p->antialiasing != 0);

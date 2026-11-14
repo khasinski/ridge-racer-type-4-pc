@@ -42,7 +42,8 @@ game's own Options then show and calibrate that controller.
 or Widescreen 16:9, PAL or NTSC timing, frame interpolation, geometry
 correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
-original.
+original. **Graphics > Draw distance > Extended (2x)** doubles the course
+view depth and draws more scenery, at a higher CPU and GPU cost.
 
 **Escape > Replays** saves the replay of the last race (Time Attack, Grand
 Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings

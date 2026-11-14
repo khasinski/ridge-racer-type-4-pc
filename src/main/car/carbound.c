@@ -4,6 +4,7 @@
 #include "psyq/libgte/gtemat3.h"
 #include <stddef.h>
 #include "types.h"
+#include "rr/draw_distance.h"
 #include "game/car/bounds.h"
 #include "game/car/carwheel.h"
 #include "rr/race.h"
@@ -26,6 +27,7 @@ void DrawCars(s32 a0) {
     int z; 
     int i, s2;
     RaceVehicle **p;
+    ApplyCourseDrawDistance();
     CarViewportBankOffset = 0;
     switch (a0) {
     case 0:

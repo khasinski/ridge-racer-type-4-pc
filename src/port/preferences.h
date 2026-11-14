@@ -76,6 +76,7 @@ typedef struct Rr4Prefs {
     int frame_interpolation;
     int aspect_ratio; /* Rr4AspectPref */
     int video_timing; /* Rr4VideoTimingPref, used from the next start */
+    int extended_draw_distance; /* double the course view depth */
     /* [audio] */
     unsigned volume; /* 0..100 */
     int mute;

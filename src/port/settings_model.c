@@ -68,6 +68,9 @@ ACCESSORS(Geometry, p->geometry_correction != 0, p->geometry_correction = i)
 static const char *const kInterpolationNames[] = {"Off (original)", "60 Hz"};
 ACCESSORS(Interpolation, p->frame_interpolation != 0, p->frame_interpolation = i)
 
+static const char *const kDrawDistanceNames[] = {"Original", "Extended (2x)"};
+ACCESSORS(DrawDistance, p->extended_draw_distance != 0, p->extended_draw_distance = i)
+
 static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
             kScaleNames, Scale,
@@ -81,6 +84,8 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
             kAspectNames, Aspect,
             SETTINGS_FEATURE_WIDESCREEN),
+    SETTING("Draw distance", "Doubles the course view depth and draws more track scenery. Costs CPU and GPU time. Original keeps the PlayStation visibility.",
+            kDrawDistanceNames, DrawDistance),
     SETTING("Dithering", "Original: PlayStation 15-bit colour, dithered on shaded polygons. Off: smooth full-colour shading.",
             kDitherNames, Dither),
     GPU_SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
@@ -342,6 +347,7 @@ static void ResetPage(SettingsModel *m) {
         p->antialiasing = d->antialiasing;
         p->texture_filtering = d->texture_filtering;
         p->geometry_correction = d->geometry_correction;
+        p->extended_draw_distance = d->extended_draw_distance;
         p->frame_interpolation = d->frame_interpolation;
         break;
     case SETTINGS_PAGE_CONTROLS:

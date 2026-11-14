@@ -1,4 +1,6 @@
 #include "rr/widescreen.h"
+#include "rr/draw_distance.h"
+#include "rr/rro_model.h"
 #include "types.h"
 #include "scratchpad.h"
 #include "game/gfx/model.h"
@@ -80,7 +82,7 @@ static void AddWideNeighbourViews(int player) {
 
     for (i = 0; i < count; i++)
         listed[own->indices[i] >> 3] |= (u8)(1u << (own->indices[i] & 7));
-    for (i = 0; i < more->count && i < 0x100 && count < COURSE_VISIBLE_CAPACITY; i++) {
+    for (i = 0; i < more->count && i < 0x100 && count < COURSE_ORIGINAL_VISIBLE_CAPACITY; i++) {
         u16 index = more->indices[i];
         if (listed[index >> 3] & (1u << (index & 7)))
             continue;
@@ -88,6 +90,46 @@ static void AddWideNeighbourViews(int player) {
         PrimaryVisibleViews.objects.records[count++] = &RelFileViewRecords[index];
     }
     for (i = 0; i < count; i++) {
+        size_t index = (size_t)(PrimaryVisibleViews.objects.records[i] - RelFileViewRecords);
+        listed[index >> 3] = 0;
+    }
+    PrimaryVisibleViews.objects.count = count;
+}
+
+/* The retail lists stop at the PS1 horizon. Collect the same viewing
+ * octant from the rest of the loaded course; normal facing, viewport and
+ * depth tests in SubmitCourseHorizon discard geometry outside the extended
+ * frustum. Keep the original list first (the mirror uses its prefix), and
+ * add each record once even when many segments share it. */
+static void AddExtendedViews(void) {
+    static u8 listed[0x10000 / 8];
+    const ProjectionView32 *view = &((RroSceneScratchPrefix *)SCRATCHPAD)->view.projection.pose08;
+    int octant = YawToOctant(view);
+    int neighbour = octant;
+    u32 count = PrimaryVisibleViews.objects.count;
+
+    if (WideMarginX) {
+        int offset = (((view->angles10.xyz.y & 0xFFF) + 0x100) & 0x1FF) - 0x100;
+        neighbour = (octant + (offset < 0 ? 7 : 1)) & 7;
+    }
+    for (u32 i = 0; i < count; i++) {
+        size_t index = (size_t)(PrimaryVisibleViews.objects.records[i] - RelFileViewRecords);
+        listed[index >> 3] |= (u8)(1u << (index & 7));
+    }
+    for (int segment = 0; segment < RelFileSegmentCount; segment++) {
+        for (int side = 0; side < (WideMarginX ? 2 : 1); side++) {
+            const CourseViewIndices *more = (const CourseViewIndices *)RelFileSegmentView(
+                segment * 8 + (side ? neighbour : octant));
+            for (u32 i = 0; i < more->count && count < COURSE_VISIBLE_CAPACITY; i++) {
+                u16 index = more->indices[i];
+                if (listed[index >> 3] & (1u << (index & 7)))
+                    continue;
+                listed[index >> 3] |= (u8)(1u << (index & 7));
+                PrimaryVisibleViews.objects.records[count++] = &RelFileViewRecords[index];
+            }
+        }
+    }
+    for (u32 i = 0; i < count; i++) {
         size_t index = (size_t)(PrimaryVisibleViews.objects.records[i] - RelFileViewRecords);
         listed[index >> 3] = 0;
     }
@@ -103,7 +145,7 @@ void BuildViewSegmentObjectList(int player) {
     TrackCourseViewIndices = (CourseViewIndices *)source;
     PrimaryVisibleViews.stream[0].count = *source;
     if (PrimaryVisibleViews.stream[0].count >= 0x100) {
-        PrimaryVisibleViews.stream[0].count = COURSE_VISIBLE_CAPACITY;
+        PrimaryVisibleViews.stream[0].count = COURSE_ORIGINAL_VISIBLE_CAPACITY;
     }
     source++;
     i = 0;
@@ -115,6 +157,8 @@ void BuildViewSegmentObjectList(int player) {
     }
     if (WideMarginX)
         AddWideNeighbourViews(player);
+    if (ExtendedDrawDistance)
+        AddExtendedViews();
 }
 
 void UpdateVisibleViewRecords(void) {
@@ -130,12 +174,12 @@ void UpdateVisibleViewRecords(void) {
     cursor.next = cursor.list->objects.records + count;
     for (extra = 0; extra < ExtraCourseViewTable.count; extra++) {
         record = &RelFileViewRecords[ExtraCourseViewTable.indices[extra]];
-        for (i = 0; i < ActiveVisibleViews->objects.count; i++) {
+        for (i = 0; i < count; i++) {
             if (record == ActiveVisibleViews->objects.records[i]) {
                 break;
             }
         }
-        if (i == ActiveVisibleViews->objects.count) {
+        if (i == count && count < COURSE_VISIBLE_CAPACITY) {
             *cursor.next = record;
             cursor.next++;
             count++;

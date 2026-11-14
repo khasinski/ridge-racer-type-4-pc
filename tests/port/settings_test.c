@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "preferences.h"
+#include "rr/draw_distance.h"
 #include "settings_model.h"
 #include "settings_raster.h"
 
@@ -44,6 +45,7 @@ static void TestDefaults(void) {
           d->aspect_ratio == RR4_ASPECT_CLASSIC);
     CHECK(d->vsync == RR4_VSYNC_AUTO);
     CHECK(d->video_timing == RR4_VIDEO_PAL);
+    CHECK(!d->extended_draw_distance);
     CHECK(d->pad_type[0] == RR4_PAD_DIGITAL && d->pad_type[1] == RR4_PAD_DIGITAL);
     CHECK(d->force_feedback == 1);
     CHECK(d->axes[RR4_AXIS_STEERING].linearity == 0.5f && d->axes[RR4_AXIS_THROTTLE].linearity == 0.0f);
@@ -87,11 +89,15 @@ static void TestGraphicsPage(void) {
         SettingsModelRow(&m, m.row, &v);
         CHECK(v.danger && !strcmp(v.label, "Quit game"));
     }
+    /* Draw distance is available to both rasterizers and applies live. */
+    SettingsModelSelect(&m, 5);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.extended_draw_distance == 1);
     /* Restore page defaults. */
     SettingsModelSelect(&m, SettingsContentRows(&m));
     Do(&m, SETTINGS_ACTIVATE, 1);
     CHECK(m.prefs.scale == 1 && !m.prefs.fullscreen && m.prefs.vsync == RR4_VSYNC_AUTO &&
-          m.prefs.video_timing == RR4_VIDEO_PAL);
+          m.prefs.video_timing == RR4_VIDEO_PAL && !m.prefs.extended_draw_distance);
     CHECK(m.open);
     /* Back closes. */
     Do(&m, SETTINGS_BACK, 1);
@@ -313,6 +319,7 @@ static void TestPrefsFile(const char *dir) {
     p.antialiasing = 1;
     p.aspect_ratio = RR4_ASPECT_WIDESCREEN;
     p.video_timing = RR4_VIDEO_NTSC;
+    p.extended_draw_distance = 1;
     p.volume = 35;
     p.mute = 1;
     p.keys[BTN_UP] = SDL_SCANCODE_I;
@@ -410,11 +417,13 @@ static void TestApply(void) {
     Rr4Prefs p = *Rr4PrefsDefaults();
 
     p.volume = 40;
+    p.extended_draw_distance = 1;
     p.keys[BTN_UP] = SDL_SCANCODE_I;
     p.buttons[BTN_CROSS] = SDL_GAMEPAD_BUTTON_COUNT + 1;
     p.pad_type[0] = RR4_PAD_NEGCON;
     p.axes[RR4_AXIS_THROTTLE].deadzone = 0.25f;
     Rr4PrefsApply(&p, 0);
+    CHECK(ExtendedDrawDistance == 1);
     CHECK(Psyz_AudioGetOutputVolume() == 40);
     CHECK(Psyz_PadsSetKind(0, 0, PSYZ_CTRL_QUERY_KIND) == PSYZ_CTRL_NEGCON);
     CHECK(Psyz_PadsSetKind(1, 0, PSYZ_CTRL_QUERY_KIND) == PSYZ_CTRL_DIGITAL_PAD);
@@ -430,6 +439,7 @@ static void TestApply(void) {
     Rr4PrefsApply(&p, 0);
     CHECK(Psyz_AudioGetOutputVolume() == 0);
     Rr4PrefsApply(Rr4PrefsDefaults(), 0);
+    CHECK(ExtendedDrawDistance == 0);
     CHECK(Psyz_AudioGetOutputVolume() == 100);
     CHECK(Psyz_PadsSetKind(0, 0, PSYZ_CTRL_QUERY_KIND) == PSYZ_CTRL_DIGITAL_PAD);
     CHECK(Psyz_GetKeyboardBinding_SDL3(BTN_UP) == Rr4PrefsDefaults()->keys[BTN_UP]);

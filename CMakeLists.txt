@@ -82,6 +82,7 @@ add_library(rr4_host STATIC
 target_include_directories(rr4_host
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/port
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
     SYSTEM PRIVATE
         ${PSYZ_DIR}/psyz/include
         ${PSYZ_DIR}/external/SDL/src/render/gpu/shaders
@@ -191,6 +192,15 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME replay-file COMMAND rr4_replay_file_test ${CMAKE_CURRENT_BINARY_DIR}/replay-file-test)
     set_tests_properties(replay-file PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
+    # Original course renderer: extended visibility and switching back live.
+    add_executable(rr4_course_view_test tests/port/course_view_test.c)
+    target_compile_definitions(rr4_course_view_test PRIVATE __psyz)
+    target_link_libraries(rr4_course_view_test PRIVATE rr4_host rr4_game psyz)
+    if(MINGW)
+        target_link_options(rr4_course_view_test PRIVATE ${RR4_MINGW_STATIC})
+    endif()
+    add_test(NAME course-view COMMAND rr4_course_view_test)
+    set_tests_properties(course-view PROPERTIES ENVIRONMENT "PSYZ_HEADLESS=1;SDL_AUDIODRIVER=dummy")
     # Memory card saves through the game's file services, preferences and a
     # synthetic disc image under a non-ASCII (UTF-8) directory.
     add_executable(rr4_host_files_test tests/port/host_files_test.c)

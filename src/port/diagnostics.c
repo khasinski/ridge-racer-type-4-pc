@@ -109,6 +109,7 @@
  *                      stereo) as a WAV file, finished when exiting. With
  *                      PSYZ_AUDIO_CLOCK=video the samples follow the VSync
  *                      count instead of the wall clock.
+ *   RR4_DRAW_DISTANCE=1 double the course view depth, as the Graphics setting
  *   RR4_INTERNAL_RES=n render at n times the PlayStation resolution (1..8)
  *                      for this run, over the preferences; with
  *                      PSYZ_HEADLESS=gpu the captured frames grow with it.
@@ -152,6 +153,7 @@
 #include <SDL3/SDL.h>
 
 #include "diagnostics.h"
+#include "rr/draw_distance.h"
 #include "diagnostics_parse.h"
 
 void Psyz_Srand(unsigned int seed);
@@ -673,6 +675,8 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     text = getenv("RR4_GRAPHICS");
     if (text && *text)
         apply_graphics(prefs, text, interactive);
+    prefs->extended_draw_distance = env_long("RR4_DRAW_DISTANCE", prefs->extended_draw_distance) != 0;
+    ExtendedDrawDistance = prefs->extended_draw_distance;
     frame_limit = env_long("RR4_FRAME_LIMIT", 0);
     trace_every = env_long("RR4_TRACE", 0);
     frame_log = SDL_getenv("PSYZ_FRAME_LOG") != NULL;

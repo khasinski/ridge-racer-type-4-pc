@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "rr/draw_distance.h"
 #include "psyq/libgte/rotmatyxz.h"
 #include "rr/menu_selection.h"
 #include "psyq/libgte/gtemat5.h"
@@ -98,12 +99,19 @@ void SetupViewMatrix(void) {
 }
 
 
+void ApplyCourseDrawDistance(void) {
+    /* Cars can be drawn before the course. Both must use the same depth
+     * mapping, including the first frame after changing the preference. */
+    ((RroSceneScratchPrefix *)SCRATCHPAD)->depthShift60 = ExtendedDrawDistance ? 6 : 5;
+}
+
 void SetupViewLighting(void) {
     SetColorMatrix(&ColorMatrix);
     BuildLightMatrix();
     SetLightMatrix(&LightMatrix.matrix);
     SetBackColor(BackColorR, BackColorG, BackColorB);
     SetFarColor(FarColorR, FarColorG, FarColorB);
+    ApplyCourseDrawDistance();
     SetFogNear(0x4E20, 0x122);
 }
 
@@ -137,7 +145,7 @@ void RenderMirrorCourseView(int player) {
     g[0x2E] = -1;
     BuildViewSegmentObjectList(player);
     v = LookupOctantVisibility();
-    if (v < PrimaryVisibleViews.objects.count) {
+    if (!ExtendedDrawDistance && v < PrimaryVisibleViews.objects.count) {
         PrimaryVisibleViews.objects.count = v;
     }
     SetupViewLighting();

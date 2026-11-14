@@ -24,7 +24,13 @@ typedef struct {
 } CourseViewIndices;
 
 /* PAL storage ends at the root-pointer symbol exactly0x400 bytes later. */
-enum {COURSE_VISIBLE_CAPACITY=255};
+enum {COURSE_ORIGINAL_VISIBLE_CAPACITY=255};
+#if defined(mips)
+enum {COURSE_VISIBLE_CAPACITY=COURSE_ORIGINAL_VISIBLE_CAPACITY};
+#else
+/* Native visibility can include every u16-indexed course record. */
+enum {COURSE_VISIBLE_CAPACITY=65536};
+#endif
 typedef union {u32 count;CourseViewRecord *record;} CourseViewListSlot;
 /* The handwritten renderer consumes count followed by pointer-sized slots.
  * C also uses the same owner as a counted array of records. Both views retain
