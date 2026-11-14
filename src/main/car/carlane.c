@@ -25,7 +25,7 @@ void InitComCars(s32 count) {
 
     car = ComCars;
     RaceContext.comCarCount10 = count;
-    PsyqBzero(car, 0x2260);
+    PsyqBzero(ComCars, sizeof ComCars);
     for (i = 0; i < count; i++) {
         sub = &car->control;
         spec = &RaceContext.carSpecs540[i];

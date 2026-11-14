@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2-alpha
 
 - **Escape > Graphics > Draw distance** offers Original (default) or
   Extended (2x). The extended view draws additional course scenery and
@@ -24,6 +24,38 @@
   page; dead zone, saturation, linearity and scaling of the steering,
   throttle and brake axes are in the `[input]` section of the preferences
   (DuckStation's neGcon terms).
+
+- **Escape > Replays** saves race replays to files and plays them from the
+  title screen. Saved replays retain the race setup, textures and effects;
+  files are checked for damage and build/video-timing compatibility.
+- **Escape > Link cable** connects the original two-console battle mode over
+  TCP, with host and join settings. Network play is experimental.
+- PsyZ uses bounded GPU upload buffers, fixes GPU memory growth at high
+  resolutions, and makes geometry correction and frame interpolation
+  independent of address randomization and primitive batch boundaries.
+- Systems without an SDL GPU device can draw at the original resolution
+  through the CPU rasterizer; unsupported enhancements are disabled in settings.
+- Startup checks the selected disc, recovers from missing or incompatible
+  saved paths, and keeps memory cards and logs beside the preferences.
+  Windows memory-card formatting and native MSVC builds are supported.
+- Opponent initialization clears the complete native car array, including
+  fields beyond the original PS1 allocation. Leaving a saved replay no
+  longer runs physics against the restored but unloaded title-screen cars.
+- Linux packages now include AppImages for x86-64 and ARM64. Release builds
+  omit diagnostic hooks and include the source revision and license texts.
+
+### Known limitations
+
+- This remains an alpha. Windows and network play have less gameplay coverage.
+- Japanese Time Attack has been compared against DuckStation; the remaining
+  Japanese modes have not yet been compared field for field.
+- A full VS replay comparison found four frames with differences of 6–23
+  pixels. Time Attack and Grand Prix replay comparisons were pixel-identical.
+- Automated wall-clock CD streaming can stall during the opening movie;
+  network timing tests currently require an instant-CD diagnostic workaround.
+  Interactive behavior on that path has not been verified.
+- Frame interpolation can still produce artifacts on newly visible geometry;
+  enhancements remain off by default. US discs and CHD images are unsupported.
 
 ## 0.1
 
