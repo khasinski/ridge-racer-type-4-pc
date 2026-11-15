@@ -26,7 +26,43 @@ Environment (see tools/port/DUCKSTATION.md for building the emulator):
 The REGTEST_* variables of DUCKSTATION.md pass through to the emulator.
 Use it as a context manager (or call close()) so the emulator always exits.
 """
-import socket, subprocess, time, os, struct, sys, shutil, shlex
+import atexit, socket, subprocess, time, os, struct, sys, shutil, shlex
+
+
+SLOT_ROOT = '/tmp/rr4-run-slots'
+
+
+def _acquire_slot():
+    """Take one of the machine-wide run slots shared with run_capped.sh.
+
+    At most RR4_RUN_SLOTS (default 2) game or emulator runs execute at once
+    across all agents and scripts; this waits for a free slot."""
+    slots = int(os.environ.get('RR4_RUN_SLOTS', '2'))
+    os.makedirs(SLOT_ROOT, exist_ok=True)
+    while True:
+        for i in range(slots):
+            d = os.path.join(SLOT_ROOT, str(i))
+            try:
+                os.mkdir(d)
+            except FileExistsError:
+                try:
+                    owner = int(open(os.path.join(d, 'pid')).read().strip() or 0)
+                except (OSError, ValueError):
+                    owner = 0
+                if owner:
+                    try:
+                        os.kill(owner, 0)
+                        continue
+                    except ProcessLookupError:
+                        pass
+                    except PermissionError:
+                        continue
+                shutil.rmtree(d, ignore_errors=True)
+                continue
+            with open(os.path.join(d, 'pid'), 'w') as f:
+                f.write(str(os.getpid()))
+            return d
+        time.sleep(2)
 
 
 def _binary():
@@ -82,6 +118,8 @@ class DuckStation:
         if pad2_type:
             env['REGTEST_PAD2_TYPE'] = pad2_type
         extra = shlex.split(os.environ.get('RR4_DS_ARGS', ''))
+        self.slot = _acquire_slot()
+        atexit.register(shutil.rmtree, self.slot, True)
         self.p = subprocess.Popen([ds, '-ai-port', str(ai), '-gdb', str(gdb), '-start-paused', '-frames', '10000000',
                                    *extra, '--', cue], stdout=log or subprocess.DEVNULL,
                                   stderr=subprocess.STDOUT, env=env, cwd=os.path.dirname(os.path.abspath(ds)))
@@ -254,3 +292,6 @@ class DuckStation:
             except subprocess.TimeoutExpired:
                 self.p.kill()
                 self.p.wait()
+        if getattr(self, 'slot', None):
+            shutil.rmtree(self.slot, ignore_errors=True)
+            self.slot = None
