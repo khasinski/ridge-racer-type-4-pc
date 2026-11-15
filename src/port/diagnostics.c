@@ -43,13 +43,16 @@
  *                      2:cross@900+6,up@1200". A "2:" prefix presses the
  *                      button on pad 2, otherwise pad 1.
  *                      Buttons: select l3 r3 start up right down left l2 r2
- *                      l1 r1 triangle circle cross square. The pressed
- *                      buttons replace the pad's receive buffer
- *                      (PadPorts[port]) right after PsyZ refreshes it at
- *                      each VSync; outside the listed ranges the real input
- *                      passes through, or an idle connected digital pad when
- *                      none is present. Any script keeps pad 1 connected;
- *                      pad 2 only when some step names it.
+ *                      l1 r1 triangle circle cross square. The controller
+ *                      sends the pressed buttons at the exchange of the
+ *                      blank before the range, so with one pad the receive
+ *                      buffer (PadPorts[port]) shows them over the listed
+ *                      VSyncs; with pads in both ports libpad stores port
+ *                      1's bytes a vblank earlier (as on the console, and on
+ *                      tools/port/ds_script.py). Outside the listed ranges
+ *                      the real input passes through, or an idle connected
+ *                      digital pad when none is present. Any script keeps
+ *                      pad 1 connected; pad 2 only when some step names it.
  *                      Instead of an absolute vsync a step can be anchored
  *                      to a mode: button@mG/I:d presses d VSyncs after each
  *                      entry into ModeGroup G / ModeIndex I (while still in
@@ -446,8 +449,12 @@ static void apply_pad_port(int port, long vsync) {
     }
     /* Any script keeps pad 1 connected; pad 2 only when a step names it. */
     int scripted = port == 0 ? pad_script_len > 0 : pad_script_ports[1];
-    if (!mask && !moved && (!scripted || PadPorts[port].status00 == 0))
-        return;
+    if (!mask && !moved) {
+        char host[PSYZ_PAD_BUF_LEN];
+        Psyz_PadsGet(port, host, sizeof(host)); /* the input sampled at this blank */
+        if (!scripted || host[0] == 0)
+            return;
+    }
     /* A scripted run always has a controller of the port's type (RR4_PAD_TYPE,
      * a digital pad by default) in each scripted port: between presses an
      * idle controller stays connected, as on the console, instead of the
@@ -473,8 +480,22 @@ static void apply_pad_port(int port, long vsync) {
         if (Psyz_PadsBuildFrame(port, kind, &in, frame) != 0)
             return;
         Psyz_PadsSet(port, frame, sizeof(frame));
-        memcpy(&PadPorts[port], frame, sizeof(frame));
     }
+}
+
+/* PsyZ's input hook at each blank, before the controllers answer: a step's
+ * vsync names the field whose receive buffer first shows the press with one
+ * pad, as libpad stores the bytes when it next starts a transfer (port 1's
+ * a field earlier when port 2 has a pad, PsyzPadsInputCb), so the
+ * controller sends the next field's buttons at this blank. The vsync
+ * counter of this blank is the next one Rr4DiagnosticsVSync sees. */
+static long diag_vsync;
+
+static void pads_input(void) {
+    long vsync = diag_vsync + 1;
+    update_anchor(vsync);
+    apply_pad_port(0, vsync + 1);
+    apply_pad_port(1, vsync + 1);
 }
 
 /* ---- captures ---- */
@@ -713,6 +734,8 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
             Psyz_PadsSetKind(port, 0, Rr4PadTypeKind(prefs->pad_type[port]));
         }
     }
+    if (pad_script_len > 0 || env_long("RR4_AUTODRIVE", 0) != 0)
+        Psyz_SetPadsInputCb(pads_input);
     setup_pokes(getenv("RR4_POKE"));
     if (path_env("RR4_AUDIO_CAPTURE"))
         start_audio_capture(path_env("RR4_AUDIO_CAPTURE"));
@@ -732,9 +755,8 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
 int Rr4DiagnosticsVSync(long vsync, int quitting) {
     capture_at_vsync(vsync);
     gpu_dump_vsync(vsync);
+    diag_vsync = vsync;
     update_anchor(vsync);
-    apply_pad_port(0, vsync);
-    apply_pad_port(1, vsync);
     apply_pokes(vsync);
     if (trace_every > 0 && vsync % trace_every == 0) {
         fprintf(stderr, "vsync %ld frame %u mode %u/%d sub %u", vsync,

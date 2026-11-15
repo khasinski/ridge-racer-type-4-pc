@@ -301,10 +301,18 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      code around each command, the boot's directory search and the
      hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time, so
      the boot's CD commands and the sequencer's timer start within 0.13 ms
-     of DuckStation's. Still open: libpad's
-     store order and missed vblanks with two pads (VS, `docs/TECH_DEBT.md`
-     F1), the sequencer's phase against the menus (F6) and race frames'
-     CPU time (F13).
+     of DuckStation's. libpad (PadInitDirect, PadStartCom) keeps a port's
+     received packet until it next starts a transfer, so with two pads
+     port 1's bytes reach the receive buffer at the vblank of the exchange
+     and port 2's at the next, with one pad at the next; test input
+     (`RR4_PAD_SCRIPT`) drives the controllers before the exchange
+     (`Psyz_SetPadsInputCb`). A vblank that arrives while another interrupt
+     is dispatched, after the BIOS chains tested for it, reaches only
+     libetc's dispatcher: libpad has no exchange and the BIOS card driver
+     no turn at it (the windows in `timing_profile.h`); which vblanks those
+     are follows the sequencer timer's phase (`docs/TECH_DEBT.md` F6) and
+     the tick and CD handlers' time (F14). Still open: the sequencer's
+     phase against the menus (F6) and race frames' CPU time (F13).
    - **Link cable over the network:** the link battle's serial port (SIO1)
      is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
      driver ported from the decompilation (`_sio_control`, the `sio:`

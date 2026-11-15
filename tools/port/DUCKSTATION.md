@@ -89,6 +89,18 @@ Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
 card slot 2 are empty, audio goes to the null backend and the renderer is
 software.
 
+## Replaying a scenario
+
+`ds_script.py frames 'pad script' [out]` plays an `RR4_PAD_SCRIPT` (the
+regression scenarios' button steps, mode anchors included) on DuckStation
+and prints the port's `RR4_TRACE=1 RR4_TRACE_RAND=1` lines (vsync,
+FrameCounter, mode, rand) for each field, so the two traces diff directly.
+Fields count from the port's first VSync (DuckStation frame - 225, the
+BIOS boot). The controller sends a step's buttons at the exchange of the
+blank before it, as the port's script does, so with one pad the receive
+buffer shows them over the step's fields on both. `RR4_DS_PADLOG=1` adds
+whether libpad's vblank handler ran, `RR4_DS_PEEK=addr:len,...` RAM bytes.
+
 ## Timing a call
 
 A GDB breakpoint, and single-stepping, switch DuckStation from its
