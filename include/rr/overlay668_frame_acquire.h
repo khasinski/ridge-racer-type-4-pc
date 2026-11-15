@@ -4,9 +4,9 @@
 #include "rr/frame_storage_types.h"
 #include "psyq/libgpu/gpuenv.h"
 extern FrameStorage DrawBuffers[2];
-/* Poll at most2000 times. A successful header has the full queue-record
- * owner; activeB8 points to a complete playback state. Config and both frame
- * owners stay live across clear-image callbacks, which may replace activeB8.
- * Width arithmetic wraps32 bits before signed division and narrowing. */
-u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config);
+/* Poll at most 2000 times. Return NULL when no frame is ready. A returned
+ * frame stays owned until StFreeRing; *bytes is its validated compressed
+ * extent, or zero for malformed dimensions/extent. Invalid metadata never
+ * changes the display config. Valid dimensions fit the fixed slice buffers. */
+u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config, size_t *bytes);
 #endif

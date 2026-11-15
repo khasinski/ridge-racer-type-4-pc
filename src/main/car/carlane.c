@@ -47,7 +47,7 @@ void InitComCars(s32 count) {
         car->rot58 = 0;
         car->rot54 = RaceContext.startGrid53C->rot[k];
         car->heading1D4 = car->rot54;
-        car->trackNodeF0 = FindTrackNode(car->position20.words, car->trackNodeF0);
+        car->trackNodeF0 = FindTrackNode(car->position20.words, car->trackNodeF0, TrackNodeCount + 1);
         AssignCarModelSlot(car);
         UpdateCarTrackProjection(car);
         sub->laneTimer38 = 10;

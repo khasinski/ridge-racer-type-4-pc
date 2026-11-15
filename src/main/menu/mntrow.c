@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "rr/menu_text_state.h"
 #include "types.h"
@@ -28,22 +29,15 @@
 #include "game/sound/fxplay.h"
 extern unsigned short MenuTextRowClutTable[];
 extern s32 VSyncThreshold;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern s16 SubmodeState;
-extern short FadeCountdown;
-extern short ActiveSceneId;
+
 extern short SelectedTeamIndex;
-extern u32 ModeFrame;
 extern short SelectedMakerIndex;
 #include "rr/badge_rows.h"
 extern int MenuStepDirection;
 
 void DrawResultsRankIcons(void);
-void SetMenuTextRowStyle();
 void ModeSelectMenuEnter(void);
 void InitModeSelectMenu(void);
-void ModeSelectMenuUpdate();
 
 void DrawMenuTextRow(s32 a0) {
     SpritePacket *s4;

@@ -30,7 +30,6 @@
 #include "game/sound/fxplay.h"
 #include "rr/overlay_module.h"
 
-extern unsigned char LoadState;
 #include "rr/cd_directory_buffer.h"
 #include "rr/menu_arena_base.h"
 #include "game/data/selection.h"

@@ -11,7 +11,6 @@
 
 extern unsigned short PadButtonLayoutPresetsA[][8];
 extern unsigned short PadButtonLayoutPresetsB[][8];
-extern unsigned short PadDefaultButtonPresets[][8];
 extern unsigned short ActivePadButtonLayouts[][2][8];
 
 void InitGamePads(void) {

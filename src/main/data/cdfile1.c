@@ -1,5 +1,7 @@
 #include "psyq/libc/exit.h"
 #include "types.h"
+#include <limits.h>
+#include <stdio.h>
 #include "rr/load_cursor.h"
 #include "scratchpad.h"
 
@@ -60,17 +62,40 @@ int GetR4FileIndex(int a0, int a1) {
     return a1 + GameReleaseProfile->r4GroupBase[a0];
 }
 
+/* Validate all boundaries before publishing any entries. Disc offsets are
+ * sectors relative to R4.BIN, never host addresses or signed byte counts. */
+s32 ParseR4Directory(const u32 *directory, size_t words, u32 fileBytes, s32 base) {
+    if (!directory || words < 2 || base < 0)
+        return 0;
+    const u32 count = directory[0];
+    const u32 fileSectors = fileBytes / 2048u + (fileBytes % 2048u != 0);
+    if (count != (u32)GameReleaseProfile->r4Entries ||
+        count > RR_R4_ENTRIES_MAX || words < (size_t)count + 2 ||
+        directory[1] < 2)
+        return 0;
+    u32 previous = directory[1];
+    for (u32 i = 0; i <= count; ++i) {
+        const u32 next = directory[i + 1];
+        if (next < previous || next > fileSectors ||
+            next > (u32)(INT_MAX - base) ||
+            next - previous > INT_MAX / 2048u)
+            return 0;
+        previous = next;
+    }
+    for (u32 i = 0; i < count; ++i) {
+        CdIntToPos(base + (s32)directory[i + 1], CdFileTable[i].location.c);
+        CdFileTable[i].sectors = (s32)(directory[i + 2] - directory[i + 1]);
+    }
+    return 1;
+}
+
 void LoadR4Directory(void)
 {
     CdlFILE file;
     s32 status;
     CdlFILE *found;
     s32 sectors;
-    u32 count;
-    u32 i;
-    s32 base, sector, next;
-    u32 *directory;
-    CdFileEntry *entry;
+    s32 base;
     DebugPrintStub(NowLoadingFmt,R4BinPath,CdDirectoryBuffer);
     found=CdSearchFile(&file,(char *)R4BinPath);
     if (!found) {
@@ -85,21 +110,10 @@ void LoadR4Directory(void)
     } while(status);
     DebugPrintStub(StrReadSectorFmt,sectors);
     base=CdPosToInt(file.pos);
-    directory=(u32 *)CdDirectoryBuffer;
-    i=0;
-    count=*directory++;
-    sector=base+*directory++;
-    entry=CdFileTable;
-    if(count>RR_R4_ENTRIES_MAX) {
-        count=RR_R4_ENTRIES_MAX;
-    }
-    while(i<count) {
-        CdIntToPos(sector,entry->location.c);
-        next=base+*directory++;
-        entry->sectors=next-sector;
-        sector=next;
-        i++;
-        entry++;
+    if (!ParseR4Directory((const u32 *)CdDirectoryBuffer, 4096 / sizeof(u32),
+                          file.size, base)) {
+        fprintf(stderr, "RR4: invalid R4.BIN directory\n");
+        PsyqExit(1);
     }
 }
 

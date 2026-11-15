@@ -38,7 +38,7 @@ RR_ASSERT_SIZE(RingScratch48, 0x48);
 RR_ASSERT_OFFSET(RingGeometry48, screen, 8);
 RR_ASSERT_OFFSET(RingGeometry48, vectors, 0x24);
 RR_ASSERT_OFFSET(RingGeometry48, red, 0x44);
-RR_ASSERT_SIZE(RingPacket24, 24);
-RR_ASSERT_OFFSET(RingPacket24, xy, 8);
+RR_ASSERT_SIZE(RingPacket24, RR_GPU_PACKET_SIZE(20));
+RR_ASSERT_OFFSET(RingPacket24, xy, sizeof(GpuDmaTag) + 4);
 
 #endif

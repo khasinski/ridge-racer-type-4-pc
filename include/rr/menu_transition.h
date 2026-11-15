@@ -1,6 +1,8 @@
 #ifndef RR_MENU_TRANSITION_H
 #define RR_MENU_TRANSITION_H
 
+#include "game/data/menuvars.h"
+#include "game/data/ldscn1.h"
 #include "rr/badge_rows.h"
 
 /* Script operations return completion; scene-entry callbacks take no arguments.
@@ -10,19 +12,15 @@ typedef s32 (*MenuScriptOperation)(void);
 typedef void (*MenuSceneEntry)(void);
 extern MenuScriptOperation MenuScriptOps[];
 extern MenuSceneEntry MenuSceneEntries[];
+/* Native replay load also reads the preset emblem bank before car CLUTs. */
+enum { MENU_SCRIPT_REPLAY = 11 };
 extern s8 *MenuScripts[];
-extern u16 ActiveSceneId;
-extern s32 ModeFrame;
-extern s16 ModeIndex;
+
 extern s8 MenuScriptStep;
-extern u16 MenuScriptId,ModeGroup;
-extern s16 GameModeType;
-extern s8 LoadState;
-extern s16 SubmodeState;
-extern u16 MenuTransitionOverlayMode;
+
 s32 UpdateLinkHandshake(s32);
 s32 UpdateRaceOpeningOverlay(s32);
-void StartDemoFadeOutAndCloseVab();
+void StartDemoFadeOutAndCloseVab(void);
 s32 IntroScriptStep(void);
 void SetDispMask(s32);
 void UpdateMenuScript(void);

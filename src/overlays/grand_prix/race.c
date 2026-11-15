@@ -36,7 +36,7 @@ void ovl659_update_race(void) {
     if (RacePaused != 0) {
         UpdatePauseMenu(GameModeType);
         ModeFrame = ModeFrame - 1U;
-        DrawRaceOverlaySprites();
+        DrawRaceOverlaySprites(1);
         DrawPauseMenu(&CurrentDrawBuf->ordering.ordering70.tags[0], PauseCursor);
         DrawLapTimeList(0);
         DrawTimeRemaining(RaceTimeRemaining);
@@ -138,7 +138,7 @@ void ovl659_update_race(void) {
     } else {
         UpdateRaceChaseCamera(PlayerCars);
     }
-    UpdateTrackObjects(0);
+    UpdateTrackObjects();
     BuildCameraMatrices();
     DrawCars(0);
     if (PlayerCars[0].half1EA != ReverseCourse) {

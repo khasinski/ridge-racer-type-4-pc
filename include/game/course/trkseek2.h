@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void UpdateComCarTrackProjections();
+void UpdateComCarTrackProjections(void);
 
 #endif /* RR_GAME_COURSE_TRKSEEK2_H */

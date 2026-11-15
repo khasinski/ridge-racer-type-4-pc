@@ -1,5 +1,7 @@
 #ifndef RR_OVERLAY662_NAME_CONTROLLER_H
 #define RR_OVERLAY662_NAME_CONTROLLER_H
+#include "game/menu/menutra21.h"
+#include "game/data/menuvars.h"
 #include "rr/screen_tiles.h"
 #include "game/system/pad.h"
 #include "rr/overlay662_name_state.h"
@@ -8,7 +10,7 @@
 #include "rr/save_progress.h"
 #include "rr/string_tail_copy.h"
 #include "rr/tables.h"
-extern s16 FadeCountdown,CardMenuOperation;
+
 extern u32 ScreenFrame;
 extern u8 NameCharset[44];
 

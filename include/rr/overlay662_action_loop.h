@@ -19,9 +19,9 @@ void ovl662_draw_rgb_sliders(void);
  * Callbacks may replace later entries and change working flags or render mode.
  * The render-enable byte is checked once, before all53 render callbacks. */
 void ovl662_dispatch_editor_actions(s32 mode);
-RR_ASSERT_SIZE(GarageActionRecord16,16);
+RR_ASSERT_SIZE(GarageActionRecord16, 2 * sizeof(GarageStep) + 8);
 RR_ASSERT_OFFSET(GarageActionRecord16,prefix,0);
-RR_ASSERT_OFFSET(GarageActionRecord16,render,4);
-RR_ASSERT_OFFSET(GarageActionRecord16,argument,8);
-RR_ASSERT_OFFSET(GarageActionRecord16,key,12);
+RR_ASSERT_OFFSET(GarageActionRecord16, render, sizeof(GarageStep));
+RR_ASSERT_OFFSET(GarageActionRecord16, argument, 2 * sizeof(GarageStep));
+RR_ASSERT_OFFSET(GarageActionRecord16, key, 2 * sizeof(GarageStep) + 4);
 #endif

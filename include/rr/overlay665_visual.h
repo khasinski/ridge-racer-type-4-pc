@@ -10,7 +10,6 @@
 #include "rr/bios_devices.h"
 #include "rr/overlay665_matrix.h"
 #include "rr/overlay665_visual_types.h"
-extern Overlay665VisualState ovl665_options_state;
 extern u8 ovl665_twist_needle_color[4];
 extern s32 DialogueSceneMode;
 void ovl665_init_scene(void);

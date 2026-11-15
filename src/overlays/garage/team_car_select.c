@@ -11,9 +11,6 @@
 #include "rr/save_progress.h"
 #include "rr/string_tail_copy.h"
 
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
-#endif
 
 extern s16 MenuItemCount;
 extern u32 ScreenFrame;

@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include <string.h>
 #include "rr/save_slots.h"
 #include "rr/menu_selection.h"
@@ -19,13 +20,12 @@
 #include "rr/video_timing.h"
 
 extern u8 GpStageRivalRankLimits[];
-extern s16 FadeCountdown;
 extern s16 ReverseCourse;
 extern s32 TrackLength;
-extern s32 LapFrameCounts[];
+extern s32 LapFrameCounts[10];
 extern s32 TotalRaceTime;
 extern s32 BestLapTime;
-extern s32 LapTimes[];
+extern s32 LapTimes[10];
 extern s32 RaceState;
 extern s32 BestSplitTimes[3];
 extern s32 SplitTimes[3];
@@ -110,8 +110,9 @@ void UpdateLapTiming(RaceVehicle *arg0) {
             LatchedSplitIndex = RR_PAL_JP(SplitIndex, 0);
             SplitIndex = 0;
             LapVoicePending = 0;
-            if (BestLapTime > LapTimes[s0->dynamics94.steering.count22 - 2]) {
-                if (s0->dynamics94.steering.count22 != 1) {
+            /* Starting lap one has no completed lap to compare. */
+            if (s0->dynamics94.steering.count22 > 1) {
+                if (BestLapTime > LapTimes[s0->dynamics94.steering.count22 - 2]) {
                     SoundQueueEnqueue(9, 0);
                     BestLapTime = LapTimes[s0->dynamics94.steering.count22 - 2];
                     s0->dynamics94.steering.finish20 = (u16)s0->dynamics94.steering.count22 - 2;

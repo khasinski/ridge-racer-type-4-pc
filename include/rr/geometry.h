@@ -39,6 +39,11 @@ typedef union {
     s32 words[4];
 } VectorWords16;
 
+/* SDK scalar arguments are long, including on LP64 hosts. */
+void InitGeom(void);
+void SetGeomOffset(long x, long y);
+void SetGeomScreen(long distance);
+
 /* SQR hardware helpers return MAC1..MAC3, with shift 12 and shift 0 respectively.
  * Input and output may overlap. GTE IR/MAC registers and FLAG are also modified. */
 Vec3i *Square12(const Vec3i *input, Vec3i *output);

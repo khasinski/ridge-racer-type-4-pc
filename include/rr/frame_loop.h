@@ -1,5 +1,6 @@
 #ifndef RR_FRAME_LOOP_H
 #define RR_FRAME_LOOP_H
+#include "game/data/menuvars.h"
 #include "rr/frame_environment.h"
 
 #include "rr/frame_storage_types.h"
@@ -7,9 +8,7 @@ typedef void (*FrameStep)(void);
 extern FrameStorage DrawBuffers[2];
 extern FrameStep *ModeFuncTable[];
 extern u32 FrameCounter;
-extern s32 VSyncThreshold, DrawSubOtFlag, ModeFrame, DrawBufIndex;
-extern u16 ModeGroup, ModeIndex;
-extern s16 SubmodeState;
+extern s32 VSyncThreshold, DrawSubOtFlag, DrawBufIndex;
 
 /* Initializes once, then runs indefinitely. Helpers may replace the current
  * context, frame counter, dispatch selectors and frame-wait threshold.

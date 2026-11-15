@@ -269,8 +269,16 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
             return ParseFlag(value, &p->geometry_correction);
         if (!strcmp(key, "extended_draw_distance"))
             return ParseFlag(value, &p->extended_draw_distance);
-        if (!strcmp(key, "frame_interpolation"))
-            return ParseFlag(value, &p->frame_interpolation);
+        if (!strcmp(key, "frame_interpolation")) {
+            if (!ParseFlag(value, &v)) return 0;
+            p->frame_interpolation = v ? 60 : 0;
+            return 1;
+        }
+        if (!strcmp(key, "frame_rate")) {
+            if (!ParseInt(value, &v) || (v != 0 && v != 60 && v != 120)) return 0;
+            p->frame_interpolation = v;
+            return 1;
+        }
         if (!strcmp(key, "widescreen")) {
             if (!ParseFlag(value, &v))
                 return 0;
@@ -478,7 +486,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             "antialiasing = %s\n"
             "texture_filtering = %s\n"
             "geometry_correction = %s\n"
-            "frame_interpolation = %s\n"
+            "frame_rate = %d\n"
             "extended_draw_distance = %s\n\n"
             "[audio]\n"
             "volume = %u\n"
@@ -496,7 +504,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             p->aspect_ratio == RR4_ASPECT_WIDESCREEN ? "widescreen" : "classic",
             Bool(p->disable_dithering),
             Bool(p->antialiasing), Bool(p->texture_filtering),
-            Bool(p->geometry_correction), Bool(p->frame_interpolation), Bool(p->extended_draw_distance),
+            Bool(p->geometry_correction), p->frame_interpolation == 120 ? 120 : p->frame_interpolation ? 60 : 0, Bool(p->extended_draw_distance),
             p->volume, Bool(p->mute), Rr4PadTypeKey(p->pad_type[0]), Rr4PadTypeKey(p->pad_type[1]),
             Bool(p->force_feedback));
     for (int i = 0; i < RR4_AXES; i++)
@@ -694,6 +702,7 @@ void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
     Psyz_VideoSetModelFiltering(p->texture_filtering != 0);
     Psyz_VideoSetGeometryCorrection(p->geometry_correction != 0);
     Psyz_GpuSetFrameInterpolation(p->frame_interpolation != 0);
+    Psyz_GpuSetPresentationRate(p->frame_interpolation == 120 ? 120 : p->frame_interpolation ? 60 : 0);
     Rr4ApplyWidescreen(p->aspect_ratio == RR4_ASPECT_WIDESCREEN);
     if (Psyz_VideoGetVsyncMode() != kVsync[p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0])
         Psyz_VideoSetVsyncMode(kVsync[p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0]);

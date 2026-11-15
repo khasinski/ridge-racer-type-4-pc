@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "rr/video_timing.h"
 #include "game/race/racegrid.h"
 #include "rr/frame_loop.h"
@@ -62,7 +63,6 @@ typedef struct {
 } PolyG3Packet;
 
 extern int ViewUsesCarTrackNode;
-extern void SetGeomScreen(int);
 extern int SceneFogWorkVector[];
 /* PsyZ libgte ScaleMatrix(MATRIX *, VECTOR *) and RotTransPers(SVECTOR *,
  * long *, long *, long *); the game types share those layouts. */

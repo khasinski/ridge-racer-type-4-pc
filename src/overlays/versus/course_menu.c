@@ -1,4 +1,5 @@
 #include "rr/overlay_module.h"
+#include "game/data/menuvars.h"
 #include "rr/player_cars.h"
 #include "game/system/pad.h"
 #include "scratchpad.h"
@@ -8,7 +9,6 @@
 #include "rr/menu_selection.h"
 #include "rr/projection_state.h"
 
-extern s16 ActiveSceneId;
 s32 PsyqRand(void);
 #ifndef RR_GPU_PROJECTION_SCRATCH
 #define RR_GPU_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
@@ -89,7 +89,7 @@ void ovl661_update_menu(void) {
                     if ((s16) MenuCursor == 0) {
                         var_s0 = 0;
                         do {
-                            temp_v1 = (UiRow24 *)((var_s0*36)+(uintptr_t)UiRows+648);
+                            temp_v1 = &UiRows[var_s0 + 18];
                             if (temp_v1->byte14 == 2) {
                                 temp_v1->byte14 = 7U;
                             }
@@ -136,7 +136,7 @@ void ovl661_update_menu(void) {
                     SetModelTexturePage(-1);
                     var_s0 = 0;
                     do {
-                        temp_v1_3 = (UiRow24 *)((var_s0*36)+(uintptr_t)UiRows+648);
+                        temp_v1_3 = &UiRows[var_s0 + 18];
                         if (temp_v1_3->byte14 == 2) {
                             temp_v1_3->byte14 = 3U;
                         }
@@ -269,6 +269,10 @@ const OverlayStateTable ovl661_course_menu_state = {ovl661_course_menu_regions, 
 extern const OverlayStateTable ovl661_course_menu_state, ovl661_preview_state, ovl661_race_state, ovl661_results_state;
 static const OverlayStateTable *const ovl661_state_tables[] = {&ovl661_course_menu_state, &ovl661_preview_state, &ovl661_race_state, &ovl661_results_state};
 static OverlayStateImage ovl661_state_image = {ovl661_state_tables, sizeof(ovl661_state_tables) / sizeof(ovl661_state_tables[0]), NULL};
+
+void ovl661_capture_module(void) {
+    OverlayStateCapture(&ovl661_state_image);
+}
 
 void ovl661_reset_module(void) {
     OverlayStateRestore(&ovl661_state_image);

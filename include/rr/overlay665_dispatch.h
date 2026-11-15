@@ -4,7 +4,7 @@
 #include "rr/menu_transition.h"
 #include "game/camera/campath.h"
 #include "game/camera/camrun.h"
-void StartAttractDemo();
+void StartAttractDemo(int a0);
 void ovl665_update_controller_options(s32);
 void ovl665_update_audio_options(void);
 /* Dispatch captures the scene and selection at their respective switches.

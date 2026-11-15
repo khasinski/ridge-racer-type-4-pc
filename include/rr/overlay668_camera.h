@@ -12,7 +12,7 @@
 #include "psyq/libgte/gtemat5.h"
 #include "rr/scene_camera_state.h"
 extern s32 TrackNodeCount;
-s32 Atan2Table();
+int Atan2Table(int a0, int a1);
 /* Node and its single-wrapped neighbours select accessible track samples.
  * Position and interpolation results use wrapping32 arithmetic. Fraction is
  *0..1023; sample count is at least4. Services may replace the sample table and

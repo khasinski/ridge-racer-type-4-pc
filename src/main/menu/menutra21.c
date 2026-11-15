@@ -1,3 +1,5 @@
+#include "rr/overlay_entrypoints.h"
+#include "game/menu/menu8.h"
 #include "rr/release.h"
 #include "game/ui/uipart1.h"
 #include "game/sound/sndvab.h"
@@ -40,28 +42,16 @@ extern s32 MenuCursorBlinkColors[];
 extern s16 MenuPanelBorderColors[];
 extern MenuChoice MenuDividerLineColors[];
 extern s16 MenuActiveControllerIndex;
-extern s32 ModeFrame;
 extern s16 MenuStateIndex;
-extern u8 CardPortPollStatus[];
 extern s16 CardActivePort;
 extern s16 CardReplayLoadedFlag;
 extern unsigned char MenuHighlightBarColors[][4];
-extern unsigned short CardTransferMode;
-extern unsigned short SubmodeState;
-extern short CardMenuOperation;
-extern short CardPromptChoices[];
+
 extern short CardPromptIndex;
-extern int ovl660_init_menu();
-extern int ovl661_init_preview();
-extern int ovl667_init_car_selection();
-extern int ovl662_init_team_car_layout();
-extern short FadeCountdown;
-extern short ModeIndex;
+
 extern short LinkState;
-extern unsigned short CardMenuReturnModeId;
-extern unsigned short GameModeType;
+
 extern int DialogueSceneMode;
-extern short GpSaveSlotCursor;
 extern int GarageExtraDefaultTimes[];
 extern s16 MenuSlideStepVectors[][2];
 #include "rr/save_buffer.h"
@@ -79,14 +69,10 @@ void RunCardSaveOrLoadStep(void);
 void StepCardConfirmPrompt(void);
 void WaitCardDialogueComplete(void);
 void RunCardFormatStep(void);
-void InitCardMenuSession();
 void CloseCardMenuUiRows(void);
-void StepCardSlotHeaderScan();
 void CheckCardPollStatusTransition(void);
 void CheckCardFileExistsTransition(void);
 void StepCardDataTransfer(void);
-int ScanBothCardPortsStep();
-int ReadCardSlotHeaderStep();
 
 void RunCardSaveOrLoadStep(void) {
     s32 i = MenuStateTable[MenuStateIndex].tableIdx04;

@@ -1,22 +1,21 @@
 /* RODATA 0x800115ec 0x20 */
 #include "game/data/cardchk.h"
+#include "game/menu/savemenu.h"
+#include "game/menu/menu8.h"
 #include "game/menu/menumode.h"
 #include "game/menu/menutra21.h"
 #include "game/system/pad.h"
 #include "game/menu/menustep.h"
 #include "rr/frame_loop.h"
-extern void (*MenuStepHandlerTable[])();
+extern void (*MenuStepHandlerTable[])(void);
 extern short MenuStateIndex;
-extern unsigned char CardPortPollStatus[];
-extern unsigned short CardTransferMode;
-extern short GpSaveSlotCursor;
+
 extern short CardActivePort;
-extern unsigned short CardMenuOperation;
-extern short CardPromptChoices[];
+
 extern short CardPromptIndex;
 extern short MenuActiveControllerIndex;
 
-int GetCardMenuInitialState();
+
 
 static inline int IsNonZero(int arg0)
 {
@@ -145,4 +144,4 @@ int GetCardMenuInitialState(void) {
 }
 
 /* Initial values of the globals this module owns. */
-void (*MenuStepHandlerTable[13])() = {(void (*)())StepCardFileSlotSelection, (void (*)())StepCardPortSelection, (void (*)())UpdateCardMenuRowStates, (void (*)())RunCardSaveOrLoadStep, (void (*)())StepCardConfirmPrompt, (void (*)())WaitCardDialogueComplete, (void (*)())RunCardFormatStep, (void (*)())InitCardMenuSession, (void (*)())CloseCardMenuUiRows, (void (*)())StepCardSlotHeaderScan, (void (*)())CheckCardPollStatusTransition, (void (*)())CheckCardFileExistsTransition, (void (*)())StepCardDataTransfer};
+void (*MenuStepHandlerTable[13])(void) = {StepCardFileSlotSelection, StepCardPortSelection, UpdateCardMenuRowStates, RunCardSaveOrLoadStep, StepCardConfirmPrompt, WaitCardDialogueComplete, RunCardFormatStep, InitCardMenuSession, CloseCardMenuUiRows, StepCardSlotHeaderScan, CheckCardPollStatusTransition, CheckCardFileExistsTransition, StepCardDataTransfer};

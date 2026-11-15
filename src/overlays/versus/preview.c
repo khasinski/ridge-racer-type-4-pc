@@ -1,4 +1,6 @@
 #include "rr/overlay_module.h"
+#include "rr/versus_names.h"
+#include "game/menu/menutra21.h"
 #include "rr/vehicle_table.h"
 #include "rr/menu_frame_state.h"
 #include "game/system/pad.h"
@@ -19,10 +21,10 @@ extern s16 ovl661_player_win_counts[2];
 extern s16 ComDifficultyLevel;
 extern s32 ovl661_available_course_count;
 extern CourseChoice4 ovl661_car_choices[2][2][9];
-extern char ovl661_player_names[24], ovl661_player2_default_name[];
+extern char ovl661_player2_default_name[];
 extern const char ovl661_scene_name[];
 extern s32 UiRowCount;
-extern s16 CardMenuOperation;
+
 s32 CountChoiceGlyphs(const CourseChoice4 *);
 void CopyStringClearTail(char *destination, char *source);
 void ovl661_init_preview(s32);
@@ -131,8 +133,8 @@ void ovl661_init_menu(void)
             ovl661_car_choices[1][i][j] = CourseChoiceTable[0][j];
         }
     }
-    CopyStringClearTail(ovl661_player_names, (char *)SaveProgress.prefix.progress.prefix00.bytes);
-    CopyStringClearTail(ovl661_player_names + 12, ovl661_player2_default_name);
+    CopyStringClearTail(ovl661_player_names[0], (char *)SaveProgress.prefix.progress.prefix00.bytes);
+    CopyStringClearTail(ovl661_player_names[1], ovl661_player2_default_name);
     SetupDrawDispEnvs(0, 0, 0, 2);
     ovl661_init_preview(0);
     UnpackChoiceGlyph((s8 *)&SelectionRows, CourseChoiceTable[0][0].glyph);
@@ -479,7 +481,7 @@ const char ovl661_scene_name[100] = {106, 111, 98, 95, 118, 115, 95, 99, 97, 114
 u8 ovl661_group_option_counts[4] = {3, 4};
 s8 ovl661_group_slot_kinds[2][4] = {{0, 1, 2, -1}, {0, 2, 3, 1}};
 s8 ovl661_group_ui_rows[2][2][4] = {{{0, 1, 2, -1}, {3, 4, 5, 6}}, {{9, 10, 11, -1}, {12, 13, 14, 15}}};
-char ovl661_player_names[24];
+char ovl661_player_names[2][12];
 s16 ovl661_preview_confirmation;
 s16 ovl661_available_car_counts[2][2];
 s16 ovl661_selected_cars[2];

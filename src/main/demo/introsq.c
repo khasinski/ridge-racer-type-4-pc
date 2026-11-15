@@ -1,4 +1,5 @@
 #include "game/sound/cdpos.h"
+#include "game/data/menuvars.h"
 #include "scratchpad.h"
 #include "rr/textured_panel.h"
 #include "game/data/trkld8.h"
@@ -7,10 +8,6 @@
 #include "game/gfx/fadeend.h"
 #include "game/demo/intro.h"
 #include "rr/scene_camera_state.h"
-
-extern short ModeIndex;
-extern short ModeGroup;
-extern short SubmodeState;
 
 void IntroModeUpdate(void);
 

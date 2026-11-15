@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/menu/menutra21.h"
 #include "types.h"
 #include "rr/frame_storage_types.h"
 #include "scratchpad.h"
@@ -8,7 +9,6 @@
 #include "game/ui/uitext.h"
 #include "rr/badge_rows.h"
 
-extern short CardMenuOperation;
 extern char StrName[];
 extern char TeamLabel[];
 extern char StrMaker[];

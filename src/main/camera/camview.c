@@ -81,7 +81,7 @@ void DrawGarageFloorReflection(void)
     RR_GPU_SCRATCH->order = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
     UpdateCarWorldTransform(PlayerCars);
     DrawPreviewCar(PlayerCars, L.color90.argument, 0x80, 1);
-    t = RotTransPersOrigin(&L.m18, &PlayerCars[0].position20);
+    t = RotTransPersOrigin();
     t = (t >> 3) + 0x64;
     /* Splice the reflected car's secondary table in at its floor depth. */
     secondary = RR_GPU_SCRATCH->order;

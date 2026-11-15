@@ -66,7 +66,7 @@ typedef struct {
 extern s32 CdFileState;
 extern s32 CdFileSyncCount;
 extern s32 CdFileIndexCurrent;
-extern s32 (*CdFileStateHandlers[])();
+extern s32 (*CdFileStateHandlers[])(void);
 extern s32 CdFileSectorOffset;
 extern s32 CdFileSectors;
 extern void *CdActiveReadBuffer;
@@ -102,7 +102,7 @@ s32 CdFileStateSetloc(void);
 s32 CdFileStateWaitSetloc(void);
 s32 CdFileStateStartRead(void);
 s32 CdFileStateReadSync(void);
-void CdFileFinish(void);
+s32 CdFileFinish(void);
 s32 CdFileStateRetry(void);
 s32 CdFileReadStart(s32 a0, void *a1);
 s32 CdFileReadRange(s32 a0, s32 a1, s32 a2, void *a3);
@@ -204,10 +204,11 @@ s32 CdFileStateReadSync(void) {
     return 0;
 }
 
-void CdFileFinish(void) {
+s32 CdFileFinish(void) {
     CdFileIndexCurrent = -1;
     CdFileState = 0;
     CdFileBytesRead = CdFileSectors * 0x800U;
+    return 0;
 }
 
 s32 CdFileStateRetry(void)
@@ -795,7 +796,7 @@ s32 CdFileState;
 s32 CdFileSyncCount;
 int SceneLoadState;
 s32 CdFileIndexCurrent = -1;
-s32 (*CdFileStateHandlers[12])() = {(int (*)())CdFileStateCheckShell, (int (*)())CdFileStateGetTN, (int (*)())CdFileStateReloadDirectory, (int (*)())CdFileStateSetMode, (int (*)())CdFileStateWaitSetMode, (int (*)())CdFileStateWaitShellClose, (int (*)())CdFileStateSetloc, (int (*)())CdFileStateWaitSetloc, (int (*)())CdFileStateStartRead, (int (*)())CdFileStateReadSync, (int (*)())CdFileFinish, (int (*)())CdFileStateRetry};
+s32 (*CdFileStateHandlers[12])(void) = {CdFileStateCheckShell, CdFileStateGetTN, CdFileStateReloadDirectory, CdFileStateSetMode, CdFileStateWaitSetMode, CdFileStateWaitShellClose, CdFileStateSetloc, CdFileStateWaitSetloc, CdFileStateStartRead, CdFileStateReadSync, CdFileFinish, CdFileStateRetry};
 unsigned char CarModelCategoryOffsets[20] = {0, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 7, 8, 9};
 unsigned char CarModelFileIndexTable[64] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0, 1, 2, 3, 4, 5, 6, 8, 0xA, 0xB, 0xC, 0x11, 0x12, 0x14, 0x16, 0x17, 0, 2, 3, 4, 6, 7, 8, 0xC, 0xE, 0xF, 0x10, 0x11, 0x12, 0x13, 0x14, 0x17, 0, 2, 3, 4, 5, 7, 8, 0xA, 0xB, 0xC, 0xD, 0xE, 0x11, 0x12, 0x14, 0x15};
 short LoadingTriangleBaseVerts[64] = {0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 4096, 4096, 4096, 4096, 4096, 4096, 0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 2048, 4096, 4096, 4096, 4096, 4096, 0, 0, 4096, 4096, 4096, 4096, 4096, 4096};

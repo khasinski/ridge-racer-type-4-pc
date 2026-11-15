@@ -25,14 +25,8 @@
 #include "game/gfx/scene1.h"
 #include "rr/badge_rows.h"
 
-extern unsigned int ModeFrame;
-extern unsigned short SubmodeState;
 extern RaceVehicle PlayerCars[2];
 extern unsigned char MenuCameraPresetIndices[];
-extern unsigned short FadeCountdown;
-extern short ModeIndex;
-
-void CarStandingsModeUpdate();
 
 void CarStandingsModeUpdate(void) {
     int sp[3];

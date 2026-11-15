@@ -36,15 +36,15 @@ s32 CdRead(s32 sectors,u8 *buffer,u32 mode);
  * then starts transfer. Shell-open/command failure publishes remaining=-1.
  * Successful return reloads remaining after the clock helper completes. */
 s32 cd_read_retry(s32 restart);
-RR_ASSERT_SIZE(LibReadRestoreTail, 0x10);
-RR_ASSERT_OFFSET(LibReadRestoreTail, saved2C, 4);
-RR_ASSERT_OFFSET(LibReadRestoreTail, saved30, 8);
-RR_ASSERT_OFFSET(LibReadRestoreTail, notify34, 0xC);
-RR_ASSERT_SIZE(LibReadRequestState, 0x38);
-RR_ASSERT_OFFSET(LibReadRequestState, buffer04, 4);
-RR_ASSERT_OFFSET(LibReadRequestState, mode0C, 0xC);
-RR_ASSERT_OFFSET(LibReadRequestState, step10, 0x10);
-RR_ASSERT_OFFSET(LibReadRequestState, start1C, 0x1C);
-RR_ASSERT_OFFSET(LibReadRequestState, finished24, 0x24);
-RR_ASSERT_OFFSET(LibReadRequestState, restore, 0x28);
+RR_ASSERT_SIZE(LibReadRestoreTail, 3 * sizeof(LibCompletionCallback) + sizeof(u8 *));
+RR_ASSERT_OFFSET(LibReadRestoreTail, saved2C, sizeof(LibCompletionCallback));
+RR_ASSERT_OFFSET(LibReadRestoreTail, saved30, 2 * sizeof(LibCompletionCallback));
+RR_ASSERT_OFFSET(LibReadRestoreTail, notify34, 3 * sizeof(LibCompletionCallback));
+RR_ASSERT_SIZE(LibReadRequestState, RR_FIELD_OFFSET(LibReadRequestState, restore) + sizeof(LibReadRestoreTail));
+RR_ASSERT_OFFSET(LibReadRequestState, buffer04, RR_ALIGN_UP(4, _Alignof(u8 *)));
+RR_ASSERT_OFFSET(LibReadRequestState, mode0C, RR_FIELD_OFFSET(LibReadRequestState, buffer04) + 2 * sizeof(u8 *));
+RR_ASSERT_OFFSET(LibReadRequestState, step10, RR_FIELD_OFFSET(LibReadRequestState, mode0C) + 4);
+RR_ASSERT_OFFSET(LibReadRequestState, start1C, RR_FIELD_OFFSET(LibReadRequestState, mode0C) + 16);
+RR_ASSERT_OFFSET(LibReadRequestState, finished24, RR_FIELD_OFFSET(LibReadRequestState, mode0C) + 24);
+RR_ASSERT_OFFSET(LibReadRequestState, restore, RR_ALIGN_UP(RR_FIELD_OFFSET(LibReadRequestState, mode0C) + 28, _Alignof(LibReadRestoreTail)));
 #endif

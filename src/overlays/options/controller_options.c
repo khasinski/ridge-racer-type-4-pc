@@ -1,8 +1,12 @@
+#include "game/sound/sndvab.h"
+#include "game/data/menuvars.h"
+#include "game/ui/uipart1.h"
 #include "rr/release.h"
 #include "rr/overlay_module.h"
 #include "rr/runtime_settings.h"
 #include "rr/menu_frame_state.h"
 #include "rr/overlay665_strokes.h"
+#include "rr/overlay665_visual_types.h"
 #include "rr/menu_text_state.h"
 #include "game/car/carstat.h"
 #include "rr/line_emit.h"
@@ -16,33 +20,6 @@
 
 /* RaceVehicle / course setup controller (one player). */
 
-typedef struct {
-    s16 x00, y02;
-    s32 words04[4];
-} Ovl665View14;
-
-typedef struct {
-    s32 scene00, reserved04, selection08;
-    s32 step0C, detail10, next14, kind18;
-    s32 angle1C, phase20, fade24;
-    u16 buttons28;
-    s16 course2A;
-    s32 ready2C;
-    u8 pad30[8];
-    Ovl665View14 view38;
-    u8 pad4C[0x3A];
-    u16 rotation86;
-    u8 pad88[4];
-    s16 offset8C, offset8E, offset90;
-    u8 pad92[2];
-    s16 offset94, offset96, offset98;
-    u8 pad9A[6];
-} Ovl665CarState;
-
-
-
-
-
 typedef GpuCommandPacket Ovl665Packet;
 
 typedef struct {
@@ -53,9 +30,7 @@ typedef struct {
     s16 x0, y0, x1, y1;
 } Ovl665Line;
 
-extern Ovl665CarState ovl665_options_state;
 extern s32 ovl665_saved_stereo_mode;
-extern s16 FadeCountdown;
 extern s32 ActivePlayerIndex;
 extern Ovl665View14 ovl665_controller_camera_poses[];
 extern Ovl665Colour4 ovl665_controller_colors_type0[][5];
@@ -81,16 +56,11 @@ extern s32 PadSetMainMode(s32, s32, s32);
 extern s32 LoadTrophyModelStep(void);
 extern s32 ovl665_detect_controller_kind(s32);
 extern void SetPresentationDrawEnabled(s32);
-extern void StepMenuValue(s32, s32, void *, s32, s32);
-/* Sound cue; several call sites pass the freshly computed offset as a
- * second (ignored) argument, so it is declared without a prototype. */
-extern void PlaySfx();
 extern void *AddSpritePrim(void *, void *, s32, s32, void *, s32, s32);
 extern void ovl665_draw_controller_model(void);
 extern void DrawUiRow(s32);
 #include "rr/screen_tiles.h"
 extern void ovl665_init_menu(void);
-extern void ClearScreenOverlayState();
 extern void InitBadgeRow(s32, s32, s32, s32, s32, s32, s32);
 extern void SetMenuFrameOptions(s32, s32, s32);
 extern s32 rsin(s32);
@@ -99,7 +69,7 @@ extern void ovl665_draw_twist_gauge_needle(s32);
 extern void UpdateBadgeRowAnim(s32);
 extern void UpdateScreenFade(s32);
 
-#define ST ovl665_options_state
+#define ST ovl665_options_state.controller
 
 #define SCRATCH RR_GPU_SCRATCH
 
@@ -247,12 +217,12 @@ void ovl665_update_controller_options(s32 player) {
                 if (RR_RELEASE_JP || PlayerControllers[player].kind1C != 0) {
                     UiRows[5].cells[0] = 1;
                     UiRows[Options.pulse[player].disabled02 + 6].cells[0] = 0;
-                    StepMenuValue(player * 4, 2, &Options.pulse[player].disabled02, 2, 0);
+                    StepMenuValue(player * 4, 2, (char *)&Options.pulse[player].disabled02, 2, 0);
                     UiRows[Options.pulse[player].disabled02 + 6].cells[0] = 2;
                 }
             case 0:
                 old = Options.pulse[player].buttonLayout00;
-                StepMenuValue(player * 4 | 1, 2, &Options.pulse[player].buttonLayout00, 8, 0);
+                StepMenuValue(player * 4 | 1, 2, (char *)&Options.pulse[player].buttonLayout00, 8, 0);
                 if (old != Options.pulse[player].buttonLayout00) {
                     if (Options.pulse[player].buttonLayout00 < old) {
                         ST.angle1C -= 0x1000;
@@ -284,7 +254,7 @@ void ovl665_update_controller_options(s32 player) {
                 break;
             case 2:
                 old = Options.pad[player].buttonLayout0C;
-                StepMenuValue(player * 4 | 1, 2, &Options.pad[player].buttonLayout0C, 8, 0);
+                StepMenuValue(player * 4 | 1, 2, (char *)&Options.pad[player].buttonLayout0C, 8, 0);
                 if (old != Options.pad[player].buttonLayout0C) {
                     if (Options.pad[player].buttonLayout0C < old) {
                         ST.angle1C -= 0x1000;
@@ -301,7 +271,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.offset8C = value / 2;
                 ST.offset94 = -value / 2;
                 if (PlayerControllers[player].action28 != 0) {
-                    PlaySfx(1, value);
+                    PlaySfx(1);
                     CLOSE_ROWS(5);
                     FadeCountdown = 64;
                     ST.step0C = 2;
@@ -324,7 +294,7 @@ void ovl665_update_controller_options(s32 player) {
                 }
                 if (PlayerControllers[player].input00.fields.type != 0xE3) {
                     old = Options.pulse[player].buttonLayout00;
-                    StepMenuValue(player * 4 | 1, 1, &Options.pulse[player].buttonLayout00, 8, 0);
+                    StepMenuValue(player * 4 | 1, 1, (char *)&Options.pulse[player].buttonLayout00, 8, 0);
                     if (old != Options.pulse[player].buttonLayout00) {
                         if (Options.pulse[player].buttonLayout00 < old) {
                             ST.angle1C -= 0x1000;
@@ -358,7 +328,7 @@ void ovl665_update_controller_options(s32 player) {
                     SCRATCH->cursor = cursor;
                 } else {
                     old = Options.wheel[player].buttonLayout03;
-                    StepMenuValue(player * 4 | 1, 1, &Options.wheel[player].buttonLayout03, 8, 0);
+                    StepMenuValue(player * 4 | 1, 1, (char *)&Options.wheel[player].buttonLayout03, 8, 0);
                     if (old != Options.wheel[player].buttonLayout03) {
                         if (Options.wheel[player].buttonLayout03 < old) {
                             ST.angle1C -= 0x1000;
@@ -377,7 +347,7 @@ void ovl665_update_controller_options(s32 player) {
                     value = (s8)PlayerControllers[player].position41 * 16;
                     ST.offset90 = value;
                     if (PlayerControllers[player].action28 != 0) {
-                        PlaySfx(1, value);
+                        PlaySfx(1);
                         CLOSE_ROWS(5);
                         FadeCountdown = 64;
                         ST.step0C = 2;
@@ -456,7 +426,7 @@ void ovl665_update_controller_options(s32 player) {
             ST.offset8C = value / 2;
             ST.offset94 = -value / 2;
             if (PlayerControllers[player].edges08.fields.pressed & 0x800) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 Options.pad[player].center00 = entry->analog04.bytes[0] - 128;
                 Options.pad[player].offset02 = entry->analog04.bytes[1];
                 Options.pad[player].offset04 = entry->analog04.bytes[2];
@@ -470,7 +440,7 @@ void ovl665_update_controller_options(s32 player) {
             break;
         case 2:
             old = Options.pad[player].deadzone08;
-            StepMenuValue(player * 4 | 1, 1, &Options.pad[player].deadzone08, 4, 0);
+            StepMenuValue(player * 4 | 1, 1, (char *)&Options.pad[player].deadzone08, 4, 0);
             if (old != Options.pad[player].deadzone08) {
                 CardDialogueStatePtr->b4 = Options.pad[player].deadzone08 + 10;
             }
@@ -483,7 +453,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.phase20 = phase - 4064;
             }
             if (PlayerControllers[player].edges08.fields.pressed & 0x840) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 CardDialogueStatePtr->b4 = Options.pad[player].range0A + 14;
                 ST.view38 = ovl665_controller_camera_poses[5];
                 ST.phase20 = 0;
@@ -510,7 +480,7 @@ void ovl665_update_controller_options(s32 player) {
             break;
         case 3:
             old = Options.pad[player].range0A;
-            StepMenuValue(player * 4 | 1, 1, &Options.pad[player].range0A, 4, 0);
+            StepMenuValue(player * 4 | 1, 1, (char *)&Options.pad[player].range0A, 4, 0);
             if (old != Options.pad[player].range0A) {
                 CardDialogueStatePtr->b4 = Options.pad[player].range0A + 14;
             }
@@ -523,7 +493,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.phase20 = phase - 4064;
             }
             if (PlayerControllers[player].edges08.fields.pressed & 0x840) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 CLOSE_ROWS(5);
                 FadeCountdown = 64;
                 ST.step0C = 2;
@@ -565,7 +535,7 @@ void ovl665_update_controller_options(s32 player) {
             value = (s8)PlayerControllers[player].position41 * 16;
             ST.offset90 = value;
             if (PlayerControllers[player].edges08.fields.pressed & 0x800) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 PadSetRumbleFlags(player, 3);
                 CardDialogueStatePtr->b4 = Options.wheel[player].deadzone00 + 10;
                 ST.phase20 = 0;
@@ -575,7 +545,7 @@ void ovl665_update_controller_options(s32 player) {
             break;
         case 2:
             old = Options.wheel[player].deadzone00;
-            StepMenuValue(player * 4 | 1, 1, &Options.wheel[player].deadzone00, 4, 0);
+            StepMenuValue(player * 4 | 1, 1, (char *)&Options.wheel[player].deadzone00, 4, 0);
             if (old != Options.pad[player].deadzone08) {
                 CardDialogueStatePtr->b4 = Options.wheel[player].deadzone00 + 10;
             }
@@ -587,7 +557,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.phase20 = phase - 4064;
             }
             if (PlayerControllers[player].action28 != 0) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 CardDialogueStatePtr->b4 = Options.wheel[player].range01 + 18;
                 ST.phase20 = 0;
                 ST.detail10++;
@@ -607,7 +577,7 @@ void ovl665_update_controller_options(s32 player) {
             break;
         case 3:
             old = Options.wheel[player].range01;
-            StepMenuValue(player * 4 | 1, 1, &Options.wheel[player].range01, 5, 0);
+            StepMenuValue(player * 4 | 1, 1, (char *)&Options.wheel[player].range01, 5, 0);
             if (old != Options.wheel[player].range01) {
                 CardDialogueStatePtr->b4 = Options.wheel[player].range01 + 18;
             }
@@ -619,7 +589,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.phase20 = phase - 4064;
             }
             if (PlayerControllers[player].action28 != 0) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 CardDialogueStatePtr->b4 = Options.wheel[player].rumble02 + 23;
                 ST.phase20 = 0;
                 ST.detail10++;
@@ -635,7 +605,7 @@ void ovl665_update_controller_options(s32 player) {
             break;
         case 4:
             old = Options.wheel[player].rumble02;
-            StepMenuValue(player * 4 | 1, 1, &Options.wheel[player].rumble02, 3, 0);
+            StepMenuValue(player * 4 | 1, 1, (char *)&Options.wheel[player].rumble02, 3, 0);
             if (old != Options.wheel[player].rumble02) {
                 CardDialogueStatePtr->b4 = Options.wheel[player].rumble02 + 23;
             }
@@ -648,7 +618,7 @@ void ovl665_update_controller_options(s32 player) {
                 ST.phase20 = phase - 4064;
             }
             if (PlayerControllers[player].action28 != 0) {
-                PlaySfx(1, value);
+                PlaySfx(1);
                 CLOSE_ROWS(5);
                 FadeCountdown = 64;
                 ST.step0C = 2;
@@ -706,7 +676,7 @@ s32 ovl665_controller_model_scales[6] = {5, 8, 11, 5, 8, 11};
 u8 ovl665_twist_needle_color[4] = {0x40, 0x80, 0xFF};
 s32 ovl665_controller_row_counts[5] = {0, 6, 10, 14};
 s32 ovl665_saved_stereo_mode;
-Ovl665CarState ovl665_options_state;
+Overlay665State ovl665_options_state;
 
 /* Writable state of this unit; ovl665_reset_module restores it. */
 static const OverlayStateRegion ovl665_controller_options_regions[] = {

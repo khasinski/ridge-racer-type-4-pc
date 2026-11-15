@@ -20,13 +20,13 @@ void ovl665_init_controller_options(void) {
     InitBadgeRow(0,16,96,76,40,0,0xD01);
     if(!RR_RELEASE_JP)ovl665_saved_stereo_mode=0;
     BadgeRows[0].half02=1;
-    ovl665_options_state.view74.position00.words[2]=0;
-    ovl665_options_state.view74.position00.words[1]=0;
-    ovl665_options_state.view74.position00.words[0]=0;
-    ovl665_options_state.view74.rotation14=0;
-    ovl665_options_state.view74.rotation12=0;
-    ovl665_options_state.view74.rotation10=0;
-    ovl665_options_state.reset2C=0;
+    ovl665_options_state.visual.view74.position00.words[2]=0;
+    ovl665_options_state.visual.view74.position00.words[1]=0;
+    ovl665_options_state.visual.view74.position00.words[0]=0;
+    ovl665_options_state.visual.view74.rotation14=0;
+    ovl665_options_state.visual.view74.rotation12=0;
+    ovl665_options_state.visual.view74.rotation10=0;
+    ovl665_options_state.visual.reset2C=0;
     SetMenuFrameOptions(1,1,0);
 }
 

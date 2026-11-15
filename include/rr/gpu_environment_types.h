@@ -40,8 +40,8 @@ typedef struct {
     DisplayFlags flags10;
 } DisplayEnvironment;
 
-/* Host (PsyZ) layout; the PS1 offsets are checked by RR_ASSERT on 32-bit.
- * src/main/psyq/sdk_abi.c compares every field against PsyZ's DRAWENV. */
+/* Native PsyZ layout on both 32-bit and 64-bit hosts.
+ * src/main/psyq/sdk_abi.c also compares the fields against PsyZ's DRAWENV. */
 _Static_assert(sizeof(GpuDrawEnvironmentPacket) == 17 * sizeof(uintptr_t), "DR_ENV size");
 _Static_assert(RR_FIELD_OFFSET(DrawEnvironment, background) == 0x18, "DRAWENV.isbg");
 _Static_assert(RR_FIELD_OFFSET(DrawEnvironment, draw_packet1C) ==
@@ -54,7 +54,7 @@ RR_ASSERT_OFFSET(DrawEnvironment,offset_x,8);
 RR_ASSERT_OFFSET(DrawEnvironment,page,0x14);
 RR_ASSERT_OFFSET(DrawEnvironment,background,0x18);
 RR_ASSERT_OFFSET(DrawEnvironment,r,0x19);
-RR_ASSERT_OFFSET(DrawEnvironment,draw_packet1C,0x1C);
+RR_ASSERT_OFFSET(DrawEnvironment, draw_packet1C, RR_ALIGN_UP(0x1C, _Alignof(GpuDrawEnvironmentPacket)));
 RR_ASSERT_SIZE(DisplayEnvironment,0x14);
 RR_ASSERT_OFFSET(DisplayEnvironment,screen,8);
 RR_ASSERT_SIZE(DisplayFlags,4);

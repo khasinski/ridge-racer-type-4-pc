@@ -3,6 +3,8 @@
  * for development builds, off for releases). The syntax of the lists is
  * parsed in diagnostics_parse.c; a malformed entry is reported on stderr and
  * skipped, and a malformed number is ignored with a message.
+ *   RR4_PRESENTATION_FPS=0|60|120  output rate, independent of PAL/NTSC
+ *   RR4_CAPTURE_SAMPLES=1  capture every generated sample and log its fraction
  *   RR4_FRAME_LIMIT=n  exit after n VSyncs
  *   RR4_CAPTURE=file   write the displayed frame as a PPM when exiting
  *   RR4_VRAM=file      write the whole VRAM as a PPM when exiting
@@ -139,7 +141,6 @@
 #else
 #include <dlfcn.h>
 #endif
-#include <psyz.h>
 #include <psyz/audio.h>
 #include <psyz/file.h>
 #include <psyz/gpu.h>
@@ -151,6 +152,8 @@
 #include <stdint.h>
 #include <string.h>
 #include "game/system/pad.h"
+#include "rr/player_cars.h"
+#include "game/data/menuvars.h"
 
 #include <SDL3/SDL.h>
 
@@ -160,10 +163,8 @@
 
 void Psyz_Srand(unsigned int seed);
 
-/* Mode state of the original dispatcher, read for RR4_TRACE. */
-extern unsigned short ModeGroup;
-extern short ModeIndex;
-extern unsigned short SubmodeState;
+/* VBlank field counter, read for RR4_TRACE. */
+
 extern unsigned int FrameCounter;
 
 static long frame_limit;
@@ -343,11 +344,9 @@ static Rr4PadStep pad_script[128];
 static int pad_script_len;
 static int pad_script_ports[2];
 
-/* RR4_AUTODRIVE: decided from PS1-layout fields of PlayerCars[0] (offsets
- * below the host-only control block are those of the original). */
-extern unsigned char PlayerCars[];
+/* RR4_AUTODRIVE reads the first player's lateral position and heading. */
 extern int RaceState;
-extern int ModeFrame;
+
 static int autodrive;
 static long autodrive_hold = -1; /* RR4_AUTODRIVE_HOLD, or -1 */
 static FILE *autodrive_log;
@@ -393,9 +392,9 @@ static unsigned short autodrive_mask(void) {
         load_autodrive_replay();
     if (autodrive_replay_state > 0)
         return ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
-    lateral = *(const short *)(PlayerCars + 0x172);
-    track = *(const short *)(PlayerCars + 0x1EC);
-    heading = (short)*(const int *)(PlayerCars + 0x54);
+    lateral = PlayerCars[0].lateralOffset172;
+    track = (short)PlayerCars[0].trackAngle1EC;
+    heading = (short)PlayerCars[0].rot54;
     error = lateral / 2;
     if (error > 400)
         error = 400;
@@ -576,6 +575,7 @@ static void finish(void) {
 static Rr4VsyncRange capture_at[64];
 static int capture_at_len;
 static int capture_mid;
+static int capture_samples;
 static const char *capture_base;
 
 static void capture_at_vsync(long vsync) {
@@ -590,6 +590,16 @@ static void capture_at_vsync(long vsync) {
             snprintf(path, sizeof(path), "%s.%ld.ppm", capture_base, vsync);
             unsigned char *rgb = Psyz_VideoAllocRenderedFrame(&w, &h);
             write_ppm(path, rgb, w, h);
+            if (capture_samples) {
+                for (unsigned sample = 0; sample < 5; ++sample) {
+                    float fraction;
+                    unsigned char* pixels = Psyz_VideoAllocInterpolationSample(sample, &fraction, &w, &h);
+                    if (!pixels) break;
+                    snprintf(path, sizeof(path), "%s.%ld.sample%u.ppm", capture_base, vsync, sample);
+                    write_ppm(path, pixels, w, h);
+                    fprintf(stderr, "interpolation capture vsync=%ld sample=%u fraction=%.6f\n", vsync, sample, fraction);
+                }
+            }
             if (capture_mid) {
                 unsigned char *mid = Psyz_VideoAllocMidpointFrame(&w, &h);
                 snprintf(path, sizeof(path), "%s.%ld.mid.ppm", capture_base, vsync);
@@ -641,7 +651,8 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
         prefs->disable_dithering |= (bits & RR4_GRAPHICS_NODITHER) != 0;
         prefs->antialiasing |= (bits & RR4_GRAPHICS_AA) != 0;
         prefs->texture_filtering |= (bits & RR4_GRAPHICS_FILTER) != 0;
-        prefs->frame_interpolation |= (bits & RR4_GRAPHICS_INTERPOLATION) != 0;
+        if ((bits & RR4_GRAPHICS_INTERPOLATION) && !prefs->frame_interpolation)
+            prefs->frame_interpolation = 60;
         if (bits & RR4_GRAPHICS_WIDE)
             prefs->aspect_ratio = RR4_ASPECT_WIDESCREEN;
     } else {
@@ -649,7 +660,7 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
         prefs->disable_dithering = (bits & RR4_GRAPHICS_NODITHER) != 0;
         prefs->antialiasing = (bits & RR4_GRAPHICS_AA) != 0;
         prefs->texture_filtering = (bits & RR4_GRAPHICS_FILTER) != 0;
-        prefs->frame_interpolation = (bits & RR4_GRAPHICS_INTERPOLATION) != 0;
+        prefs->frame_interpolation = (bits & RR4_GRAPHICS_INTERPOLATION) ? 60 : 0;
         prefs->aspect_ratio = bits & RR4_GRAPHICS_WIDE ? RR4_ASPECT_WIDESCREEN : RR4_ASPECT_CLASSIC;
     }
     Psyz_VideoSetGeometryCorrection(prefs->geometry_correction);
@@ -658,7 +669,8 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
     Psyz_VideoSetModelFiltering(prefs->texture_filtering);
     Psyz_VideoSetAspectMode(prefs->aspect_ratio == RR4_ASPECT_WIDESCREEN ? PSYZ_ASPECT_SQUARE
                                                                           : PSYZ_ASPECT_DISPLAY);
-    Psyz_GpuSetFrameInterpolation(prefs->frame_interpolation);
+    Psyz_GpuSetFrameInterpolation(prefs->frame_interpolation != 0);
+    Psyz_GpuSetPresentationRate(prefs->frame_interpolation);
     Rr4ApplyWidescreen(prefs->aspect_ratio == RR4_ASPECT_WIDESCREEN);
 }
 
@@ -678,6 +690,12 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     text = getenv("RR4_GRAPHICS");
     if (text && *text)
         apply_graphics(prefs, text, interactive);
+    text = getenv("RR4_PRESENTATION_FPS");
+    if (text && (!strcmp(text, "0") || !strcmp(text, "60") || !strcmp(text, "120"))) {
+        prefs->frame_interpolation = atoi(text);
+        Psyz_GpuSetFrameInterpolation(prefs->frame_interpolation != 0);
+        Psyz_GpuSetPresentationRate(prefs->frame_interpolation);
+    }
     prefs->extended_draw_distance = env_long("RR4_DRAW_DISTANCE", prefs->extended_draw_distance) != 0;
     ExtendedDrawDistance = prefs->extended_draw_distance;
     frame_limit = env_long("RR4_FRAME_LIMIT", 0);
@@ -707,6 +725,7 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     gpu_dump_base = path_env("RR4_GPU_DUMP") ? path_env("RR4_GPU_DUMP") : "gpudump";
     capture_at_len = Rr4DiagParseRanges(getenv("RR4_CAPTURE_AT"), 1, capture_at, 64, "RR4_CAPTURE_AT");
     capture_mid = getenv("RR4_CAPTURE_MID") && *getenv("RR4_CAPTURE_MID") == '1';
+    capture_samples = getenv("RR4_CAPTURE_SAMPLES") && *getenv("RR4_CAPTURE_SAMPLES") == '1';
     capture_base = path_env("RR4_CAPTURE") ? path_env("RR4_CAPTURE") : "capture";
 }
 

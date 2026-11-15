@@ -1,3 +1,7 @@
+#include "rr/overlay_module.h"
+#include "game/race/racegrid.h"
+#include "game/data/menuvars.h"
+#include "rr/geometry.h"
 #include "rr/release.h"
 #include "game/system/frmtask.h"
 #include "game/sound/cdpos.h"
@@ -35,7 +39,6 @@
 #include "rr/string_tail_copy.h"
 #include "game/menu/mnrows.h"
 
-extern int InitGeom();
 
 #include "rr/cd_directory_buffer.h"
 extern char StrTotalInitLog[];
@@ -54,7 +57,6 @@ extern char StrTerrazi[];
 extern char StrAgeSolo[];
 extern RaceVehicle PlayerCars[2];
 extern int MirrorRenderFlag;
-extern short LinkHostFlag;
 extern char SaveHeaderPlayerNameBuf[];
 extern char *TeamStringPtrTable[8];
 extern char *RivalTeamNamePtrTable[4];
@@ -62,9 +64,6 @@ extern int DisplayEnvOffsetX;
 extern int DisplayEnvOffsetY;
 extern int DialogueSceneMode;
 #include "rr/menu_arena_base.h"
-extern short GameModeType;
-extern void SetGeomOffset(s32,s32);
-extern void SetGeomScreen(s32);
 
 void SetupDrawDispEnvs(s32 r,s32 g,s16 b,u32 flags);
 
@@ -74,6 +73,7 @@ void SystemInit(void)
     int k;
     int m;
 
+    OverlayModulesInit();
     DebugPrintStub(StrTotalInitLog);
     /* The Japanese release sets MODE_NTSC here (the PAL one in MainLoop). */
     if (RR_RELEASE_JP)
@@ -87,7 +87,7 @@ void SystemInit(void)
     SetGraphDebug(0);
     SetDispMask(0);
     InitGeom();
-    CardSystemInit(1);
+    CardSystemInit();
     InitGamePads();
     InitOptionsDefaults();
     ApplyOptionsPadButtonMaps();

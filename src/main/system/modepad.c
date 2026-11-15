@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
 #include "rr/runtime_settings.h"
 #include "game/system/pad.h"
@@ -19,9 +20,7 @@
 #include "rr/driver_control.h"
 
 extern short MenuCursor;
-extern short MenuScriptId;
 extern int DialogueSceneMode;
-extern short MenuTransitionOverlayMode;
 
 int RunIntroScriptStep(void) {
     return IntroScriptStep();

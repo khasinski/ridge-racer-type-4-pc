@@ -1,4 +1,5 @@
 #include "rr/vehicle_table.h"
+#include "game/race/racegrid.h"
 #include "rr/player_cars.h"
 #include "rr/frame_storage_types.h"
 #include "game/data/bankrec.h"
@@ -44,7 +45,6 @@ extern RaceVehicle PlayerCars[];
  * (ComCars - 2) and GrandPrixRaceVehicles (ComCars - 1), so that car slot i
  * of a race maps onto ComCars without a gap. */
 extern RaceVehicle ComCars[];
-extern short LinkHostFlag;
 extern short ReverseCourse;
 
 void InitPreviewImageRows(void) {

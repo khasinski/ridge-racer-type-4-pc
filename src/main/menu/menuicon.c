@@ -1,3 +1,5 @@
+#include "rr/geometry.h"
+#include "game/ui/uibar.h"
 #include "rr/release.h"
 #include "game/car/carbound.h"
 #include "rr/save_slots.h"
@@ -14,9 +16,6 @@
 #include "rr/badge_rows.h"
 #include "game/math/rotmat.h"
 #include "game/ui/uidraw.h"
-extern int InitBadgeRow();
-extern int SetGeomOffset();
-extern int SetGeomScreen();
 extern short MenuIconRowStartX[];
 extern short MenuIconRowStartY[];
 extern short MenuIconRowWidth[];

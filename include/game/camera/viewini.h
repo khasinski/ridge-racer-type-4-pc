@@ -23,6 +23,6 @@ void InitCourseViewState(void);
 void BuildViewSegmentObjectList(int player);
 void UpdateVisibleViewRecords(void);
 void CourseViewInitNoop(void);
-void ResetViewScratchMask();
+void ResetViewScratchMask(void);
 
 #endif /* RR_GAME_CAMERA_VIEWINI_H */

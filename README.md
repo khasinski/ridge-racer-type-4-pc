@@ -41,11 +41,16 @@ triggers press I and II) or a JogCon (the left stick turns the dial). The
 game's own Options then show and calibrate that controller.
 
 **Escape** opens the settings: resolution up to 8x, fullscreen, Classic 4:3
-or Widescreen 16:9, PAL or NTSC timing, frame interpolation, geometry
+or Widescreen 16:9, PAL or NTSC game timing, frame rate, geometry
 correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
 original. **Graphics > Draw distance > Extended (2x)** doubles the course
 view depth and draws more scenery, at a higher CPU and GPU cost.
+**Graphics > Frame rate > Original / 60 FPS / 120 FPS** selects presentation
+independently of PAL/NTSC. The higher rates interpolate geometry and add one
+original frame of display latency; physics and audio retain their original
+clock. Antialiasing also filters the final reduction from 8x to the window
+size to reduce shimmering on distant detail.
 
 **Escape > Replays** saves the replay of the last race (Time Attack, Grand
 Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings

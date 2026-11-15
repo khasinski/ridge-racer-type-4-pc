@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void SoundQueueUpdate();
+void SoundQueueUpdate(void);
 void SoundCloseVabsAndReset(void);
 void SoundInitForRace(void);
 void StopAllSoundAndReset(void);

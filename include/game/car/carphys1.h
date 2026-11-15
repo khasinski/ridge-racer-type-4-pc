@@ -3,6 +3,7 @@
 
 #include "types.h"
 
-void UpdateCarHeading();
+struct RaceVehicle;
+void UpdateCarHeading(struct RaceVehicle *a0);
 
 #endif /* RR_GAME_CAR_CARPHYS1_H */

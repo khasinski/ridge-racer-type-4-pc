@@ -3,11 +3,8 @@
 #include "rr/overlay668_frame_acquire.h"
 #include "psyq/libcd/dsstrm3.h"
 #include "rr/overlay668_vlc.h"
-/* Poll at most2000 times. Success toggles the current fullword selector to0/1,
- * captures that selector, reads the fresh stream root and submits the acquired
- * full data pointer with its command buffer. Release status is returned intact;
- * exhausted polling returns-1 without touching command storage or releasing.
- * Acquire may mutate the complete display config and replace the stream root.
- */
+/* Decode into the inactive command buffer, publishing its selector only on
+ * success. Return StFreeRing status, -1 for exhausted polling, or -2 after
+ * releasing a malformed frame. The playback loop stops on the latter. */
 s32 ovl668_decode_next_frame(StrDisplayConfig *config);
 #endif

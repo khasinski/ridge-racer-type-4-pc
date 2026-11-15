@@ -1,5 +1,6 @@
 #ifndef RR_RACE_SETUP_H
 #define RR_RACE_SETUP_H
+#include "game/data/menuvars.h"
 #include "game/ui/hudmap2.h"
 #include "rr/menu_selection.h"
 #include "game/car/carstat.h"
@@ -25,18 +26,15 @@ extern s32 RaceVoiceFlags;
 extern s16 ForceTailLightTrails;
 extern s32 ChaseViewEnabled;
 extern s32 RaceTimeRemaining;
-extern s16 FadeCountdown;
 extern s32 VSyncThreshold;
 extern s32 DrawSubOtFlag;
 extern s16 RearViewMirrorEnabled;
 extern s16 ReverseCourse;
 extern s32 SavedRaceState;
-extern s32 ModeFrame;
 extern s32 TrackLength;
 extern s8 PauseCursor;
 extern s8 RacePaused;
 extern s32 BestLapTime;
-extern s16 GameModeType;
 extern s32 RaceState;
 extern s32 TrackEventSfxEnabled;
 extern s16 LinkPlayerCount;
@@ -56,7 +54,7 @@ extern s32 LapFrameCounts[10];
  * mode values are supported. Helpers may change later-read globals, tables,
  * current/future vehicle flags and output state; both whole vehicles stay live.
  * The 8011 hooks are the overlay entry points used when entering mode4. */
-void SetupRace();
+void SetupRace(void);
 RR_ASSERT_SIZE(RaceSetupPair4,4);
 RR_ASSERT_OFFSET(RaceSetupPair4,second,2);
 #endif

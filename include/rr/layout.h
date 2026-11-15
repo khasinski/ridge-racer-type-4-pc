@@ -11,20 +11,14 @@
 #define RR_FIELD_OFFSET(type, field) offsetof(type, field)
 #endif
 
-/* Original 32-bit layout checks. They describe the PS1 ABI (4-byte pointers)
- * and are enforced by 32-bit layout-check builds; with 64-bit host pointers
- * runtime structures holding pointers legitimately grow, so the host build
- * does not apply them. Serialized disc/card formats contain no host pointers
- * and keep the same layout on both. */
-#if __SIZEOF_POINTER__ == 4
+/* Checked on every host, including MSVC (which does not define
+ * __SIZEOF_POINTER__). Pointer-bearing layouts express their native widths;
+ * disc/card/wire records retain their fixed sizes and offsets. */
+#define RR_ALIGN_UP(bytes, alignment) \
+    (((bytes) + (alignment) - 1) & ~((alignment) - 1))
 #define RR_ASSERT_SIZE(type, size) \
-    typedef char rr_size_##type[(sizeof(type) == (size)) ? 1 : -1]
+    _Static_assert(sizeof(type) == (size), #type " size")
 #define RR_ASSERT_OFFSET(type, field, offset) \
-    typedef char rr_offset_##type##_##field[ \
-        (RR_FIELD_OFFSET(type, field) == (offset)) ? 1 : -1]
-#else
-#define RR_ASSERT_SIZE(type, size) struct rr_layout_unchecked
-#define RR_ASSERT_OFFSET(type, field, offset) struct rr_layout_unchecked
-#endif
+    _Static_assert(RR_FIELD_OFFSET(type, field) == (offset), #type "." #field " offset")
 
 #endif

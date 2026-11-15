@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void StepModeSelectChoice();
+void StepModeSelectChoice(void);
 /* Bind caller-provided storage, publish MenuGridRecords, then clear count
  * complete records through the BIOS service. Count is nonnegative and the
  * byte count fits signed32; buffer covers that many aligned MenuGrid38 records.

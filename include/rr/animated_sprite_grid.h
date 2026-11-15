@@ -18,5 +18,5 @@ void EmitSpriteGridTick(u32 intensity,u16 *tick);
 
 RR_ASSERT_SIZE(SpriteGridClock, 16);
 RR_ASSERT_OFFSET(SpriteGridClock, tick0E, 14);
-RR_ASSERT_SIZE(GpuSingleCommandPacket, 8);
+RR_ASSERT_SIZE(GpuSingleCommandPacket, RR_GPU_PACKET_SIZE(4));
 #endif

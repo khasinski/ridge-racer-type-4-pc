@@ -4,7 +4,7 @@
 #include "types.h"
 
 void StopRaceRumble(void);
-void FinishRace();
+void FinishRace(void);
 int ExitOnLinkLost(void);
 int UpdateLinkHandshake(int a0);
 void DrawLinkEntryScreen(s32 mode);

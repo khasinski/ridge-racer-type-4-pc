@@ -4,7 +4,6 @@
 #include "game/race/racegrid.h"
 
 extern s32 RaceTimeRemaining;
-extern u16 LinkHostFlag;
 extern u8 StrPlayerLabel[12],StrNowAcceptingEntries[28],EntryAcceptedStr[20];
 extern u8 StrStarPleaseWait[16],StrNoPlayer[12],SecondsUntilCloseText[28],StrLinkProgressBarGlyph[4];
 void DrawBigFontString(s32 x,s32 y,u8 *text);

@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "game/ui/uidraw.h"
 #include "game/sound/sndvab.h"
 #include "rr/save_slots.h"
@@ -15,10 +16,6 @@
 
 extern int MenuStepDirection;
 extern short SelectedTeamIndex;
-extern int ModeFrame;
-extern short ModeIndex;
-extern short ModeGroup;
-extern short SubmodeState;
 
 void StepModeSelectChoice(void) {
     int s0;

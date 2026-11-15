@@ -12,9 +12,9 @@ typedef struct {
 /* Partial layout of the 0x20-byte entries referenced by StRingHeaders. */
 typedef struct {
     u16 state;
-    u8 pad02[6];
+    u16 type02, sector04, sectors06;
     s32 value08;
-    u8 pad0C[4];
+    u32 frameBytes0C;
     u16 width10,height12;
     u8 pad14[8];
     LibPackedWord word1C;
@@ -29,7 +29,9 @@ s32 StGetNext(u8 **data, LibQueueRecord32 **header);
 
 RR_ASSERT_SIZE(LibPackedWord, 4);
 RR_ASSERT_SIZE(LibQueueRecord32, 0x20);
+RR_ASSERT_OFFSET(LibQueueRecord32, sectors06, 6);
 RR_ASSERT_OFFSET(LibQueueRecord32, value08, 8);
+RR_ASSERT_OFFSET(LibQueueRecord32, frameBytes0C, 0xC);
 RR_ASSERT_OFFSET(LibQueueRecord32, width10, 0x10);
 RR_ASSERT_OFFSET(LibQueueRecord32, height12, 0x12);
 RR_ASSERT_OFFSET(LibQueueRecord32, word1C, 0x1C);
@@ -47,9 +49,9 @@ RR_ASSERT_OFFSET(GpuDebugSettings, width, 2);
 RR_ASSERT_OFFSET(GpuDebugSettings, height, 4);
 
 /* Resident GPU driver: the executable's sixteen pointer-sized cells.
- * Queue operations retain their legacy unspecified-argument callback type;
- * payload and parameter transport retain complete native pointer widths. */
-typedef int (*GpuOpFunc)();
+ * Queue callbacks receive two native-width words, as in PsyZ addque2.
+ * Payload and parameter transport retain complete native pointer widths. */
+typedef int (*GpuOpFunc)(uintptr_t, uintptr_t);
 typedef void (*LibDrawOrderingTable)(uintptr_t address);
 union GpuRectangle;
 typedef struct GpuDriver40 {

@@ -1,4 +1,6 @@
 #include "game/data/savedat.h"
+#include "rr/overlay662_init.h"
+#include "game/menu/menu8.h"
 #include "rr/emblem_images.h"
 #include "game/race/ranking.h"
 #include "rr/save_slots.h"
@@ -7,8 +9,7 @@
 #include "game/data/globals.h"
 extern CourseChoice4 CourseChoiceTable[4][9];
 extern TimeRecord16 RaceRecords[2][8][5];
-extern int EmblemEditFrames;
-extern unsigned short GpSaveSlotCursor;
+
 extern TimeRecord16 LapRecords[2][8][5];
 
 void BuildSaveData(int mode) {

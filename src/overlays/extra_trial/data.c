@@ -47,6 +47,10 @@ extern const OverlayStateTable ovl666_data_state;
 static const OverlayStateTable *const ovl666_state_tables[] = {&ovl666_data_state};
 static OverlayStateImage ovl666_state_image = {ovl666_state_tables, sizeof(ovl666_state_tables) / sizeof(ovl666_state_tables[0]), NULL};
 
+void ovl666_capture_module(void) {
+    OverlayStateCapture(&ovl666_state_image);
+}
+
 void ovl666_reset_module(void) {
     OverlayStateRestore(&ovl666_state_image);
 }

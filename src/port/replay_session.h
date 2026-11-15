@@ -15,8 +15,8 @@
  * the state it is played from (race setup, car snapshots, the rand() state
  * and the race globals the replay reads) is kept: Save writes it to a file,
  * Load stages a file through the game's own path. It sets the race setup,
- * runs the full race load script (the one the link battle uses: the mode
- * overlay, all cars, the course, SetupRace) with the replay mode as its
+ * runs the full race load script (mode overlay, preset emblems, all cars,
+ * the course, SetupRace) with the replay mode as its
  * scene, installs the saved replay and car snapshots at ReplayModeEnter and,
  * when the replay fades out, restores the player's own setup and returns to
  * the title screen instead of the race results. Link battle replays (serial

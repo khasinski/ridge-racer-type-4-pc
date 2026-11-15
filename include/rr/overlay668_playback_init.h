@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY668_PLAYBACK_INIT_H
 #define RR_OVERLAY668_PLAYBACK_INIT_H
+#include "game/data/menuvars.h"
 #include "rr/overlay668_stream.h"
 #include "rr/load_cursor.h"
 #include "rr/frame_environment.h"
@@ -12,7 +13,7 @@ typedef struct {
     char name[16];
 } StrCdFileInfo;
 #include "rr/menu_arena_base.h"
-extern s16 ModeGroup,ModeIndex,SubmodeState;
+
 void ovl668_resolve_stream_file(s32 resource,StrCdFileInfo *file,u32 *sectors);
 /* After the display setup service, MenuArenaBase covers an aligned complete
  * playback owner. Publish its base and end, then clear the captured owner.

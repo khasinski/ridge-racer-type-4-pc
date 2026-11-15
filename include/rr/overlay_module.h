@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "types.h"
+#include "rr/overlay_entrypoints.h"
 
 /* Statically linked mode overlays (R4.BIN entries 659..668, duplicates
  * 669..672). The PS1 loaded one image into the 0x80114878 window; a fresh
@@ -26,37 +27,56 @@ typedef struct {
     size_t count;
 } OverlayStateTable;
 
-/* Image of a module's state as linked (= a fresh load). Captured the first
- * time the module is bound, before any of its code has run, and copied back
- * on every later bind. */
+/* Image of a module's state as linked (= a fresh load). Capture at startup,
+ * before resident code can write overlay state, and restore on every bind. */
 typedef struct {
     const OverlayStateTable *const *tables;
     size_t tableCount;
     u8 *pristine;
 } OverlayStateImage;
 
-static inline void OverlayStateRestore(OverlayStateImage *image) {
+static inline void OverlayStateCapture(OverlayStateImage *image) {
     size_t total = 0, offset = 0, t, i;
-    int capture = image->pristine == NULL;
+    if (image->pristine != NULL)
+        return;
     for (t = 0; t < image->tableCount; t++)
         for (i = 0; i < image->tables[t]->count; i++)
             total += image->tables[t]->regions[i].size;
-    if (capture) {
-        image->pristine = malloc(total ? total : 1);
-        if (image->pristine == NULL)
-            abort();
-    }
+    image->pristine = malloc(total ? total : 1);
+    if (image->pristine == NULL)
+        abort();
     for (t = 0; t < image->tableCount; t++) {
         for (i = 0; i < image->tables[t]->count; i++) {
             const OverlayStateRegion *region = &image->tables[t]->regions[i];
-            if (capture)
-                memcpy(image->pristine + offset, region->data, region->size);
-            else
-                memcpy(region->data, image->pristine + offset, region->size);
+            memcpy(image->pristine + offset, region->data, region->size);
             offset += region->size;
         }
     }
 }
+
+static inline void OverlayStateRestore(OverlayStateImage *image) {
+    size_t offset = 0, t, i;
+    OverlayStateCapture(image);
+    for (t = 0; t < image->tableCount; t++) {
+        for (i = 0; i < image->tables[t]->count; i++) {
+            const OverlayStateRegion *region = &image->tables[t]->regions[i];
+            memcpy(region->data, image->pristine + offset, region->size);
+            offset += region->size;
+        }
+    }
+}
+
+/* Idempotent capture: never overwrite the linked initial state on restart. */
+void OverlayModulesInit(void);
+void ovl659_capture_module(void);
+void ovl660_capture_module(void);
+void ovl661_capture_module(void);
+void ovl662_capture_module(void);
+void ovl663_capture_module(void);
+void ovl665_capture_module(void);
+void ovl666_capture_module(void);
+void ovl667_capture_module(void);
+void ovl668_capture_module(void);
 
 /* Per-module reset: restore the state a fresh load of the image gave. */
 void ovl659_reset_module(void); /* grand_prix */
@@ -74,6 +94,7 @@ typedef struct {
     const char *name;
     u16 entry, duplicate;
     void (*reset)(void);
+    void (*capture)(void);
 } OverlayModule;
 
 /* If R4.BIN entry `file` is an executable mode overlay, reset that linked

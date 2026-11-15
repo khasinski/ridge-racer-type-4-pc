@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "game/sound/sndvab.h"
@@ -35,25 +36,19 @@
 
 #include "rr/cd_directory_buffer.h"
 extern char StrMainMenu0Log[];
-extern short FadeCountdown;
 extern int ActivePlayerIndex;
 extern int DrawSubOtFlag;
-extern short LinkHostFlag;
 extern short ReverseCourse;
 extern int MaskBitSetting;
-extern short ModeIndex;
-extern short MenuScriptId;
-extern short ModeGroup;
+
 extern int DialogueSceneMode;
 #include "rr/menu_arena_base.h"
-extern u16 SubmodeState;
+
 extern short LinkState;
 extern int ModeInitResetCount;
 extern char StrInitMainMenu0[];
 extern int VSyncThreshold;
 extern short MenuCursor;
-extern short ActiveSceneId;
-extern int ModeFrame;
 
 void TitleModeEnter(void);
 void TitleMenuInit(void);
@@ -377,16 +372,21 @@ void (**ModeFuncTable[])(void) = {
  * entry 658 + n). Entries 669..672 are byte-identical copies loaded by the
  * mode menu; 664 and 673 are asset containers and are still read. */
 static const OverlayModule OverlayModules[] = {
-    {"grand_prix", 659, 670, ovl659_reset_module},
-    {"time_attack", 660, 669, ovl660_reset_module},
-    {"versus", 661, 671, ovl661_reset_module},
-    {"garage", 662, 0, ovl662_reset_module},
-    {"records", 663, 0, ovl663_reset_module},
-    {"options", 665, 0, ovl665_reset_module},
-    {"extra_trial", 666, 0, ovl666_reset_module},
-    {"serial_link", 667, 672, ovl667_reset_module},
-    {"movie_playback", 668, 0, ovl668_reset_module},
+    {"grand_prix", 659, 670, ovl659_reset_module, ovl659_capture_module},
+    {"time_attack", 660, 669, ovl660_reset_module, ovl660_capture_module},
+    {"versus", 661, 671, ovl661_reset_module, ovl661_capture_module},
+    {"garage", 662, 0, ovl662_reset_module, ovl662_capture_module},
+    {"records", 663, 0, ovl663_reset_module, ovl663_capture_module},
+    {"options", 665, 0, ovl665_reset_module, ovl665_capture_module},
+    {"extra_trial", 666, 0, ovl666_reset_module, ovl666_capture_module},
+    {"serial_link", 667, 672, ovl667_reset_module, ovl667_capture_module},
+    {"movie_playback", 668, 0, ovl668_reset_module, ovl668_capture_module},
 };
+
+void OverlayModulesInit(void) {
+    for (size_t i = 0; i < sizeof(OverlayModules) / sizeof(OverlayModules[0]); i++)
+        OverlayModules[i].capture();
+}
 
 s32 OverlayModuleBind(s32 file) {
     u32 i;

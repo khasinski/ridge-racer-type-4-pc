@@ -181,7 +181,8 @@ s32 ovl667_poll_race_packet(void) {
             if ((ovl667_rx_staging_packet.packet.flags00 >> 6) & 1) ovl667_remote_error_code = 2;
             else ovl667_remote_error_code = 1;
         }
-        ovl667_rx_slot_index = ovl667_rx_staging_packet.packet.flags00;
+        /* Upper bits report peer errors; only the low three address the ring. */
+        ovl667_rx_slot_index = ovl667_rx_staging_packet.packet.flags00 & 7;
         ovl667_select_active_slot();
         ovl667_rx_packet_ring.packets[ovl667_rx_slot_index] = ovl667_rx_staging_packet.packet;
         FileRead(LinkReadHandle, &ovl667_rx_staging_packet.packet, 12);
@@ -336,6 +337,10 @@ const OverlayStateTable ovl667_sio_state = {ovl667_sio_regions, sizeof(ovl667_si
 extern const OverlayStateTable ovl667_car_selection_state, ovl667_race_state, ovl667_results_state, ovl667_sio_state;
 static const OverlayStateTable *const ovl667_state_tables[] = {&ovl667_car_selection_state, &ovl667_race_state, &ovl667_results_state, &ovl667_sio_state};
 static OverlayStateImage ovl667_state_image = {ovl667_state_tables, sizeof(ovl667_state_tables) / sizeof(ovl667_state_tables[0]), NULL};
+
+void ovl667_capture_module(void) {
+    OverlayStateCapture(&ovl667_state_image);
+}
 
 void ovl667_reset_module(void) {
     OverlayStateRestore(&ovl667_state_image);

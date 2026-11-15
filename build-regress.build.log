@@ -1,0 +1,1348 @@
+[  0%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/alpha_processing.c.o
+[  0%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/huffman_utils.c.o
+[  1%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_clip_tables.c.o
+[  1%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/quant_levels_dec_utils.c.o
+[  1%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/tree_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/alpha_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/io_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/idec_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/quant_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/palette.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/vp8_dec.c.o
+[  2%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/webp_dec.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/bit_reader_utils.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/vp8l_dec.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/color_cache_utils.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/random_utils.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/filters_utils.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/rescaler_utils.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/cpu.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/alpha_processing_sse41.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/filters.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/frame_dec.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdecode.dir/src/dec/buffer_dec.c.o
+[  3%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling_sse41.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/utils.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_sse41.c.o
+[  4%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/cmake_pch.h.pch
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_sse2.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webputilsdecode.dir/src/utils/thread_utils.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_avx2.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv_sse41.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_sse2.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv_sse2.c.o
+[  4%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/alpha_processing_sse2.c.o
+[  5%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_sse41.c.o
+[  5%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/dynapi/SDL_dynapi.c.o
+[  5%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/misc/macos/SDL_sysurl.m.o
+[  5%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/apple/SDL_mfijoystick.m.o
+[  5%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/coreaudio/SDL_coreaudio.m.o
+[  6%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/alpha_processing_neon.c.o
+[  6%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/filters_sse2.c.o
+[  6%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling_sse2.c.o
+[  6%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoakeyboard.m.o
+[  6%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoaevents.m.o
+[  7%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoaclipboard.m.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_msa.c.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_msa.c.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling_neon.c.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler_neon.c.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling_mips_dsp_r2.c.o
+[  7%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoamodes.m.o
+[  7%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv_neon.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler_mips_dsp_r2.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/filters_neon.c.o
+[  9%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoametalview.m.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv_mips32.c.o
+[  9%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoawindow.m.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/upsampling_msa.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_mips32.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler_mips32.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/filters_msa.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/filters_mips_dsp_r2.c.o
+[  9%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_mips_dsp_r2.c.o
+[ 10%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler_msa.c.o
+[ 10%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/lossless_neon.c.o
+[ 10%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_mips_dsp_r2.c.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/camera/coremedia/SDL_camera_coremedia.m.o
+[ 10%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/alpha_processing_mips_dsp_r2.c.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/dialog/cocoa/SDL_cocoadialog.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/gpu/metal/SDL_gpu_metal.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/tray/cocoa/SDL_tray.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoashape.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoavulkan.m.o
+[ 10%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/dec_neon.c.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoamessagebox.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/locale/macos/SDL_syslocale.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/metal/SDL_render_metal.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/filesystem/cocoa/SDL_sysfilesystem.m.o
+[ 10%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoavideo.m.o
+[ 11%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoapen.m.o
+[ 11%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoaopengles.m.o
+[ 11%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/yuv_mips_dsp_r2.c.o
+[ 11%] Building C object _deps/psyz_webp-build/CMakeFiles/webpdspdecode.dir/src/dsp/rescaler_sse2.c.o
+[ 11%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoamouse.m.o
+[ 11%] Building OBJC object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/cocoa/SDL_cocoaopengl.m.o
+[ 11%] Built target webputilsdecode
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_assert.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_error.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_guid.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_hashtable.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_log.c.o
+[ 11%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/atomic/SDL_atomic.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_properties.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audio.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_hints.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_list.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/atomic/SDL_spinlock.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/SDL_utils.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audiodev.c.o
+[ 12%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audiocvt.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audiotypecvt.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audioresample.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_mixer.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_audioqueue.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/SDL_wave.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/core/SDL_core_unsupported.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/cpuinfo/SDL_cpuinfo.c.o
+[ 13%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/camera/SDL_camera.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_dropevents.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_events.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_keyboard.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_pen.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_clipboardevents.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_displayevents.c.o
+[ 14%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_eventwatch.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_scancode_tables.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_keysym_to_keycode.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_keysym_to_scancode.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_keymap.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_categories.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_quit.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_mouse.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_touch.c.o
+[ 15%] Built target webpdecode
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/SDL_windowevents.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/events/imKStoUCS.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/gpu/SDL_gpu.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/haptic/SDL_haptic.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/filesystem/SDL_filesystem.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/hidapi/SDL_hidapi.c.o
+[ 15%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/io/SDL_asyncio.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/io/generic/SDL_asyncio_generic.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/io/SDL_iostream.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/SDL_gamepad.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/SDL_joystick.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/SDL_steam_virtual_gamepad.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/controller_type.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/locale/SDL_locale.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/main/SDL_main_callbacks.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/SDL_render.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/power/SDL_power.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/SDL_render_unsupported.c.o
+[ 17%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/misc/SDL_libusb.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/misc/SDL_url.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/SDL_yuv_sw.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/main/SDL_runapp.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d/SDL_shaders_d3d.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d/SDL_render_d3d.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d12/SDL_render_d3d12.c.o
+[ 18%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d11/SDL_render_d3d11.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d12/SDL_shaders_d3d12.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/direct3d11/SDL_shaders_d3d11.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/gpu/SDL_pipeline_gpu.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/gpu/SDL_render_gpu.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/gpu/SDL_shaders_gpu.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/ngage/SDL_render_ngage.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/opengl/SDL_shaders_gl.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/opengles2/SDL_render_gles2.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/opengl/SDL_render_gl.c.o
+[ 19%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_blendfillrect.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/psp/SDL_render_psp.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/opengles2/SDL_shaders_gles2.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/ps2/SDL_render_ps2.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_blendline.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_drawpoint.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_drawline.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_blendpoint.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_render_sw.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/software/SDL_triangle.c.o
+[ 20%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/vulkan/SDL_shaders_vulkan.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/vitagxm/SDL_render_vita_gxm_memory.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/vulkan/SDL_render_vulkan.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/vitagxm/SDL_render_vita_gxm.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/render/vitagxm/SDL_render_vita_gxm_tools.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_crc32.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/sensor/SDL_sensor.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_getenv.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_iconv.c.o
+[ 21%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_crc16.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_memcpy.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_memmove.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_malloc.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_memset.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_mslibc.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_string.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_A.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_0.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_RLEaccel.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_random.c.o
+[ 22%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_strtokr.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/storage/SDL_storage.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_murmur3.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_bmp.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_pixels.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_egl.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_stdlib.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/stdlib/SDL_qsort.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_clipboard.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/SDL_thread.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/timer/SDL_timer.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_video.c.o
+[ 23%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_rect.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_N.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_auto.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_surface.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_yuv.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_vulkan_utils.c.o
+[ 25%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_stb.c.o
+[ 26%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/k_cos.c.o
+[ 26%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/time/SDL_time.c.o
+[ 26%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_slow.c.o
+[ 26%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_copy.c.o
+[ 26%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_atan.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/yuv2rgb/yuv_rgb_sse.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_floor.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_video_unsupported.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_log.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_sqrt.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_blit_1.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/dummy/SDL_dummyaudio.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_isinf.c.o
+[ 27%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_lg4ff.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_combined.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_fillrect.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_gip.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/k_rem_pio2.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_8bitdo.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/yuv2rgb/yuv_rgb_lsx.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_ps5.c.o
+[ 28%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_copysign.c.o
+[ 29%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/camera/dummy/SDL_camera_dummy.c.o
+[ 29%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_stretch.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/SDL_rotate.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_tan.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_gamecube.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_atan2.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/k_tan.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/dummy/SDL_nullevents.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_scalbn.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/k_sin.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_exp.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_rem_pio2.c.o
+[ 30%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/dummy/SDL_nullframebuffer.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_isinff.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_switch2.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/audio/disk/SDL_diskaudio.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_isnanf.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_steamdeck.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_flydigi.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/yuv2rgb/yuv_rgb_std.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_ps3.c.o
+[ 31%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_rumble.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_shield.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_modf.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_steam_triton.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_switch.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_xbox360w.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/loadso/dlopen/SDL_sysloadso.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/dummy/SDL_nullvideo.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_fabs.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_xboxone.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/haptic/darwin/SDL_syshaptic.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/process/SDL_process.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/process/posix/SDL_posixprocess.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenevents.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenopengles.c.o
+[ 32%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/dialog/SDL_dialog.c.o
+[ 34%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenframebuffer.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_sysrwlock.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/storage/generic/SDL_genericstorage.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_syssem.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_steam_hori.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/haptic/hidapi/SDL_hidapihaptic.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/timer/unix/SDL_systimer.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_zuiki.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_syscond.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenvideo.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapijoystick.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_isnan.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/virtual/SDL_virtualjoystick.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/filesystem/posix/SDL_sysfsops.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_systls.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenwindow.c.o
+[ 35%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/dialog/SDL_dialog_utils.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_wii.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_luna.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_sinput.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/main/generic/SDL_sysmain_callbacks.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_sin.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_report_descriptor.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_sysmutex.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_stadia.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/video/offscreen/SDL_offscreenvulkan.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/tray/SDL_tray_utils.c.o
+[ 36%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/gpu/vulkan/SDL_gpu_vulkan.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/darwin/SDL_iokitjoystick.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/thread/pthread/SDL_systhread.c.o
+[ 37%] Built target webpdspdecode
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/storage/steam/SDL_steamstorage.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/sensor/dummy/SDL_dummysensor.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_steam.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/time/unix/SDL_systime.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_pow.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_ps4.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/s_cos.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/joystick/hidapi/SDL_hidapi_xbox360.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_fmod.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/haptic/hidapi/SDL_hidapihaptic_lg4ff.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/power/macos/SDL_syspower.c.o
+[ 37%] Building C object psyz/sdl/CMakeFiles/SDL3-static.dir/src/libm/e_log10.c.o
+[ 37%] Linking C static library libwebpdecoder.a
+[ 37%] Built target webpdecoder
+[ 38%] Linking C static library libSDL3.a
+[ 38%] Built target SDL3-static
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/dma.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/kernel.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/pad.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libapi.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/psyz.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libgpu.c.o
+[ 38%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/otag.c.o
+[ 39%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgte/msc02.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/prim.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/gpudump.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/ext.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/sys.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcard/card.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgte/geo_03.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libetc.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcard/init.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/font.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_003.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgpu/tmd.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_002.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgte/sqrtbl.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_004.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libgs.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_005.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libgte.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libcd.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libgte/ratan.c.o
+[ 40%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_008.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_007.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_009.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/c_010.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/cdrom.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/sys.c.o
+[ 42%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/iso9660.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/toc.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/link_net.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libcard.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/src/psyz/libapi.c:317:42: warning: format specifies type 'unsigned int' but the argument has type 'long' [-Wformat]
+  317 |     ERRORF("SystemError('%c', 0x%X)", c, n);
+      |                                 ~~       ^
+      |                                 %lX
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/include/psyz/log.h:48:65: note: expanded from macro 'ERRORF'
+   48 |             psyz_log(LOG_LEVEL_E, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+      |                                                                 ^~~~~~~~~~~
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_crwa.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/tmd.c:73:31: warning: format specifies type 'unsigned int' but the argument has type 'u_long' (aka 'unsigned long') [-Wformat]
+   73 |         printf("mode=%08x\n", img->mode);
+      |                      ~~~~     ^~~~~~~~~
+      |                      %08lx
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/tmd.c:7:16: note: expanded from macro 'printf'
+    7 | #define printf INFOF
+      |                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/include/psyz/log.h:38:65: note: expanded from macro 'INFOF'
+   38 |             psyz_log(LOG_LEVEL_I, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+      |                                                                 ^~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/tmd.c:76:34: warning: format specifies type 'unsigned int' but the argument has type 'unsigned int *' [-Wformat]
+   76 |         printf("timaddr=%08x\n", timaddr);
+      |                         ~~~~     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/tmd.c:7:16: note: expanded from macro 'printf'
+    7 | #define printf INFOF
+      |                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/include/psyz/log.h:38:65: note: expanded from macro 'INFOF'
+   38 |             psyz_log(LOG_LEVEL_I, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+      |                                                                 ^~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/src/psyz/dma.c:20:53: warning: format specifies type 'int' but the argument has type 'u_long' (aka 'unsigned long') [-Wformat]
+   20 |             WARNF("SyncMode %d is invalid for SPU", (value >> 9) & 3);
+      |                             ~~                      ^~~~~~~~~~~~~~~~
+      |                             %lu
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/include/psyz/log.h:43:65: note: expanded from macro 'WARNF'
+   43 |             psyz_log(LOG_LEVEL_W, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+      |                                                                 ^~~~~~~~~~~
+1 warning generated.
+2 warnings generated.
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_cb.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/type.c.o
+1 warning generated.
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/cdread.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svsra.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_91.c.o
+[ 43%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_6.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_grmp.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_dcb.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libcd/cdread2.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_gks.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sra.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_ih.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svara.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_i.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_16.c.o
+[ 44%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_n2p.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_rmp.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_no1.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_r.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sia.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/seqinit.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midiread.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_13.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/src/psyz/libgpu.c:442:62: warning: format specifies type 'unsigned int' but the argument has type 'u_long' (aka 'unsigned long') [-Wformat]
+  442 |                 ERRORF("packet 0x%X long, likely corrupted", env->len);
+      |                                  ~~                          ^~~~~~~~
+      |                                  %lX
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/include/psyz/log.h:48:65: note: expanded from macro 'ERRORF'
+   48 |             psyz_log(LOG_LEVEL_E, __FILE__, __LINE__, __func__, __VA_ARGS__);  \
+      |                                                                 ^~~~~~~~~~~
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cres.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_pb.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/decres.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sepinit.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssclose.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/spu.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_wsa.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_gtm.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_int.c.o
+[ 45%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_2.c.o
+[ 46%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssend.c.o
+[ 46%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sssattr.c.o
+[ 46%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midibend.c.o
+[ 46%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_prog.c.o
+[ 47%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_18.c.o
+[ 47%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sr.c.o
+[ 47%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssplay.c.o
+[ 47%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_util.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_f.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_splv.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sscall.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_srv.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_stm.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_stc.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midiprog.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_14.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sic.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_m.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssreplay.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_12.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_gva.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_vol.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sva.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_stav.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssopenq.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sscres.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssopenp.c.o
+[ 48%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_19.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_sva.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_snv.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/playmode.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/replay.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/sr_sv.c.o
+[ 50%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_stsa.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svdr.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sssmv.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sav.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_it.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_srd.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_f.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svv.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_3.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssquit.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_10.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/next.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midimeta.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_99.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sca.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_srmp.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_rfb.c.o
+[ 51%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_5.c.o
+[ 52%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_1.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/psyz/src/psyz/libcd.c:2194:9: warning: expression result unused [-Wunused-value]
+ 2194 |         abs_sector;
+      |         ^~~~~~~~~~
+[ 52%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_11.c.o
+[ 52%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_9.c.o
+[ 52%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svp.c.o
+[ 52%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssopenqj.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midicc.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/pause.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/sr_gaks.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_sk.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libspu.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_100.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_8.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_0.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/play.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_10.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssmark.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svsa.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_4.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svsl.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_0.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_m_init.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svlsa.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_w.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_don.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ccadsr.c.o
+[ 53%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_q.c.o
+[ 54%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_wp.c.o
+[ 54%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_7.c.o
+[ 54%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_101.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/miditime.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_gvv.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_121.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_17.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libcomb.c.o
+[ 55%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssopenpj.c.o
+[ 56%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_7.c.o
+[ 56%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_64.c.o
+[ 56%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssinit_h.c.o
+[ 56%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_key.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sspause.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_ini.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_6.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/cc_98.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/midinote.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_svrra.c.o
+[ 57%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_si.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_11.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_snc.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/de_15.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssloop.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssinit_c.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/sys.c:168:50: warning: format specifies type 'unsigned int' but the argument has type 'GpuVtable *' [-Wformat]
+  168 |         printf("ResetGraph:jtb=%08x,env=%08x\n", &_gpucb, &info);
+      |                                ~~~~              ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libgpu/sys.c:168:59: warning: format specifies type 'unsigned int' but the argument has type 'struct Debug *' [-Wformat]
+  168 |         printf("ResetGraph:jtb=%08x,env=%08x\n", &_gpucb, &info);
+      |                                         ~~~~              ^~~~~
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/tempo.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libspu/s_itc.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssinit.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssvol.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/cres.c:14:62: warning: passing 'unsigned short *' to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   14 |                 _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                              ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:46: note: passing argument to parameter 'voll' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/cres.c:14:69: warning: passing 'unsigned short *' to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   14 |                 _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                                     ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:59: note: passing argument to parameter 'volr' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/cres.c:30:58: warning: passing 'unsigned short *' to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   30 |             _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                          ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:46: note: passing argument to parameter 'voll' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/cres.c:30:65: warning: passing 'unsigned short *' to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   30 |             _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                                 ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:59: note: passing argument to parameter 'volr' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libcd/iso9660.c:59:13: warning: assigning to 'unsigned char *' from 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]4 warnings generated.
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_rdep.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vol.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sstick.c.o
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_nowon.c.o
+
+   59 |     pathPtr = name;
+      |             ^ ~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libcd/iso9660.c:64:17: warning: assigning to 'unsigned char *' from 'char[32]' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   64 |         nameEnd = buf;
+      |                 ^ ~~~
+[ 59%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sssv.c.o
+[ 60%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sstable.c.o
+[ 60%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssstart.c.o
+[ 60%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_key.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_seq.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/sstickcb.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_noff.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/sdl3_gpu.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_vvol.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_cadsr.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_autop.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_ako.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ssstop.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_rev.c.o
+[ 61%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_cp.c.o
+[ 62%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libc2/rand.c.o
+[ 62%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_f.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/psyz_spu.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_g.c.o
+2 warnings generated.
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_vtc.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_vab.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_vtbp.c.o
+2 warnings generated.
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libsnd.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/sdl3_os.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_init.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_nowof.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/sdl3_audio.c.o
+[ 63%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libsn.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/decres.c:14:62: warning: passing 'u16 *' (aka 'unsigned short *') to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   14 |                 _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                              ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:46: note: passing argument to parameter 'voll' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/decres.c:14:69: warning: passing 'u16 *' (aka 'unsigned short *') to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   14 |                 _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                                     ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:59: note: passing argument to parameter 'volr' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/decres.c:32:58: warning: passing 'u16 *' (aka 'unsigned short *') to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   32 |             _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                          ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:46: note: passing argument to parameter 'voll' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/decres.c:32:65: warning: passing 'u16 *' (aka 'unsigned short *') to parameter of type 'short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+   32 |             _SsVmGetSeqVol(seq_access_num | (arg1 << 8), &voll, &volr);
+      |                                                                 ^~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/third_party/psyz/decomp/src/libsnd/libsnd_private.h:304:59: note: passing argument to parameter 'volr' here
+  304 | void _SsVmGetSeqVol(short seq_sep_no, short* voll, short* volr);
+      |                                                           ^
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_keyv.c.o
+4 warnings generated.
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_mono.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_vtb.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/module_unix.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_n2p.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/plat_unix.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_ron.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_vh.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vs_srv.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libgte_sw_sqrt.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_roff.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/sdl3_log.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_vsu.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_gva.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_aloc1.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_autop.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/platform/sdl3_software.c.o
+[ 64%] Building C object psyz/CMakeFiles/psyz.dir/src/psyz/libpress.c.o
+[ 65%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_aloc2.c.o
+[ 65%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libpress/libpress.c.o
+[ 65%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_gpa.c.o
+[ 65%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/ut_rdel.c.o
+[ 65%] Building C object psyz/CMakeFiles/psyz.dir/__/decomp/src/libsnd/vm_doff.c.o
+1 warning generated.
+1 warning generated.
+[ 65%] Linking C static library libpsyz.a
+[ 65%] Built target psyz
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/host_log.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/disc_check.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/memory_cards.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/settings_overlay.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/replay_file.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/settings_replays.c.o
+[ 65%] Building C object CMakeFiles/rr4_host.dir/src/port/link.c.o
+[ 67%] Building C object CMakeFiles/rr4_host.dir/src/port/settings_model.c.o
+[ 67%] Building C object CMakeFiles/rr4_host.dir/src/port/settings_raster.c.o
+[ 67%] Building C object CMakeFiles/rr4_host.dir/src/port/preferences.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/camfx.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/viewcam.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/cammove.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/campath.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/viewini.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/car/aipath2.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/car/aipath.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/camview.c.o
+[ 68%] Building C object CMakeFiles/rr4_game.dir/src/main/camera/camrun.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carai.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carbound.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carctrl.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carcurv.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carlat.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carlane.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/cardrive.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carmove1.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carphys1.c.o
+[ 69%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carparam.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carphys2.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carsetup.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carsteer.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carrpm.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carspec1.c.o
+[ 70%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carstate.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carwheel.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carstat.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carspec3.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkclip.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/math/shuffle.c.o
+[ 71%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mnrows.c.o
+[ 72%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mntanim.c.o
+[ 73%] Building C object CMakeFiles/rr4_game.dir/src/main/race/objdraw.c.o
+[ 73%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libcard/pda.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racegrid.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/race/raceai2.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menuicon.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racedist.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/title.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/race/ranking.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdpos.c.o
+[ 75%] Building C object CMakeFiles/rr4_game.dir/src/main/race/result4.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdstop.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/race/raceinit.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menutran.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndevt.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libapi/file.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndslot.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndctrl.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdplay.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndque.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libgte/gtemat.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkintp.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menumode.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/motion1.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkseek2.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/fxplay.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdmain.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdclose.c.o
+[ 76%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menutra21.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndlis2.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racesetp.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/race/objclr.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndchan.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/fxramp1.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/race/raceinfo.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndcmd.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racecar.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/sdk_abi.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdramp.c.o
+[ 77%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndmain.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/skyrot1.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndrst2.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/data/trkld1.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libgpu/gpudisp.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libc/exit.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menucalc.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/race/objsim.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/cdstart.c.o
+[ 78%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/fxramp2.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/race/raceset.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libgte/gtecord.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/data/trkld6.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libcomb/sio.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndsys.c.o
+[ 79%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libc/rand.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkres2.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menustep.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/ptinit.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/fxspr.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkproj.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menuwork.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libc/printf.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/data/trkld5.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racesave.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/car/carspec2.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/carfx.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/data/cdfile2.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mntext.c.o
+[ 80%] Building C object CMakeFiles/rr4_game.dir/src/main/demo/attract.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menu13.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/spfade.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/light2.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/data/savebld.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/polytri.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/sprefct.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racemai2.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/psyq/libc/memory.c.o
+[ 81%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/submodel.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/motion4.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/gtepoly1.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/model.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/spremit.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/data/bankrec.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/data/ldscn1.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkevent.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/car/cartimer.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/data/cardini.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menubadg.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/light1.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racemode.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mnlist.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/polygt4.c.o
+[ 82%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/poly1.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/sky.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/demo/opening.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/loadmenu.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/race/racesamp.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menutra22.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menuslot.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/sprpkt.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/savemenu.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mnchoice.c.o
+[ 84%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menusave.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trktext.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/scrtile.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/math/rotmat.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/gtemodel.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/scene1.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/data/cdfile1.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndbgm3.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndown.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/gfxmtx.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/dispenv.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menu8.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndloop2.c.o
+[ 85%] Building C object CMakeFiles/rr4_game.dir/src/main/data/ldscn5.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/data/resinit.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mnpulse.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/effect.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mntrow.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/data/relfile.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/meshquad.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/data/ldscn4.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trknode.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menustat.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/demo/splash.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/data/cardchk.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/demo/introsq.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadectl.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/demo/intro.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/data/savedat.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/effect/spark.c.o
+[ 86%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fontdraw.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/color.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadeset.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadeend.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/data/trkld8.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadein.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/ring2.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/ring.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/course/trkintp2.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/sound/cdstart.c:134:28: warning: passing 'char[8]' to parameter of type 'const u8 *' (aka 'const unsigned char *') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  134 |         if (CdControl(0xD, sp, 0) != 0) {
+      |                            ^~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/rr/cd.h:38:37: note: passing argument to parameter 'parameters' here
+   [ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/clut.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadesel.c.o
+38 | int CdControl(u8 command, const u8 *parameters, u8 *result);
+      |                                     ^
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/fadespr.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/mnsel.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/menu/menu1.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/tilerect.c.o
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/drawlist.c.o
+1 warning generated.
+[ 87%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/gfxotag.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/gfx/gfxdraw.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/system/frmtask.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/system/pad.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/system/modeinit.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/system/modepad.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/system/pad3.c.o
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/badgeprim.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/data/trkld1.c:293:64: warning: assigning to 'u8 *' (aka 'unsigned char *') from 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  293 |                     SoundState.seqAddr2858[TrackSeqTargetSlot] = (char *)RrWireTableAddress(RaceLoadCursor, 1);
+      |                                                                ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 88%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/badgespr.c.o
+[ 89%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/barsel0.c.o
+[ 89%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/badge1.c.o
+[ 89%] Building C object CMakeFiles/rr4_game.dir/src/main/system/release.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/system/frmenv.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudctrl.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndvol2.c.o
+1 warning generated.
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudnum3.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/barsel1.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/sound/sndvab.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudmap2.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:919:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  919 |     RampValueToLimit(&G->s48, &G->s74, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:920:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  920 |     RampValueToLimit(&G->s4A, &G->s76, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:921:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  921 |     RampValueToLimit(&G->s4C, &G->s78, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:922:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  922 |     RampValueToLimit(&G->s4E, &G->s7A, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:923:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  923 |     RampValueToLimit(&G->s50, &G->s7C, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:924:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  924 |     RampValueToLimit(&G->s52, &G->s7E, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:925:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  925 |     RampValueToLimit(&G->s54, &G->s80, 0x80);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:926:22: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  926 |     RampValueToLimit(&G->s9A, &G->s98, 0x100);
+      |                      ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:927:25: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  927 |     RampValuePairTo4096(&G->s56, &G->s5E,[ 90%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudnum4.c.o
+ &G->s82);
+      |                         ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:42: note: passing argument to parameter 'a0' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                          ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:927:34: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  927 |     RampValuePairTo4096(&G->s56, &G->s5E, &G->s82);
+      |                                  ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:62: note: passing argument to parameter 'a1' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:928:25: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  928 |     RampValuePairTo4096(&G->s58, &G->s60, &G->s84);
+      |                         ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:42: note: passing argument to parameter 'a0' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                          ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:928:34: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  928 |     RampValuePairTo4096(&G->s58, &G->s60, &G->s84);
+      |                                  ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:62: note: passing argument to parameter 'a1' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:929:25: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  929 |     RampValuePairTo4096(&G->s5A, &G->s62, &G->s86);
+      |                         ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:42: note: passing argument to parameter 'a0' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                          ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:929:34: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  929 |     RampValuePairTo4096(&G->s5A, &G->s62, &G->s86);
+      |                                  ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:62: note: passing argument to parameter 'a1' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:930:25: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  930 |     RampValuePairTo4096(&G->s5C, &G->s64, &G->s88);
+      |                         ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:42: note: passing argument to parameter 'a0' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                          ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:930:34: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  930 |     RampValuePairTo4096(&G->s5C, &G->s64, &G->s88);
+      |                                  ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:7:62: note: passing argument to parameter 'a1' here
+    7 | void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2);
+      |                                                              ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:931:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  931 |     RampValueTo4096(&G->s66, &G->s8A);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:932:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  932 |     RampValueTo4096(&G->s68, &G->s8C);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:933:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  933 |     RampValueTo4096(&G->s6A, &G->s8E);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:934:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  934 |     RampValueTo4096(&G->s6C, &G->s90);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:935:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  935 |     RampValueTo4096(&G->s6E, &G->s92);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:936:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  936 |     RampValueTo4/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/menutra21.c:454:48: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  454 |             if (CardHasFile(096(&GCardFileCounts[0], CardTargetFileName) == 1) {
+      |                                                ^~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/data/cardini.h:29:40: note: passing argument to parameter 'a1' here
+   29 | int CardHasFile(int a0, unsigned char *a1);
+      |                                        ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/menutra21.c:549:48: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  549 |             if (CardHasFile(CardFileCounts[0], CardTargetFileName) == 1) {
+      |                                                ^~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/data/cardini.h:29:40: note: passing argument to parameter 'a1' here
+   29 | int CardHasFile(int a0, unsi->s70, &G->s94);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/drawlist.c:937:21: warning: passing 's16 *' (aka 'short *') to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  937 |     RampValueTo4096(&G->s72, &G->s96);
+      |                     ^~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+gned char *a1);
+      |                                        ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/menutra21.c:614:48: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  614 |             if (CardHasFile(CardFileCounts[0], CardTargetFileName) == 1) {
+      |                                                ^~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/data/cardini.h:29:40: note: passing argument to parameter 'a1' here
+   29 | int CardHasFile(int a0, unsigned char *a1);
+      |                                        ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/title.c:404:41: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  404 |         DrawFontStringRight(0x131, old, RepeatLabel, 0xFF, 0);
+      |                                         ^~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:10:57: note: passing argument to parameter 's' here
+   10 | void DrawFontStringRight(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                         ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/title.c:406:39: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  406 |       DrawFontStringRight(0xFA, 0xD4, CD_TRACK_TITLE(BgmNumberToCdTrack[SoundState.track28A4 - 1]), 0xFF, 0);
+      |                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/demo/opening.h:13:31: note: expanded from macro 'CD_TRACK_TITLE'
+   13 | #define CD_TRACK_TITLE(track) ((char *)&CdTrackTables + 22 * 4 + ((track) << 5))
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:10:57: note: passing argument to parameter 's' here
+   10 | void DrawFontStringRight(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                         ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/title.c:410:35: warning: passing 'char[16]' to parameter of type 'const u8 *' (aka 'const unsigned char *') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  410 |       DrawFontString(0x112, 0xD4, sp18, 0xFF, 0);
+      |                                   ^~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:6:45: note: passing argument to parameter 'text' here
+    6 | void DrawFontString(s32 x, s32 y, const u8 *text, s32 color, s32 bank);
+      |                                             ^
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/record_labels.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/team_car_select.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/name_entry.c.o
+[ 90%] Building C object CMakeFiles/rr4_game.dir/src/overlays/grand_prix/data.c.o
+[ 92%] Building C object CMakeFiles/rr4_game.dir/src/overlays/grand_prix/results.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_tools.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/grand_prix/preview.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/window1.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/tilerect.c:404:22: warning: passing 'short *' to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  404 |     RampValueToLimit(&TileRectScene->s3E, &TileRectScene->s42, 0x80);
+      |                      ^~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/tilerect.c:405:22: warning: passing 'short *' to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  405 |     RampValueToLimit(&TileRectScene->s40, &TileRectScene->s44, 0x80);
+      |                      ^~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:6:39: note: passing argument to parameter 'a0' here
+    6 | void RampValueToLimit(unsigned short *a0, short *a1, int a2);
+      |                                       ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/gfx/tilerect.c:437:21: warning: passing 'short *' to parameter of type 'unsigned short *' converts between pointers to integer types with different sign [-Wpointer-sign]
+  437 |     RampValueTo4096(&TileRectScene->s46, &TileRectScene->s48);
+      |                     ^~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/effect/spfade.h:8:38: note: passing argument to parameter 'a0' here
+    8 | void RampValueTo4096(unsigned short *a0, short *a1);
+      |                                      ^
+23 warnings generated.
+3 warnings generated.
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_sliders.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/grand_prix/race.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_panels.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_lifecycle.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_selection.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_primitives.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_hit.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/progress_menu.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/window2.c.o
+3 warnings generated.
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/screen_adjust.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/menu.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/records/records.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/native/frame_storage.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/demo/opening.c:171:47: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  171 |     half = DrawFontStringCentered(0x60, 0x58, CourseNames + CourseIndex * 0x18, fade[2], 0) / 2;
+      |                                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/demo/opening.c:200:64: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  200 |         half = 0x88 - DrawFontStringCenteredOffset(0x14, 0xC8, CD_TRACK_TITLE(BgmNumberToCdTrack[SoundState.track28A4 - 1]), fade[5], 0) / 2;
+      |                                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/demo/opening.h:13:31: note: expanded from macro 'CD_TRACK_TITLE'
+   13 | #define CD_TRACK_TITLE(track) ((char *)&CdTrackTables + 22 * 4 + ((track) << 5))
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:9:65: note: passing argument to parameter 's' here
+    9 | int DrawFontStringCenteredOffset(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                                 ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/demo/opening.c:297:51: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  297 |         s0_1 = DrawFontStringCentered(0x60, 0xB0, CourseNames + CourseIndex * 0x18, sp18[4], 0) / 2;
+      |                                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/demo/opening.c:403:51: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  403 |         s0_2 = DrawFontStringCentered(0x60, 0x58, CourseNames + CourseIndex * 0x18, sp18[2], 0) / 2;
+      |                                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_paint.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/demo/opening.c:447:68: warning: passing 'char *' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  447 |             s0_3 = 0x88 - DrawFontStringCenteredOffset(0x14, 0xC8, CD_TRACK_TITLE(BgmNumberTo[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/history_screen.c.o
+CdTrack[SoundState.track28A4 - 1]), sp18[5], 0) / 2;
+      |                                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/demo/opening.h:13:31: note: expanded from macro 'CD_TRACK_TITLE'
+   13 | #define CD_TRACK_TITLE(track) ((char *)&CdTrackTables + 22 * 4 + ((track) << 5))
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:9:65: note: passing argument to parameter 's' here
+    9 | int DrawFontStringCenteredOffset(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                                 ^
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/records/menu.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/movie_playback/vlc_tables.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/movie_playback/mdec.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/controller_draw.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/audio_options.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/emblem_selector.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/controller_options.c.o
+[ 93%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_scrollbars.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/serial_link/course_menu.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/movie_playback/epilogue_credits.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_input.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/time_attack/race.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/serial_link/race.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/time_attack/course_menu.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/serial_link/car_selection.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uipart1.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/records/selection.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/movie_playback/stream.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/records/data.c.o
+[ 94%] Building C object CMakeFiles/rr4_game.dir/src/overlays/extra_trial/data.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/controller_preview.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/car_view.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/options/options.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/versus/course_menu.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudpl.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uitext.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/versus/results.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uiprim.c.o
+[ 95%] Building C object CMakeFiles/rr4_game.dir/src/overlays/extra_trial/results.c.o
+[ 96%] Building C object CMakeFiles/rr4_game.dir/src/overlays/versus/race.c.o
+[ 96%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_canvas.c.o
+[ 96%] Building C object CMakeFiles/rr4_game.dir/src/overlays/versus/preview.c.o
+[ 96%] Building C object CMakeFiles/rr4_game.dir/src/overlays/extra_trial/course_menu.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/editor_dialogs.c.o
+3 warnings generated.
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uicode.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uiwin.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/extra_trial/preview.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:95:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   95 |         FormatDecimalDigits(MenuTextRows[4].marquee.at28 + 8, ovl661_player_standings[0] + 1, 0);
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:20:32: note: passing argument to parameter here
+   20 | void FormatDecimalDigits(char *, s32, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:96:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   96 |         CopyStringPadSpaces(MenuTextRows[5].marquee.at28 + 1, ovl661_player_names[ovl661_player_standings[0]], 9);
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:19:32: note: passing argument to parameter here
+   19 | void CopyStringPadSpaces(char *, char *, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:97:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   97 |         CopyStringClearTail(MenuTextRows[5].marquee.at28 + 10, ovl661_wins_suffix_label);
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:18:32: note: passing argument to parameter here
+   18 | void CopyStringClearTail(char *, char *);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:100:33: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  100 |             CopyStringPadSpaces(MenuTextRows[7 + i].marquee.at28 + 5, ovl661_player_names[player], 9);
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:19:32: note: passing argument to parameter here
+   19 | void CopyStringPadSpaces(char *, char *, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:101:33: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  101 |             CopyStringClearTail(MenuTextRows[7 + i].marquee.at28 + 14, ovl661_win_count_prefix);
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:18:32: note: passing argument to parameter here
+   18 | void CopyStringClearTail(char *, char *);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:102:33: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  102 |             FormatDecimalDigits(MenuTextRows[7 + i].marquee.at28 + 18, ovl661_player_win_counts[player], 1);
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/versus/results.c:20:32: note: passing argument to parameter here
+   20 | void FormatDecimalDigits(char *, s32, s32);
+      |                                ^
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uidraw.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/time_attack/preview.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/serial_link/results.c.o
+6 warnings generated.
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/serial_link/sio.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/data/ldscn1.c:229:20: warning: assigning to 'char *' from 'u8 *' (aka 'unsigned char *') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  229 |                 s2 = CustomEmblemBuffers.bytes + (s0 & 1) * sizeof(EmblemTim840);
+      |                    ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/data/ldscn1.c:281:20: warning: assigning to 'char *' from 'u8 *' (aka 'unsigned char *') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  281 |                 q3 = CustomEmblemBuffers.bytes + (arg0 & 1) * sizeof(EmblemTim840);
+      |                    ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/data/ldscn1.c:607:15: warning: assigning to 'char *' from 'u8[]' (aka 'unsigned char[]') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  607 |             s = SharedWorkArena;
+      |               ^ ~~~~~~~~~~~~~~~
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/records/preview.c.o
+[ 97%] Building C object CMakeFiles/rr4_game.dir/src/overlays/movie_playback/epilogue_camera.c.o
+[ 98%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uicnt.c.o
+[100%] Building C object CMakeFiles/rr4_game.dir/src/native/gpu_address.c.o
+[100%] Building C object CMakeFiles/rr4_game.dir/src/overlays/garage/available_cars.c.o
+[100%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/hudmap.c.o
+[100%] Building C object CMakeFiles/rr4_game.dir/src/overlays/time_attack/results.c.o
+[100%] Building C object CMakeFiles/rr4_game.dir/src/overlays/extra_trial/race.c.o
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/system/modeinit.c:64:8: warning: assigning to 'char *' from 'u8[32]' (aka 'unsigned char[32]') converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   64 |     a1 = SelectionRows.bytes;
+      |        ^ ~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/menumode.c:157:61: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  157 |             if (CardHasFile(CardFileCounts[CardActivePort], CardSaveFileName) != 0) {
+      |                                                             ^~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/data/cardini.h:29:40: note: passing argument to parameter 'a1' here
+   29 | int CardHasFile(int a0, unsigned char *a1);
+      |                                        ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/menu/menumode.c:164:53: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  164 |     if (CardHasFile(CardFileCounts[CardActivePort], CardTargetFileName) == 1) {
+      |                                                     ^~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/data/cardini.h:29:40: note: passing argument to parameter 'a1' here
+   29 | int CardHasFile(int a0, unsigned char *a1);
+      |                                        ^
+1 warning generated.
+[100%] Building C object CMakeFiles/rr4_game.dir/src/main/ui/uibar.c.o
+3 warnings generated.
+5 warnings generated.
+2 warnings generated.
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:114:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  114 |         FormatDecimalDigits(MenuTextRows[4].marquee.at28 + 8, LinkFinishCarOrder[0] + 1, 0);
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:69:32: note: passing argument to parameter here
+   69 | void FormatDecimalDigits(char *, s32, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:115:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  115 |         CopyStringPadSpaces(MenuTextRows[5].marquee.at28 + 1, LinkPlayerNames[LinkFinishCarOrder[0]], 9);
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:68:32: note: passing argument to parameter here
+   68 | void CopyStringPadSpaces(char *, char *, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:117:29: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  117 |         CopyStringClearTail(MenuTextRows[5].marquee.at28 + 10, "WON !!!\0\0\0");
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:67:32: note: passing argument to parameter here
+   67 | void CopyStringClearTail(char *, char *);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:121:37: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  121 |                 CopyStringPadSpaces(MenuTextRows[7 + i].marquee.at28 + 5, LinkPlayerNames[player], 9);
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:68:32: note: passing argument to parameter here
+   68 | void CopyStringPadSpaces(char *, char *, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:122:37: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  122 |                 CopyStringClearTail(MenuTextRows[7 + i].marquee.at28 + 14, "WIN ");
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:67:32: note: passing argument to parameter here
+   67 | void CopyStringClearTail(char *, char *);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:123:37: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  123 |                 FormatDecimalDigits(MenuTextRows[7 + i].marquee.at28 + 18, LinkPlayerWinCounts[player], 1);
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:69:32: note: passing argument to parameter here
+   69 | void FormatDecimalDigits(char *, s32, s32);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:161:33: warning: passing 'u8[32]' (aka 'unsigned char[32]') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  161 |             CopyStringClearTail(MenuTextRows[38].marquee.at28, "*PLEASE WAIT! ");
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/serial_link/results.c:67:32: note: passing argument to parameter here
+   67 | void CopyStringClearTail(char *, char *);
+      |                                ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/ui/hudmap.c:59:40: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   59 |     DrawFontStringCentered(0x78, 0x50, StrTotalTimeLabel, 0x80, 0);
+      |                                        ^~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/ui/hudmap.c:60:40: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   60 |     DrawFontStringCentered(0x78, 0x78, LapTimeLabel, 0x80, 0);
+      |                                        ^~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/overlays/garage/record_labels.c:305:39: warning: passing 'u8 *' (aka 'unsigned char *') to parameter of type 'char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+  305 |             CopyStringClearTail(text, ovl662_format_record_time(time[1]));
+      |                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/rr/string_tail_copy.h:6:50: note: passing argument to parameter 'source' here
+    6 | void CopyStringClearTail(char *destination,char *source);
+      |                                                  ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/ui/hudmap.c:69:40: warning: passing 'char[8]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   69 |     DrawFontStringCentered(0x78, 0x3C, sp18, 0x80, 0);
+      |                                        ^~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+/Users/hasik/Projects/ridge-racer-type-4-pc/src/main/ui/hudmap.c:70:40: warning: passing 'char[]' to parameter of type 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+   70 |     DrawFontStringCentered(0x78, 0xC8, StrPressStart, 0x80, 0);
+      |                                        ^~~~~~~~~~~~~
+/Users/hasik/Projects/ridge-racer-type-4-pc/include/game/course/trktext.h:8:59: note: passing argument to parameter 's' here
+    8 | int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4);
+      |                                                           ^
+4 warnings generated.
+7 warnings generated.
+1 warning generated.
+[100%] Linking C static library librr4_game.a
+[100%] Linking C static library librr4_host.a
+[100%] Built target rr4_host
+[100%] Built target rr4_game
+[100%] Building C object CMakeFiles/ridge-racer-type-4-pc.dir/src/port/diagnostics_parse.c.o
+[100%] Building C object CMakeFiles/ridge-racer-type-4-pc.dir/src/port/diagnostics.c.o
+[100%] Building C object CMakeFiles/ridge-racer-type-4-pc.dir/src/port/replay_session.c.o
+[100%] Building C object CMakeFiles/ridge-racer-type-4-pc.dir/src/port/main.c.o
+[100%] Linking C executable ridge-racer-type-4-pc
+ld: warning: ignoring duplicate libraries: 'psyz/libpsyz.a'
+ld: warning: reducing alignment of section __DATA,__common from 0x8000 to 0x4000 because it exceeds segment maximum alignment
+[100%] Built target ridge-racer-type-4-pc

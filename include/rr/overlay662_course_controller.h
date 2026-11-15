@@ -1,5 +1,7 @@
 #ifndef RR_OVERLAY662_COURSE_CONTROLLER_H
 #define RR_OVERLAY662_COURSE_CONTROLLER_H
+#include "rr/overlay662_available_cars.h"
+#include "game/data/menuvars.h"
 #include "rr/screen_tiles.h"
 #include "game/system/pad.h"
 #include "rr/race.h"
@@ -19,11 +21,10 @@ extern CourseChoice4 CourseChoiceTable[4][9];
 #include "game/data/selection.h"
 #include "rr/menu_arena_state.h"
 #include "rr/image_rows.h"
-extern s32 ModeFrame,ActivePlayerIndex;
-extern s16 MenuCursor,ModeIndex;
-extern u16 FadeCountdown,ModeGroup;
+extern s32 ActivePlayerIndex;
+extern s16 MenuCursor;
 extern s16 ovl662_menu_substate,ovl662_available_car_count,ovl662_selected_car_slot;
-extern u16 ovl662_saved_car_choice_idx;
+
 void SetupMenuCarCamera(s32);void SetupViewport(s32);s32 LoadCarRangeStep(s32,s32);
 void SetCarBounds(RaceVehicle*);void UpdateCarWorldTransform(char*);
 void SetMenuFrameOptions(s32,s32,s32);void StepMenuValue(s32,s32,char*,s32,s32);

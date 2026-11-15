@@ -289,6 +289,10 @@ extern const OverlayStateTable ovl660_course_menu_state, ovl660_preview_state, o
 static const OverlayStateTable *const ovl660_state_tables[] = {&ovl660_course_menu_state, &ovl660_preview_state, &ovl660_results_state};
 static OverlayStateImage ovl660_state_image = {ovl660_state_tables, sizeof(ovl660_state_tables) / sizeof(ovl660_state_tables[0]), NULL};
 
+void ovl660_capture_module(void) {
+    OverlayStateCapture(&ovl660_state_image);
+}
+
 void ovl660_reset_module(void) {
     OverlayStateRestore(&ovl660_state_image);
 }

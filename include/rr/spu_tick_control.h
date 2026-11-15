@@ -26,7 +26,7 @@ s32 SetRCnt(u32 selector,u16 target,s32 mode);
 void _SsTickCallback(void);
 void _SsTickCallbackDivided(void);
 void _SsStart(s32 direct);
-RR_ASSERT_SIZE(SpuTickInterruptDriver20,0x20);
-RR_ASSERT_OFFSET(SpuTickInterruptDriver20,install14,0x14);
-RR_ASSERT_OFFSET(SpuTickInterruptDriver20,state1C,0x1C);
+RR_ASSERT_SIZE(SpuTickInterruptDriver20, sizeof(LibInterruptDriverPrefix) + 3 * sizeof(SpuTickCallback) + sizeof(LibSavedState *));
+RR_ASSERT_OFFSET(SpuTickInterruptDriver20, install14, sizeof(LibInterruptDriverPrefix) + sizeof(SpuTickCallback));
+RR_ASSERT_OFFSET(SpuTickInterruptDriver20, state1C, sizeof(LibInterruptDriverPrefix) + 3 * sizeof(SpuTickCallback));
 #endif

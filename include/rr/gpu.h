@@ -40,7 +40,6 @@ typedef struct {
 /* The DMA packet header occupies the eight bytes preceding this payload. */
 extern GpuMovePayload12 GpuMovePayload;
 void checkRECT(const char *name, GpuRectangle *rectangle);
-void GPU_DmaDoneRequeue();
 s32 MoveImage2(GpuRectangle *rectangle, s32 x, s32 y);
 /* Uploads ceil(width*height/2) packed pixel words, using a CPU tail and DMA
  * blocks of16 words. Dimensions clamp against the signed configured limits
@@ -74,6 +73,10 @@ typedef struct GpuDmaTag {
     uintptr_t address;
     uintptr_t length;
 } GpuDmaTag;
+/* Allocation stride includes the native DMA header and tail alignment.
+ * Packet lengths still count only the payload's 32-bit words. */
+#define RR_GPU_PACKET_SIZE(payload_bytes) \
+    RR_ALIGN_UP(sizeof(GpuDmaTag) + (payload_bytes), _Alignof(GpuDmaTag))
 #define RR_GPU_END_LINK ((uintptr_t)0xFFFFFF)
 /* PsyZ reads a packet whose first payload word is not a drawing primitive
  * (code 0x20..0x7F) as u_long words unless one payload word is this GP0 NOP
@@ -108,16 +111,16 @@ typedef struct SpritePacketSignedClut {
     s16 clut, w, h;
 } SpritePacketSignedClut;
 
-RR_ASSERT_SIZE(SpritePacket, 0x14);
-RR_ASSERT_OFFSET(SpritePacket, r, 0x4);
-RR_ASSERT_OFFSET(SpritePacket, x, 0x8);
-RR_ASSERT_OFFSET(SpritePacket, clut, 0xe);
-RR_ASSERT_OFFSET(SpritePacket, w, 0x10);
-RR_ASSERT_SIZE(SpritePacketSignedClut, 0x14);
-RR_ASSERT_OFFSET(SpritePacketSignedClut, r, 0x4);
-RR_ASSERT_OFFSET(SpritePacketSignedClut, x, 0x8);
-RR_ASSERT_OFFSET(SpritePacketSignedClut, clut, 0xe);
-RR_ASSERT_OFFSET(SpritePacketSignedClut, w, 0x10);
+RR_ASSERT_SIZE(SpritePacket, RR_GPU_PACKET_SIZE(16));
+RR_ASSERT_OFFSET(SpritePacket, r, sizeof(GpuDmaTag));
+RR_ASSERT_OFFSET(SpritePacket, x, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(SpritePacket, clut, sizeof(GpuDmaTag) + 10);
+RR_ASSERT_OFFSET(SpritePacket, w, sizeof(GpuDmaTag) + 12);
+RR_ASSERT_SIZE(SpritePacketSignedClut, RR_GPU_PACKET_SIZE(16));
+RR_ASSERT_OFFSET(SpritePacketSignedClut, r, sizeof(GpuDmaTag));
+RR_ASSERT_OFFSET(SpritePacketSignedClut, x, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(SpritePacketSignedClut, clut, sizeof(GpuDmaTag) + 10);
+RR_ASSERT_OFFSET(SpritePacketSignedClut, w, sizeof(GpuDmaTag) + 12);
 
 /* RGB bytes and command byte shared by CPU templates and GTE output words. */
 typedef struct {u8 r,g,b,code;} GpuColorCommand;
@@ -128,8 +131,8 @@ typedef struct {
     GpuDmaTag tag;
     GpuColorWord color;
 } GpuPrimitiveHeader;
-RR_ASSERT_SIZE(GpuPrimitiveHeader,8);
-RR_ASSERT_OFFSET(GpuPrimitiveHeader,color,4);
+RR_ASSERT_SIZE(GpuPrimitiveHeader, RR_GPU_PACKET_SIZE(4));
+RR_ASSERT_OFFSET(GpuPrimitiveHeader, color, sizeof(GpuDmaTag));
 
 RR_ASSERT_SIZE(GpuColorCommand, 4);
 RR_ASSERT_OFFSET(GpuColorCommand, code, 3);
@@ -176,13 +179,13 @@ typedef struct {
     u8 u2, v2;
     u16 reserved1E;
 } GpuPolyFT3Packet;
-RR_ASSERT_SIZE(GpuPolyFT3Packet, 32);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, x0, 8);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, u0, 12);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, clut, 14);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, tpage, 22);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, x2, 24);
-RR_ASSERT_OFFSET(GpuPolyFT3Packet, reserved1E, 30);
+RR_ASSERT_SIZE(GpuPolyFT3Packet, RR_GPU_PACKET_SIZE(28));
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, x0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, u0, sizeof(GpuDmaTag) + 8);
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, clut, sizeof(GpuDmaTag) + 10);
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, tpage, sizeof(GpuDmaTag) + 18);
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, x2, sizeof(GpuDmaTag) + 20);
+RR_ASSERT_OFFSET(GpuPolyFT3Packet, reserved1E, sizeof(GpuDmaTag) + 26);
 
 /* DR_* command packets (E1..E6 words): PsyZ reads their payload as native
  * u_long words (DR_MODE/DR_TPAGE/DR_AREA layout), unlike shape primitives,
@@ -203,26 +206,26 @@ typedef struct {
     s32 color08, xy0C, color10, xy14, color18, xy1C, color20, xy24;
     u32 restoreMask28;
 } GpuMaskedG4Packet;
-RR_ASSERT_SIZE(GpuMaskedG4Packet, 44);
-RR_ASSERT_OFFSET(GpuMaskedG4Packet, color08, 8);
-RR_ASSERT_OFFSET(GpuMaskedG4Packet, color20, 32);
-RR_ASSERT_OFFSET(GpuMaskedG4Packet, restoreMask28, 40);
-RR_ASSERT_SIZE(GpuCommandPacket, 8);
-RR_ASSERT_SIZE(GpuPolyG3, 28);
-RR_ASSERT_OFFSET(GpuPolyG3, xy0, 8);
-RR_ASSERT_OFFSET(GpuPolyG3, xy2, 24);
-RR_ASSERT_SIZE(GpuDrawModePacket,12);
-RR_ASSERT_OFFSET(GpuDrawModePacket,command,4);
+RR_ASSERT_SIZE(GpuMaskedG4Packet, RR_GPU_PACKET_SIZE(44));
+RR_ASSERT_OFFSET(GpuMaskedG4Packet, color08, sizeof(GpuDmaTag) + 8);
+RR_ASSERT_OFFSET(GpuMaskedG4Packet, color20, sizeof(GpuDmaTag) + 32);
+RR_ASSERT_OFFSET(GpuMaskedG4Packet, restoreMask28, sizeof(GpuDmaTag) + 40);
+RR_ASSERT_SIZE(GpuCommandPacket, sizeof(GpuDmaTag) + sizeof(uintptr_t));
+RR_ASSERT_SIZE(GpuPolyG3, RR_GPU_PACKET_SIZE(24));
+RR_ASSERT_OFFSET(GpuPolyG3, xy0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuPolyG3, xy2, sizeof(GpuDmaTag) + 20);
+RR_ASSERT_SIZE(GpuDrawModePacket, sizeof(GpuDmaTag) + 2 * sizeof(uintptr_t));
+RR_ASSERT_OFFSET(GpuDrawModePacket, command, sizeof(GpuDmaTag));
 typedef struct {
     GpuDmaTag tag;
     u8 r,g,b,code;
     s16 x,y,w,h;
 } GpuTilePacket;
-RR_ASSERT_SIZE(GpuDmaTag,4);
-RR_ASSERT_SIZE(GpuTilePacket,16);
-RR_ASSERT_OFFSET(GpuTilePacket,r,4);
-RR_ASSERT_OFFSET(GpuTilePacket,x,8);
-RR_ASSERT_OFFSET(GpuTilePacket,w,12);
+RR_ASSERT_SIZE(GpuDmaTag, 2 * sizeof(uintptr_t));
+RR_ASSERT_SIZE(GpuTilePacket, RR_GPU_PACKET_SIZE(12));
+RR_ASSERT_OFFSET(GpuTilePacket, r, sizeof(GpuDmaTag));
+RR_ASSERT_OFFSET(GpuTilePacket, x, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuTilePacket, w, sizeof(GpuDmaTag) + 8);
 
 /* Whole sprite/tile owners expose the same packet through packed GPU words
  * and the coordinate/color fields used by CPU-side primitive builders. */
@@ -238,19 +241,19 @@ typedef struct {
     u32 position, size;
 } GpuTileCommandWords;
 typedef union {GpuTilePacket fields;GpuTileCommandWords words;GpuPrimitiveHeader header;} GpuTileCommand;
-RR_ASSERT_SIZE(GpuSpriteCommand,20);
-RR_ASSERT_SIZE(GpuSpriteCommandWords,20);
+RR_ASSERT_SIZE(GpuSpriteCommand, RR_GPU_PACKET_SIZE(16));
+RR_ASSERT_SIZE(GpuSpriteCommandWords, RR_GPU_PACKET_SIZE(16));
 RR_ASSERT_OFFSET(GpuSpriteCommand,words,0);
-RR_ASSERT_OFFSET(GpuSpriteCommandWords,position,8);
-RR_ASSERT_OFFSET(GpuSpriteCommandWords,uv,12);
-RR_ASSERT_OFFSET(GpuSpriteCommandWords,size,16);
-RR_ASSERT_SIZE(GpuTileCommand,16);
-RR_ASSERT_SIZE(GpuTileCommandWords,16);
+RR_ASSERT_OFFSET(GpuSpriteCommandWords, position, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuSpriteCommandWords, uv, sizeof(GpuDmaTag) + 8);
+RR_ASSERT_OFFSET(GpuSpriteCommandWords, size, sizeof(GpuDmaTag) + 12);
+RR_ASSERT_SIZE(GpuTileCommand, RR_GPU_PACKET_SIZE(12));
+RR_ASSERT_SIZE(GpuTileCommandWords, RR_GPU_PACKET_SIZE(12));
 RR_ASSERT_OFFSET(GpuTileCommand,words,0);
 RR_ASSERT_OFFSET(GpuTileCommand,header,0);
 RR_ASSERT_OFFSET(GpuSpriteCommand,header,0);
-RR_ASSERT_OFFSET(GpuTileCommandWords,position,8);
-RR_ASSERT_OFFSET(GpuTileCommandWords,size,12);
+RR_ASSERT_OFFSET(GpuTileCommandWords, position, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuTileCommandWords, size, sizeof(GpuDmaTag) + 8);
 
 /* Flat triangle: three packed signed16 X/Y pairs in wire words. */
 typedef struct {
@@ -258,8 +261,8 @@ typedef struct {
     u8 r, g, b, code;
     s32 xy0, xy1, xy2;
 } PolyF3Packet;
-RR_ASSERT_SIZE(PolyF3Packet,20);
-RR_ASSERT_OFFSET(PolyF3Packet,xy0,8);
+RR_ASSERT_SIZE(PolyF3Packet, RR_GPU_PACKET_SIZE(16));
+RR_ASSERT_OFFSET(PolyF3Packet, xy0, sizeof(GpuDmaTag) + 4);
 
 /* Textured quad and four-vertex polyline DMA packets. */
 typedef struct {
@@ -293,15 +296,15 @@ typedef struct {
     s16 x0, y0, x1, y1, x2, y2, x3, y3;
     u32 pad;
 } GpuLineF4Packet;
-RR_ASSERT_SIZE(GpuPolyFT4Packet,40);
-RR_ASSERT_SIZE(GpuPolyFT4,40);
-RR_ASSERT_OFFSET(GpuPolyFT4Packet,x0,8);
-RR_ASSERT_OFFSET(GpuPolyFT4Packet,u0,12);
-RR_ASSERT_OFFSET(GpuPolyFT4Packet,tpage,22);
-RR_ASSERT_OFFSET(GpuPolyFT4Packet,x3,32);
-RR_ASSERT_SIZE(GpuLineF4Packet,28);
-RR_ASSERT_OFFSET(GpuLineF4Packet,x0,8);
-RR_ASSERT_OFFSET(GpuLineF4Packet,pad,24);
+RR_ASSERT_SIZE(GpuPolyFT4Packet, RR_GPU_PACKET_SIZE(36));
+RR_ASSERT_SIZE(GpuPolyFT4, RR_GPU_PACKET_SIZE(36));
+RR_ASSERT_OFFSET(GpuPolyFT4Packet, x0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuPolyFT4Packet, u0, sizeof(GpuDmaTag) + 8);
+RR_ASSERT_OFFSET(GpuPolyFT4Packet, tpage, sizeof(GpuDmaTag) + 18);
+RR_ASSERT_OFFSET(GpuPolyFT4Packet, x3, sizeof(GpuDmaTag) + 28);
+RR_ASSERT_SIZE(GpuLineF4Packet, RR_GPU_PACKET_SIZE(24));
+RR_ASSERT_OFFSET(GpuLineF4Packet, x0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(GpuLineF4Packet, pad, sizeof(GpuDmaTag) + 20);
 
 /* Quad primitive GPU packets (POLY_F4, POLY_G4, POLY_GT4) and mesh face records. */
 typedef struct {
@@ -333,8 +336,8 @@ typedef union {
     PolyG4WordPacket words;
     GpuDmaTag tag;
 } GpuPolyG4;
-RR_ASSERT_SIZE(GpuPolyG4, 36);
-RR_ASSERT_OFFSET(PolyG4WordPacket, xy3, 32);
+RR_ASSERT_SIZE(GpuPolyG4, RR_GPU_PACKET_SIZE(32));
+RR_ASSERT_OFFSET(PolyG4WordPacket, xy3, sizeof(GpuDmaTag) + 28);
 
 typedef struct {
     GpuDmaTag tag;
@@ -365,16 +368,16 @@ typedef struct {
     u8 pad24, otBias25, pad26[2];
 } MeshQuadGT4;
 
-RR_ASSERT_SIZE(PolyF4Packet, 0x18);
-RR_ASSERT_SIZE(PolyG4Packet, 0x24);
-RR_ASSERT_OFFSET(PolyG4Packet, x0, 0x8);
-RR_ASSERT_OFFSET(PolyG4Packet, x1, 0x10);
-RR_ASSERT_OFFSET(PolyG4Packet, x2, 0x18);
-RR_ASSERT_OFFSET(PolyG4Packet, x3, 0x20);
-RR_ASSERT_SIZE(PolyG4WordPacket, 0x24);
-RR_ASSERT_SIZE(PolyGT4WordPacket, 0x34);
-RR_ASSERT_OFFSET(PolyGT4WordPacket, uv2, 0x24);
-RR_ASSERT_OFFSET(PolyGT4WordPacket, uv3, 0x30);
+RR_ASSERT_SIZE(PolyF4Packet, RR_GPU_PACKET_SIZE(20));
+RR_ASSERT_SIZE(PolyG4Packet, RR_GPU_PACKET_SIZE(32));
+RR_ASSERT_OFFSET(PolyG4Packet, x0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(PolyG4Packet, x1, sizeof(GpuDmaTag) + 12);
+RR_ASSERT_OFFSET(PolyG4Packet, x2, sizeof(GpuDmaTag) + 20);
+RR_ASSERT_OFFSET(PolyG4Packet, x3, sizeof(GpuDmaTag) + 28);
+RR_ASSERT_SIZE(PolyG4WordPacket, RR_GPU_PACKET_SIZE(32));
+RR_ASSERT_SIZE(PolyGT4WordPacket, RR_GPU_PACKET_SIZE(48));
+RR_ASSERT_OFFSET(PolyGT4WordPacket, uv2, sizeof(GpuDmaTag) + 32);
+RR_ASSERT_OFFSET(PolyGT4WordPacket, uv3, sizeof(GpuDmaTag) + 44);
 RR_ASSERT_SIZE(MeshQuadF4, 0x10);
 RR_ASSERT_SIZE(MeshQuadG4, 0x1C);
 RR_ASSERT_SIZE(MeshQuadGT4, 0x28);

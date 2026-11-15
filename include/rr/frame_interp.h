@@ -6,9 +6,10 @@
 
 struct GpuDmaTag;
 
-/* Frame interpolation (Escape menu Graphics > Frame interpolation). A race
- * frame takes two fields; PsyZ presents a midpoint between two frames at the
- * blank between them (Psyz_GpuPrepareInterpolatedBlank in MainLoop). The
+/* Frame interpolation (Escape menu Graphics > Frame rate: Original/60/120).
+ * A race frame still takes two original fields. PsyZ generates positions
+ * between two frames for an independent output clock; MainLoop prepares
+ * the completed pair through Psyz_GpuPrepareInterpolatedBlank. The
  * packets come from a linear arena, so their addresses do not pair across
  * frames: each 3D packet is tagged with a stable identity instead
  * (Psyz_GpuTagInterpolationPacket), made of
@@ -113,6 +114,7 @@ void InterpViewCamera(s32 view, const s32 position[3], const s32 angles[3]);
 /* MainLoop: the frame starts / its ordering tables are about to be drawn
  * into clip, after the frame drawn at previousY. */
 void InterpBeginFrame(void);
+void InterpPollOutput(void);
 void InterpCommitFrame(s32 previousY, const GpuRectangleFields *clip);
 
 #endif

@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
 #include "rr/menu_arena_state.h"
 #include "game/sound/sndvab.h"
@@ -36,16 +37,11 @@
 extern unsigned char CourseSelectGroupCounts[];
 extern unsigned char GpStageCourseBaseIndex[];
 extern unsigned char MakerTeamCarCounts[];
-extern int ModeFrame;
-#include "game/ui/uidraw.h"
-extern short ModeIndex;
-extern short ModeGroup;
-extern int DialogueSceneMode;
-extern unsigned short SubmodeState;
-extern s32 VSyncThreshold;
-extern s16 ActiveSceneId;
-extern unsigned short FadeCountdown;
 
+#include "game/ui/uidraw.h"
+
+extern int DialogueSceneMode;
+extern s32 VSyncThreshold;
 
 void DialogueIntroModeUpdate(void);
 void DialogueSceneSetup(void);
@@ -198,7 +194,7 @@ void DialogueModeUpdate(void) {
                     FadeCountdown = 0x40;
                     ResetScreenCounters();
                     LoadCursor = MenuArenas.second;
-                    LoadTimListStep(0);
+                    LoadTimListStep();
                     SeqFadeVolume(0, (short)(FadeCountdown - 4));
                     SubmodeState = 1;
                 } else if (PendingModeId == 0x111) {
@@ -218,7 +214,7 @@ void DialogueModeUpdate(void) {
     if (BadgeRows[Dialogue->s16].state10 == 0xB) {
         if (ImageRows->f1 == 5) {
             if (PendingModeId == 0x10F || PendingModeId == 0x12A) {
-                if (LoadTimListStep(1) == 1) {
+                if (LoadTimListStep() == 1) {
                     SeqMuteVolume();
                     if ((short)FadeCountdown <= 0) {
                         unsigned c = PendingModeId;

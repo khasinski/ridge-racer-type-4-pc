@@ -1,9 +1,19 @@
 #ifndef RR_GAME_DATA_MENUVARS_H
 #define RR_GAME_DATA_MENUVARS_H
 
-/* Menu/frame globals whose signedness differs between the rr/ headers; only units that were checked
- * against these spellings include this header (globals.h would hand them to every includer). */
-extern unsigned short SubmodeState;
-extern unsigned short ModeGroup;
+#include "types.h"
+
+/* Shared dispatcher/menu state. Definitions stay in their original modules.
+ * FadeCountdown is signed: negative values are used as sentinels. */
+
+extern u16 ModeGroup;
+extern u16 SubmodeState;
+extern s16 ModeIndex;
+extern s32 ModeFrame;
+extern s16 FadeCountdown;
+extern u16 ActiveSceneId;
+extern u16 MenuScriptId;
+extern u16 MenuTransitionOverlayMode;
+extern s16 GameModeType;
 
 #endif

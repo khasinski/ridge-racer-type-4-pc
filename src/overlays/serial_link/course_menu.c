@@ -1,4 +1,5 @@
 #include "rr/projection_state.h"
+#include "game/data/menuvars.h"
 #include "rr/player_cars.h"
 #include "scratchpad.h"
 #include "rr/load_cursor.h"
@@ -6,7 +7,6 @@
 #include "rr/overlay667_course_menu.h"
 #include "rr/frame_storage_types.h"
 
-extern u16 ActiveSceneId;
 extern s16 LinkRaceAbortFlag;
 extern s32 ActivePlayerIndex;
 
@@ -99,7 +99,7 @@ void ovl667_update_course_menu(void) {
                         row = 0;
                         previewIndex = 0;
                         do {
-                            preview = (UiRow24 *)((previewIndex*sizeof(UiRow24))+(uintptr_t)UiRows+0x288);
+                            preview = &UiRows[previewIndex + 18];
                             if (preview->byte14 == 2) {
                                 preview->byte14 = 7U;
                             }
@@ -128,7 +128,7 @@ void ovl667_update_course_menu(void) {
                     row = 0;
                     backIndex = 0;
                     do {
-                        back = (UiRow24 *)((backIndex*sizeof(UiRow24))+(uintptr_t)UiRows+0x288);
+                        back = &UiRows[backIndex + 18];
                         if (back->byte14 == 2) {
                             back->byte14 = 3U;
                         }

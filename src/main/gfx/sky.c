@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "rr/release.h"
 #include "rr/frame_interp.h"
 /* RODATA 0x800100e4 0x20 */
@@ -212,7 +213,6 @@ extern char UnknownSkyModeFmt[];
 extern short *CourseSkyKeyframePtrs[];
 extern short *CourseSceneryRangePtrs[];
 extern char SkyDefaultRotMatrix[];
-void SetGeomOffset(s32 x, s32 y);
 
 static SkyCtx SkySceneryWork;
 static SkyLitCtx SkyLitWork;

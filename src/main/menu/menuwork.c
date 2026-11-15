@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
 #include "game/sound/sndvab.h"
 #include "rr/save_slots.h"
@@ -36,20 +37,13 @@
 #include "game/data/ldscn1.h"
 #include "game/ui/uidraw.h"
 
-
-
 extern unsigned char NameCharset[];
-extern s32 ModeFrame;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern u16 SubmodeState;
+
 extern unsigned char ProgressBitMasks[];
 
 extern RaceVehicle PlayerCars[2];
 extern s32 VSyncThreshold;
-extern s16 ActiveSceneId;
 extern unsigned char GpStageShowcaseModes[];
-extern short FadeCountdown;
 
 void GetNameChar(unsigned char *a0, int a1);
 void StepNameChar(unsigned char *a0);

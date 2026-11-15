@@ -14,8 +14,8 @@ extern s32 DrawBufIndex;
 
 /* Preserve the other configuration fields and store low16 coordinate bits. */
 void ovl668_init_stream_display(StrDisplayConfig *config,s32 x,s32 y,s32 second_x,s32 second_y);
-/* Base covers the complete partitioned allocation through offset0x19A00.
- * Reload activeB8 for every publication: a destination slot may overlap it. */
+/* Base covers both command/slice buffers and 32 ring sectors (0x29A00 bytes).
+ * The ring begins at offset 0x19A00. */
 void ovl668_init_stream_buffers(u8 *base);
 
 /* Consume readiness; on timeout toggle the buffer and select its coordinates. */

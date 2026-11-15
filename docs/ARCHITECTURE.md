@@ -143,11 +143,18 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      16:9 window, and bit-identical captures. In Classic 4:3 every value is
      the original one.
 
-   - **Frame interpolation:** a race frame takes two fields (25 fps PAL);
-     with the option on PsyZ presents a midpoint between two frames at the
-     blank in between (`Psyz_GpuPrepareInterpolatedBlank` in `MainLoop`),
-     drawn into a separate target from the same packets with averaged
-     vertices. The packets come from a linear arena, so the 3D renderers tag
+   - **Frame rate:** Original / 60 FPS / 120 FPS controls presentation,
+     separately from PAL/NTSC simulation and audio. A race frame still takes
+     two original fields. PsyZ evaluates intermediate geometry at output
+     deadlines, with up to five samples and one original frame of display
+     latency. The midpoint solver supplies motion and junction constraints;
+     each sample uses the paired screen positions and view depths, with
+     junctions projected onto their sampled edges. Completed samples use a
+     bounded queue of twelve cropped textures; cooperative polling serves
+     it during CPU rendering and VBlank waits. No extra simulation update
+     or packet consumption happens when presenting. The legacy boolean PsyZ
+     API retains its single-midpoint path when no output rate is selected.
+     The packets come from a linear arena, so the 3D renderers tag
      each one with a stable identity (`include/rr/frame_interp.h`): the view,
      the object (`InterpObject`: course, scenery, car and part, track object
      placement) and a key from the renderer (the face record, the contents of

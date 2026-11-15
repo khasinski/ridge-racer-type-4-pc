@@ -1,3 +1,6 @@
+#include "rr/bios_devices.h"
+#include "game/menu/menutra21.h"
+#include "game/data/menuvars.h"
 #include "rr/save_slots.h"
 #include "rr/save_progress.h"
 #include "rr/menu_selection.h"
@@ -11,8 +14,6 @@
 
 typedef struct { int x; } RR_PACKED U4;
 
-extern s16 CardMenuOperation;
-extern int PsyqBzero();
 extern unsigned char GpStageQualifyRanks[];
 extern short ComDifficultyLevel;
 extern short SelectedTeamIndex;

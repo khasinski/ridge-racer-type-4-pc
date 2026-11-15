@@ -10,7 +10,7 @@ extern s32 CD_timeout_deadline;
 extern s32 CD_timeout_count;
 extern const char *CdWaitCallerName[];
 extern const char CdTimeoutPrefixStr[],CdTimeoutStatusFmt[],CdDatasyncNameStr[];
-s32 DebugPrintStub();
+s32 DebugPrintStub(const char *format, ...);
 s32 PsyqPuts(const char *message);
 void CD_flush(void);
 /* Mode0 waits; a nonzero mode polls once. Returns-1 on timeout,0 when idle,

@@ -3,6 +3,7 @@
 #include "rr/animated_sprite_grid.h"
 #include "rr/geometry.h"
 #include "rr/matrix_words.h"
+#include "scratchpad.h"
 /* Camera position and full-word Euler angles are one contiguous input view.
  * The fourth word of each vector belongs to the SDK storage. */
 typedef struct {
@@ -15,6 +16,9 @@ typedef struct {
     u8 gpu_slot00[8];
     ProjectionView32 pose08;
 } ProjectionScratchPrefix;
+/* Every projection view shares the native scratchpad, independent of which
+ * overlay header the caller includes first. */
+#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)(void *)RrScratchpad)
 typedef struct {
     ProjectionScratchPrefix projection;
     MatrixWords32 matrix28;

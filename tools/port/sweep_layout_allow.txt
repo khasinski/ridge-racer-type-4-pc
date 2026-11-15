@@ -3,6 +3,7 @@
 # carries the reason it was accepted; stale entries are reported.
 
 # Host-enlarged objects: their PS1 size bounds the extent check.
+SIZE CdFileTable 0x1DB0  # 950 PAL entries at 0x801094A8; the host table also holds the Japanese R4.BIN's 969 (RR_R4_ENTRIES_MAX)
 SIZE DrawBuffers 0x44EF0  # two 0x22778-byte banks on PS1 (0x800ADAF0..0x800F29E0); the host packet arena is larger for 16-byte tags
 SPAN SharedWorkArena  # host-sized for MenuTextState at +0x4E20 and ReplayStorage; the PS1 two-player replay (0x60E8) already ran into SceneOffsetLookupBuf, which is reloaded before each dialogue scene (ldscn1.c)
 

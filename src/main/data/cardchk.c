@@ -1,9 +1,9 @@
 #include "game/data/cardini.h"
+#include "game/menu/menutra21.h"
 #include "game/data/cardchk.h"
 extern int CardPortCheckStateA[];
 extern int CardPortCheckStateB[];
 extern unsigned char CardCheckCounts[];
-extern unsigned char CardPortPollStatus[];
 extern unsigned char CardFileCounts[];
 
 void PollCardStatus(int a0, int a1, int a2) {

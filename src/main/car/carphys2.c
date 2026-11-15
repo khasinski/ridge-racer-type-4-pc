@@ -1,4 +1,5 @@
 #include "types.h"
+#include "game/data/menuvars.h"
 #include "rr/trig.h"
 #include "game/math/rotmat.h"
 #include "game/car/bounds.h"
@@ -14,7 +15,6 @@
 #include "rr/overlay668_camera.h"
 
 extern RaceVehicle PlayerCars[2];
-extern int ModeFrame;
 
 void StepCarStateNormal(RaceVehicle *c);
 void StepCarStateSlide(RaceVehicle *c0);

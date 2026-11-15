@@ -10,6 +10,7 @@
  * while scene configuration is read from RroSceneScratchPrefix by name. GTE
  * command order, register usage and packet contents follow the original. */
 #include "rr/widescreen.h"
+#include "rr/draw_distance.h"
 #include "rr/frame_interp.h"
 #include "game/data/globals.h"
 #include "rr/frame_loop.h"
@@ -528,6 +529,7 @@ static void SubmitModelStream(RroSceneScratchPrefix *scene, s32 modelIndex, u32 
 /* 8005F0D0 */
 void SubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex, s32 flags, s32 depthBias)
 {
+    InterpPollOutput();
     RroFogColorFT4 = *(const u32 *)&DefaultScreenClearColor;
     RroFogColorGT4 = *(const u32 *)&LoadingScreenClearColor;
     RroLightingMode = flags;
@@ -1124,6 +1126,7 @@ static void SubmitCourseModelWith(RroSceneScratchPrefix *scene, s32 modelIndex, 
 /* 8005FC74 */
 void SubmitCourseModel(RroSceneScratchPrefix *scene, s32 modelIndex)
 {
+    InterpPollOutput();
     SubmitCourseModelWith(scene, modelIndex, CourseFaceHandlers);
 }
 
@@ -1192,6 +1195,8 @@ static unsigned HorizonInterpPieceFlags;
 
 static void HorizonInterpTile(const void *record, size_t size)
 {
+    static unsigned output_poll;
+    if ((++output_poll & 31u) == 0) InterpPollOutput();
     const u32 *w = (const u32 *)record;
     u64 h = 0x9E3779B97F4A7C15ULL;
     size_t i;
@@ -3952,6 +3957,7 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
 void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
 {
     const HorizonPass *program;
+    int projection = Psyz_GteSetExtendedProjection(ExtendedDrawDistance);
     u32 interp = InterpBegin(INTERP_COURSE, 0);
     Horizon.scene = (RroSceneScratchPrefix *)scene;
     Horizon.savedFarColor[0] = gte_cfc2(GTE_FC_R);
@@ -3965,6 +3971,7 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
     RR_GPU_SCRATCH->cursor = Horizon.cursor;
     InterpEnd(interp);
+    Psyz_GteSetExtendedProjection(projection);
 }
 
 /* ------------------------------------------------------------------------ */

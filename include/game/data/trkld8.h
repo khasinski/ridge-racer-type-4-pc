@@ -4,6 +4,6 @@
 #include "types.h"
 
 int LoadIntroSceneStep(void);
-void SoundSystemInit();
+void SoundSystemInit(void);
 
 #endif /* RR_GAME_DATA_TRKLD8_H */

@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "rr/audio_state_types.h"
 #include "game/gfx/scene1.h"
 #include "rr/menu_selection.h"
@@ -24,13 +25,9 @@
 extern int MenuTransitionFadeRates[];
 extern unsigned short LoadingBarAnimCounter;
 extern unsigned short MenuStageEntryModeIds[];
-extern short MenuTransitionOverlayMode;
-extern short MenuScriptId;
-extern short ModeGroup;
-extern short ModeIndex;
-extern short SubmodeState;
+
 extern int MaskBitSetting;
-extern short ActiveSceneId;
+
 void StartAttractDemo(int a0);
 void AttractDemoRaceEnter(void);
 

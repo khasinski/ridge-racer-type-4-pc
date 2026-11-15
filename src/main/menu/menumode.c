@@ -1,5 +1,7 @@
 #include <string.h>
 #include "rr/release.h"
+#include "game/menu/menutra21.h"
+#include "game/menu/menu8.h"
 #include "game/ui/uipart1.h"
 #include "game/data/cardchk.h"
 #include "game/menu/loadmenu.h"
@@ -12,26 +14,21 @@
 #include "rr/menu_choice.h"
 #include "rr/string_tail_copy.h"
 
-extern short CardMenuOperation;
 extern short CardActivePort;
 extern short MenuActiveControllerIndex;
 extern short MenuStateIndex;
-extern short GpSaveSlotCursor;
-extern short CardTransferMode;
+
 extern char CardTargetFileName[];
 extern char CardFileNameTemplate[];
 extern char CardSaveFileName[];
 extern u8 D_800115A4[];
 extern unsigned char TeamSelectLogoPolys[][4];
-extern unsigned char CardPortPollStatus[];
-extern short CardPromptChoices[];
+
 extern short CardPromptIndex;
 extern unsigned char MenuCardStepRows[][4];
 extern unsigned char CardFileCounts[];
 
 void StepCardFileSlotSelection(void);
-void StepCardPortSelection();
-void UpdateCardMenuRowStates();
 
 void StepCardFileSlotSelection(void) {
     int s3;

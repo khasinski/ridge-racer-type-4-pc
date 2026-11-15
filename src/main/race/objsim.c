@@ -1,4 +1,5 @@
 #include "rr/video_timing.h"
+#include "game/data/menuvars.h"
 #include "rr/projection_state.h"
 #include "rr/player_cars.h"
 #include "rr/menu_selection.h"
@@ -16,7 +17,6 @@
 #include "rr/audio_loop.h"
 
 extern int MenuSoundEffectMap;
-extern int ModeFrame;
 extern int RaceState;
 extern int ObjSimBlimpTrackNode;
 extern int ObjSimJetTrackNode;

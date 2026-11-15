@@ -1,4 +1,6 @@
 #include "rr/release.h"
+#include "game/race/racegrid.h"
+#include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "rr/widescreen.h"
 #include "rr/race_frame_scratch.h"
@@ -45,20 +47,14 @@ extern int SavedRaceState;
 extern int RaceState;
 extern short TwistRangeLimits[];
 extern int ReplayFrame;
-extern short LinkHostFlag;
-extern short GameModeType;
-extern short FadeCountdown;
+
 extern int TrackLength;
 extern RaceVehicle PlayerCars[2];
-extern short ModeIndex;
-extern short ModeGroup;
-extern short SubmodeState;
+
 extern int ReplayFocusCarIndex;
 extern int RaceQuitTargetMode;
-extern int ModeFrame;
 
 void ReadCarInput(RaceVehicle *arg0, s32 arg1);
-void ReplayModeEnter();
 void ReplayModeUpdate(void);
 
 /* Callers explicitly supply this legacy argument; the body ignores it. */
@@ -377,7 +373,7 @@ void ReplayModeUpdate(void) {
     }
     SetupViewport(0);
     UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
-    UpdateTrackObjects(0);
+    UpdateTrackObjects();
     BuildCameraMatrices();
     DrawCars(6);
     ((RaceFrameScratch *)SCRATCHPAD)->word78 = RaceQuitTargetMode;

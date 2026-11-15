@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "rr/release.h"
 #include "rr/draw_distance.h"
 #include "psyq/libgte/rotmatyxz.h"
@@ -44,8 +45,6 @@ extern u16 CourseSelectMapCoordsX[];
 extern s16 CourseSelectMapCoordsY[];
 extern u16 CourseSelectLabelPosX[];
 extern s16 CourseSelectLabelPosY[];
-extern void SetGeomOffset(s32, s32);
-extern void SetGeomScreen(s32);
 extern int ViewUsesCarTrackNode;
 extern RaceVehicle PlayerCars[];
 
@@ -69,7 +68,7 @@ void SetupHorizonViewTransform(int *a0, int *a1) {
         g[0x29] = w[1];
         g[0x2A] = w[2];
         ScaleMatrix((MatrixWords32 *)(SCRATCHPAD + 0x108), x);
-        ResetViewScratchMask(ActiveVisibleViews, a0, a1);
+        ResetViewScratchMask();
     }
 }
 

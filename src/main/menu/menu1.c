@@ -1,3 +1,7 @@
+#include "game/ui/uitext.h"
+#include "game/menu/menutra21.h"
+#include "game/data/menuvars.h"
+#include "game/menu/menu1.h"
 #include "game/ui/badge1.h"
 #include "rr/release.h"
 #include "game/ui/uipart1.h"
@@ -29,21 +33,13 @@
 #include "rr/badge_rows.h"
 #include "game/menu/mnrows.h"
 
-extern unsigned short FadeCountdown;
 extern int VSyncThreshold;
 extern short MenuCursor;
-extern int ModeFrame;
-extern short ModeIndex;
-extern short ModeGroup;
-extern unsigned short SubmodeState;
-extern int DrawUiRow();
-extern short CardMenuOperation;
+
 #include "rr/menu_arena_base.h"
 
-void GpMenuModeEnter();
 void GpMenuModeUpdate(void);
 void DrawFirstThreeUiRows(void);
-void StepGpMenuSelection();
 void CarStandingsModeEnter(void);
 
 void GpMenuModeEnter(void) {

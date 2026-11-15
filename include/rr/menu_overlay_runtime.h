@@ -1,5 +1,6 @@
 #ifndef RR_MENU_OVERLAY_RUNTIME_H
 #define RR_MENU_OVERLAY_RUNTIME_H
+#include "game/data/menuvars.h"
 #include "rr/save_slots.h"
 #include "game/system/pad.h"
 #include "game/sound/sndque.h"
@@ -41,7 +42,6 @@ extern CourseChoice4 CourseChoiceTable[4][9];
 extern u32 ScreenFrame;
 #include "rr/player_cars.h"
 extern s32 RaceTimeRemaining;
-extern s16 FadeCountdown;
 extern s16 MenuItemCount;
 extern s16 MenuCursor;
 #include "rr/menu_frame_state.h"
@@ -52,21 +52,19 @@ extern s32 RaceQuitTargetMode;
 #include "game/menu/menu8.h"
 #include "rr/image_rows.h"
 #include "game/car/carparam.h"
-extern s32 ModeFrame;
+
 extern s32 TrackLength;
 extern s8 PauseCursor;
 extern s16 SelectedMakerIndex;
-extern s16 ModeIndex;
-extern u16 MenuScriptId;
+
 extern s32 TotalRaceTime;
 extern s8 RacePaused;
-extern u16 ModeGroup;
 extern s32 LapTimes[10];
 #include "rr/menu_arena_base.h"
-extern s16 GameModeType;
+
 #include "rr/menu_arena_state.h"
 extern UiRow24 *UiRows;
-extern u16 SubmodeState;
+
 #include "game/ui/uidraw.h"
 #include "game/data/selection.h"
 extern s32 RaceState;
@@ -99,9 +97,6 @@ typedef RaceFrameScratch Ovl659Scratch;
 #endif
 #ifndef RR_MENU_PREVIEW_SCRATCH_WORDS
 #define RR_MENU_PREVIEW_SCRATCH_WORDS ((s32 *)SCRATCHPAD)
-#endif
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
 #endif
 
 /* Resident game and GPU services. */
@@ -177,7 +172,7 @@ void UpdateLapTiming(RaceVehicle *);
 void InitBadgeRow(s32 index, s32 first, s16 x, s32 y, u16 width, u16 mode, u16 flags);
 void UpdateBadgeRowAnim(s32);
 void InitRect16Row(s32 index, s16 a, s16 b, s16 c, s16 d, s16 e, s16 f);
-void InitGlyphRow();
+void InitGlyphRow(int index, int control, int glyph, int presetIndex);
 s32 UpdateGlyphRow(s32 selected);
 void InitUiRow(s32 index, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 count, s32 g, s32 h,
                    ...);
@@ -190,10 +185,10 @@ void SetMenuTextRowStyle(s32 row, s32 first, s32 second);
 void DrawLensFlareAndSun(RaceVehicle *);
 void PlaySfx(s32);
 void SoundSetMasterVolume(s16, s16);
-void SlotsStartForRace();
+void SlotsStartForRace(void);
 void SlotSetLevelProgram(s32, s32, s32);
 void CdAudioInit(void);
-void CdAudioSelectTrack();
+void CdAudioSelectTrack(int bank, int track);
 void CdAudioBeginPlay(s32);
 void CdAudioFade(s32, s32);
 void SeqFadeVolume(s32, s32);
@@ -203,7 +198,7 @@ void BuildCameraMatrices(void);
 void SetupPlayerView(s32);
 void SetupViewport(s32);
 void UpdateAndDrawRearViewMirror(s32);
-void UpdateTrackObjects(s32);
+void UpdateTrackObjects(void);
 void DrawTrackObjects(s32);
 s32 rsin(s32);
 s32 rcos(s32);

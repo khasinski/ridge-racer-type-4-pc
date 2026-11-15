@@ -166,7 +166,7 @@ int UpdateGlyphRow(int index) {
         if (initialTick >= GlyphRows[index].frameDuration05 && (s8)GlyphRows[index].frameCount01 >= 2) {
             GlyphRows[index].tick03 = 0;
             GlyphRows[index].control02 = MENU_GLYPH_PREPARE_IMAGE;
-            GlyphRows[index].frameIndex00 = (s8)(++GlyphRows[index].frameIndex00) % (s8)GlyphRows[index].frameCount01;
+            GlyphRows[index].frameIndex00 = (s8)((GlyphRows[index].frameIndex00 + 1) % (s8)GlyphRows[index].frameCount01);
         } else {
             GlyphRows[index].tick03++;
         }

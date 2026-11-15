@@ -1,4 +1,5 @@
 #include "rr/overlay_module.h"
+#include "game/menu/menu8.h"
 #include "game/gfx/sprefct.h"
 #include "rr/overlay662_history_labels.h"
 #include "rr/overlay662_character_grid.h"
@@ -14,7 +15,7 @@ extern u8 ovl662_extra_record_label_glyphs[3];
 /* The decal slots' edit times. The PS1 resident card code (scan, save,
  * load) and this panel share the one object at 0x801272F0. */
 extern s32 GarageExtraDefaultTimes[3];
-extern s16 GpSaveSlotCursor;
+
 void FormatDecimalDigits(char *output, s32 value, s32 digitsMinusOne);
 
 void *ovl662_draw_stage_history_label(GpuDmaTag *arg0, void *arg1, s32 arg2) {

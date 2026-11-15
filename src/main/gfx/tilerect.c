@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "game/system/pad.h"
@@ -61,11 +62,8 @@ static void EmitTileRectCommand(s32 index, u32 command) {
 }
 
 extern GpuRectangleFields TileRectSkyVramRect;
-extern short FadeCountdown;
 extern int VSyncThreshold;
-extern short ModeIndex;
-extern short ModeGroup;
-extern short SubmodeState;
+
 extern int TileRectUploadPhase;
 extern Vec3sFields8 TileRectDefaultAngles;
 extern GpuRectangleFields TileRectCaptureVramRect;

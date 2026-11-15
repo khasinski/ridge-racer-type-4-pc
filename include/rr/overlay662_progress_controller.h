@@ -1,5 +1,7 @@
 #ifndef RR_OVERLAY662_PROGRESS_CONTROLLER_H
 #define RR_OVERLAY662_PROGRESS_CONTROLLER_H
+#include "rr/overlay662_progress_init.h"
+#include "game/data/menuvars.h"
 #include "rr/screen_tiles.h"
 #include "game/system/pad.h"
 #include "rr/overlay662_setup.h"
@@ -7,8 +9,8 @@
 #include "rr/frame_environment.h"
 #include "rr/tables.h"
 #include "rr/overlay_menu.h"
-extern s16 FadeCountdown;
-extern u16 ovl662_team_unlocked_counts[4],ovl662_team_maker_car_counts[4][4];
+
+extern u16 ovl662_team_unlocked_counts[4];
 s32 LoadGlyphRowsStep(void);
 void ovl662_step_selected_team(void);
 void ovl662_step_selected_maker(void);

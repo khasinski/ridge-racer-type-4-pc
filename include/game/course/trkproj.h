@@ -2,6 +2,7 @@
 #define RR_GAME_COURSE_TRKPROJ_H
 
 #include "types.h"
+#include "rr/race_types.h"
 
 void UpdateComCarOvertake(RaceVehicle *p);
 void ComputeCarTrackSurfaceProj(RaceVehicle *vehicle);

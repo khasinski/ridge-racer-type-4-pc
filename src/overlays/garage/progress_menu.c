@@ -204,6 +204,10 @@ extern const OverlayStateTable ovl662_available_cars_state, ovl662_car_view_stat
 static const OverlayStateTable *const ovl662_state_tables[] = {&ovl662_available_cars_state, &ovl662_car_view_state, &ovl662_editor_canvas_state, &ovl662_editor_dialogs_state, &ovl662_editor_input_state, &ovl662_editor_lifecycle_state, &ovl662_editor_paint_state, &ovl662_editor_panels_state, &ovl662_editor_primitives_state, &ovl662_editor_sliders_state, &ovl662_emblem_selector_state, &ovl662_history_screen_state, &ovl662_name_entry_state, &ovl662_progress_menu_state, &ovl662_record_labels_state, &ovl662_team_car_select_state};
 static OverlayStateImage ovl662_state_image = {ovl662_state_tables, sizeof(ovl662_state_tables) / sizeof(ovl662_state_tables[0]), NULL};
 
+void ovl662_capture_module(void) {
+    OverlayStateCapture(&ovl662_state_image);
+}
+
 void ovl662_reset_module(void) {
     OverlayStateRestore(&ovl662_state_image);
 }

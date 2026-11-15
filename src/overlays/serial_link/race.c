@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "rr/overlay_module.h"
 #include "game/car/carparam.h"
 #include "rr/menu_selection.h"
@@ -45,7 +46,6 @@
 extern s32 TrackLength;
 extern s32 RaceState;
 extern s32 TotalRaceTime;
-extern s16 FadeCountdown;
 extern void SaveCarSnapshots(s32);
 
 void ovl667_update_checkpoint(RaceVehicle *arg0) {
@@ -92,12 +92,9 @@ extern s16 LinkPlayerCount;
 extern s32 RaceStartWipeY;
 extern s32 RaceState;
 extern s32 TotalRaceTime;
-extern s16 FadeCountdown;
 extern s32 RaceTimeRemaining;
-extern s16 LinkHostFlag;
 extern s8 RacePaused;
 extern s8 PauseCursor;
-extern s16 GameModeType;
 extern RaceVehicle PlayerCars[];
 
 
@@ -320,7 +317,7 @@ void ovl667_update_race(void) {
                 DrawRaceStartSignalSprite(n == 1 ? 0 : i + 1);
             }
             SetupPlayerView(i);
-            UpdateTrackObjects(0);
+            UpdateTrackObjects();
             DrawTrackObjects(0);
             DrawTrackSceneryForPlayer(i + 1);
             if (n == 1) {

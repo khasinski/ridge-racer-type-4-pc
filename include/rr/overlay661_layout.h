@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY661_LAYOUT_H
 #define RR_OVERLAY661_LAYOUT_H
+#include "game/data/menuvars.h"
 #include "rr/race.h"
 #include "scratchpad.h"
 #include "rr/load_cursor.h"
@@ -14,7 +15,7 @@
 #include "rr/menu_arena_state.h"
 #include "rr/cd_directory_buffer.h"
 #include "rr/menu_arena_base.h"
-extern s32 ModeFrame;
+
 extern u32 ScreenFrame;
 extern s16 MenuCursor,MenuItemCount,ovl661_preview_confirmation;
 extern s16 ovl661_available_car_counts[2][2],ovl661_selected_cars[2],ovl661_selected_groups[2];
@@ -28,7 +29,4 @@ s32 CountChoiceGlyphs(const CourseChoice4 *);
  * count helpers inspect all nine records. The full selection owner has32 bytes.
  * Setup callbacks may replace arenas and mutate every later selection. */
 void ovl661_init_preview(s32 mode);
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
-#endif
 #endif

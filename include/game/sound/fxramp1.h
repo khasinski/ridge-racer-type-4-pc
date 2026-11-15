@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void SeqFadeStep();
+void SeqFadeStep(void);
 
 #endif /* RR_GAME_SOUND_FXRAMP1_H */

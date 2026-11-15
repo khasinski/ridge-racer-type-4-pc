@@ -164,13 +164,13 @@ typedef char rr_glow_projection_offset[
     RR_FIELD_OFFSET(RroProjectionWorkspace, glow.points) == 24 ? 1 : -1];
 RR_ASSERT_SIZE(RroEffectColors, 28);
 RR_ASSERT_SIZE(RroEffectColorTable, 48);
-RR_ASSERT_SIZE(RroGlowPacket, 32);
-RR_ASSERT_OFFSET(RroGlowPacket, centerXY0C, 12);
-RR_ASSERT_OFFSET(RroGlowPacket, secondXY1C, 28);
-RR_ASSERT_SIZE(RroBodyPacket, 40);
-RR_ASSERT_OFFSET(RroBodyPacket, vertices, 8);
-RR_ASSERT_SIZE(RroSparkPacket, 20);
-RR_ASSERT_OFFSET(RroSparkPacket, color08, 8);
+RR_ASSERT_SIZE(RroGlowPacket, RR_GPU_PACKET_SIZE(32));
+RR_ASSERT_OFFSET(RroGlowPacket, centerXY0C, sizeof(GpuDmaTag) + 12);
+RR_ASSERT_OFFSET(RroGlowPacket, secondXY1C, sizeof(GpuDmaTag) + 28);
+RR_ASSERT_SIZE(RroBodyPacket, RR_GPU_PACKET_SIZE(40));
+RR_ASSERT_OFFSET(RroBodyPacket, vertices, sizeof(GpuDmaTag) + 8);
+RR_ASSERT_SIZE(RroSparkPacket, RR_GPU_PACKET_SIZE(20));
+RR_ASSERT_OFFSET(RroSparkPacket, color08, sizeof(GpuDmaTag) + 8);
 #if defined(mips)
 RR_ASSERT_SIZE(RroGlowProjection, 20);
 RR_ASSERT_SIZE(RroProjectionWorkspace, 0x1F8);

@@ -1,4 +1,5 @@
 #include "rr/work_arena.h"
+#include "game/menu/menutra21.h"
 #include "types.h"
 #include "rr/bios_devices.h"
 #include "psyq/libcard/cardsts.h"
@@ -14,7 +15,7 @@
 #include "game/data/globals.h"
 #include "rr/spu_tick_control.h"
 
-extern int _bu_init();
+extern void _bu_init(void);
 extern int HwCardEvIoe;
 extern int HwCardEvError;
 extern int HwCardEvTimeout;
@@ -23,7 +24,6 @@ extern int SwCardEvIoe;
 extern int SwCardEvError;
 extern int SwCardEvTimeout;
 extern int SwCardEvNew;
-extern unsigned char CardPortPollStatus[];
 extern char StrCardDirPatternFmt[];
 /* BIOS directory entry (struct DIRENTRY): firstfile/nextfile fill one per
  * card file. `next` is a pointer, so the host entry is wider than the PS1's

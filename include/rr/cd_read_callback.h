@@ -19,6 +19,6 @@ extern u32 D_800A67D0;
  * Timers compare signed32 ticks against wrapping32(start+1200), reloading start
  * after each clock call. Notification receives the original full result pointer. */
 void cb_read(s32 event,u8 *result);
-RR_ASSERT_SIZE(CdPositionView,0xC);
-RR_ASSERT_OFFSET(CdPositionView,step10,8);
+RR_ASSERT_SIZE(CdPositionView, sizeof(u8 *) + 8);
+RR_ASSERT_OFFSET(CdPositionView, step10, sizeof(u8 *) + 4);
 #endif

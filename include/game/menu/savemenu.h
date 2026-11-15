@@ -13,4 +13,6 @@ extern CardSaveStepState4 CardSaveStepState;
 
 int CardSaveStep(short initialize, int port);
 
+extern s16 CardTransferMode;
+
 #endif /* RR_GAME_MENU_SAVEMENU_H */

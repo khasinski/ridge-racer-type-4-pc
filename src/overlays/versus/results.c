@@ -1,17 +1,17 @@
 #include "game/system/pad.h"
+#include "rr/versus_names.h"
+#include "game/data/menuvars.h"
 #include "rr/overlay_module.h"
 #include "rr/menu_text_rows.h"
 #include "rr/overlay_menu.h"
 #include "rr/frame_storage_types.h"
 
-extern s32 ModeFrame, TotalRaceTime;
-extern u16 SubmodeState;
-extern s16 ModeGroup, ModeIndex, FadeCountdown, MenuScriptId;
+extern s32 TotalRaceTime;
+
 extern s32 ovl661_result_labels[22];
 extern s16 ovl661_finish_ranks[2];
 extern s16 ovl661_player_standings[2];
 extern s16 ovl661_player_win_counts[2];
-extern char ovl661_player_names[2][12];
 extern char ovl661_wins_suffix_label[];
 extern char ovl661_win_count_prefix[];
 

@@ -37,9 +37,8 @@ extern u8 ovl667_rx_slot_index,ovl667_active_slot_index,ovl667_remote_pause_bits
 extern u8 ovl667_consumed_slot_index;
 extern u8 ovl667_remote_error_code;
 void ovl667_init_sio_session(u32 configuration);
-/* An event-ready packet's flags byte must be a valid ring index0..7: the
- * original uses the full byte as the index, without stripping control bits.
- * Serial services may mutate globals; every later ring access stays in0..7. */
+/* Low three flags bits select ring slot 0..7; upper bits report peer errors.
+ * Serial services may mutate globals; every later ring access stays in 0..7. */
 s32 ovl667_poll_race_packet(void);
 /* Receive selection and transmit retry state machines. Counter increments wrap
  * modulo2^32. Payloads and state are reread after the serial service returns. */

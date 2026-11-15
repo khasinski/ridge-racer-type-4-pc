@@ -19,4 +19,6 @@ void InitGamePads(void);
 void SetPadButtonMapLayout(s32 player, s32 standard, s32 calibrated, s32 wheel);
 void ApplyOptionsPadButtonMaps(void);
 
+extern u16 PadDefaultButtonPresets[8][8];
+
 #endif /* RR_GAME_CAR_CARSTAT_H */

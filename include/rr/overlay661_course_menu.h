@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY661_COURSE_MENU_H
 #define RR_OVERLAY661_COURSE_MENU_H
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "rr/vehicle_table.h"
 #include "rr/menu_selection.h"
@@ -11,12 +12,12 @@
 #include "rr/selection_types.h"
 #include "rr/menu_selection_word.h"
 #include "rr/menu_arena_types.h"
-extern s32 ModeFrame,ovl661_available_course_count;
+extern s32 ovl661_available_course_count;
 extern u32 ScreenFrame;
-extern s16 MenuCursor,MenuItemCount,FadeCountdown,ModeIndex,MenuScriptId,ModeGroup,GameModeType;
+extern s16 MenuCursor,MenuItemCount;
 extern s16 ovl661_finish_ranks[2];
 extern s16 ComDifficultyLevel;
-extern u16 SubmodeState;
+
 #include "game/data/selection.h"
 #include "rr/menu_arena_state.h"
 extern u8 ovl661_difficulty_parameters[4];

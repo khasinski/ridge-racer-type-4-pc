@@ -111,6 +111,8 @@ typedef struct {
     s16 unk126, unk128;
     s16 metric12A;
 } RaceVehicleControl;
+RR_ASSERT_SIZE(RaceVehicleControl,
+    RR_ALIGN_UP(0x12C + 2 * (sizeof(void *) - 4), _Alignof(RaceVehicleControl)));
 
 /* 0x30-byte performance interpolation row (CarSpecTable / context table). */
 typedef struct {
@@ -182,6 +184,9 @@ typedef struct RaceVehicle {
     VehicleContactFlags contactFlags1F0;
     RaceVehicleControl control;
 } RaceVehicle;
+RR_ASSERT_OFFSET(RaceVehicle, control, RR_ALIGN_UP(0x1F4, _Alignof(RaceVehicleControl)));
+RR_ASSERT_SIZE(RaceVehicle,
+    RR_ALIGN_UP(0x1F4, _Alignof(RaceVehicleControl)) + sizeof(RaceVehicleControl));
 RR_ASSERT_OFFSET(RaceVehicle, worldPosition10, 0x10);
 RR_ASSERT_OFFSET(RaceVehicle, position20, 0x20);
 RR_ASSERT_OFFSET(RaceVehicle, footprint110, 0x110);

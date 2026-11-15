@@ -10,6 +10,8 @@ extern s32 LatchedSplitTime;
 extern s32 LatchedBestSplitTime;
 extern s32 SplitDeltaTimer;
 void UpdateRaceRanking(void);
+struct RaceVehicle;
+void UpdateLapTiming(struct RaceVehicle *vehicle);
 void SetupRaceAndSceneId(void);
 
 #endif /* RR_GAME_RACE_RACESET_H */

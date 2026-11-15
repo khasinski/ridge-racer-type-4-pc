@@ -67,7 +67,8 @@ typedef struct ReplayFileImage {
 uint32_t ReplayCrc32(const void *data, size_t size, uint32_t crc);
 
 /* Encodes a file into memory (malloc'd, *size bytes). Returns NULL when a
- * block is invalid (empty or long name, too many, too large). */
+ * block is invalid (empty/unterminated/duplicate name, too many, too large).
+ * On failure *size is zero. */
 unsigned char *ReplayFileEncode(const ReplayFileInfo *info, const ReplayBlock *blocks, int count,
                                 size_t *size);
 /* Decodes a file image; on success the blocks point into data, which must

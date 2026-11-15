@@ -17,11 +17,11 @@ typedef struct {
     FrameEnvironment environment00;
     FrameOrderingTable ordering70;
 } FrameOrderingPrefix;
-RR_ASSERT_SIZE(FrameOrderingTable,0xB00);
-RR_ASSERT_SIZE(FrameOrderingPrefix,0xB70);
-RR_ASSERT_OFFSET(FrameOrderingPrefix,ordering70,0x70);
+RR_ASSERT_SIZE(FrameOrderingTable, 704 * sizeof(GpuDmaTag));
+RR_ASSERT_SIZE(FrameOrderingPrefix, RR_ALIGN_UP(sizeof(FrameEnvironment), _Alignof(FrameOrderingTable)) + sizeof(FrameOrderingTable));
+RR_ASSERT_OFFSET(FrameOrderingPrefix, ordering70, RR_ALIGN_UP(sizeof(FrameEnvironment), _Alignof(FrameOrderingTable)));
 
-RR_ASSERT_SIZE(FrameEnvironment,0x70);
+RR_ASSERT_SIZE(FrameEnvironment, RR_ALIGN_UP(sizeof(DrawEnvironment) + sizeof(DisplayEnvironment), _Alignof(DrawEnvironment)));
 RR_ASSERT_OFFSET(FrameEnvironment,draw00,0);
-RR_ASSERT_OFFSET(FrameEnvironment,display5C,0x5C);
+RR_ASSERT_OFFSET(FrameEnvironment, display5C, sizeof(DrawEnvironment));
 #endif

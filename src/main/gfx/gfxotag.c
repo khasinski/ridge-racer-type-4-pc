@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "rr/audio_state_types.h"
@@ -51,8 +52,6 @@ typedef struct {
 
 
 extern short SelectedTeamIndex;
-extern void SetGeomScreen();
-extern void RotMatrixZYX();
 extern int ViewUsesCarTrackNode;
 
 void RenderSubOtObject(void);
@@ -119,7 +118,7 @@ void ApplyCameraState(const SceneCameraView24 *state) {
     offset.fields.x = 0;
     offset.fields.y = 0;
     offset.fields.z = -(u16)state->distance1C;
-    RotMatrixZYX(angles.halves, matrix.w);
+    RotMatrixZYX((const Vec3sFields8 *)angles.halves, &matrix);
     ApplyMatrix(&matrix, &offset, &transformed);
     {
         s32 origin = state->pose00.position00.xyz.x;

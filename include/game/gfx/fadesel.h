@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void SelectDemoFadePreset();
+void SelectDemoFadePreset(int a0);
 void EnableDemoFadeSkip(void);
 
 #endif /* RR_GAME_GFX_FADESEL_H */

@@ -1,4 +1,6 @@
 #include "rr/release.h"
+#include "game/menu/menutra21.h"
+#include "game/menu/menu8.h"
 #include "rr/save_slots.h"
 #include "rr/save_progress.h"
 /* RODATA 0x80011570 0x18 */
@@ -26,10 +28,8 @@ static const CardHeaderBlock128 CardSlotHeaderTitlesJp[3];
 #define CARD_SLOT_TITLE(i) (RR_RELEASE_JP ? CardTitleStringsJp[i] : CardTitleStrings[i])
 #define CARD_MAIN_EXTRA (RR_RELEASE_JP ? &CardExtraDataTitleBufJp : &CardExtraDataTitleBuf)
 #define CARD_SLOT_EXTRA(i) (RR_RELEASE_JP ? &CardSlotHeaderTitlesJp[i] : &CardSlotHeaderTitles[i])
-extern short CardTransferMode;
-extern short GpSaveSlotCursor;
+
 extern char CardTargetFileName[];
-extern short CardMenuOperation;
 extern int GarageExtraDefaultTimes[];
 
 int CardSaveStep(short initialize, int port) {

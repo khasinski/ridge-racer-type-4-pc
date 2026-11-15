@@ -14,8 +14,6 @@
 #include "rr/matrix_words.h"
 #include "rr/geometry.h"
 
-/* libgte (PsyZ): rotation matrix from Euler angles applied Z, Y, then X. */
-MatrixWords32 *RotMatrixZYX(const Vec3sFields8 *angles, MatrixWords32 *matrix);
 
 int ComputeCameraNodeDist(RaceVehicle *vehicle, CamNode44 *node)
 {

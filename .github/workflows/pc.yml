@@ -46,13 +46,13 @@ jobs:
             libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev \
             libegl1-mesa-dev libgl1-mesa-dev libgles2-mesa-dev libvulkan-dev \
             libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev \
-            libdbus-1-dev clang mingw-w64-x86-64-dev
+            libdbus-1-dev clang mingw-w64-x86-64-dev mingw-w64-i686-dev
       - name: Fetch PsyZ and SDL
         run: |
           git submodule update --init third_party/psyz
           git -C third_party/psyz submodule update --init external/SDL
-      - name: Host-flag and LLP64 (64-bit Windows) compile check
-        run: CC=clang RR4_CHECK_LLP64=1 RR4_MINGW_SYSROOT=/usr tools/port/check.sh
+      - name: Source/header and native/LLP64/ILP32 layout checks
+        run: CC=clang RR4_CHECK_LLP64=1 RR4_CHECK_ILP32=1 RR4_MINGW_SYSROOT=/usr tools/port/check.sh
       - name: Build native target
         run: |
           cmake -S . -B build -G Ninja -DBUILD_TESTING=ON

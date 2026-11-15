@@ -1,3 +1,4 @@
+#include "game/ui/uitext.h"
 #include "game/system/pad.h"
 #include "rr/menu_arena_state.h"
 #include "game/ui/uipart1.h"
@@ -21,12 +22,9 @@
 #include "rr/menu_label_render.h"
 #include "rr/trig.h"
 #include "game/ui/uidraw.h"
-extern int DrawUiRow();
-extern short FadeCountdown;
+
 extern short MenuCursor;
-extern short ModeIndex;
-extern unsigned short SubmodeState;
-extern int ModeFrame;
+
 extern int DialogueSceneMode;
 extern UiUvRect SaveSlotPanelSpriteUv;
 
@@ -74,7 +72,7 @@ void YesNoPromptModeUpdate(void) {
         if (FadeCountdown > 0) FadeCountdown = FadeCountdown - 1;
         AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (0x40 - FadeCountdown) * 4, 0x45);
         if (FadeCountdown <= 0) {
-            r = LoadTimListStep(1);
+            r = LoadTimListStep();
             if (r == 1) {
                 ModeGroup = r;
                 ModeIndex = 0xF;

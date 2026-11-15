@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY667_COURSE_MENU_H
 #define RR_OVERLAY667_COURSE_MENU_H
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "rr/menu_frame_state.h"
 #include "rr/overlay_menu.h"
@@ -9,9 +10,8 @@
 #include "rr/tables.h"
 #include "rr/driver_control.h"
 #include "game/race/racegrid.h"
-extern s16 FadeCountdown,LinkHostFlag,LinkState,LinkMenuSyncPhase,ModeIndex;
-extern u16 SubmodeState,ModeGroup;
-extern s32 LinkAvailableCourseCount,ModeFrame;
+extern s16 LinkState,LinkMenuSyncPhase;
+extern s32 LinkAvailableCourseCount;
 extern u32 ScreenFrame;
 s32 ExitOnLinkLost(void);
 s32 UpdateLinkHandshake(s32);

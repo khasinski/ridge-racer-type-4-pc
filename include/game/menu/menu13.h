@@ -2,6 +2,7 @@
 #define RR_GAME_MENU_MENU13_H
 
 #include "types.h"
+#include "rr/gpu.h"
 #include "rr/menu_text_state.h"
 
 extern unsigned char *DialoguePageCounts;

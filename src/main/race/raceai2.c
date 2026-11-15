@@ -1,3 +1,5 @@
+#include "rr/overlay_entrypoints.h"
+#include "game/data/menuvars.h"
 #include "rr/release.h"
 #include "rr/video_timing.h"
 #include "rr/save_slots.h"
@@ -34,26 +36,15 @@
 extern int LinkReadHandle;
 extern int LinkWriteHandle;
 extern int VSyncThreshold;
-extern int ModeFrame;
-extern short ModeIndex;
-extern short ModeGroup;
-extern unsigned short SubmodeState;
+
 extern short LinkState;
-extern s16 MenuScriptId;
 extern char LinkPlayerNames[4][12];
-extern short ActiveSceneId;
-extern short MenuTransitionOverlayMode;
+
 extern char StrLinkError[];
 extern char PressStartStr[];
-extern short FadeCountdown;
 extern char StrLinkBattleEnd[];
 extern char PressStartText[];
 extern s32 MaskBitSetting;
-extern void ovl659_init_results();
-extern void ovl661_init_results();
-extern void ovl660_init_results();
-extern void ovl667_init_results();
-extern void ovl666_init_results();
 extern int LinkCommTimeoutTimer;
 extern int TotalRaceTime;
 extern unsigned char GpStageMaxRetryRanks[];
@@ -61,7 +52,6 @@ extern unsigned char GpStageMaxRetryRanks[];
 void LinkWaitModeEnter(void);
 void LinkWaitModeUpdate(void);
 void LinkExchangeModeUpdate(void);
-void LinkErrorModeUpdate();
 void LinkBattleEndModeUpdate(void);
 void StopRaceAudioAndRumble(void);
 void RaceAbortToMenuUpdate(void);

@@ -63,8 +63,8 @@ typedef struct {
     u32 work7C[26];
 } AnimatedTrackScratch;
 
-RR_ASSERT_SIZE(AnimatedLinePacket, 20);
-RR_ASSERT_OFFSET(AnimatedLinePacket, color1, 12);
+RR_ASSERT_SIZE(AnimatedLinePacket, RR_GPU_PACKET_SIZE(16));
+RR_ASSERT_OFFSET(AnimatedLinePacket, color1, sizeof(GpuDmaTag) + 8);
 RR_ASSERT_SIZE(AnimatedTrackParticle, 36);
 RR_ASSERT_OFFSET(AnimatedTrackParticle, step10, 16);
 RR_ASSERT_OFFSET(AnimatedTrackParticle, colorPhase20, 32);

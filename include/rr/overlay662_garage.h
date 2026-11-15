@@ -29,39 +29,42 @@ typedef struct {
     u8 shadeD0,flagsD1,stateD2,dirtyD3;
 } GarageSelectionPrefix;
 extern GarageSelectionPrefix ovl662_editor_workspace;
-RR_ASSERT_SIZE(GarageSelectionPrefix,0xd4);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,phaseCC,0xcc);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,shadeD0,0xd0);
+/* Fifteen editor buffer pointers precede the scalar selection fields;
+ * eight option pointers precede the final scalar controls. */
+#define RR_GARAGE_BUFFER_OFFSET RR_ALIGN_UP(0x24, _Alignof(void *))
+RR_ASSERT_SIZE(GarageSelectionPrefix, RR_ALIGN_UP(RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 0x54, _Alignof(GarageSelectionPrefix)));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, phaseCC, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 76);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, shadeD0, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 80);
 void ovl662_update_cursor_pulse(void);
 void ovl662_setup_editor_buffers(s32 mode);
 RR_ASSERT_OFFSET(GarageSelectionPrefix,reset08,0x08);
 RR_ASSERT_OFFSET(GarageSelectionPrefix,config1C,0x1c);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,flagsD1,0xd1);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, flagsD1, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 81);
 /* Negative modes initialize option pointers and scalar selections. */
 void ovl662_init_option_groups(s32 mode);
-RR_ASSERT_SIZE(GarageOptionPointers,0x20);
+RR_ASSERT_SIZE(GarageOptionPointers, 8 * sizeof(GarageOptionRecord *));
 RR_ASSERT_SIZE(GarageOptionIndices,0x20);
-RR_ASSERT_OFFSET(GarageOptionPointerGroups,second,0x0C);
+RR_ASSERT_OFFSET(GarageOptionPointerGroups, second, 3 * sizeof(GarageOptionRecord *));
 RR_ASSERT_OFFSET(GarageOptionIndexGroups,second,0x0C);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,options78,0x78);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,optionIndices98,0x98);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, options78, RR_GARAGE_BUFFER_OFFSET + 15 * sizeof(void *) + 24);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, optionIndices98, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 24);
 /* active21 is a two-buffer selector. Copy forward, then retain the selection. */
 void ovl662_backup_layer_and_palette(void);
 /* Return1 when all 512 words of the selected layer and side are zero. */
 s32 ovl662_is_active_layer_empty(void);
 RR_ASSERT_OFFSET(GarageSelectionPrefix,layer23,0x23);
 void ovl662_toggle_preview_side(void);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,buffers24,0x24);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,tim2C,0x2C);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,scratch34,0x34);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,image38,0x38);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,image40,0x40);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,palette48,0x48);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,dirtyD3,0xd3);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,paletteBackup50,0x50);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,paletteScratch58,0x58);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,saved64,0x64);
-RR_ASSERT_OFFSET(GarageSelectionPrefix,selectorsB8,0xb8);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, buffers24, RR_GARAGE_BUFFER_OFFSET + 0 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, tim2C, RR_GARAGE_BUFFER_OFFSET + 2 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, scratch34, RR_GARAGE_BUFFER_OFFSET + 4 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, image38, RR_GARAGE_BUFFER_OFFSET + 5 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, image40, RR_GARAGE_BUFFER_OFFSET + 7 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, palette48, RR_GARAGE_BUFFER_OFFSET + 9 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, dirtyD3, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 83);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, paletteBackup50, RR_GARAGE_BUFFER_OFFSET + 11 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, paletteScratch58, RR_GARAGE_BUFFER_OFFSET + 13 * sizeof(void *));
+RR_ASSERT_OFFSET(GarageSelectionPrefix, saved64, RR_GARAGE_BUFFER_OFFSET + 15 * sizeof(void *) + 4);
+RR_ASSERT_OFFSET(GarageSelectionPrefix, selectorsB8, RR_GARAGE_BUFFER_OFFSET + 23 * sizeof(void *) + 56);
 /* Shared 64-byte working owner: scalar animation counters and halfword clips. */
 typedef struct {s16 x,y;} GaragePoint;
 RR_ASSERT_SIZE(GaragePoint,4);

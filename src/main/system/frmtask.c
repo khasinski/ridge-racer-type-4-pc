@@ -1,5 +1,6 @@
 #include <string.h>
 #include "rr/gpu_address.h"
+#include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
 #include "game/sound/cdpos.h"
 #include "game/gfx/drawlist.h"
@@ -16,6 +17,7 @@
 #include "rr/frame_interp.h"
 #include <psyz/gpu.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "game/data/globals.h"
 #include "rr/gpu_scratch_types.h"
 #include "game/data/cdfile2.h"
@@ -36,8 +38,6 @@
 #include "rr/screen_tiles.h"
 #include "game/sound/cdplay.h"
 #include "rr/replay_host.h"
-
-extern s16 FadeCountdown;
 
 /* Host scratchpad buffer and the GPU packet cursor/ordering pointers that
  * occupied its first two words on the PS1 (include/scratchpad.h). */
@@ -250,6 +250,10 @@ void MainLoop(void) {
     s32 threshold;
     u32 bank;
     FrameStorage *frame;
+    if (!InitFramePacketStorage()) {
+        fprintf(stderr, "RR4: cannot protect frame packet arenas\n");
+        abort();
+    }
     MainLoopStartupHook();
     /* MODE_PAL, or MODE_NTSC for NTSC timing; the Japanese release sets
      * MODE_NTSC in SystemInit. */
@@ -291,11 +295,30 @@ void MainLoop(void) {
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
         CdFileStep();
         SoundUpdate();
+        InterpPollOutput();
         WideBeginFrame();
         InterpBeginFrame();
         if (ReplayHost)
             ReplayHost->frame();
         ModeFuncTable[ModeGroup][ModeIndex]();
+        InterpPollOutput();
+        /* Guards stop out-of-bounds writes. Also reject an invalid final
+         * cursor before GPU dispatch, even if no packet was written there. */
+        {
+            size_t used = (uintptr_t)RR_GPU_SCRATCH->cursor -
+                          (uintptr_t)frame->buffer.packets1670;
+            if (used > sizeof(frame->buffer.packets1670)) {
+                fprintf(stderr, "RR4: frame packet arena overflow: %zu > %zu bytes, frame %d\n",
+                        used, sizeof(frame->buffer.packets1670), FrameCounter);
+                abort();
+            }
+            static size_t peak;
+            if (getenv("RR4_PACKET_STATS") && used > peak) {
+                peak = used;
+                fprintf(stderr, "RR4: packet peak %zu / %zu bytes\n",
+                        peak, sizeof(frame->buffer.packets1670));
+            }
+        }
         DrawSync(0);
         /* The frame drawn last is shown at the next VSync(0); a frame of two
          * fields shows the midpoint to it at the blank between. */
@@ -406,8 +429,13 @@ void InterpBeginFrame(void) {
     InterpLastIndex = ModeIndex;
 }
 
+void InterpPollOutput(void) {
+    if (InterpActive) Psyz_GpuPollPresentation();
+}
+
 void InterpCommitFrame(s32 previousY, const GpuRectangleFields *clip) {
     InterpObject = 0;
+    Psyz_GpuSetPresentationInterval(1 + VSyncThreshold / RR_PAL_NTSC(314, 263));
     Psyz_GpuBeginInterpolationFrame();
     if (InterpActive)
         Psyz_GpuInterpolationBackdrop(clip->x, previousY, clip->y, clip->w, clip->h);

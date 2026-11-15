@@ -1,8 +1,9 @@
 #ifndef RR_OVERLAY662_SAVE_DIALOG_H
 #define RR_OVERLAY662_SAVE_DIALOG_H
+#include "game/menu/menutra21.h"
 #include "rr/overlay662_modal.h"
 #include "rr/overlay662_tim.h"
-extern s16 CardMenuOperation;
+
 /* Modes1/2/4/8 configure navigation through the shared option mapper.
  * Other nonzero modes preserve state. Mode0 operates two live UI rows and
  * complete text/badge owners; sound and TIM services may replace the roots.

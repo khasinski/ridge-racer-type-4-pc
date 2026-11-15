@@ -9,7 +9,7 @@ void UpdateRaceCamera(int arg0, void *arg1);
 /* object: showcase object record (position, angles, light rows, ambient). */
 void BuildObjectLightAndRotMatrices(const void *object, MatrixWords32 *rotation);
 /* Takes no arguments; some callers still pass two ignored PS1 arguments. */
-int RotTransPersOrigin();
+int RotTransPersOrigin(void);
 void InitRaceContextBuffers(void);
 u8 *EmitSpotlightConePolys(s32 a0);
 void InitTrackStartPos(void);

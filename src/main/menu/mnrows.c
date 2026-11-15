@@ -1,4 +1,5 @@
 #include "game/ui/badge1.h"
+#include "game/data/menuvars.h"
 #include "rr/release.h"
 #include "rr/cpu_time.h"
 #include "game/ui/uipart1.h"
@@ -29,8 +30,6 @@ extern char StrCdReadPtrFmt[];
 #include "rr/menu_arena_base.h"
 extern short SelectedMakerIndex;
 
-void InitMenuArenas();
-void InitMenuScript();
 
 void UpdateSelectionRank(void) {
  /* SelectionState viewed through its prefix; history rows follow at 0x20. */
@@ -150,6 +149,7 @@ void InitMenuScript(void) {
         LoadCursor = MenuArenas.first;
         goto l428;
     case 10:
+    case MENU_SCRIPT_REPLAY:
         if (GameModeType != 5) {
             SetupDrawDispEnvs(0, 0, 0, 1);
             MenuTransitionOverlayMode = 1;
@@ -276,6 +276,9 @@ extern FrameStorage DrawBuffers[2];
 #include "game/system/modeinit.h"
 signed char D_8009F8A0[4] = {5, 1, -2};
 signed char D_8009F8A4[8] = {0, 2, 5, 1, -11};
+/* A saved replay can start from a fresh title screen, before any car menu
+ * has loaded preset emblems. Use the existing loader before applying CLUTs. */
+static s8 ReplayLoadScript[] = {0, 11, 2, 5, 1, -11};
 signed char D_8009F8AC[4] = {7, 4, -3};
 signed char D_8009F8B0[4] = {4, -4};
 signed char D_8009F8B4[4] = {3, 11, -7};
@@ -293,7 +296,7 @@ MenuScriptOperation MenuScriptOps[12] = {(int (*)(void))LoadModeMenuAssetsStep, 
  * (0x80114998) and the time attack scene selector (0x80114910). */
 void ovl662_init_progress_menu(void), ovl660_select_scene(void);
 MenuSceneEntry MenuSceneEntries[12] = {0, (void (*)(void))MenuSceneNoop, (void (*)(void))SetupRaceAndSceneId, (void (*)(void))InitModeSelectMenu, (void (*)(void))DialogueSceneSetup, (void (*)(void))TitleMenuInit, ovl662_init_progress_menu, (void (*)(void))InitPostRaceScreen, (void (*)(void))InitCarPreviewScene, (void (*)(void))SetNextModeByGameType, ovl660_select_scene, (void (*)(void))SetupRace};
-s8 *MenuScripts[11] = {(signed char *)D_8009F8A0, (signed char *)D_8009F8AC, (signed char *)D_8009F8B0, (signed char *)D_8009F8B8, (signed char *)D_8009F8BC, (signed char *)D_8009F8C8, (signed char *)D_8009F8B4, (signed char *)D_8009F8CC, (signed char *)D_8009F8C0, (signed char *)D_8009F8C4, (signed char *)D_8009F8A4};
+s8 *MenuScripts[12] = {(signed char *)D_8009F8A0, (signed char *)D_8009F8AC, (signed char *)D_8009F8B0, (signed char *)D_8009F8B8, (signed char *)D_8009F8BC, (signed char *)D_8009F8C8, (signed char *)D_8009F8B4, (signed char *)D_8009F8CC, (signed char *)D_8009F8C0, (signed char *)D_8009F8C4, (signed char *)D_8009F8A4, [MENU_SCRIPT_REPLAY] = ReplayLoadScript};
 s8 MenuScriptStep;
 u16 MenuScriptId;
 u16 MenuTransitionOverlayMode;

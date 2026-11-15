@@ -26,7 +26,8 @@ def frame(b):
 
 
 def read_card(path):
-    data = open(path, 'rb').read()
+    with open(path, 'rb') as source:
+        data = source.read(BLOCK * BLOCKS + 1)
     if len(data) != BLOCK * BLOCKS or data[:2] != b'MC':
         raise SystemExit('%s: not a raw 128 KiB memory card image' % path)
     files = []
@@ -36,14 +37,30 @@ def read_card(path):
         if state != 0x51:  # first block of a file in use
             continue
         size = int.from_bytes(d[4:8], 'little')
-        name = d[10:30].split(b'\0')[0].decode('ascii')
-        chunks, blk = [], i
+        try:
+            name = d[10:30].split(b'\0')[0].decode('ascii')
+        except UnicodeDecodeError:
+            raise SystemExit('%s: invalid filename in block %d' % (path, i))
+        # Preserve genuine card names exactly; reject paths instead of silently
+        # renaming saves or allowing export outside its destination directory.
+        if (not name or name in ('.', '..') or
+                any(c in name for c in '/\\:') or
+                any(ord(c) < 32 or ord(c) == 127 for c in name)):
+            raise SystemExit('%s: unsafe filename in block %d' % (path, i))
+        chunks, blk, seen = [], i, set()
         while True:
+            if blk < 1 or blk >= BLOCKS or blk in seen:
+                raise SystemExit('%s: invalid block chain for %s' % (path, name))
+            seen.add(blk)
             chunks.append(data[blk * BLOCK:(blk + 1) * BLOCK])
             nxt = int.from_bytes(data[blk * FRAME + 8:blk * FRAME + 10], 'little')
             if nxt == 0xFFFF:
                 break
             blk = nxt + 1
+        if size > len(chunks) * BLOCK or size == 0:
+            raise SystemExit('%s: invalid size for %s' % (path, name))
+        if any(existing == name for existing, _ in files):
+            raise SystemExit('%s: duplicate filename %s' % (path, name))
         files.append((name, b''.join(chunks)[:size]))
     return files
 
@@ -72,7 +89,8 @@ def write_card(path, files):
             d += name.encode('ascii')[:20] if k == 0 else b''
             card[b * FRAME:(b + 1) * FRAME] = frame(d)
             card[b * BLOCK:(b + 1) * BLOCK] = body[k * BLOCK:(k + 1) * BLOCK].ljust(BLOCK, b'\0')
-    open(path, 'wb').write(card)
+    with open(path, 'wb') as destination:
+        destination.write(card)
 
 
 def main(argv):
@@ -82,7 +100,8 @@ def main(argv):
     elif len(argv) == 4 and argv[1] == 'export':
         os.makedirs(argv[3], exist_ok=True)
         for name, body in read_card(argv[2]):
-            open(os.path.join(argv[3], name), 'wb').write(body)
+            with open(os.path.join(argv[3], name), 'wb') as destination:
+                destination.write(body)
     elif len(argv) == 4 and argv[1] == 'import':
         files = [(n, open(os.path.join(argv[2], n), 'rb').read())
                  for n in sorted(os.listdir(argv[2]))

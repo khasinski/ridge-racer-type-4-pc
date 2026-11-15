@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY668_REPLAY_CONTROLLER_H
 #define RR_OVERLAY668_REPLAY_CONTROLLER_H
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "rr/frame_storage_types.h"
 #include "rr/overlay668_camera.h"
@@ -7,7 +8,7 @@
 #include "rr/tables.h"
 typedef struct {s32 key,action;} ReplayEvent;
 extern ReplayEvent ovl668_epilogue_events[3];
-extern s16 ModeGroup,ModeIndex,SubmodeState;
+
 #include "rr/screen_tiles.h"
 void CdAudioBeginPlay(s32);
 void CdAudioFade(u16,s32);

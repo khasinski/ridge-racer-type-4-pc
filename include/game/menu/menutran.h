@@ -4,8 +4,8 @@
 #include "types.h"
 
 extern short SelectedMakerCarIndex;
-void UpdateGrandPrixStageProgress();
-int CountProgressFlags();
+void UpdateGrandPrixStageProgress(void);
+int CountProgressFlags(void);
 void SetNextModeByGameType(void);
 
 

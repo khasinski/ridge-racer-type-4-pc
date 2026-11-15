@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "psyq/libgte/rotmat.h"
 #include "rr/rro_model.h"
 #include "game/gfx/model.h"
@@ -21,10 +22,6 @@ MatrixWords32 *RotMatrixX(s32 angle, MatrixWords32 *matrix);
 MatrixWords32 *RotMatrixY(s32 angle, MatrixWords32 *matrix);
 /* GTE translation (three words) applied to the rotating sky. */
 extern s32 RotatingSkyCommandList[];
-extern s16 FadeCountdown;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern s16 SubmodeState;
 
 void IntroSceneModeEnter(void);
 

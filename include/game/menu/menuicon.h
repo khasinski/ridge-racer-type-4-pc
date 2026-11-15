@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void DrawMenuCarPreviewScene();
+void DrawMenuCarPreviewScene(int a0);
 
 #endif /* RR_GAME_MENU_MENUICON_H */

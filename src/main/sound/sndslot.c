@@ -31,7 +31,7 @@ void SoundMasterFadeStep(void) {
             v = (unsigned short)p->fadeStart20 + n * c1 / 4096;
         } else {
             p->fadeLength1A = 0;
-            SoundStopAll(n, p, c);
+            SoundStopAll();
             return;
         }
     }

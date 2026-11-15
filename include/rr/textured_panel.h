@@ -25,14 +25,14 @@ typedef struct {
  * with sizeof(PolyFT4Packet) writable bytes; links at ordering entry 1. RGB bytes and
  * the last two UV padding halfwords retain their old contents. */
 void EmitTexturedPanel(s32 index);
-RR_ASSERT_SIZE(PolyFT4Packet, 0x28);
-RR_ASSERT_OFFSET(PolyFT4Packet, code, 7);
-RR_ASSERT_OFFSET(PolyFT4Packet, x0, 8);
-RR_ASSERT_OFFSET(PolyFT4Packet, clut, 0xE);
-RR_ASSERT_OFFSET(PolyFT4Packet, x1, 0x10);
-RR_ASSERT_OFFSET(PolyFT4Packet, tpage, 0x16);
-RR_ASSERT_OFFSET(PolyFT4Packet, x2, 0x18);
-RR_ASSERT_OFFSET(PolyFT4Packet, pad1E, 0x1E);
-RR_ASSERT_OFFSET(PolyFT4Packet, x3, 0x20);
-RR_ASSERT_OFFSET(PolyFT4Packet, pad26, 0x26);
+RR_ASSERT_SIZE(PolyFT4Packet, RR_GPU_PACKET_SIZE(36));
+RR_ASSERT_OFFSET(PolyFT4Packet, code, sizeof(GpuDmaTag) + 3);
+RR_ASSERT_OFFSET(PolyFT4Packet, x0, sizeof(GpuDmaTag) + 4);
+RR_ASSERT_OFFSET(PolyFT4Packet, clut, sizeof(GpuDmaTag) + 10);
+RR_ASSERT_OFFSET(PolyFT4Packet, x1, sizeof(GpuDmaTag) + 12);
+RR_ASSERT_OFFSET(PolyFT4Packet, tpage, sizeof(GpuDmaTag) + 18);
+RR_ASSERT_OFFSET(PolyFT4Packet, x2, sizeof(GpuDmaTag) + 20);
+RR_ASSERT_OFFSET(PolyFT4Packet, pad1E, sizeof(GpuDmaTag) + 26);
+RR_ASSERT_OFFSET(PolyFT4Packet, x3, sizeof(GpuDmaTag) + 28);
+RR_ASSERT_OFFSET(PolyFT4Packet, pad26, sizeof(GpuDmaTag) + 34);
 #endif

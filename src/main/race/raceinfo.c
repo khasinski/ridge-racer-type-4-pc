@@ -1,4 +1,5 @@
 #include "rr/video_timing.h"
+#include "game/data/menuvars.h"
 #include "rr/runtime_settings.h"
 #include "rr/vehicle_table.h"
 #include "rr/menu_selection.h"
@@ -30,7 +31,6 @@
 
 extern signed char CourseInfoRowOrder[];
 extern UiUvRect CourseInfoLabelUvs[9];
-extern short GameModeType;
 extern short CourseLengthMetersTable[];
 extern short ComDifficultyLevel;
 extern int TrackNodeCount;

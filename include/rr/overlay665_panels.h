@@ -9,9 +9,6 @@ void ovl665_init_brightness_panel(void);
 void ovl665_update_brightness_panel(void);
 void DrawHudDigit(s32,s32,s32,s32);
 void UpdateBadgeRowAnim(s32);
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
-#endif
 /* Writable aligned packet arenas and a full frame ordering context. Device
  * links serialize low24 address bits; software cursors keep native width. */
 #endif

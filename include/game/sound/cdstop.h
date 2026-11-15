@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-int PollCdAudioStatus();
+int PollCdAudioStatus(void);
 void CdAudioStopStep(void);
 
 

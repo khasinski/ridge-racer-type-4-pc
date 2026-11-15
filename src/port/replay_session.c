@@ -1,6 +1,8 @@
 /* Race replays saved as files: the game side (replay_session.h). */
 
 #include "replay_session.h"
+#include "game/race/racegrid.h"
+#include "game/data/menuvars.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +13,7 @@
 #include "rr/gpu.h"
 #include "rr/emblem_tim_types.h"
 #include "rr/menu_selection.h"
+#include "rr/menu_transition.h"
 #include "rr/record_banks.h"
 #include "rr/replay_host.h"
 #include "rr/replay_types.h"
@@ -36,9 +39,9 @@ int LoadImage(GpuRectangle *rectangle, const void *pixels);
 int DrawSync(int mode);
 
 /* Game state the replay is set up from (owners in src/main). */
-extern s16 GameModeType, CourseIndex, ReverseCourse, SelectedTeamIndex, SelectedMakerIndex,
-    SelectedCourseChoice, LinkHostFlag, LinkPlayerCount;
-extern s32 NumLaps, TotalRaceTime, ModeFrame, RaceState, TrackLength, RaceTimeRemaining, RaceVoiceFlags,
+extern s16 CourseIndex, ReverseCourse, SelectedTeamIndex, SelectedMakerIndex,
+    SelectedCourseChoice, LinkPlayerCount;
+extern s32 NumLaps, TotalRaceTime, RaceState, TrackLength, RaceTimeRemaining, RaceVoiceFlags,
     CarCollisionGraceTimers, ObjSimLastActiveFrame[30], TrackObjVisibleFrame[32];
 extern s16 PlayerDisplayRpm[2], PlayerThrottleLoad[2];
 extern ParticleSystem32C ParticleSystem;
@@ -53,8 +56,7 @@ extern SceneRaceContext RaceContext;
 extern S_ECB4 *TrackObjectStates;
 extern int TrackObjectCount;
 extern int VideoTimingNtsc;
-extern u16 ModeGroup, SubmodeState, MenuScriptId, ActiveSceneId;
-extern s16 ModeIndex;
+
 void SeqMuteVolume(void);
 void StopRaceAudioAndRumble(void);
 
@@ -71,12 +73,19 @@ typedef struct ReplayGlobal {
 /* The race setup the load script reads: mode, course, the cars and their
  * colours and emblems, the Grand Prix stage, the VS options. Applied before
  * the load; the player's own values come back when the replay ends. */
+enum {
+    SETUP_MODE, SETUP_COURSE, SETUP_REVERSE, SETUP_LAPS, SETUP_CARS,
+    SETUP_SELECTIONS, SETUP_CHOICES, SETUP_MENU_STATE, SETUP_TEAM, SETUP_MAKER,
+    SETUP_SELECTED_COURSE, SETUP_EMBLEMS, SETUP_LINK_ENTRIES, SETUP_LINK_COUNT,
+};
 static const ReplayGlobal kSetup[] = {
-    GLOBAL(GameModeType),        GLOBAL(CourseIndex),        GLOBAL(ReverseCourse),
-    GLOBAL(NumLaps),             GLOBAL(NumCars),            GLOBAL(SelectionRows),
-    GLOBAL(PlayerCourseChoices), GLOBAL(SelectionState),     GLOBAL(SelectedTeamIndex),
-    GLOBAL(SelectedMakerIndex),  GLOBAL(SelectedCourseChoice), GLOBAL(CustomEmblemBuffers),
-    GLOBAL(LinkEntryState),      GLOBAL(LinkPlayerCount),
+    [SETUP_MODE] = GLOBAL(GameModeType), [SETUP_COURSE] = GLOBAL(CourseIndex),
+    [SETUP_REVERSE] = GLOBAL(ReverseCourse), [SETUP_LAPS] = GLOBAL(NumLaps),
+    [SETUP_CARS] = GLOBAL(NumCars), [SETUP_SELECTIONS] = GLOBAL(SelectionRows),
+    [SETUP_CHOICES] = GLOBAL(PlayerCourseChoices), [SETUP_MENU_STATE] = GLOBAL(SelectionState),
+    [SETUP_TEAM] = GLOBAL(SelectedTeamIndex), [SETUP_MAKER] = GLOBAL(SelectedMakerIndex),
+    [SETUP_SELECTED_COURSE] = GLOBAL(SelectedCourseChoice), [SETUP_EMBLEMS] = GLOBAL(CustomEmblemBuffers),
+    [SETUP_LINK_ENTRIES] = GLOBAL(LinkEntryState), [SETUP_LINK_COUNT] = GLOBAL(LinkPlayerCount),
 };
 enum { SETUP_COUNT = sizeof(kSetup) / sizeof(kSetup[0]) };
 
@@ -262,7 +271,7 @@ static void TrailSizes(const CarSlotBufferC8 *e, u32 *primary, u32 *history) {
 }
 
 static int TrailPut(ReplayData *d, u32 *at, const void *data, u32 size) {
-    if (*at + size > sizeof(d->trails))
+    if (*at > sizeof(d->trails) || size > sizeof(d->trails) - *at)
         return 0;
     if (size)
         memcpy(d->trails + *at, data, size);
@@ -303,7 +312,7 @@ static void SaveTrails(ReplayData *d) {
 }
 
 static int TrailGet(const ReplayData *d, u32 *at, void *out, u32 size) {
-    if (*at + size > d->trails_size)
+    if (d->trails_size > sizeof(d->trails) || *at > d->trails_size || size > d->trails_size - *at)
         return 0;
     if (out && size)
         memcpy(out, d->trails + *at, size);
@@ -311,10 +320,56 @@ static int TrailGet(const ReplayData *d, u32 *at, void *out, u32 size) {
     return 1;
 }
 
+/* Validate the whole stream before restoring any live slot. In particular,
+ * matching a model's ring sizes does not prove that the file contains them.
+ * Empty means SaveTrails could not retain the optional history. */
+static int TrailsValid(const ReplayData *d) {
+    u32 at = 0;
+    if (!d->trails_size)
+        return 1;
+    for (int i = 0; i < CAR_SLOT_ENTRIES; ++i) {
+        CarSlotBufferC8 copy;
+        u32 present, primary, history, sparks;
+        if (!TrailGet(d, &at, &present, 4) || !TrailGet(d, &at, &primary, 4) ||
+            !TrailGet(d, &at, &history, 4) || !TrailGet(d, &at, &sparks, 4) ||
+            !TrailGet(d, &at, &copy, sizeof(copy)))
+            return 0;
+        if (present > 1 || sparks > 1 || (!present && (primary || history || sparks)))
+            return 0;
+        if (present) {
+            /* The renderer indexes these rings directly and writes one
+             * palette entry per retained sample. Counts are not arbitrary. */
+            if (copy.mainCount0C < 0 || copy.mainCount0C > 4 ||
+                copy.mainIndex10 < 0 || copy.mainIndex10 >= 4 ||
+                copy.secondCount34 < 0 || copy.secondCount34 > 4 ||
+                copy.secondIndex38 < 0 || copy.secondIndex38 >= 4 ||
+                copy.historyCount68 < 0 || copy.historyCount68 > 8 ||
+                copy.historyIndex6C < 0 || copy.historyIndex6C >= 8 ||
+                copy.phase5C < 0 || copy.phase5C > 2 ||
+                (copy.phase5C == 0 && copy.historyCount68 != 0) ||
+                (copy.phase5C == 1 && copy.historyCount68 >= 8) ||
+                primary % (3 * sizeof(RroProjectedVertex)) ||
+                history % (3 * sizeof(RroProjectedVertex)))
+                return 0;
+            for (int k = 0; k < 4; ++k)
+                if (!TrailGet(d, &at, NULL, primary) || !TrailGet(d, &at, NULL, history))
+                    return 0;
+            for (int k = 0; k < 8; ++k)
+                if (!TrailGet(d, &at, NULL, history))
+                    return 0;
+        }
+        if (sparks && !TrailGet(d, &at, NULL, sizeof(RroSpark) * CAR_SPARKS))
+            return 0;
+    }
+    return at == d->trails_size;
+}
+
 /* Over the entries the load allocated for the same models. */
 static void ApplyTrails(const ReplayData *d) {
     u32 at = 0;
 
+    if (!TrailsValid(d))
+        return;
     for (int i = 0; i < CAR_SLOT_ENTRIES && at < d->trails_size; i++) {
         CarSlotBufferC8 *e = &CarSlotBuffers[i], copy;
         u32 present, primary, history, sparks, live_primary = 0, live_history = 0;
@@ -356,8 +411,137 @@ static int Saveable(int mode) {
     return mode == 0 || mode == 1 || mode == 2 || mode == 3 || mode == 6;
 }
 
+/* InitCarTable (racesamp.c) and InitRaceCars (raceinit.c) select these
+ * populations and layouts. A union-wide bounds check is insufficient: the
+ * two-player inputs overlap the single-player snapshot region. */
+static int ReplayCarCountValid(int mode, int cars) {
+    switch (mode) {
+    case 0: return cars == 1;
+    case 1: return cars == 8;
+    case 2: case 6: return cars == 2;
+    case 3: return cars >= 2 && cars <= 4;
+    default: return 0;
+    }
+}
+
+static size_t SnapshotOffset(int mode, int car) {
+    return (mode == 2 || mode == 3 ? offsetof(ReplayStorage, two.snapshots) :
+            offsetof(ReplayStorage, single.snapshots)) + (size_t)car * sizeof(RaceVehicle);
+}
+
+/* The editor emits a fixed 64x64, 4-bpp TIM with a 16-entry palette.
+ * UploadCarClut follows the block length and trusts the dimensions; validate
+ * these before it can read beyond a serialized custom emblem. Origins are
+ * deliberately unrestricted because the uploader replaces both of them. */
+static int CustomEmblemValid(const u8 *data) {
+    u32 header[5], image[3];
+    memcpy(header, data, sizeof(header));
+    memcpy(image, data + offsetof(EmblemTimLayout840, imageHeader), sizeof(image));
+    return header[0] == 0x10 && header[1] == 8 && header[2] == 44 &&
+           header[4] == 0x00010010 && image[0] == 0x80C && image[2] == 0x00400010;
+}
+
+static int ReplayAssetsValid(const ReplayData *d) {
+    CurrentSelection selections;
+    MenuGridPoint choices[4];
+    SavedMenuSettings menu;
+    s16 team, maker;
+    s32 laps;
+    memcpy(&selections, d->setup[SETUP_SELECTIONS], sizeof(selections));
+    memcpy(choices, d->setup[SETUP_CHOICES], sizeof(choices));
+    memcpy(&menu, d->setup[SETUP_MENU_STATE], sizeof(menu));
+    memcpy(&team, d->setup[SETUP_TEAM], sizeof(team));
+    memcpy(&maker, d->setup[SETUP_MAKER], sizeof(maker));
+    memcpy(&laps, d->setup[SETUP_LAPS], sizeof(laps));
+    if (team < 0 || team >= 4 || maker < 0 || maker >= 4)
+        return 0;
+    /* VS retains the user's lap choice; other modes derive it from the
+     * course. The menu offers 2..9, bounded by the race's lap tables. */
+    if ((d->info.mode == 2 || d->info.mode == 3) && (laps < 2 || laps > 9))
+        return 0;
+    if (d->info.mode == 1 && (menu.fields.phase17 < 0 || menu.fields.phase17 >= 8))
+        return 0;
+    /* LoadAllCarsStep consumes all four slots even in single-player modes.
+     * The file selector uses parameter % 20, so no extra bound is needed on
+     * that byte. Wheel variants index one of four 16-entry table rows. */
+    for (int i = 0; i < 4; ++i) {
+        if (selections.entries[i].selection >= 4 || selections.entries[i].variant >= 4 ||
+            choices[i].first < 0 || choices[i].first > 16 ||
+            choices[i].second < 0 || choices[i].second > 26)
+            return 0;
+        /* 0: none; 1: custom; 2..26: 25 preset images (including the
+         * locked-emblem placeholder). GP skips loading that preset bank. */
+        if (d->info.mode == 1 && choices[i].second >= 2)
+            return 0;
+        if (choices[i].second == 1 &&
+            !CustomEmblemValid(d->setup[SETUP_EMBLEMS] + (i & 1) * sizeof(EmblemTim840)))
+            return 0;
+    }
+    return 1;
+}
+
+/* Player physics and AI reuse the control fields differently. In particular,
+ * players use the gear index in previewSample84 and the loaded CarRecord;
+ * their AI gearCount/span fields can legitimately be zero. */
+static int ReplayVehicleValid(const ReplayData *d, const RaceVehicle *v, int car) {
+    const RaceVehicleControl *c = &v->control;
+    const int players = d->info.mode == 2 || d->info.mode == 3 ? 2 : 1;
+    const unsigned identity = car < players ? 0x10u + (unsigned)car : (unsigned)(car - players + 1);
+    if ((v->flags1E4 != 0xFFFF && (v->flags1E4 & ~0x100u) != identity) ||
+        v->slotIndex1E6 < 0 || v->slotIndex1E6 >= 8)
+        return 0;
+    if (car < players) {
+        return d->snapshot_links[car] == (LINK_RECORD | LINK_HANDLING) &&
+               c->playerFlags24 == car &&
+               c->previewSample84.halves.high >= 0 && c->previewSample84.halves.high < 7 &&
+               c->dynamics94.steering.count22 >= 0 && c->dynamics94.steering.count22 <= 10;
+    }
+    return !d->snapshot_links[car] &&
+           c->gearCountFC >= 1 && c->gearCountFC <= 6 &&
+           c->gear68 >= 0 && c->gear68 < c->gearCountFC &&
+           c->shiftDir62 >= -1 && c->shiftDir62 <= 1 &&
+           c->gear68 + c->shiftDir62 >= 0 && c->gear68 + c->shiftDir62 < c->gearCountFC &&
+           c->span11A > 0 && (c->boostTimer44 <= 0 || c->divisor11C != 0);
+}
+
+static int ReplayStorageValid(const ReplayData *d) {
+    s16 mode, cars, course, reverse;
+    memcpy(&mode, d->setup[SETUP_MODE], sizeof(mode));
+    memcpy(&cars, d->setup[SETUP_CARS], sizeof(cars));
+    memcpy(&course, d->setup[SETUP_COURSE], sizeof(course));
+    memcpy(&reverse, d->setup[SETUP_REVERSE], sizeof(reverse));
+    if (!ReplayCarCountValid(mode, cars) || mode != d->info.mode || cars != d->info.cars ||
+        course < 0 || course >= 8 || course != d->info.course ||
+        reverse < 0 || reverse > 1 || reverse != d->info.reverse)
+        return 0;
+    /* bankrec.c reserves the final input entry beyond ReplayLength. */
+    const size_t capacity = (mode == 2 || mode == 3 ?
+        sizeof(d->storage.two.inputs[0]) : sizeof(d->storage.single.inputs)) / sizeof(ReplayFrame4) - 1;
+    if (d->replay_length <= 0 || (size_t)d->replay_length > capacity ||
+        d->info.frames > (u32)d->replay_length)
+        return 0;
+    for (int i = 0; i < SNAPSHOTS_MAX; ++i) {
+        if (i >= cars) {
+            if (d->snapshot_offset[i] != -1 || d->snapshot_links[i])
+                return 0;
+            continue;
+        }
+        if (d->snapshot_offset[i] < 0 || (size_t)d->snapshot_offset[i] != SnapshotOffset(mode, i) ||
+            (d->snapshot_links[i] & ~(LINK_RECORD | LINK_HANDLING)))
+            return 0;
+        /* Capture strips both host pointers. Install reconstructs them from
+         * live allocations; file bytes must never become process pointers. */
+        const RaceVehicle *snapshot = mode == 2 || mode == 3 ?
+            &d->storage.two.snapshots[i] : &d->storage.single.snapshots[i];
+        if (snapshot->control.record18 || snapshot->control.handling1C ||
+            !ReplayVehicleValid(d, snapshot, i))
+            return 0;
+    }
+    return 1;
+}
+
 static void Title(const ReplayFileInfo *info, char *out, size_t size) {
-    snprintf(out, size, "%s, course %d%s", ReplayModeName(info->mode), info->course + 1,
+    snprintf(out, size, "%s, course %lld%s", ReplayModeName(info->mode), (long long)info->course + 1,
              info->reverse ? " reverse" : "");
 }
 
@@ -439,6 +623,8 @@ static int Capture(ReplayData *d) {
     int i;
 
     memset(d, 0, sizeof(*d));
+    if (!ReplayCarCountValid(GameModeType, NumCars))
+        return 0;
     memcpy(&d->storage, SharedWorkArena, sizeof(d->storage));
     d->saved_race_state = SavedRaceState;
     d->replay_length = ReplayLength;
@@ -449,7 +635,7 @@ static int Capture(ReplayData *d) {
         uintptr_t base = (uintptr_t)SharedWorkArena;
         size_t offset;
         RaceVehicle *snapshot;
-        if (address < base || address - base > sizeof(d->storage) - sizeof(RaceVehicle))
+        if (address < base || address - base != SnapshotOffset(GameModeType, i))
             return 0;
         offset = (size_t)(address - base);
         d->snapshot_offset[i] = (s32)offset;
@@ -564,6 +750,7 @@ static int FromImage(const ReplayFileImage *image, ReplayData *d, char *err, siz
         if (ok && trails && trails->size <= sizeof(d->trails)) {
             d->trails_size = trails->size;
             memcpy(d->trails, trails->data, trails->size);
+            ok = TrailsValid(d);
         } else {
             ok = 0;
         }
@@ -576,16 +763,16 @@ static int FromImage(const ReplayFileImage *image, ReplayData *d, char *err, siz
     } else {
         ok = 0;
     }
-    for (int i = 0; ok && i < SNAPSHOTS_MAX; i++)
-        if (d->snapshot_offset[i] >= 0 &&
-            (size_t)d->snapshot_offset[i] + sizeof(RaceVehicle) > sizeof(d->storage))
-            ok = 0;
     if (!ok) {
         snprintf(err, size, "The replay file is incomplete.");
         return 0;
     }
     if (!Saveable(d->info.mode)) {
         snprintf(err, size, "This kind of replay cannot be played.");
+        return 0;
+    }
+    if (!ReplayStorageValid(d) || !ReplayAssetsValid(d)) {
+        snprintf(err, size, "The replay contains invalid race setup or car snapshots.");
         return 0;
     }
     if (d->info.ntsc != (VideoTimingNtsc != 0)) {
@@ -717,9 +904,9 @@ static void HostFrame(void) {
     SaveSetup(&s_player);
     ApplySetup(&s_loaded, 0);
     SeqMuteVolume();
-    /* The full race load (mode overlay, all cars, course, SetupRace), with
+    /* The full race load (mode overlay, preset emblems, cars, course, SetupRace), with
      * the replay mode as the scene it ends in. */
-    MenuScriptId = 10;
+    MenuScriptId = MENU_SCRIPT_REPLAY;
     ActiveSceneId = 0x115;
     ModeGroup = 1;
     ModeIndex = 0x23;

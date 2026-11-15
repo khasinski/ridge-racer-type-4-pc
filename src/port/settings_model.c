@@ -39,7 +39,7 @@ static int ScaleIndex(unsigned scale) {
 }
 ACCESSORS(Scale, ScaleIndex(p->scale), p->scale = kScales[i])
 
-static const char *const kWindowNames[] = {"Windowed", "Fullscreen", "Fullscreen 50 Hz"};
+static const char *const kWindowNames[] = {"Windowed", "Fullscreen", "Fullscreen (match FPS)"};
 ACCESSORS(Fullscreen, p->fullscreen ? 1 + (p->fullscreen_field_rate != 0) : 0,
           p->fullscreen = i != 0; if (i) p->fullscreen_field_rate = i == 2)
 
@@ -65,8 +65,9 @@ ACCESSORS(Filtering, p->texture_filtering != 0, p->texture_filtering = i)
 
 ACCESSORS(Geometry, p->geometry_correction != 0, p->geometry_correction = i)
 
-static const char *const kInterpolationNames[] = {"Off (original)", "60 Hz"};
-ACCESSORS(Interpolation, p->frame_interpolation != 0, p->frame_interpolation = i)
+static const char *const kInterpolationNames[] = {"Original", "60 FPS", "120 FPS"};
+ACCESSORS(Interpolation, p->frame_interpolation == 120 ? 2 : p->frame_interpolation != 0,
+          p->frame_interpolation = i == 2 ? 120 : i == 1 ? 60 : 0)
 
 static const char *const kDrawDistanceNames[] = {"Original", "Extended (2x)"};
 ACCESSORS(DrawDistance, p->extended_draw_distance != 0, p->extended_draw_distance = i)
@@ -75,11 +76,14 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
             kScaleNames, Scale,
             SETTINGS_FEATURE_UPSCALE),
-    SETTING("Display mode", "Window or fullscreen (F4). Fullscreen 50 Hz sets a display that has the mode (most 120 Hz ones) to the game's own rate (60 Hz with NTSC video timing) for the smoothest motion.",
+    SETTING("Display mode", "Window or fullscreen (F4). Match FPS selects a supported display mode at 60/120 Hz, or the original PAL/NTSC field rate when Frame rate is Original.",
             kWindowNames, Fullscreen),
-    SETTING("VSync", "Auto uses display sync on 60 Hz screens. Off paces the game's fields (50 Hz PAL, 60 Hz NTSC) with a limiter.",
+    SETTING("VSync", "Auto/On synchronizes output when the renderer supports it. Off allows tearing. Frame rate controls presentation; PAL/NTSC controls the original game clock.",
             kVsyncNames, Vsync),
-    {"Video timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Used from the next start.",
+    GPU_SETTING("Frame rate", "Original: the game's own frames. 60/120 FPS: intermediate geometry frames, with original game speed and one game frame of display delay. Higher rates cost GPU time.",
+            kInterpolationNames, Interpolation,
+            SETTINGS_FEATURE_INTERPOLATION),
+    {"Game timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Separate from display frame rate. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
     GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
             kAspectNames, Aspect,
@@ -97,9 +101,6 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
             kSwitchNames, Geometry,
             SETTINGS_FEATURE_GEOMETRY),
-    GPU_SETTING("Frame interpolation", "Experimental. Presents in-between frames; game timing stays original.",
-            kInterpolationNames, Interpolation,
-            SETTINGS_FEATURE_INTERPOLATION),
 };
 
 static const char *const kVolumeNames[] = {

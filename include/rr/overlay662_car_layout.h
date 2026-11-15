@@ -15,7 +15,4 @@ void SetMenuFrameOptions(s32,s32,s32);
 /* Fresh choice index0..8. Vehicle setup may change published roots and choices.
  * Nine-entry course group and two complete vehicle owners remain accessible. */
 #include "scratchpad.h"
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
-#endif
 #endif

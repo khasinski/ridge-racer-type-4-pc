@@ -40,7 +40,7 @@ s32 CdFileStateSetloc(void);
 s32 CdFileStateWaitSetloc(void);
 s32 CdFileStateStartRead(void);
 s32 CdFileStateReadSync(void);
-void CdFileFinish(void);
+s32 CdFileFinish(void);
 s32 CdFileStateRetry(void);
 int ApplyCarWheelTexturePatch(int a0, int a1, int a2, int a3, int a4);
 

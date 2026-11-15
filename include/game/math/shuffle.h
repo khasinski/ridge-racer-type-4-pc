@@ -14,6 +14,6 @@ typedef struct {
 extern SlotOrder28 SlotOrder;
 RR_ASSERT_SIZE(SlotOrder28, 0x28);
 
-void ShuffleSlotOrder();
+void ShuffleSlotOrder(void);
 
 #endif /* RR_GAME_MATH_SHUFFLE_H */

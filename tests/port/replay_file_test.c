@@ -146,9 +146,16 @@ static void TestRefusals(const char *dir) {
     /* Valid checksums must not hide ambiguous block names. */
     snprintf(block.name, sizeof(block.name), "Block");
     ReplayBlock duplicates[2] = {block, block};
+    snprintf(duplicates[1].name, sizeof(duplicates[1].name), "Other");
     data = ReplayFileEncode(&info, duplicates, 2, &size);
     CHECK(data != NULL);
     if (data) {
+        memcpy(data + REPLAY_HEADER_SIZE + 1 + 5 + 4 + block.size + 1, "Block", 5);
+        crc = ReplayCrc32(data + REPLAY_HEADER_SIZE, size - REPLAY_HEADER_SIZE, 0);
+        for (int i = 0; i < 4; ++i) data[20 + i] = (unsigned char)(crc >> (8 * i));
+        crc = ReplayCrc32(data, REPLAY_HEADER_SIZE - 4, 0);
+        for (int i = 0; i < 4; ++i)
+            data[REPLAY_HEADER_SIZE - 4 + i] = (unsigned char)(crc >> (8 * i));
         CHECK(!ReplayFileDecode(data, size, LAYOUT, &image, err, sizeof(err)));
         CHECK(strstr(err, "duplicate blocks") != NULL);
         free(data);
@@ -177,6 +184,83 @@ static void TestList(const char *dir) {
     CHECK(ok == 1 && bad == 1);
 }
 
+static void TestExtremeMetadata(const char *dir) {
+    char subdir[1024], path[1100], name[256], err[256];
+    ReplayFileInfo info = Info();
+    ReplayListEntry list[2];
+    snprintf(subdir, sizeof(subdir), "%s/extreme", dir);
+    CHECK(SDL_CreateDirectory(subdir));
+    for (int i = 0; i < 2; ++i) {
+        info.saved_at = i ? INT64_MIN : INT64_MAX;
+        info.course = INT32_MAX;
+        ReplayFileName(&info, name, sizeof(name));
+        CHECK(strstr(name, "course2147483648") != NULL);
+        CHECK(strstr(name, "00000000-000000") != NULL);
+        snprintf(path, sizeof(path), "%s/%d" REPLAY_FILE_EXTENSION, subdir, i);
+        CHECK(ReplayFileWrite(path, &info, NULL, 0, err, sizeof(err)));
+    }
+    CHECK(ReplayFileList(subdir, LAYOUT, list, 2) == 2);
+    CHECK(list[0].info.saved_at == INT64_MAX && list[1].info.saved_at == INT64_MIN);
+}
+
+static void TestEncoderBounds(void) {
+    ReplayFileInfo info = Info();
+    ReplayBlock *bad = malloc(sizeof(*bad));
+    size_t size = 123;
+    CHECK(bad != NULL);
+    if (bad) {
+        /* No terminator anywhere in the allocation. Refuse the name before
+         * looking at its size or data pointer, without crossing the buffer. */
+        memset(bad, 'X', sizeof(*bad));
+        CHECK(ReplayFileEncode(&info, bad, 1, &size) == NULL);
+        CHECK(size == 0);
+        free(bad);
+    }
+    unsigned char byte = 1;
+    ReplayBlock block = {"B", UINT32_MAX, &byte};
+    CHECK(ReplayFileEncode(&info, &block, 1, &size) == NULL);
+    block.size = REPLAY_PAYLOAD_MAX;
+    CHECK(ReplayFileEncode(&info, &block, 1, &size) == NULL);
+    block.size = 1;
+    ReplayBlock duplicate[2] = {block, block};
+    CHECK(ReplayFileEncode(&info, duplicate, 2, &size) == NULL);
+    CHECK(ReplayFileEncode(&info, NULL, 1, &size) == NULL);
+    CHECK(ReplayFileEncode(&info, &block, -1, &size) == NULL);
+    CHECK(ReplayFileEncode(&info, &block, REPLAY_BLOCKS_MAX + 1, &size) == NULL);
+
+    /* The payload limit includes the block name and length cells. */
+    unsigned char *payload = calloc(1, REPLAY_PAYLOAD_MAX);
+    CHECK(payload != NULL);
+    if (payload) {
+        ReplayFileImage image;
+        char err[256];
+        block.size = REPLAY_PAYLOAD_MAX - 6;
+        block.data = payload;
+        unsigned char *encoded = ReplayFileEncode(&info, &block, 1, &size);
+        CHECK(encoded != NULL);
+        if (encoded) {
+            CHECK(size == REPLAY_HEADER_SIZE + REPLAY_PAYLOAD_MAX);
+            CHECK(ReplayFileDecode(encoded, size, LAYOUT, &image, err, sizeof(err)));
+            CHECK(image.count == 1 && image.blocks[0].size == block.size);
+            free(encoded);
+        }
+        ++block.size;
+        CHECK(ReplayFileEncode(&info, &block, 1, &size) == NULL);
+        free(payload);
+    }
+}
+
+static void TestDirectoryBounds(void) {
+    char out[4] = "old";
+    SDL_SetEnvironmentVariable(SDL_GetEnvironment(), "RR4_REPLAY_DIR", "directory-boundary/replays", true);
+    CHECK(!ReplayDirectory(NULL, out, sizeof(out)));
+    CHECK(out[0] == '\0');
+    CHECK(!ReplayDirectory(NULL, out, 0));
+    SDL_SetEnvironmentVariable(SDL_GetEnvironment(), "RR4_REPLAY_DIR", "", true);
+    CHECK(!ReplayDirectory("abc/prefs.toml", out, sizeof(out)));
+    CHECK(out[0] == '\0');
+}
+
 int main(int argc, char **argv) {
     const char *dir = argc > 1 ? argv[1] : "replay-file-test";
     char prefs[1024], replays[1024];
@@ -189,6 +273,9 @@ int main(int argc, char **argv) {
     TestRoundTrip(replays);
     TestRefusals(replays);
     TestList(replays);
+    TestExtremeMetadata(replays);
+    TestEncoderBounds();
+    TestDirectoryBounds();
     if (failures) {
         fprintf(stderr, "replay_file_test: %d failures\n", failures);
         return 1;

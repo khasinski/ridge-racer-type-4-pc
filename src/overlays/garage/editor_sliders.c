@@ -346,11 +346,7 @@ void ovl662_drag_h_scrollbar(void) {
     u16 narrowed;
     s32 coordinate;
     GarageSelectionPrefix *selection;
-    union {
-        GarageSelectionPrefix *ptr;
-        s32 addr;
-    } sel;
-    s32 tmp;
+    GarageSelectionPrefix *selectionOwner;
 
     if (ovl662_editor_cursor_state.words[0] & 8) {
         if (ovl662_editor_cursor_state.words[1] & 4) {
@@ -363,10 +359,8 @@ void ovl662_drag_h_scrollbar(void) {
         ovl662_editor_cursor_state.words[0] = (ovl662_editor_cursor_state.words[0] | 8);
         ovl662_set_clip_rect(0x5A, 0x151, 0x70, 8);
         imageThumb = 0x40 / ((u8) ovl662_editor_workspace.config1C >> 1);
-        sel.ptr = &ovl662_editor_workspace;
-        tmp = sel.addr | 1;
-        sel.addr &= tmp;
-        trackThumb = 0x70 / ((u8) sel.ptr->config1C >> 1);
+        selectionOwner = &ovl662_editor_workspace;
+        trackThumb = 0x70 / ((u8) selectionOwner->config1C >> 1);
         imageTravel = 0x40 - imageThumb;
         trackTravel = 0x70 - trackThumb;
         projected = ((ovl662_editor_cursor_state.points.cursor14.x - 0x5A) * imageTravel) / trackTravel;
@@ -410,11 +404,7 @@ void ovl662_drag_v_scrollbar(void) {
     u16 narrowed;
     GarageSelectionPrefix *selection;
     s32 coordinate;
-    union {
-        GarageSelectionPrefix *ptr;
-        s32 addr;
-    } sel;
-    s32 tmp;
+    GarageSelectionPrefix *selectionOwner;
 
     if (ovl662_editor_cursor_state.words[0] & 8) {
         if (ovl662_editor_cursor_state.words[1] & 4) {
@@ -427,10 +417,8 @@ void ovl662_drag_v_scrollbar(void) {
         ovl662_editor_cursor_state.words[0] = (ovl662_editor_cursor_state.words[0] | 8);
         ovl662_set_clip_rect(0xD8, 0x57, 4, 0xE0);
         imageThumb = 0x40 / ((u8) ovl662_editor_workspace.config1C >> 1);
-        sel.ptr = &ovl662_editor_workspace;
-        tmp = sel.addr | 1;
-        sel.addr &= tmp;
-        trackThumb = 0xE0 / ((u8) sel.ptr->config1C >> 1);
+        selectionOwner = &ovl662_editor_workspace;
+        trackThumb = 0xE0 / ((u8) selectionOwner->config1C >> 1);
         imageTravel = 0x40 - imageThumb;
         trackTravel = 0xE0 - trackThumb;
         projected = ((ovl662_editor_cursor_state.points.cursor14.y - 0x57) * imageTravel) / trackTravel;
@@ -597,23 +585,7 @@ void ovl662_drag_preview_viewport(void) {
         return;
     }
     {
-        union {
-            GarageSelectionPrefix *ptr;
-            s32 addr;
-        } ws;
-        union {
-            GarageWorkingStorage *ptr;
-            s32 addr;
-        } cs;
-        s32 t1, t2;
-
-        ws.ptr = &ovl662_editor_workspace;
-        cs.ptr = &ovl662_editor_cursor_state;
-        t1 = ws.addr | 1;
-        t1 &= 1;
-        t2 = cs.addr | 1;
-        t2 &= t1;
-        offsetX = ovl662_preview_drag_grab[0] + 0xEC + t2;
+        offsetX = ovl662_preview_drag_grab[0] + 0xED;
 
         nextX = ovl662_editor_cursor_state.points.cursor14.x - offsetX;
         ovl662_editor_workspace.reset08[0] = nextX;

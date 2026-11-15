@@ -1,3 +1,5 @@
+#include "rr/geometry.h"
+#include "game/data/menuvars.h"
 #include "rr/release.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
@@ -54,13 +56,8 @@ typedef struct {
     u32 size;
 } IntroTintTilePacket;
 
-void SetGeomOffset(s32 x, s32 y);
-extern short FadeCountdown;
-extern short ModeIndex;
-extern short MenuScriptId;
-extern short ModeGroup;
 extern int DialogueSceneMode;
-extern short SubmodeState;
+
 /* Music positions (G->s46) at which the intro scene advances a page. */
 extern short DrawListDefaultVerts[];
 extern short DrawListDefaultVertsNtsc[];
@@ -70,7 +67,6 @@ extern const VectorWords16 TitleModelPosLayer0A;
 extern const VectorWords16 TitleModelPosLayer0B;
 extern const VectorWords16 TitleModelPosLayer1;
 
-void StepIntroScene();
 
 void StepIntroScene(void) {
     int idx;

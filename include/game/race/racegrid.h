@@ -40,4 +40,6 @@ int PollLinkStatus(void);
 
 void UpdateRaceChaseCamera(RaceVehicle *vehicle);
 
+extern s16 LinkHostFlag;
+
 #endif /* RR_GAME_RACE_RACEGRID_H */

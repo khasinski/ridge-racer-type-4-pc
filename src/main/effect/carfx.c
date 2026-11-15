@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "rr/video_timing.h"
 #include "psyq/libgte/rotmat.h"
 #include "psyq/libgte/gtemat5.h"
@@ -16,7 +17,6 @@
 #include "game/math/rotmat.h"
 #include "psyq/libc/rand.h"
 
-void SetGeomScreen(long h); /* PsyZ libgte */
 extern VectorWords16 ReplayCamZoomMultipliers;
 extern Vec3s8 StartCamLateralOffsets;
 extern int StartCamHeightKeyframes;

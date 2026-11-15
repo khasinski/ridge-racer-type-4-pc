@@ -22,14 +22,14 @@ void ovl665_update_screen_adjust(void) {
     GpuSingleCommandPacket *packet;
     s16 timer;
     FrameStorage *context;
-    switch(ovl665_options_state.layout0C) {
+    switch(ovl665_options_state.visual.layout0C) {
     case 0:
         ovl665_init_screen_adjust();
         SetPresentationDrawEnabled(0);
-        ovl665_options_state.layout0C=(ovl665_options_state.layout0C+1U);
+        ovl665_options_state.visual.layout0C=(ovl665_options_state.visual.layout0C+1U);
         break;
     case 1:
-        if(BadgeRows[0].state10==3)ovl665_options_state.layout0C=2;
+        if(BadgeRows[0].state10==3)ovl665_options_state.visual.layout0C=2;
         break;
     case 2:
         if(PlayerControllers[0].edges08.fields.repeat&0x8000)Options.screenX34=(Options.screenX34-1U);
@@ -48,7 +48,7 @@ void ovl665_update_screen_adjust(void) {
             PlaySfx(1);
             BadgeRows[0].state10=4;
             FadeCountdown=64;
-            ovl665_options_state.layout0C=(ovl665_options_state.layout0C+1U);
+            ovl665_options_state.visual.layout0C=(ovl665_options_state.visual.layout0C+1U);
         }
         for(i=0;i<2;i++) {
             DrawBuffers[i].environment.display5C.screen.x=(s16)Options.screenX34;
@@ -61,8 +61,8 @@ void ovl665_update_screen_adjust(void) {
         AddScreenFadeTiles(CurrentDrawBuf->buffer.ordering70.tags,(64-timer)*4,69);
         if(FadeCountdown<=0 && BadgeRows[0].state10==11) {
             ovl665_init_menu();
-            ovl665_options_state.layout0C=0;
-            ovl665_options_state.scene00=(ovl665_options_state.scene00-1U);
+            ovl665_options_state.visual.layout0C=0;
+            ovl665_options_state.visual.scene00=(ovl665_options_state.visual.scene00-1U);
             return;
         }
         break;
@@ -101,21 +101,21 @@ void ovl665_update_brightness_panel(void) {
     const UiUvRect *glyph;
     void *cursor;
     GpuSingleCommandPacket *packet;
-    switch(ovl665_options_state.layout0C) {
+    switch(ovl665_options_state.visual.layout0C) {
     case 0:
         ovl665_init_brightness_panel();
         SetPresentationDrawEnabled(0);
-        ovl665_options_state.layout0C=(ovl665_options_state.layout0C+1U);
+        ovl665_options_state.visual.layout0C=(ovl665_options_state.visual.layout0C+1U);
         break;
     case 1:
-        if(BadgeRows[0].state10==3)ovl665_options_state.layout0C=2;
+        if(BadgeRows[0].state10==3)ovl665_options_state.visual.layout0C=2;
         break;
     case 2:
         if(MenuReturnSubmodeIndex) {
             PlaySfx(1);
             BadgeRows[0].state10=4;
             FadeCountdown=64;
-            ovl665_options_state.layout0C=(ovl665_options_state.layout0C+1U);
+            ovl665_options_state.visual.layout0C=(ovl665_options_state.visual.layout0C+1U);
         }
         break;
     case 3:
@@ -123,8 +123,8 @@ void ovl665_update_brightness_panel(void) {
         AddScreenFadeTiles(CurrentDrawBuf->buffer.ordering70.tags,(64-FadeCountdown)*4,69);
         if(FadeCountdown<=0 && BadgeRows[0].state10==11) {
             ovl665_init_menu();
-            ovl665_options_state.layout0C=0;
-            ovl665_options_state.scene00=(ovl665_options_state.scene00-1U);
+            ovl665_options_state.visual.layout0C=0;
+            ovl665_options_state.visual.scene00=(ovl665_options_state.visual.scene00-1U);
             return;
         }
         break;

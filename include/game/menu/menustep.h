@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void StepCardMenuStateMachine();
+void StepCardMenuStateMachine(void);
 int GetCardMenuInitialState(void);
 
 

@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "rr/overlay_module.h"
 #include "rr/screen_tiles.h"
 #include "rr/overlay662_available_cars.h"
@@ -12,8 +13,6 @@
 #include "rr/image_rows.h"
 #include "rr/ui.h"
 
-extern s16 FadeCountdown;
-extern s16 ovl662_saved_car_choice_idx;
 void ovl662_init_team_car_layout(void);
 void SetupMenuCarCamera(s32);
 void SetupViewport(s32);

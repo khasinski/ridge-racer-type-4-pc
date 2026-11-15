@@ -1,4 +1,5 @@
 #include "rr/video_timing.h"
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "game/sound/cdstart.h"
 #include "rr/player_cars.h"
@@ -44,12 +45,9 @@ extern char StrFmtTwoDigitsTitle[];
 extern u8 HudSpeedUnitSprites[];
 extern u8 HudViewModeIconUvs[];
 extern u8 HudLapSlashSprite[];
-extern short FadeCountdown;
 extern int RaceQuitTargetMode;
 extern int MaskBitSetting;
-extern short ModeIndex;
-extern short ModeGroup;
-extern short SubmodeState;
+
 extern int ViewUsesCarTrackNode;
 void AttractDemoRaceUpdate(void) {
   char sp18[16];
@@ -97,7 +95,7 @@ void AttractDemoRaceUpdate(void) {
     }
   }
   StepRaceFrame(5);
-  UpdateTrackObjects(0);
+  UpdateTrackObjects();
   MaskBitSetting = (one = 1);
   RaceContext.attract4BC.frame00 = RaceContext.attract4BC.frame00 + one;
   RaceContext.attract4BC.cameraTimer08 = RaceContext.attract4BC.cameraTimer08 + one;

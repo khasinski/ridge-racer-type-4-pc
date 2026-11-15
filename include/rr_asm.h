@@ -6,6 +6,7 @@
 /* PsyZ GTE register file and command endpoints (psyz/gte.h); declared here
  * so game modules keep their own PsyQ libgte prototypes. */
 unsigned int Psyz_GteDataRead(unsigned reg);
+int Psyz_GteSetExtendedProjection(int enabled);
 void Psyz_GteDataWrite(unsigned reg, unsigned int value);
 unsigned int Psyz_GteCtrlRead(unsigned reg);
 void Psyz_GteCtrlWrite(unsigned reg, unsigned int value);

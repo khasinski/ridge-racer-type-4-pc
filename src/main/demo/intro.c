@@ -1,4 +1,5 @@
 #include "game/ui/badge1.h"
+#include "game/data/menuvars.h"
 #include "rr/release.h"
 /* RODATA 0x80011270 0x2c */
 #include "rr/video_timing.h"
@@ -33,7 +34,6 @@ extern struct Entry IntroTimeline[];
 extern const struct Entry IntroTimelineNtsc[];
 #define INTRO_TIMELINE RR_PAL_NTSC(IntroTimeline, IntroTimelineNtsc)
 #include "rr/cd_directory_buffer.h"
-extern s16 SubmodeState;
 
 int IntroScriptStep(void);
 void IntroInit(void);

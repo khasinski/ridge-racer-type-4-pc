@@ -255,7 +255,7 @@ block_7:
         }
         RR_661_FRAME_SCRATCH->mode5E = 1;
         SetupPlayerView(var_s2);
-        UpdateTrackObjects(0);
+        UpdateTrackObjects();
         DrawTrackObjects(0);
         temp_s0_4 = var_s2 + 1;
         DrawTrackSceneryForPlayer(temp_s0_4);

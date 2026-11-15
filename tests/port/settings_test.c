@@ -76,6 +76,13 @@ static void TestGraphicsPage(void) {
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 2);
     CHECK(m.prefs.vsync == RR4_VSYNC_OFF);
+    Do(&m, SETTINGS_DOWN, 1);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.frame_interpolation == 60 && m.prefs.video_timing == RR4_VIDEO_PAL);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.frame_interpolation == 120 && m.prefs.video_timing == RR4_VIDEO_PAL);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.frame_interpolation == 0);
     /* Video timing: used from the next start, the status says so. */
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 1);
@@ -83,7 +90,7 @@ static void TestGraphicsPage(void) {
     CHECK(strstr(SettingsModelHelp(&m), "next start") != NULL);
     Do(&m, SETTINGS_UP, 1);
     /* Up from the first row wraps to Quit game. */
-    Do(&m, SETTINGS_UP, 3);
+    Do(&m, SETTINGS_UP, 4);
     CHECK(m.row == SettingsRowCount(&m) - 1);
     {
         SettingsRowView v;
@@ -91,7 +98,7 @@ static void TestGraphicsPage(void) {
         CHECK(v.danger && !strcmp(v.label, "Quit game"));
     }
     /* Draw distance is available to both rasterizers and applies live. */
-    SettingsModelSelect(&m, 5);
+    SettingsModelSelect(&m, 6);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.extended_draw_distance == 1);
     /* Restore page defaults. */
@@ -127,9 +134,9 @@ static void TestUnavailable(void) {
     CHECK(!v.disabled);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.fullscreen == 1);
-    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* frame interpolation */
-    CHECK(v.disabled && !strcmp(v.label, "Frame interpolation"));
-    SettingsModelRow(&m, SettingsContentRows(&m) - 2, &v); /* geometry correction */
+    SettingsModelRow(&m, 3, &v); /* frame rate: visible near the top */
+    CHECK(v.disabled && !strcmp(v.label, "Frame rate"));
+    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* geometry correction */
     CHECK(!v.disabled);
 }
 
@@ -411,6 +418,7 @@ static void TestPrefsFile(const char *dir) {
     p.antialiasing = 1;
     p.aspect_ratio = RR4_ASPECT_WIDESCREEN;
     p.video_timing = RR4_VIDEO_NTSC;
+    p.frame_interpolation = 120;
     p.extended_draw_distance = 1;
     p.volume = 35;
     p.mute = 1;
@@ -427,6 +435,23 @@ static void TestPrefsFile(const char *dir) {
     CHECK(Rr4PrefsSaveFile(&p, path));
     CHECK(Rr4PrefsLoadFile(&q, path));
     CHECK(!memcmp(&p, &q, sizeof(p)));
+
+    /* Migrate the old boolean without changing the game's video timing. */
+    snprintf(path, sizeof(path), "%s/legacy-fps.toml", dir);
+    f = fopen(path, "w");
+    CHECK(f != NULL);
+    if (f) {
+        fputs("[graphics]\nframe_interpolation = true\nvideo_timing = \"pal\"\n", f);
+        fclose(f);
+    }
+    q = *Rr4PrefsDefaults();
+    CHECK(Rr4PrefsLoadFile(&q, path));
+    CHECK(q.frame_interpolation == 60 && q.video_timing == RR4_VIDEO_PAL);
+    f = fopen(path, "w");
+    CHECK(f != NULL);
+    if (f) { fputs("[graphics]\nframe_rate = 119\n", f); fclose(f); }
+    CHECK(Rr4PrefsLoadFile(&q, path));
+    CHECK(q.frame_interpolation == 60);
 
     /* Invalid values are skipped, the rest still loads. */
     snprintf(path, sizeof(path), "%s/partial.toml", dir);

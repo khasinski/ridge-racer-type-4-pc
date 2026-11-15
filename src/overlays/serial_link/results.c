@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "rr/overlay_module.h"
 #include "rr/vehicle_table.h"
 #include "game/race/racegrid.h"
@@ -6,7 +7,6 @@
 #include "rr/overlay_menu.h"
 #include "rr/frame_storage_types.h"
 
-extern s32 ModeFrame;
 extern s16 MenuCursor;
 extern s16 MenuItemCount;
 extern s32 ovl667_result_labels[22];
@@ -55,9 +55,8 @@ s32 ovl667_update_retry_choice(s32 mode){
  return -1;
 }
 
-extern s32 ModeFrame, TotalRaceTime, ActivePlayerIndex;
-extern u16 SubmodeState;
-extern s16 ModeGroup, ModeIndex, FadeCountdown, MenuCursor, LinkHostFlag;
+extern s32 TotalRaceTime, ActivePlayerIndex;
+extern s16 MenuCursor;
 extern s16 LinkState, LinkRaceAbortFlag, LinkPlayerCount;
 extern char LinkPlayerNames[4][12];
 

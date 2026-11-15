@@ -1,4 +1,5 @@
 #include "rr/overlay_module.h"
+#include "game/menu/menutra21.h"
 #include "rr/menu_selection.h"
 #include "rr/menu_frame_state.h"
 #include "game/race/racegrid.h"
@@ -17,8 +18,7 @@ extern s16 LinkCarChoiceCounts[2][2];
 extern s16 LinkCarChoiceIndex[2];
 extern s16 LinkCarChoiceGroup[2];
 extern s32 UiRowCount;
-extern s16 CardMenuOperation;
-extern s16 LinkHostFlag;
+
 extern u8 ovl667_group_option_counts[4];
 extern s8 ovl667_group_slot_kinds[2][4];
 extern s8 ovl667_group_ui_rows[2][2][4];
@@ -30,9 +30,6 @@ extern s16 LinkClientRoleState;
 s32 CountChoiceGlyphs(const CourseChoice4 *);
 void CopyStringClearTail(char *, char *);
 void ovl667_init_car_selection(s32);
-#ifndef RR_PROJECTION_SCRATCH
-#define RR_PROJECTION_SCRATCH ((ProjectionScratchPrefix *)SCRATCHPAD)
-#endif
 
 void ovl667_init_car_selection(s32 arg0) {
     s16 *temp_s0;

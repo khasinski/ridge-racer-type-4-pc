@@ -1,3 +1,4 @@
+#include "rr/geometry.h"
 #include "game/car/carbound.h"
 #include "rr/gpu.h"
 #include "rr/gpu_scratch_types.h"
@@ -18,8 +19,6 @@
 #include "rr/rro_model.h"
 #include "game/camera/viewcam.h"
 
-extern void SetGeomOffset(s32, s32);
-extern void SetGeomScreen(s32);
 
 void StepCameraScript(void) {
     RroSceneScratchPrefix *scratch = (RroSceneScratchPrefix *)SCRATCHPAD;

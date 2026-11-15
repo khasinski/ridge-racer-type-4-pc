@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "rr/race_setup.h"
 #include "game/car/carparam.h"

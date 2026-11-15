@@ -1,4 +1,5 @@
 #include "rr/frame_interp.h"
+#include "game/data/menuvars.h"
 #include "psyq/libgte/rotmat.h"
 #include "rr/player_cars.h"
 #include "rr/menu_selection.h"
@@ -54,7 +55,6 @@ extern s32 OpeningCreditTextTable[];
 extern SVec CourseLightColors[];
 extern CVec OpeningSkipHoldTimer[];
 extern s32 ReplayState;
-extern s32 ModeFrame;
 extern s8 RacePaused;
 extern s32 RaceState;
 extern s32 TrackObjCullDistance;

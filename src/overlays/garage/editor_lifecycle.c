@@ -74,12 +74,10 @@ void ovl662_init_editor_arenas(void)
         u32 *words;
         GarageTimBytes *tim;
         void *raw;
-        s32 addr;
-    } base, alloc, lc;
+    } base, alloc;
     u32 *clear;
     u8 *second;
     GarageSelectionPrefix *owner;
-    s32 tmp1, tmp2;
     stage=(ovl662_arena_init_stage+1U);
     ovl662_arena_init_stage=stage;
     switch (stage) {
@@ -93,21 +91,11 @@ void ovl662_init_editor_arenas(void)
         base.ptr-=((GarageArenaAddress)MenuArenas.second&3U);
         second=base.ptr+0x840;
         /* Retain each publication of the shared arena cursor. */
-        tmp1 = base.addr | 1;
-        tmp1 &= base.addr;
-        tmp2 = base.addr | 1;
-        tmp2 &= base.addr;
-        lc.addr = tmp1 & tmp2;
-        LoadCursor = lc.raw;
+        LoadCursor = base.ptr;
         *(void *volatile*)&LoadCursor=second;
         owner->buffers24[1]=*(void **)&LoadCursor=(u32*)(base.ptr+0x1080);
         alloc.ptr = base.ptr + 0x18C0;
-        tmp1 = alloc.addr | 1;
-        tmp1 &= alloc.addr;
-        tmp2 = alloc.addr | 1;
-        tmp2 &= alloc.addr;
-        lc.addr = tmp1 & tmp2;
-        LoadCursor = lc.raw;
+        LoadCursor = alloc.ptr;
         owner->tim2C[1]=alloc.tim;
         owner->scratch34=*(void **)&LoadCursor=(u32*)(base.ptr+0x2100);
         owner->paletteScratch58[0]=*(void **)&LoadCursor=(u32*)(base.ptr+0x2900);

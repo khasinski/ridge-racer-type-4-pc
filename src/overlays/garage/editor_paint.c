@@ -118,46 +118,44 @@ void ovl662_apply_line_stroke(void) {
         ovl662_editor_workspace.config1D);
 }
 
-/* FloodFill4bpp (resident, PAL 800717AC): four-way recursive fill of a 64x64
- * 4bpp image (32 bytes per row; odd x is the high nibble). The original
- * recursion stops when the stack pointer drops below 0x801F8000, 4 bytes per
- * level; FLOOD_FILL_DEPTH is that budget from the PAL initial stack 0x801FFFF0
- * (the caller's own frames reduced it slightly on the PS1). */
-enum { FLOOD_FILL_DEPTH = (0x801FFFF0 - 0x801F8000) / 4 };
-
-typedef struct {
-    s32 previous, replacement, depth;
-} FloodFill4bppState;
-
-static void FloodFill4bppStep(FloodFill4bppState *fill, u8 *pixel, s32 x, s32 y)
-{
-    s32 prev = fill->previous;
-    if (fill->depth <= 0) return;
-    fill->depth--;
-    if (x & 1) {
-        *pixel = (u8)((*pixel & 0xF) | (fill->replacement << 4));
-        if (0 < y && (pixel[-32] >> 4) == prev) FloodFill4bppStep(fill, pixel - 32, x, y - 1);
-        if (y < 63 && (pixel[32] >> 4) == prev) FloodFill4bppStep(fill, pixel + 32, x, y + 1);
-        if (0 < x && (pixel[0] & 0xF) == prev) FloodFill4bppStep(fill, pixel, x - 1, y);
-        if (x < 63 && (pixel[1] & 0xF) == prev) FloodFill4bppStep(fill, pixel + 1, x + 1, y);
-    } else {
-        *pixel = (u8)((*pixel & 0xF0) | fill->replacement);
-        if (0 < y && (pixel[-32] & 0xF) == prev) FloodFill4bppStep(fill, pixel - 32, x, y - 1);
-        if (y < 63 && (pixel[32] & 0xF) == prev) FloodFill4bppStep(fill, pixel + 32, x, y + 1);
-        if (0 < x && (pixel[-1] >> 4) == prev) FloodFill4bppStep(fill, pixel - 1, x - 1, y);
-        if (x < 63 && (pixel[0] >> 4) == prev) FloodFill4bppStep(fill, pixel, x + 1, y);
-    }
-    fill->depth++;
-}
-
-/* operation: x, y, previous and replacement colour in bytes 0..3. */
+/* Four-way fill of a 64x64 4bpp image. Mark pixels when queued, so each
+ * pixel occupies the work list at most once. The original recursive fill
+ * allowed 8188 levels; a valid image has only 4096 pixels, so an explicit
+ * 8 KiB work list covers every fill without consuming the host call stack. */
 void FloodFill4bpp(u8 *pixel, u32 operation)
 {
-    FloodFill4bppState fill;
-    fill.previous = (s32)((operation >> 16) & 0xFF);
-    fill.replacement = (s32)(operation >> 24);
-    fill.depth = FLOOD_FILL_DEPTH;
-    FloodFill4bppStep(&fill, pixel, (s32)(operation & 0xFF), (s32)((operation >> 8) & 0xFF));
+    const unsigned x = operation & 0xFF, y = (operation >> 8) & 0xFF;
+    const unsigned previous = (operation >> 16) & 0xFF;
+    const unsigned replacement = operation >> 24;
+    if (!pixel || x >= 64 || y >= 64 || previous > 15 ||
+        replacement > 15 || previous == replacement)
+        return;
+    u8 *image = pixel - (y * 32 + x / 2);
+    u16 pending[64 * 64];
+    unsigned count = 0;
+    const unsigned first = y * 64 + x;
+    const unsigned shift = (x & 1) * 4;
+    if (((*pixel >> shift) & 15) != previous)
+        return;
+    *pixel = (u8)((*pixel & ~(15u << shift)) | (replacement << shift));
+    pending[count++] = (u16)first;
+    while (count) {
+        const unsigned at = pending[--count];
+        const unsigned px = at % 64, py = at / 64;
+        unsigned neighbours[4], n = 0;
+        if (py > 0) neighbours[n++] = at - 64;
+        if (py < 63) neighbours[n++] = at + 64;
+        if (px > 0) neighbours[n++] = at - 1;
+        if (px < 63) neighbours[n++] = at + 1;
+        for (unsigned i = 0; i < n; ++i) {
+            const unsigned next = neighbours[i], bits = (next & 1) * 4;
+            u8 *dest = &image[next / 2];
+            if (((*dest >> bits) & 15) == previous) {
+                *dest = (u8)((*dest & ~(15u << bits)) | (replacement << bits));
+                pending[count++] = (u16)next;
+            }
+        }
+    }
 }
 
 void ovl662_apply_flood_fill(void)

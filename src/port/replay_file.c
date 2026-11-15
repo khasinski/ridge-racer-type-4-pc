@@ -70,25 +70,36 @@ static void Fail(char *err, size_t size, const char *message) {
 unsigned char *ReplayFileEncode(const ReplayFileInfo *info, const ReplayBlock *blocks, int count,
                                 size_t *size) {
     size_t payload = 0, at;
+    size_t names[REPLAY_BLOCKS_MAX];
     unsigned char *out;
     uint32_t byte_order = 0x01020304u;
 
-    if (count < 0 || count > REPLAY_BLOCKS_MAX)
+    if (!size)
+        return NULL;
+    *size = 0;
+    if (!info || count < 0 || count > REPLAY_BLOCKS_MAX || (count && !blocks))
         return NULL;
     for (int i = 0; i < count; i++) {
-        size_t name = strlen(blocks[i].name);
-        if (!name || name > REPLAY_NAME_MAX || (blocks[i].size && !blocks[i].data))
+        const char *end = memchr(blocks[i].name, '\0', sizeof(blocks[i].name));
+        if (!end || end == blocks[i].name || (blocks[i].size && !blocks[i].data))
             return NULL;
-        payload += 1 + name + 4 + blocks[i].size;
+        names[i] = (size_t)(end - blocks[i].name);
+        for (int j = 0; j < i; ++j)
+            if (!strcmp(blocks[j].name, blocks[i].name))
+                return NULL;
+        /* Check each addition before it happens, also on 32-bit size_t. */
+        size_t header = 1 + names[i] + 4;
+        if (header > REPLAY_PAYLOAD_MAX - payload ||
+            blocks[i].size > REPLAY_PAYLOAD_MAX - payload - header)
+            return NULL;
+        payload += header + blocks[i].size;
     }
-    if (payload > REPLAY_PAYLOAD_MAX)
-        return NULL;
     out = calloc(1, REPLAY_HEADER_SIZE + payload);
     if (!out)
         return NULL;
     at = REPLAY_HEADER_SIZE;
     for (int i = 0; i < count; i++) {
-        size_t name = strlen(blocks[i].name);
+        size_t name = names[i];
         out[at++] = (unsigned char)name;
         memcpy(out + at, blocks[i].name, name);
         at += name;
@@ -251,7 +262,13 @@ static unsigned char *ReadAll(const char *path, size_t limit, size_t *size) {
         if (n == 0)
             break;
     }
-    fclose(f);
+    int failed = ferror(f);
+    if (fclose(f))
+        failed = 1;
+    if (failed) {
+        free(data);
+        return NULL;
+    }
     *size = used;
     return data;
 }
@@ -283,7 +300,12 @@ int ReplayFileReadInfo(const char *path, uint32_t layout, ReplayFileInfo *info, 
         return 0;
     }
     n = fread(header, 1, sizeof(header), f);
+    int failed = ferror(f);
     fclose(f);
+    if (failed) {
+        Fail(err, err_size, "The replay file cannot be read.");
+        return 0;
+    }
     return ReplayFileDecodeInfo(header, n, layout, info, err, err_size);
 }
 
@@ -301,7 +323,7 @@ const ReplayBlock *ReplayFileFind(const ReplayFileImage *image, const char *name
 
 int ReplayFileWrite(const char *path, const ReplayFileInfo *info, const ReplayBlock *blocks, int count,
                     char *err, size_t err_size) {
-    char temporary[1100];
+    char *temporary = NULL;
     size_t size = 0;
     unsigned char *data = ReplayFileEncode(info, blocks, count, &size);
     FILE *f;
@@ -311,10 +333,15 @@ int ReplayFileWrite(const char *path, const ReplayFileInfo *info, const ReplayBl
         Fail(err, err_size, "The replay could not be encoded.");
         return 0;
     }
-    snprintf(temporary, sizeof(temporary), "%s.tmp", path);
+    if (SDL_asprintf(&temporary, "%s.tmp", path) < 0) {
+        free(data);
+        Fail(err, err_size, "The replay file cannot be created.");
+        return 0;
+    }
     f = Psyz_FileOpen(temporary, "wb");
     if (!f) {
         free(data);
+        SDL_free(temporary);
         Fail(err, err_size, "The replay file cannot be created.");
         return 0;
     }
@@ -324,29 +351,47 @@ int ReplayFileWrite(const char *path, const ReplayFileInfo *info, const ReplayBl
     free(data);
     if (failed || !SDL_RenamePath(temporary, path)) {
         SDL_RemovePath(temporary);
+        SDL_free(temporary);
         Fail(err, err_size, "The replay file could not be written.");
         return 0;
     }
+    SDL_free(temporary);
     return 1;
 }
 
 int ReplayDirectory(const char *prefs_path, char *out, size_t size) {
     const char *override = SDL_getenv("RR4_REPLAY_DIR");
     SDL_PathInfo info;
+    int written;
+
+    if (!out || !size)
+        return 0;
 
     if (override && *override) {
-        snprintf(out, size, "%s", override);
+        written = snprintf(out, size, "%s", override);
     } else if (prefs_path && *prefs_path) {
         const char *slash = NULL;
         for (const char *c = prefs_path; *c; c++)
             if (*c == '/' || *c == '\\')
                 slash = c;
-        if (slash)
-            snprintf(out, size, "%.*sreplays", (int)(slash - prefs_path + 1), prefs_path);
-        else
-            snprintf(out, size, "replays");
+        if (slash) {
+            size_t prefix = (size_t)(slash - prefs_path + 1);
+            if (size < sizeof("replays") || prefix > size - sizeof("replays")) {
+                out[0] = '\0';
+                return 0;
+            }
+            memcpy(out, prefs_path, prefix);
+            memcpy(out + prefix, "replays", sizeof("replays"));
+            written = 0; /* The complete path was checked before copying. */
+        } else {
+            written = snprintf(out, size, "replays");
+        }
     } else {
-        snprintf(out, size, "replays");
+        written = snprintf(out, size, "replays");
+    }
+    if (written < 0 || (size_t)written >= size) {
+        out[0] = '\0';
+        return 0;
     }
     if (SDL_GetPathInfo(out, &info) && info.type == SDL_PATHTYPE_DIRECTORY)
         return 1;
@@ -388,7 +433,9 @@ static void FormatTime(int32_t ms, char *out, size_t size, int for_name) {
 static void FormatDate(int64_t at, char *out, size_t size, int compact) {
     SDL_DateTime dt;
 
-    if (!SDL_TimeToDateTime((SDL_Time)at * SDL_NS_PER_SECOND, &dt, true))
+    /* Header dates are untrusted seconds; SDL_Time uses signed nanoseconds. */
+    if (at < INT64_MIN / SDL_NS_PER_SECOND || at > INT64_MAX / SDL_NS_PER_SECOND ||
+        !SDL_TimeToDateTime((SDL_Time)at * SDL_NS_PER_SECOND, &dt, true))
         SDL_zero(dt);
     if (compact)
         snprintf(out, size, "%04d%02d%02d-%02d%02d%02d", dt.year, dt.month, dt.day, dt.hour, dt.minute,
@@ -402,8 +449,8 @@ void ReplayFileName(const ReplayFileInfo *info, char *out, size_t size) {
 
     FormatTime(info->race_time, time_text, sizeof(time_text), 1);
     FormatDate(info->saved_at, date, sizeof(date), 1);
-    snprintf(out, size, "%s_course%d%s_car%d-%d_%s_%s" REPLAY_FILE_EXTENSION, ModeTag(info->mode),
-             info->course + 1, info->reverse ? "R" : "", (info->car >> 8) & 0xFF, info->car & 0xFF,
+    snprintf(out, size, "%s_course%lld%s_car%d-%d_%s_%s" REPLAY_FILE_EXTENSION, ModeTag(info->mode),
+             (long long)info->course + 1, info->reverse ? "R" : "", (info->car >> 8) & 0xFF, info->car & 0xFF,
              time_text, date);
 }
 

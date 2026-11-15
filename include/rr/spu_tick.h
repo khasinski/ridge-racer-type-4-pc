@@ -17,7 +17,8 @@ typedef struct {
 } SpuTickState20;
 
 extern SpuTickState20 _snd_seq_tick_env;
-extern s32 VBLANK_MINUS;
+extern u32 VBLANK_MINUS;
+
 s32 GetVideoMode(void);
 void SsSetTickMode(s32 mode);
 

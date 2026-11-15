@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "game/data/menuvars.h"
 #include "game/system/pad.h"
 #include "rr/save_slots.h"
 #include "game/race/result4.h"
@@ -28,13 +29,8 @@
 #include "game/menu/mnrows.h"
 #include "game/data/ldscn1.h"
 
-
-extern int ModeFrame;
 #include "rr/menu_arena_base.h"
-extern signed char LoadState;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern s16 SubmodeState;
+
 extern char NewCar0Msg[];
 extern char StrNewCarLog[];
 extern int MenuStepDirection;

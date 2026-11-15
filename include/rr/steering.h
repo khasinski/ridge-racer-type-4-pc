@@ -1,5 +1,6 @@
 #ifndef RR_STEERING_H
 #define RR_STEERING_H
+#include "game/data/menuvars.h"
 #include "rr/race_types.h"
 
 /* Active node comparisons require a positive track count. Curve construction
@@ -9,7 +10,7 @@ s32 AngleDiffAbs(s32 first, s32 second);
 void BuildRateCurve(Curve24 *record, s32 displacement, s32 duration, s32 initialRate);
 s32 EvalRateCurve(const Curve24 *record, s32 time, s32 *output);
 extern s32 TrackNodeCount;
-extern s16 SelectedMakerIndex, GameModeType;
+extern s16 SelectedMakerIndex;
 
 RR_ASSERT_SIZE(Curve24, 0x18);
 RR_ASSERT_OFFSET(Curve24, duration, 4);

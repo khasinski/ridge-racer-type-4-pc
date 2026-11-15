@@ -5,7 +5,7 @@
 
 int LoadRaceSoundAndTrackStep(void);
 int LoadTrackVabsStep(void);
-int LoadAttractRaceStep();
+int LoadAttractRaceStep(void);
 void SetupRaceSoundCarConfig(void);
 int LoadTrophyModelStep(void);
 

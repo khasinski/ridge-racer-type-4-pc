@@ -1,3 +1,5 @@
+#include "game/gfx/sprefct.h"
+#include "game/data/menuvars.h"
 #include "rr/release.h"
 #include "rr/video_timing.h"
 #include "rr/projection_state.h"
@@ -38,22 +40,18 @@ typedef struct {
     short x, y, z;
 } Vec3s6;
 
-extern PolyF3Packet *EmitPolyF3();
 extern Vec3s6 StartSignalLightOffsetsA[];
 extern Vec3s6 StartSignalLightOffsetsB[];
 #include "game/course/trkintp.h"
 extern int ViewUsesCarTrackNode;
 extern s32 RaceState;
 extern int RaceVoiceFlags;
-extern short FadeCountdown;
 extern unsigned char PauseMenuMaxChoices[];
 extern signed char PauseCursor;
 extern int PauseAbortNextModes[];
 extern int TrackLength;
-extern short ModeIndex;
 extern int TotalRaceTime;
-extern short ModeGroup;
-extern short SubmodeState;
+
 #include "game/gfx/spremit.h"
 /* Aggregate coordinate arguments still need one recovered public contract. */
 extern unsigned char PauseMenuChoiceMap[][4];
@@ -63,7 +61,6 @@ extern int LinkReadHandle;
 extern s16 LinkState;
 extern int RaceStartSignalState;
 extern int RaceTimeRemaining;
-extern short LinkHostFlag;
 
 void SetupMenuCarCamera(int a);
 void PlayStartCountdownVoice(int a0);
@@ -395,7 +392,7 @@ void ApplyPauseMenuChoice(int arg0) {
             ModeIndex = *(unsigned char *)&PauseAbortNextModes[3];
             return;
         }
-        FinishRace(SelectionState.bytes, PauseCursor);
+        FinishRace();
         return;
     }
     RaceState = 6;
@@ -440,13 +437,17 @@ void DrawPauseMenu(GpuDmaTag *ordering, int selection) {
         rgb[1] = 0x20;
         vertex = tile / 3;
         vertex = vertex == 1;
+        s32 packedCorners[4];
+        for (unsigned i = 0; i < 4; ++i)
+            packedCorners[i] = (s32)((u32)(u16)corners[i].x |
+                                     ((u32)(u16)corners[i].y << 16));
         triangles = PauseMenuChoiceMap;
         indices = triangles[vertex];
-        cursor = EmitPolyF3(ordering, cursor, corners[indices[0]], corners[indices[1]], corners[indices[2]], rgb, 1);
+        cursor = EmitPolyF3(ordering, cursor, packedCorners[indices[0]], packedCorners[indices[1]], packedCorners[indices[2]], rgb, 1);
         rgb[0] = 0xFF;
         rgb[2] = 0xFF;
         rgb[1] = 0xFF;
-        cursor = EmitPolyF3(ordering, cursor, corners[indices[1]], corners[indices[2]], corners[indices[3]], rgb, 1);
+        cursor = EmitPolyF3(ordering, cursor, packedCorners[indices[1]], packedCorners[indices[2]], packedCorners[indices[3]], rgb, 1);
     }
     RR_GPU_SCRATCH->cursor = AddDrawModePrim(ordering, cursor, 5);
 

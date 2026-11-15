@@ -137,7 +137,7 @@ update_pause_timer:
         SubmitRaceHudPackets(GameModeType);
     }
     StepRaceFrame(GameModeType);
-    UpdateTrackObjects(0);
+    UpdateTrackObjects();
     if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
         UpdateRaceIntroCamera(PlayerCars, ModeFrame);
     } else {

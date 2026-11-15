@@ -22,7 +22,7 @@ extern s32 CardPortResult[RR_CARD_PORT_COUNT];
 extern s32 CardPortLoaded[RR_CARD_PORT_COUNT];
 extern u8 CardRawSectorWorkBuf[RR_CARD_RAW_SCRATCH_BYTES];
 
-void CardSystemInit();
+void CardSystemInit(void);
 s32 GetHwCardEvent(void);
 int CountCardFiles(int a, int b);
 int CardFreeBlocks(int a0);

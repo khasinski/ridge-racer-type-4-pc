@@ -38,7 +38,6 @@ typedef struct {
 } ColorRGB8;
 
 extern unsigned char FontGlyphMap[96];
-extern unsigned short PadDefaultButtonPresets[8][8];
 extern s32 PadDeadzoneTable[4];
 extern int CourseAssetGroupIds[8];
 extern int CourseAssetBaseFileIndex;

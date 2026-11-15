@@ -8,7 +8,7 @@ extern signed char *DialogueAssetTable;
 extern char *TrackNodesEnd;
 extern short MainMenuChoice;
 int LoadOpeningMovieTimStep(void);
-int LoadTimListStep();
+int LoadTimListStep(void);
 int LoadDialogueStep(void);
 int LoadSplashAssetsStep(void);
 int LoadDefaultRaceStep(void);
@@ -24,5 +24,6 @@ int LoadGlyphRowsStep(void);
 int LoadMenuCarModelsStep(void);
 int LoadTrackNodesStep(void);
 
+extern u8 LoadState;
 
 #endif /* RR_GAME_DATA_LDSCN1_H */

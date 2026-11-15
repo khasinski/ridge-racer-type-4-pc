@@ -1,5 +1,9 @@
 #ifndef RR_MODE_MENU_STATE_H
 #define RR_MODE_MENU_STATE_H
+#include "game/menu/savemenu.h"
+#include "game/menu/menutra21.h"
+#include "game/menu/menu8.h"
+#include "game/data/menuvars.h"
 #include "rr/save_slots.h"
 
 #include "rr/menu_setup.h"
@@ -8,10 +12,9 @@
 
 extern char CardSaveFileName[], CardTargetFileName[24];
 extern s32 ActivePlayerIndex, LoadMenuStatusPromptId, DialogueSceneMode, GarageExtraDefaultTimes[3];
-extern s16 MenuActiveControllerIndex, MenuStateIndex, CardTransferMode, ModeGroup;
-extern s16 GpSaveSlotCursor, GameModeType, LinkState, CardActivePort, CardMenuOperation;
-extern s16 CardReplayLoadedFlag, CardPromptIndex, CardPromptChoices[3];
-extern u16 ModeIndex, SubmodeState;
+extern s16 MenuActiveControllerIndex, MenuStateIndex;
+extern s16 LinkState, CardActivePort;
+extern s16 CardReplayLoadedFlag, CardPromptIndex;
 
 void CopyStringClearTail(char *destination, char *source);
 s32 UpdateLinkHandshake(s32);

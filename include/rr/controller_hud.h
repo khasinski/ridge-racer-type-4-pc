@@ -1,5 +1,6 @@
 #ifndef RR_CONTROLLER_HUD_H
 #define RR_CONTROLLER_HUD_H
+#include "game/race/racegrid.h"
 #include "game/system/pad.h"
 #include "rr/sprite_emit.h"
 #include "rr/badge_rows.h"
@@ -12,7 +13,6 @@ RR_ASSERT_SIZE(HudTriangle,12);
 extern u32 ScreenFrame;
 extern s16 HudLapFlashToggles[2];
 extern u8 HudRotatingQuadVerts[6],HudIndicatorTriColor[3];
-extern s16 LinkHostFlag;
 extern UiUvRect HudCheckeredFlagUv;
 s32 GetControllerWarning(s32 player);
 /* Layout1 selects port0 at Y112; layout2 selects port1 at Y240.

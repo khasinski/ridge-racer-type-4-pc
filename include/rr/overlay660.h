@@ -1,6 +1,8 @@
 #ifndef RR_OVERLAY660_H
 #define RR_OVERLAY660_H
 
+#include "game/menu/menutra21.h"
+#include "game/data/menuvars.h"
 #include "rr/menu_overlay_runtime.h"
 #include "rr/overlay_race_state.h"
 #include "rr/race_frame_scratch.h"
@@ -22,8 +24,7 @@ extern s32 ovl660_lap_record_rank;
 extern s16 ovl660_preview_bank;
 
 #include "rr/runtime_settings.h"
-extern s16 ActiveSceneId;
-extern s16 CardMenuReturnModeId, CardMenuOperation;
+
 void CopyStringClearTail(char *destination, char *source);
 void StepNameChar(char *text);
 void DrawRaceOverlaySprites(s32 paused);

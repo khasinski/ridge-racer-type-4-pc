@@ -32,11 +32,21 @@ Every file must compile with the root CMake flags:
 truncates a pointer is not a fix.
 
 The game also builds for 64-bit Windows, where `long` is 32 bits (LLP64).
-`tools/port/check.sh` compiles every file a second time for the Clang
-MinGW-w64 target with `-Wshorten-64-to-32 -Wformat` (CI runs it on Linux);
-install `mingw-w64` (Homebrew) to run it locally. Never keep a pointer or a
-host size in `long` / `unsigned long`; SDK prototypes keep `long` only where
-PsyZ declares `long`, and PsyZ `u_long` (pointer width) is `PsyqULong`.
+`tools/port/check.sh` checks game/native sources and each project header as a
+standalone C translation unit. Besides the native pass it checks Clang's
+64-bit MinGW target with `-Wshorten-64-to-32 -Wformat` and its 32-bit i686 target
+(ILP32). Install `mingw-w64` (Homebrew) to run both locally. Linux CI requires
+both header sets; `RR4_CHECK_LLP64=1` and `RR4_CHECK_ILP32=1` make a missing
+cross-target fail instead of skip. Separate installations can set
+`RR4_MINGW_SYSROOT` and `RR4_MINGW32_SYSROOT`.
+
+`RR_ASSERT_SIZE` and `RR_ASSERT_OFFSET` are active C11 static assertions on
+every host. Fixed disc/card/wire records keep fixed sizes; pointer-bearing
+records and GPU packets express their sizes using native pointer/tag widths
+and alignment. Use `RR_GPU_PACKET_SIZE` for a packed primitive payload's
+allocation stride, not its DMA word count. Never keep a pointer or a host
+size in `long` / `unsigned long`; SDK prototypes keep `long` only where PsyZ
+declares `long`, and PsyZ `u_long` (pointer width) is `PsyqULong`.
 
 ### GTE
 

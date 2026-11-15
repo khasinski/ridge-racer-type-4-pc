@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include <stdio.h>
 #include "rr/overlay_module.h"
 #include "rr/overlay668_resource.h"
 #include "rr/overlay668_playback_init.h"
@@ -10,6 +11,7 @@
 #include "rr/overlay668_decode.h"
 #include "rr/cd.h"
 #include "rr/cpu_time.h"
+#include "rr/interrupts.h"
 #include "rr/overlay668_display.h"
 #include "rr/overlay668_frame_submit.h"
 #include "rr/overlay668_frame_acquire.h"
@@ -80,7 +82,7 @@ void ovl668_update_stream_mode(void) {
 }
 
 void ovl668_start_stream_playback(u8 *arg0) {
-    s32 vol;
+    s32 vol, decoded;
     SetDispMask(0);
     ((StrPlaybackState *)RaceContext.streamStateB8)->width00 = 320;
     ((StrPlaybackState *)RaceContext.streamStateB8)->height04 = 240;
@@ -91,8 +93,13 @@ void ovl668_start_stream_playback(u8 *arg0) {
     ovl668_init_stream_buffers(arg0);
     ovl668_init_stream_display(&((StrPlaybackState *)RaceContext.streamStateB8)->display24, 0, 24, 0, 264);
     ovl668_setup_stream_ring(ovl668_on_mdec_slice_ready);
-    while (ovl668_decode_next_frame(&((StrPlaybackState *)RaceContext.streamStateB8)->display24) == -1) {
+    while ((decoded = ovl668_decode_next_frame(&((StrPlaybackState *)RaceContext.streamStateB8)->display24)) == -1) {
         ovl668_seek_and_read_stream(RaceContext.streamCurrentC0.c);
+    }
+    if (decoded < 0) {
+        RaceContext.streamStopD0 = 1;
+        RaceContext.streamPhaseB4 = 2;
+        return;
     }
     RaceContext.streamPhaseB4 = 1;
     RaceContext.streamFrameC4 = 0;
@@ -106,20 +113,27 @@ void ovl668_step_stream_playback(void)
     u32 frame;
     CdLocation *location;
     SceneRaceContext *context;
-    s32 pixels;
+    s32 pixels, decoded;
     SceneRaceContext *initialContext;
 
     timer = (ModeFrame + 1U);
     ModeFrame = timer;
     if (timer == 4) SetDispMask(1);
     initialContext = &RaceContext;
+    Psyz_KernelLockInterrupts();
     ovl668_mdec_in(((StrPlaybackState *)initialContext->streamStateB8)->commands10[((StrPlaybackState *)initialContext->streamStateB8)->display24.word00], 3);
     pixels = ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].h;
     context = initialContext;
     location = &context->streamCurrentC0;
     ovl668_mdec_out(((StrPlaybackState *)initialContext->streamStateB8)->buffers18[((StrPlaybackState *)initialContext->streamStateB8)->display24.word08], pixels / 2);
+    Psyz_KernelUnlockInterrupts();
 retry:
-    if (ovl668_decode_next_frame(&((StrPlaybackState *)context->streamStateB8)->display24) == -1) {
+    decoded = ovl668_decode_next_frame(&((StrPlaybackState *)context->streamStateB8)->display24);
+    if (decoded < -1) {
+        context->streamStopD0 = 1;
+        goto complete;
+    }
+    if (decoded == -1) {
         frame = StGetBackloc(location);
         DebugPrintStub(ovl668_backloc_debug_fmt, frame);
         if (frame >= context->streamFrameLimitC8) {
@@ -154,13 +168,13 @@ void ovl668_stop_stream_playback(void){
 
 void ovl668_init_stream_buffers(u8 *base){
  ((StrPlaybackState*)RaceContext.streamStateB8)->commands10[0]=(StrCommandHeader*)base;
- base+=0xa000;
+ base+=RR_STR_COMMAND_BYTES;
  ((StrPlaybackState*)RaceContext.streamStateB8)->commands10[1]=(StrCommandHeader*)base;
- base+=0xa000;
+ base+=RR_STR_COMMAND_BYTES;
  ((StrPlaybackState*)RaceContext.streamStateB8)->buffers18[0]=base;
- base+=0x2d00;
+ base+=RR_STR_SLICE_BYTES;
  ((StrPlaybackState*)RaceContext.streamStateB8)->buffers18[1]=base;
- base+=0x2d00;
+ base+=RR_STR_SLICE_BYTES;
  ((StrPlaybackState*)RaceContext.streamStateB8)->queue20=(LibQueueRecord32*)base;
 }
 
@@ -183,7 +197,7 @@ void ovl668_init_stream_display(StrDisplayConfig*p,s32 x,s32 y,s32 second_x,s32 
 void ovl668_setup_stream_ring(LibInterruptCallback callback) {
     ovl668_mdec_reset(0);
     ovl668_mdec_out_callback(callback);
-    StSetRing(((StrPlaybackState *)RaceContext.streamStateB8)->queue20, 32);
+    StSetRing(((StrPlaybackState *)RaceContext.streamStateB8)->queue20, RR_STR_RING_SECTORS);
     StSetStream(1, 1, -1, 0, 0);
 }
 
@@ -227,10 +241,11 @@ static void ovl668_spend_vlc_time(const StrCommandHeader *commands) {
 s32 ovl668_decode_next_frame(StrDisplayConfig *config) {
     u8 *data;
     s32 remaining = 2000;
-    u32 *index;
+    size_t bytes;
+    u32 index;
 
     while (1) {
-        data = ovl668_acquire_stream_frame(config);
+        data = ovl668_acquire_stream_frame(config, &bytes);
         if (data != 0) {
             break;
         }
@@ -238,18 +253,33 @@ s32 ovl668_decode_next_frame(StrDisplayConfig *config) {
             return -1;
         }
     }
-    index = &config->word00;
-    *index = *index < 1U;
-    ovl668_mdec_decode_vlc(data, ((StrPlaybackState *)RaceContext.streamStateB8)->commands10[*index]);
-    ovl668_spend_vlc_time(((StrPlaybackState *)RaceContext.streamStateB8)->commands10[*index]);
+    index = config->word00 < 1U;
+    StrCommandHeader *commands = ((StrPlaybackState *)RaceContext.streamStateB8)->commands10[index];
+    if (!bytes || ovl668_mdec_decode_vlc(data, bytes, commands, RR_STR_COMMAND_BYTES) != 0) {
+        StFreeRing(data);
+        fprintf(stderr, "RR4: invalid or truncated movie frame; ending playback\n");
+        return -2;
+    }
+    config->word00 = index;
+    ovl668_spend_vlc_time(commands);
     return (s32)StFreeRing(data);
 }
 
-u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config) {
+u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config, size_t *bytes) {
  GpuRectangle rectangle;
  u8 *data;LibQueueRecord32 *header;
  s32 retry=2000;StrPlaybackState *playback;
+ *bytes = 0;
  while(StGetNext(&data,&header)!=0) {if(--retry==0)return 0;}
+ /* The consumer owns this completed frame until StFreeRing. A malformed
+  * header must not resize the display or overrun the 16-pixel slice buffers. */
+ if (!header->sectors06 || header->sectors06 >= RR_STR_RING_SECTORS ||
+     header->frameBytes0C < 12 || header->frameBytes0C > (u32)header->sectors06 * 2016 ||
+     !header->width10 || header->width10 > 320 || (header->width10 & 15) ||
+     !header->height12 || header->height12 > 240 || (header->height12 & 15))
+     return data;
+ *bytes = header->frameBytes0C;
+ Psyz_KernelLockInterrupts();
  if(header->value08>=RaceContext.streamFrameLimitC8)RaceContext.streamStopD0=1;
  if(RaceContext.streamFrameC4>=RaceContext.streamFrameBudgetCC)RaceContext.streamStopD0=1;
  if(((StrPlaybackState*)RaceContext.streamStateB8)->width00!=header->width10 || ((StrPlaybackState*)RaceContext.streamStateB8)->height04!=header->height12) {
@@ -272,6 +302,7 @@ u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config) {
  DrawBuffers[0].environment.display5C.display.w=DrawBuffers[1].environment.display5C.display.w;
  DrawBuffers[1].environment.display5C.display.h=((StrPlaybackState*)RaceContext.streamStateB8)->height04;
  DrawBuffers[0].environment.display5C.display.h=DrawBuffers[1].environment.display5C.display.h;
+ Psyz_KernelUnlockInterrupts();
  return data;
 }
 
@@ -282,10 +313,13 @@ u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config) {
 
 void ovl668_wait_frame_ready(StrDisplayConfig *config,s32 mode)
 {
-    u32 ready=config->ready0C;
     volatile u32 counter=0x800000;
+    Psyz_KernelLockInterrupts();
+    u32 ready=config->ready0C;
     if(ready==0) do {
+        Psyz_KernelUnlockInterrupts();
         Psyz_SpendTime(WAIT_FRAME_ITERATION_NS);
+        Psyz_KernelLockInterrupts();
         if (--counter==0) {
             config->ready0C=1;
             config->alternate04=!config->alternate04;
@@ -294,6 +328,7 @@ void ovl668_wait_frame_ready(StrDisplayConfig *config,s32 mode)
         }
     } while(config->ready0C==0);
     config->ready0C=0;
+    Psyz_KernelUnlockInterrupts();
 }
 
 extern s32 CdRead2(s32);
@@ -317,6 +352,10 @@ const char ovl668_backloc_debug_fmt[28] = {116, 105, 109, 101, 32, 111, 117, 116
 extern const OverlayStateTable ovl668_epilogue_credits_state, ovl668_mdec_state;
 static const OverlayStateTable *const ovl668_state_tables[] = {&ovl668_epilogue_credits_state, &ovl668_mdec_state};
 static OverlayStateImage ovl668_state_image = {ovl668_state_tables, sizeof(ovl668_state_tables) / sizeof(ovl668_state_tables[0]), NULL};
+
+void ovl668_capture_module(void) {
+    OverlayStateCapture(&ovl668_state_image);
+}
 
 void ovl668_reset_module(void) {
     OverlayStateRestore(&ovl668_state_image);

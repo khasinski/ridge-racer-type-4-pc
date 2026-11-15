@@ -1,4 +1,5 @@
 #include "rr/emblem_images.h"
+#include "game/data/menuvars.h"
 #include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/load_cursor.h"
@@ -36,12 +37,6 @@ extern unsigned short DefaultCourseChoiceGlyphs[];
 #include "rr/cd_directory_buffer.h"
 extern char StrTitle0Log[];
 extern s32 VSyncThreshold;
-extern s32 ModeFrame;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern s8 LoadState;
-extern s16 SubmodeState;
-extern s16 CardMenuOperation;
 
 void InitDefaultTimeRecords(void) {
     RR_CPU_CYCLES(RR_CYCLES_INIT_DEFAULT_TIME_RECORDS);

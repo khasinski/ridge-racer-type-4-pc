@@ -1,4 +1,5 @@
 #include "psyq/libgte/gtemat5.h"
+#include "game/race/racegrid.h"
 #include "rr/vehicle_table.h"
 #include "psyq/libgte/gtemat4.h"
 #include "psyq/libgte/gtemat3.h"
@@ -18,8 +19,6 @@
 #include "game/race/racesamp.h"
 #include "game/data/selection.h"
 #include "game/math/rotmat.h"
-
-extern short LinkHostFlag;
 
 void SetCarBounds(RaceVehicle *a);
 

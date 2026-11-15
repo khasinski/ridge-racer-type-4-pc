@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-int LoadTrackStep();
+int LoadTrackStep(void);
 int GetPlayerCarVariantIndex(int i);
 
 #endif /* RR_GAME_DATA_TRKLD5_H */

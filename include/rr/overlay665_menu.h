@@ -1,5 +1,6 @@
 #ifndef RR_OVERLAY665_MENU_H
 #define RR_OVERLAY665_MENU_H
+#include "game/data/menuvars.h"
 #include "rr/menu_arenas.h"
 #include "rr/menu_setup.h"
 #include "rr/menu_text_state.h"
@@ -9,8 +10,7 @@
 #include "rr/menu_pulse.h"
 #include "rr/frame_environment.h"
 #include "rr/scene_camera_state.h"
-extern Overlay665VisualState ovl665_options_state;
-extern s16 FadeCountdown;
+
 #include "rr/menu_frame_state.h"
 extern s32 ovl665_saved_stereo_mode;
 void RaceLoadReset(void);

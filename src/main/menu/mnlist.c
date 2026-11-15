@@ -1,4 +1,5 @@
 #include "game/ui/uipart1.h"
+#include "game/menu/menu8.h"
 #include "rr/menu_frame_state.h"
 #include "rr/save_slots.h"
 #include "game/menu/mnlist.h"
@@ -33,7 +34,6 @@ extern u8 SaveSlotDifficultyCharsA[];
 extern u8 SaveSlotDifficultyCharsB[];
 extern u8 SaveSlotPhaseChars[];
 extern u8 SaveSlotTrophyTileColors[];
-extern short GpSaveSlotCursor;
 extern char FractionText[];
 
 
@@ -381,7 +381,8 @@ SavedMenuSettings SaveSlotSelections[RR_SAVE_SLOT_COUNT];
  * which is constant once the game runs. Unloaded slots point at an image of
  * those bytes so the panel shows the same values; the loader replaces the
  * pointer (SetCarRecordPtr). Same scheme as CarBoundsTable. */
-static const union {
+/* Car setup writes derived gear rates, including through this fallback. */
+static union {
     u8 bytes[sizeof(CarRecord)];
     CarRecord record;
 } CarRecordUnloaded = {.bytes = {
@@ -400,7 +401,7 @@ static const union {
     [0x210] = 0x00, 0x2E, 0x00, 0x00, 0xFC, 0x2E, 0x00, 0x00,
 }};
 CarRecord *CarRecordPtrs[4] = {
-    (CarRecord *)&CarRecordUnloaded.record, (CarRecord *)&CarRecordUnloaded.record,
-    (CarRecord *)&CarRecordUnloaded.record, (CarRecord *)&CarRecordUnloaded.record,
+    &CarRecordUnloaded.record, &CarRecordUnloaded.record,
+    &CarRecordUnloaded.record, &CarRecordUnloaded.record,
 };
 char FractionText[8];

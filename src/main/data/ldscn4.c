@@ -1,4 +1,5 @@
 #include "game/data/cdfile2.h"
+#include "game/data/ldscn1.h"
 #include "rr/load_cursor.h"
 #include "game/data/trkld6.h"
 #include "game/gfx/fadespr.h"
@@ -11,7 +12,6 @@
 #include "rr/cd_directory_buffer.h"
 #include "rr/menu_arena_base.h"
 #include "rr/overlay_module.h"
-extern unsigned char LoadState;
 
 int LoadAttractTimStep(void) {
     int r = 0;

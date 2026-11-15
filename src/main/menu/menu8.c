@@ -1,4 +1,6 @@
 #include "game/ui/uipart1.h"
+#include "game/menu/menutra21.h"
+#include "game/data/menuvars.h"
 #include "rr/menu_arena_state.h"
 #include "rr/menu_choice_types.h"
 #include "rr/vehicle_table.h"
@@ -33,21 +35,12 @@
 #include "game/ui/uidraw.h"
 #include "game/ui/uibar.h"
 
-
-
-extern short CardMenuOperation;
 #include "rr/sprite_effect.h"
 extern SpriteEffectSource MenuJitterSpritePresetA;
 extern SpriteEffectSource MenuJitterSpritePresetB;
-extern s16 ModeIndex;
-extern s16 ModeGroup;
-extern s16 GpSaveSlotCursor;
-extern u16 SubmodeState;
-extern short FadeCountdown;
-extern short MenuScriptId;
+
 extern int MenuAutoAdvanceTimer;
 extern s16 MenuCursor;
-extern s32 ModeFrame;
 extern s16 CardActivePort;
 
 void SelectDialogueScript(void);
@@ -365,7 +358,7 @@ void GpSaveSlotMenuUpdate(void) {
                     FadeCountdown = 0x40;
                     ResetScreenCounters();
                     LoadCursor = MenuArenas.second;
-                    LoadTimListStep(0);
+                    LoadTimListStep();
                     BadgeRows->state10 = s0;
                     BadgeRows[1].state10 = s0;
                 }
@@ -377,7 +370,7 @@ void GpSaveSlotMenuUpdate(void) {
         if (FadeCountdown > 0) FadeCountdown = FadeCountdown - 1;
         AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (0x40 - FadeCountdown) * 4, 0x45);
         if (FadeCountdown <= 0) {
-            if (LoadTimListStep(1) == 1) {
+            if (LoadTimListStep() == 1) {
                 SelectionState.fields = SaveSlotSelections[GpSaveSlotCursor].fields;
                 ModeGroup = 1;
                 ModeIndex = 0xF;

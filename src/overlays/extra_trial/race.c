@@ -1,4 +1,5 @@
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include "game/car/carparam.h"
 #include "rr/overlay666.h"
 #include "rr/frame_storage_types.h"
@@ -195,7 +196,7 @@ void ovl666_update_race(void) {
         DrawRaceStartSignalSprite(0);
     }
     SetupPlayerView(0);
-    UpdateTrackObjects(0);
+    UpdateTrackObjects();
     DrawTrackObjects(0);
     DrawTrackSceneryForPlayer(0);
     UpdateAndDrawRearViewMirror(ScreenFrame);
