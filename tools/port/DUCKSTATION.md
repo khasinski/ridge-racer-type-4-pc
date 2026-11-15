@@ -83,6 +83,7 @@ Environment:
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
 | `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on/off |
 | `DUCKSTATION_ADPCM_DUMP`, `DUCKSTATION_VOICE18_DUMP` | dump voice 18's decoded blocks / output samples (XA debugging) |
+| `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
 card slot 2 are empty, audio goes to the null backend and the renderer is

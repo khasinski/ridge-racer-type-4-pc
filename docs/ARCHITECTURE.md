@@ -288,6 +288,11 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      as CPU time with the interrupts on top (StGetNext), so a second pad's
      libpad exchange (4.8k clocks a vblank) lengthens them; DrawOTag waits
      for the list DMA over the table's empty head (61 clocks a node).
+     Each CD seek takes DuckStation's extra 0.5-1 ms from the same seeded
+     generator, draw for draw (the BIOS boot's 12 draws included), and the
+     drive's geometry counts absolute sectors as the mechanism does.
+     StGetNext's poll spends its time on the real-time clock as well, so
+     the movie player's 4,000,000-poll retry count outlasts the first seek.
      A LIBCD polling wait (CdSync(0), CdReady(0)) takes the interrupt
      handlers that come meanwhile within the wait, so a CdControlB(CdlPause)
      returns as the drive finishes; the wait CD_cw makes for the previous

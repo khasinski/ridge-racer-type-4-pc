@@ -1,3 +1,82 @@
+diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
+index 667aaab67..c4cc51fd9 100644
+--- a/src/core/cdrom.cpp
++++ b/src/core/cdrom.cpp
+@@ -38,6 +38,8 @@
+ #include "imgui.h"
+ 
+ #include <cmath>
++#include <cstdio>
++#include <cstdlib>
+ #include <map>
+ #include <vector>
+ 
+@@ -1669,6 +1671,12 @@ u32 CDROM::GetSectorsPerTrack(CDImage::LBA lba)
+   return spt_table[std::min(mm, static_cast<u32>(spt_table.size() - 1))];
+ }
+ 
++static bool CdTraceEnabled()
++{
++  static const int enabled = std::getenv("DUCKSTATION_CD_TRACE") != nullptr;
++  return enabled != 0;
++}
++
+ TickCount CDROM::GetTicksForSeek(CDImage::LBA new_lba, bool ignore_speed_change)
+ {
+   if (g_settings.cdrom_seek_speedup == 0)
+@@ -1745,7 +1753,15 @@ TickCount CDROM::GetTicksForSeek(CDImage::LBA new_lba, bool ignore_speed_change)
+   // the same seek times repeatedly, end up locking up in an infinite loop. e.g. Resident Evil, Dino Crisis, etc.
+   // Add some randomness to timing if we detect them repeatedly seeking, otherwise don't. This somewhat simulates how
+   // the real hardware behaves, by adding an additional 0.5-1ms to every seek.
+-  ticks += s_state.prng.NextRange<u32>(System::MASTER_CLOCK / 2000, System::MASTER_CLOCK / 1000);
++  {
++    static u32 s_seek_draws;
++    const u32 jitter = s_state.prng.NextRange<u32>(System::MASTER_CLOCK / 2000, System::MASTER_CLOCK / 1000);
++    ticks += jitter;
++    if (CdTraceEnabled())
++      std::fprintf(stderr, "CDSEEK %u tick %llu frame %u from %u to %u jitter %u ticks %u\n", ++s_seek_draws,
++                   static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber(),
++                   static_cast<unsigned>(current_lba), static_cast<unsigned>(new_lba), jitter, ticks);
++  }
+ 
+   if (g_settings.cdrom_seek_speedup > 1)
+     ticks = std::max<u32>(ticks / g_settings.cdrom_seek_speedup, MIN_SEEK_TICKS);
+@@ -1911,6 +1927,9 @@ void CDROM::ExecuteCommand(void*, TickCount ticks)
+ 
+   // Stop command event first, reduces our chances of ending up with out-of-order events.
+   s_state.command_event.Deactivate();
++  if (CdTraceEnabled())
++    std::fprintf(stderr, "CDCMD %s tick %llu frame %u\n", ci.name,
++                 static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
+ 
+   switch (s_state.command)
+   {
+diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
+index d31bc5d83..3299937c9 100644
+--- a/src/core/gpu.cpp
++++ b/src/core/gpu.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "gpu.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "bus.h"
+ #include "core.h"
+ #include "cpu_pgxp.h"
+@@ -1672,6 +1674,12 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
+       }
+ 
+       Timers::SetGate(HBLANK_TIMER_INDEX, new_vblank);
++      {
++        static const bool trace = std::getenv("DUCKSTATION_CD_TRACE") != nullptr;
++        if (trace && new_vblank)
++          std::fprintf(stderr, "VBLANK tick %llu frame %u\n",
++                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
++      }
+       InterruptController::SetLineState(InterruptController::IRQ::VBLANK, new_vblank);
+       s_locals.crtc_state.in_vblank = new_vblank;
+     }
 diff --git a/src/core/spu.cpp b/src/core/spu.cpp
 index 824a9ae9a..0ba65db03 100644
 --- a/src/core/spu.cpp
@@ -96,6 +175,32 @@ index 824a9ae9a..0ba65db03 100644
  #ifndef __ANDROID__
      if (MediaCapture* cap = System::GetMediaCapture()) [[unlikely]]
      {
+diff --git a/src/core/timers.cpp b/src/core/timers.cpp
+index c3b6edd26..7da5c8a02 100644
+--- a/src/core/timers.cpp
++++ b/src/core/timers.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "timers.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "gpu.h"
+ #include "interrupt_controller.h"
+ #include "system.h"
+@@ -370,6 +372,12 @@ void Timers::WriteRegister(u32 offset, u32 value)
+   }
+ 
+   s_state.sysclk_event.InvokeEarly();
++  {
++    static const bool trace = std::getenv("DUCKSTATION_CD_TRACE") != nullptr;
++    if (trace && timer_index == 2)
++      std::fprintf(stderr, "RCNT2 off %u value 0x%x tick %llu frame %u\n", port_offset, value,
++                   static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
++  }
+ 
+   // Strictly speaking these IRQ checks should probably happen on the next tick.
+   switch (port_offset)
 diff --git a/src/duckstation-regtest/CMakeLists.txt b/src/duckstation-regtest/CMakeLists.txt
 index 9a7080255..d7b1ba718 100644
 --- a/src/duckstation-regtest/CMakeLists.txt

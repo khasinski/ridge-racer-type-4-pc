@@ -16,8 +16,7 @@
  * A headless run with RR4_LINK keeps the host clock and paces its fields
  * (PSYZ_AUDIO_CLOCK=wall, PSYZ_HEADLESS_PACED=1) unless they are given:
  * the two games share real time, as two consoles do. Only the hidden GPU
- * renderer (PSYZ_HEADLESS=gpu) paces; PSYZ_HEADLESS=1 runs unpaced. Such
- * runs also need PSYZ_CD_TIMING=instant for now (TECH_DEBT H19). */
+ * renderer (PSYZ_HEADLESS=gpu) paces; PSYZ_HEADLESS=1 runs unpaced. */
 
 /* First thing in main: the environment defaults above. */
 void Rr4LinkPrepareEnv(void);
