@@ -81,9 +81,9 @@ Environment:
 | `REGTEST_CARD1` | `none`: no card in slot 1; a path: that card file (shared); unset: a blank non-persistent card |
 | `REGTEST_VRAM_OUT` | write the final VRAM at exit |
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
-| `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on/off |
+| `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on (with the system tick) and key-off |
 | `DUCKSTATION_ADPCM_DUMP`, `DUCKSTATION_VOICE18_DUMP` | dump voice 18's decoded blocks / output samples (XA debugging) |
-| `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
+| `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`) and completes (`CDDONE`, a second response), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
 card slot 2 are empty, audio goes to the null backend and the renderer is
@@ -99,3 +99,7 @@ the game leaves unused and points each function at it, then prints the
 clocks of each call (`ds_calltime.py 2000 2200 PadUpdate PsyqBzero:tail:arg=a1`,
 through `run_capped.sh`; its docstring has the options). `DUMMYBP=1` sets a
 never-hit breakpoint, for the same run on the interpreter.
+`ds_mark.py` logs when functions are entered instead (a stub writes a
+marker to root counter 2, which `DUCKSTATION_CD_TRACE` logs with the tick):
+for calls too long for root counter 0 and for timelines across fields, such
+as the boot (`ds_mark.py 293 440 MainLoop SystemInit CdInit SsInit`).

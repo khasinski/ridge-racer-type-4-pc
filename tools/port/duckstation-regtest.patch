@@ -1,5 +1,5 @@
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
-index 667aaab67..c4cc51fd9 100644
+index 667aaab67..ad184982b 100644
 --- a/src/core/cdrom.cpp
 +++ b/src/core/cdrom.cpp
 @@ -38,6 +38,8 @@
@@ -51,6 +51,17 @@ index 667aaab67..c4cc51fd9 100644
  
    switch (s_state.command)
    {
+@@ -2665,6 +2684,10 @@ void CDROM::ExecuteTestCommand(u8 subcommand)
+ 
+ void CDROM::ExecuteCommandSecondResponse(void*, TickCount ticks)
+ {
++  if (CdTraceEnabled())
++    std::fprintf(stderr, "CDDONE %s tick %llu frame %u\n",
++                 s_command_info[static_cast<u8>(s_state.command_second_response)].name,
++                 static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
+   switch (s_state.command_second_response)
+   {
+     case Command::GetID:
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
 index d31bc5d83..3299937c9 100644
 --- a/src/core/gpu.cpp
@@ -78,7 +89,7 @@ index d31bc5d83..3299937c9 100644
        s_locals.crtc_state.in_vblank = new_vblank;
      }
 diff --git a/src/core/spu.cpp b/src/core/spu.cpp
-index 824a9ae9a..0ba65db03 100644
+index 824a9ae9a..613295791 100644
 --- a/src/core/spu.cpp
 +++ b/src/core/spu.cpp
 @@ -55,6 +55,8 @@ ALWAYS_INLINE constexpr float ApplyVolumeF(float sample, s16 volume)
@@ -114,8 +125,8 @@ index 824a9ae9a..0ba65db03 100644
 +  {
 +    const std::ptrdiff_t index = this - s_state.voices.data();
 +    std::fprintf(stderr,
-+                 "DS-SPU key-on voice=%td addr=%u repeat=%u pitch=%u left=%d right=%d adsr1=%u adsr2=%u\n",
-+                 index, regs.adpcm_start_address, regs.adpcm_repeat_address, regs.adpcm_sample_rate,
++                 "DS-SPU key-on tick=%llu voice=%td addr=%u repeat=%u pitch=%u left=%d right=%d adsr1=%u adsr2=%u\n",
++                 static_cast<unsigned long long>(System::GetGlobalTickCounter()), index, regs.adpcm_start_address, regs.adpcm_repeat_address, regs.adpcm_sample_rate,
 +                 static_cast<s16>(regs.volume_left.bits), static_cast<s16>(regs.volume_right.bits),
 +                 static_cast<u16>(regs.adsr.bits), static_cast<u16>(regs.adsr.bits >> 16));
 +  }

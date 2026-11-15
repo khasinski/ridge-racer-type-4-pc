@@ -1,4 +1,5 @@
 #include <string.h>
+#include "rr/cpu_time.h"
 #include "rr/gpu_address.h"
 #include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
@@ -259,6 +260,12 @@ void MainLoop(void) {
      * MODE_NTSC in SystemInit. */
     if (!RR_RELEASE_JP)
         SetVideoMode(RR_PAL_NTSC(1, 0));
+    /* The console gets here 6.484 ms after a vblank (the BIOS's hand-over
+     * and crt0) and libetc's first ResetCallback takes 62.3k clocks; that
+     * phase sets where the boot's CD commands and the sequencer's root
+     * counter (SsStart) fall in their fields (rr/cpu_time.h). The port's
+     * fields start here. */
+    RR_CPU_CYCLES(RR_CYCLES_BOOT_TO_MAIN_LOOP + RR_CYCLES_FIRST_RESET_CALLBACK);
     ResetCallback();
     SystemInit();
     VSyncThreshold=128;

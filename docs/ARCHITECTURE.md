@@ -293,13 +293,18 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      drive's geometry counts absolute sectors as the mechanism does.
      StGetNext's poll spends its time on the real-time clock as well, so
      the movie player's 4,000,000-poll retry count outlasts the first seek.
-     A LIBCD polling wait (CdSync(0), CdReady(0)) takes the interrupt
-     handlers that come meanwhile within the wait, so a CdControlB(CdlPause)
-     returns as the drive finishes; the wait CD_cw makes for the previous
-     command keeps them owed, as DuckStation does. Still open: libpad's
+     A LIBCD polling wait (CdSync(0), CdReady(0), and CD_cw's CD_sync(0)
+     for the previous command) takes the interrupt handlers that come
+     meanwhile within the wait, so a CdControlB(CdlPause) returns as the
+     drive finishes and SsStart follows CdReset's 0.8 s Init by 0.2 ms; a
+     read ends with its Pause's completion (CdReadSync), and LIBCD's own
+     code around each command, the boot's directory search and the
+     hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time, so
+     the boot's CD commands and the sequencer's timer start within 0.13 ms
+     of DuckStation's. Still open: libpad's
      store order and missed vblanks with two pads (VS, `docs/TECH_DEBT.md`
-     F1), and the sequencer timer's phase, which the boot timeline before
-     SsStart sets (F6).
+     F1), the sequencer's phase against the menus (F6) and race frames'
+     CPU time (F13).
    - **Link cable over the network:** the link battle's serial port (SIO1)
      is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
      driver ported from the decompilation (`_sio_control`, the `sio:`

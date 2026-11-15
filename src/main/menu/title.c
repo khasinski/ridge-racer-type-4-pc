@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/video_timing.h"
 #include "game/data/menuvars.h"
 #include "game/system/pad.h"
@@ -96,6 +97,9 @@ void AttractDemoRaceUpdate(void) {
   }
   StepRaceFrame(5);
   UpdateTrackObjects();
+  /* The demo race's PS1 time: after a long CD wait at its start the
+   * frame runs past the next vblank, as on the console (rr/cpu_time.h). */
+  RR_CPU_CYCLES(RR_CYCLES_ATTRACT_DEMO_FRAME);
   MaskBitSetting = (one = 1);
   RaceContext.attract4BC.frame00 = RaceContext.attract4BC.frame00 + one;
   RaceContext.attract4BC.cameraTimer08 = RaceContext.attract4BC.cameraTimer08 + one;

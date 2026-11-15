@@ -1,4 +1,6 @@
+#include <string.h>
 #include "rr/release.h"
+#include "rr/cpu_time.h"
 #include "rr/scene_camera_state.h"
 #include "rr/runtime_settings.h"
 #include "rr/menu_selection.h"
@@ -101,8 +103,13 @@ void SoundSystemInit(void) {
     state = &SoundState;
     SsStart();
     SsSetMVol(0x7F, 0x7F);
-    PsyqBzero(state, sizeof(*state));
-    PsyqBzero(&RaceContext, sizeof(RaceContext));
+    /* The BIOS bzero clears the PS1 structures, 43216 and 1404 bytes; the
+     * host's are larger (pointers), so they are cleared here and the
+     * bzero's time is the PS1 one. */
+    memset(state, 0, sizeof(*state));
+    RR_CPU_CYCLES(RR_CYCLES_BIOS_FILL + RR_CYCLES_BIOS_FILL_BYTE * RR_PS1_AUDIO_STATE_BYTES);
+    memset(&RaceContext, 0, sizeof(RaceContext));
+    RR_CPU_CYCLES(RR_CYCLES_BIOS_FILL + RR_CYCLES_BIOS_FILL_BYTE * RR_PS1_RACE_CONTEXT_BYTES);
     InitSceneOverlayState();
     ResetSlotOrder();
     state->master08 = 0x80;

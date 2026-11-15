@@ -59,6 +59,11 @@ enum {
      * host table holds, at the BIOS fill's 132 clocks a byte (PsyZ
      * BIOS_FILL_BYTE_CYCLES, which the recompiler confirms) */
     RR_CYCLES_BIOS_FILL_BYTE = 132,
+    RR_CYCLES_BIOS_FILL = 328, // and the call (PsyZ BIOS_FILL_CYCLES)
+    /* SoundSystemInit's bzero of AudioState and RaceContext: their PS1
+     * sizes (the executable's arguments) */
+    RR_PS1_AUDIO_STATE_BYTES = 0xA8D0,
+    RR_PS1_RACE_CONTEXT_BYTES = 1404,
     /* 00df23a8: loads with a save on the card. PadUpdate takes 2.0k or
      * 5.7k on the recompiler depending on its path (not its callees), so
      * the breakpoint value stays [call] */
@@ -70,6 +75,23 @@ enum {
     RR_CYCLES_SOUND_UPDATE = 1105,
     RR_CYCLES_UPDATE_SOUND_SLOT = 3873,  // UpdateSoundSlot, a call
     RR_CYCLES_SOUND_LISTENER = 2695,     // SoundListenerUpdate, listener on
+    /* The boot, measured [mark]: entry-to-entry clocks on DuckStation's
+     * recompiler, from a stub at each function entry that writes root
+     * counter 2 (unused before SsStart), logged with DUCKSTATION_CD_TRACE
+     * (tools/port/DUCKSTATION.md). The BIOS (fast boot, SCPH-1001) starts
+     * the executable 10.7 ms into a field; its crt0 reaches MainLoop
+     * 6.484 ms after the next vblank, and libetc's first ResetCallback
+     * takes 62.3k clocks: SystemInit starts 8.324 ms after that vblank.
+     * The port starts its fields there and spends both in MainLoop. */
+    RR_CYCLES_BOOT_TO_MAIN_LOOP = 219610,
+    RR_CYCLES_FIRST_RESET_CALLBACK = 62308,
+    /* LoadR4Directory after its read: the directory's entries to sector
+     * positions (CdIntToPos, 76 clocks, and the loop), 80.0k for 950 */
+    RR_CYCLES_R4_DIRECTORY_ENTRY = 84,
+    /* The attract demo's race frame, AttractDemoRaceUpdate up to the
+     * frame's DrawSync: the least of 169 frames (502k-614k, median 614k)
+     * [mark], so a frame that starts on time stays in its field */
+    RR_CYCLES_ATTRACT_DEMO_FRAME = 502220,
 };
 
 void Psyz_SpendCycles(unsigned cycles);

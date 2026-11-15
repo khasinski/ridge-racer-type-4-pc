@@ -19,6 +19,7 @@
 #include "rr/gpu.h"
 #include "rr/gpu_scratch_types.h"
 #include "rr/release.h"
+#include "rr/cpu_time.h"
 
 s32 CdPosToInt(const u8 *location);
 extern const char NowLoadingFmt[];
@@ -115,6 +116,7 @@ void LoadR4Directory(void)
         fprintf(stderr, "RR4: invalid R4.BIN directory\n");
         PsyqExit(1);
     }
+    RR_CPU_CYCLES(RR_CYCLES_R4_DIRECTORY_ENTRY * GameReleaseProfile->r4Entries);
 }
 
 void InitCdFileDirectory(void) {
