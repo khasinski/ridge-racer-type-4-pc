@@ -81,6 +81,16 @@ index 667aaab67..ad184982b 100644
    switch (s_state.command_second_response)
    {
      case Command::GetID:
+@@ -3376,6 +3399,9 @@ void CDROM::DoSectorRead()
+   }
+ 
+   s_state.current_lba = s_reader.GetLastReadSector();
++  if (CdTraceEnabled() && std::getenv("DUCKSTATION_CD_SECTORS"))
++    std::fprintf(stderr, "CDSECT %u tick %llu frame %u\n", static_cast<unsigned>(s_state.current_lba),
++                 static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
+   s_state.current_subq_lba = s_state.current_lba;
+   s_state.last_subq_needs_update = false;
+   s_state.subq_lba_update_tick = System::GetGlobalTickCounter();
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
 index d31bc5d83..3299937c9 100644
 --- a/src/core/gpu.cpp
