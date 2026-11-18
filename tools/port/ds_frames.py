@@ -21,6 +21,9 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
   DSF_POKES   its RR4_POKE (PlayerCars/ComCars/TrackLength names; host
               RaceVehicle offsets past the first car are mapped to the PS1's
               800-byte records)
+  DSF_CARDPORT=1  append "cport <n>": the BIOS card driver's port byte
+              (PS1 0x7264) as the line is read, the port it served at the
+              blank before; the port's PSYZ_CARD_TRACE prints its own
   DSF_MASKS   pad 1 masks per port vsync ("vsync mask"), RR4_AUTODRIVE's
               input made with `masks` from the port's trace and its
               RR4_AUTODRIVE_LOG (lead 1, with one pad or two: lead 2 put
@@ -75,6 +78,7 @@ for _f in (os.listdir(_ovl) if os.path.isdir(_ovl) else []):
     if _f.endswith('.json') and _f != 'names.json':
         for _fn in json.load(open(os.path.join(_ovl, _f))).get('functions', []):
             OVL[_fn['symbol']] = _fn['address']
+CARD_PORT = 0x80007264  # the BIOS card driver's current port (DSF_CARDPORT)
 WATCH = [('RaceState', 'RaceState', 0), ('PlayerCars+388', 'PlayerCars', 388),
          ('PlayerCars+1204', 'PlayerCars', 1204), ('ComCars+388', 'ComCars', 388),
          ('ComCars+1188', 'ComCars', 1188)]
@@ -210,6 +214,7 @@ def run(fields, trace_path, log_path):
     func_at = int(os.environ['DSF_FUNCAT']) if os.environ.get('DSF_FUNCAT') else None
     pad2 = any(s[0] == 2 for s in steps)
     padlog = os.environ.get('DSF_PADLOG') == '1'
+    cardport = os.environ.get('DSF_CARDPORT') == '1'
     anchor_mode, anchor_entry = -1, 0
     held = {1: set(), 2: set()}
     with open(log_path, 'w') as lf, open(trace_path, 'w') as out, DuckStation(log=lf, pad2=pad2) as d:
@@ -262,6 +267,8 @@ def run(fields, trace_path, log_path):
                 line += ' rand=%08x' % d.u32(RAND_STATE)
                 if padlog:
                     line += ' pad %d' % d.u32(PAD_RAN)
+                if cardport:
+                    line += ' cport %d' % d.mem(CARD_PORT, 1)[0]
                 out.write(line + '\n')
             if padlog:
                 d.poke(PAD_RAN, b'\0\0\0\0')
