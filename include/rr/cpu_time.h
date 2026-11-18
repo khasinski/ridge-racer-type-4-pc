@@ -118,6 +118,11 @@ enum {
     /* LoadR4Directory after its read: the directory's entries to sector
      * positions (CdIntToPos, 76 clocks, and the loop), 80.0k for 950 */
     RR_CYCLES_R4_DIRECTORY_ENTRY = 84,
+    /* LoadR4Directory from its CdReadSync loop's end to the parse: on
+     * DuckStation the read's Pause completion comes 2 fields and 34871
+     * clocks before CdReset's first acknowledge (the boot's Getstat), the
+     * work between them as charged [exc] */
+    RR_CYCLES_R4_DIRECTORY_READ_END = 251,
     /* The attract demo's race frame, AttractDemoRaceUpdate up to the
      * frame's DrawSync: the least of 169 frames (502k-614k, median 614k)
      * [mark], so a frame that starts on time stays in its field. Its logic
