@@ -8,8 +8,12 @@ run plays the scenario on the patched regtest (tools/port/DUCKSTATION.md)
 and writes, per field, the port's RR4_TRACE=1 RR4_TRACE_RAND=1 line with
 regress.sh's RR4_WATCH globals (RaceState, PlayerCars+388, PlayerCars+1204,
 ComCars+388, ComCars+1188: host offsets, read at the PS1 ones), so the
-two traces diff directly. Port vsync n is DuckStation field n + 296 (the
-BIOS boot); compare with the port run headless with PSYZ_CARD_UNPLUG=2.
+two traces diff directly. The port's first field starts at DuckStation's
+vblank 296 (the BIOS boot; the game's first CD command lands 603 clocks
+after it), so port vsync n's blank is DuckStation's vblank n + 296, and
+line n is read at the pause just before that vblank (DuckStation frame
+n + 295 ends there): line n and port vsync n are the same moment. Compare
+with the port run headless with PSYZ_CARD_UNPLUG=2.
 
   DSF_PADS    the scenario's RR4_PAD_SCRIPT (mode anchors included); the
               controller sends a step's buttons DSF_LEAD (default 1) fields
@@ -19,7 +23,7 @@ BIOS boot); compare with the port run headless with PSYZ_CARD_UNPLUG=2.
               800-byte records)
   DSF_MASKS   pad 1 masks per port vsync ("vsync mask"), RR4_AUTODRIVE's
               input made with `masks` from the port's trace and its
-              RR4_AUTODRIVE_LOG (lead 0 with one pad, 1 with two: libpad
+              RR4_AUTODRIVE_LOG (lead 1 with one pad, 2 with two: libpad
               stores port 1's bytes a field earlier then)
   DSF_MARKS   name[:ret][@mG/I],...: stubs at these functions' entries (and
               returns with :ret) write a marker to EXP2 0x1F802090, which
@@ -35,13 +39,13 @@ BIOS boot); compare with the port run headless with PSYZ_CARD_UNPLUG=2.
               the blank before the field (its flag, read and cleared between
               fields: no effect on the emulation)
   DSF_PAUSES=1  log "PAUSE <n> tick <t>" at each field's pause (the trace
-              line n is read there, just before DuckStation field n + 297's
-              vblank; port vsync n's blank is field n + 296)
+              line n is read there)
   DSF_A0=1    also log each BIOS A0 call's number (rand 2f, srand 30)
   DSF_FUNCAT  at that port vsync, print the mode function's address
 
 timeline prints the log's marks, CD commands and completions per field with
-their clocks after the field's vblank (EXC lines: interrupts; RET94/98:
+their clocks after the field's vblank (numbered as the port's vsyncs:
+DuckStation's VBLANK lines say frame n + 296 for it) (EXC lines: interrupts; RET94/98:
 exception returns; RET9c: DICR at the exception). Run `run` through
 tools/port/run_capped.sh-compatible slots (duckstation.py takes one) with
 RR4_DUCKSTATION and RR4_DISC set.
@@ -51,7 +55,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ds_calltime as dc
 from duckstation import DuckStation
 
-FIELD_OFFSET = 296
+FIELD_OFFSET = 295
 BUTTONS = {'select': 'Select', 'start': 'Start', 'up': 'Up', 'right': 'Right', 'down': 'Down',
            'left': 'Left', 'l2': 'L2', 'r2': 'R2', 'l1': 'L1', 'r1': 'R1', 'triangle': 'Triangle',
            'circle': 'Circle', 'cross': 'Cross', 'square': 'Square'}
@@ -331,7 +335,7 @@ def timeline(log_path, first=0, last=1 << 30):
         i = bisect.bisect_right(ticks, t) - 1
         if i < 0:
             continue
-        v = blanks[i][1] - FIELD_OFFSET
+        v = blanks[i][1] - FIELD_OFFSET - 1  # the vblank of port vsync v
         if not first <= v <= last:
             continue
         if v != cur:

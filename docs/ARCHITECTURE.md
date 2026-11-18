@@ -286,8 +286,14 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      VSync(0) in 480-line interlace returns late on the console's fields.
      Busy waits that DuckStation measures with interrupts in them are fitted
      as CPU time with the interrupts on top (StGetNext), so a second pad's
-     libpad exchange (4.8k clocks a vblank) lengthens them; DrawOTag waits
-     for the list DMA over the table's empty head (61 clocks a node).
+     libpad exchange (4.8k clocks a vblank) lengthens them; DrawOTag spends
+     DuckStation's list DMA for the whole table (8 clocks a node, 5 and the
+     RAM's 17 per 16 words a packet). Interrupts are exceptions with a
+     window (the root counters', the CD drive's sector, acknowledge and
+     completion interrupts): a vblank arriving inside one after the BIOS
+     chains tested for it reaches only libetc, so libpad and the card
+     driver miss it; their costs are DuckStation's exception-to-return
+     times, before and after the card driver's chain is installed.
      Each CD seek takes DuckStation's extra 0.5-1 ms from the same seeded
      generator, draw for draw (the BIOS boot's 12 draws included), and the
      drive's geometry counts absolute sectors as the mechanism does.
@@ -299,9 +305,12 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      drive finishes and SsStart follows CdReset's 0.8 s Init by 0.2 ms; a
      read ends with its Pause's completion (CdReadSync), and LIBCD's own
      code around each command, the boot's directory search and the
-     hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time, so
-     the boot's CD commands and the sequencer's timer start within 0.13 ms
-     of DuckStation's. libpad (PadInitDirect, PadStartCom) is PSY-Q's channel
+     hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time,
+     as do the boot's graphics, GTE and card setups: the port's first field
+     starts at DuckStation's vblank 296, and the boot's CD commands and the
+     sequencer's timer fall within about 1k clocks of DuckStation's (the
+     timer's phase against the vblanks within 40), field for field with
+     `tools/port/ds_frames.py`. libpad (PadInitDirect, PadStartCom) is PSY-Q's channel
      state machine ported from the decompilation (PsyZ `libpad.c`), run a
      byte at a time against models of the controllers (`pad.c`, as
      DuckStation's digital pad, DUAL SHOCK, neGcon and JogCon answer):

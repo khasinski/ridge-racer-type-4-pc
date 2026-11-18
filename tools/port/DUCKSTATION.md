@@ -123,7 +123,8 @@ as the boot (`ds_mark.py 293 440 MainLoop SystemInit CdInit SsInit`).
 (`DSF_PADS`, `DSF_POKES` as in `regress.sh`, `DSF_MASKS` for
 `RR4_AUTODRIVE`'s input from `ds_frames.py masks`) and writes the port's
 trace lines, with `regress.sh`'s watched globals, for every field from the
-game's first VSync (DuckStation field 296); run the port headless with
+game's first VSync, each line read at the same moment as the port's
+vsync of that number (DuckStation's vblank n + 296); run the port headless with
 `PSYZ_CARD_UNPLUG=2` to compare. `DSF_MARKS` marks function entries (and
 returns, `name:ret`) through writes to EXP2 0x1F802090, which the patched
 regtest logs as `XMARK` with its tick under `DUCKSTATION_CD_TRACE`; unlike
