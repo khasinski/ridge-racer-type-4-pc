@@ -112,6 +112,25 @@ the port's `RR4_POKE`. Stick steps (`lx=0.6@...`, a DUAL SHOCK with
 `REGTEST_PAD1_TYPE=AnalogController`) bind the half axes so that
 DuckStation sends the byte the port sends for that value.
 
+## Comparing scenarios
+
+`ds_compare.py run <scenario> <out-dir> [--lowram]` plays one of its
+scenarios on DuckStation (`ds_script.py`) and on the port (headless,
+`PSYZ_CARD_UNPLUG=2`), both through `run_capped.sh`, and reports per
+column (mode, FrameCounter, rand and the scenario's watched memory) whether
+every field matches, else the first field that differs and whether the
+values still come in the same order. `ds_compare.py list` names them: the
+Options screens, Records, the emblem editor and Options each followed by a
+Grand Prix race, the Garage's save, Save and Load, a boot with a saved card
+(made by the Save and Load scenario on DuckStation, exported with
+`mcd.py`), the Grand Prix rules to their end (the null-`Dialogue` store,
+with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
+race, Extra Trial (its row and a car poked into the save) and the DUAL
+SHOCK in analog mode through Time Attack with both sticks. `--lowram` adds
+the `DS_LOWRAM_LOG` run and `lowram.txt`. The scripts are
+`RR4_PAD_SCRIPT`s; the port alone runs one with
+`RR4_PAD_SCRIPT=... RR4_FRAME_LIMIT=...`.
+
 ## Timing a call
 
 A GDB breakpoint, and single-stepping, switch DuckStation from its

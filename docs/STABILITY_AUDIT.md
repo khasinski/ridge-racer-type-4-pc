@@ -740,18 +740,11 @@ the Garage's emblem editor (sample load, drawing, the exit dialog) then a
 Grand Prix and its race (16500), Extra Trial (trial and car select, a
 race) and the DUAL SHOCK in analog mode through the Time Attack menus and
 a race steered with both sticks: every field the same, the editor's
-cursor and the race car's position too. The low RAM accesses were only the three above. The card menus keep
-the same mode, FrameCounter and rand sequences but not their fields
-(Garage name entry and save, Save and Load: load from the empty card,
-save, load, PocketStation; a boot with the saved card): the game's card
-poll (`PollCardStatus` counting three equal `CardUpdate` results) runs a
-field ahead in the port from vsync 432 of the opening on, where
-DuckStation's card driver takes one more field between two polls (its
-transfers at 428 and 433 against 428 and 432 in the port, a vblank the
-driver skips there). The port's next poll result then still lands in
-mode 1/2 and clears the count, DuckStation's does not, so a card prompt
-that needs three results shows at once on DuckStation and 15 or 16 fields later
-in the port (TECH_DEBT F5).
+cursor and the race car's position too. The low RAM accesses were only the three above. The card menus (Garage name entry and save; Save and Load: load from the
+empty card, save, load, PocketStation; a boot with the saved card) keep
+the same mode, FrameCounter and rand sequences, with some card operations
+a few fields off and one card request DuckStation never answers after a
+save (TECH_DEBT F5). The scenarios are `tools/port/ds_compare.py`'s.
 
 The presentation controller's fields after its script pointer (+0x64) sit at
 host offsets on 64-bit hosts; only +0x54 was seen before binding.
