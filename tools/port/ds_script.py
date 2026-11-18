@@ -4,20 +4,23 @@ DuckStation and print the port's per-field trace format.
 The script is the port's RR4_PAD_SCRIPT syntax (src/port/diagnostics.c):
 a comma list of [2:]button@vsync[+frames][%period] or
 [2:]button@mG/I:d[+frames][%period] (d VSyncs after each entry into
-ModeGroup G / ModeIndex I). Analog steps are not supported.
+ModeGroup G / ModeIndex I). Analog steps lx/ly/rx/ry=value@... hold a
+DUAL SHOCK stick (REGTEST_PAD1_TYPE=AnalogController) as the port's do.
 
 Every field the emulator pauses at its blank; this reads the mode state as
 the port's VSync hook does at that blank, then sets the buttons of the
 script's next field before the exchange of this blank: the port's script
 names the field whose receive buffer shows the press with one pad
 (libpad stores port 1's bytes when it starts the next exchange), so the
-controller holds it one exchange earlier. DuckStation pauses after libpad
-has sent a blank's first command bytes: a DUAL SHOCK or JogCon reads its
-buttons at the command byte (a digital pad and a neGcon only at the
-buttons' byte), so for those the buttons are set one blank earlier still.
-RR4_DS_LEAD overrides the lead (1, or 2 for those controllers) for both
-ports. A pad in port 2 is connected when
-a step names it (REGTEST_PAD2=1).
+controller holds it one exchange earlier. The pause comes before the
+blank (ds_frames.py), so no exchange has started and every controller
+takes the same lead of one field: a DUAL SHOCK in analog mode, which
+reads its buttons at the command byte, matches the port's receive buffer,
+PlayerControllers and the Time Attack menus field for field with it (a
+lead of two, from when the pause was taken to come after libpad's first
+command bytes, put its presses a field early). The JogCon was not
+checked again. RR4_DS_LEAD overrides the lead for both ports. A pad in
+port 2 is connected when a step names it (REGTEST_PAD2=1).
 
 Output per field, as the port's RR4_TRACE=1 RR4_TRACE_RAND=1 lines:
   vsync <n> frame <FrameCounter> mode <g>/<i> sub <s> rand=<state>
@@ -31,6 +34,9 @@ in hex, e.g. 8010c1a6:1 for the JogCon byte of pad 1's receive buffer
 (the port's RR4_WATCH=PadPorts+6:1). REGTEST_PAD1_TYPE=JogCon (and the
 other REGTEST_* variables of DUCKSTATION.md) select the controllers.
 Absolute steps count port VSyncs (DuckStation frame - the offset).
+RR4_DS_POKE=addr:hexbytes@vsync[,...] stores bytes (hex PS1 address, data
+in memory order) at that field's blank, like the port's RR4_POKE, e.g.
+800f3974:01000000@1000 for SaveProgress+0x54 (the Extra Trial row).
 DUMMYBP=1 sets a never-hit breakpoint, which runs the emulator's
 interpreter with its memory checks: with DS_LOWRAM_LOG=<file> the patched
 regtest then logs game code touching PS1 RAM 0..0xFFFF (null-pointer
@@ -45,6 +51,25 @@ BUTTONS = {'select': 'Select', 'start': 'Start', 'up': 'Up', 'right': 'Right', '
            'left': 'Left', 'l2': 'L2', 'r2': 'R2', 'l1': 'L1', 'r1': 'R1', 'triangle': 'Triangle',
            'circle': 'Circle', 'cross': 'Cross', 'square': 'Square'}
 FRAME_COUNTER, RAND_STATE, PAD_RAN = 0x800ABEAC, 0x80009010, 0x800ABCD0
+# The DUAL SHOCK's sticks (the port's lx ly rx ry, -1..1): DuckStation's
+# AnalogController binds its half axes after its 17 buttons (LLeft, LRight,
+# LDown, LUp, RLeft, RRight, RDown, RUp); a negative value is left / up.
+STICK_BINDS = {'lx': (17, 18), 'ly': (20, 19), 'rx': (21, 22), 'ry': (24, 23)}
+ANALOG_SENSITIVITY = 1.33  # AnalogController's default "AnalogSensitivity"
+
+
+def stick_bind(axis, value):
+    """The bind that makes DuckStation send the stick byte the port sends
+    for value: the port maps -1..1 linearly to 0x00..0xFF (as an SDL axis,
+    src/port/diagnostics.c), DuckStation scales a half axis by its analog
+    sensitivity to 0..255 and merges the two halves around 0x80."""
+    low, high = STICK_BINDS[axis.lower()]
+    byte = (max(-32768, min(32767, int(value * 32767))) + 32768) >> 8
+    if byte >= 128:
+        index, half = high, 2 * (byte - 128)
+    else:
+        index, half = low, 2 * (128 - byte) - 1
+    return index, (half + 0.5) / (ANALOG_SENSITIVITY * 255)
 
 
 def parse(script):
@@ -54,6 +79,11 @@ def parse(script):
         if item.startswith('2:'):
             port, item = 2, item[2:]
         name, at = item.split('@')
+        if '=' in name:
+            axis, value = name.split('=')
+            button = stick_bind(axis, float(value))
+        else:
+            button = BUTTONS[name.lower()]
         period = 0
         if '%' in at:
             at, p = at.split('%')
@@ -69,7 +99,7 @@ def parse(script):
             mode, first = (int(g) << 8) | (int(i) & 0xFF), int(d)
         else:
             first = int(at)
-        steps.append((port, BUTTONS[name.lower()], mode, first, count, period))
+        steps.append((port, button, mode, first, count, period))
     return steps
 
 
@@ -89,15 +119,20 @@ class Driver:
     and runs one field."""
 
     def __init__(self, d, script, offset=None):
-        late = ('AnalogController', 'JogCon')
         self.d, self.steps = d, parse(script)
         self.offset = field_offset() if offset is None else offset
-        self.lead = {p: int(os.environ.get('RR4_DS_LEAD') or
-                            (2 if os.environ.get('REGTEST_PAD%d_TYPE' % p) in late else 1))
+        self.lead = {p: int(os.environ.get('RR4_DS_LEAD') or 1)
                      for p in (1, 2)}
         self.anchor_mode, self.anchor_entry = -1, 0
         self.held = {1: set(), 2: set()}
         self.frame = 0
+        # RR4_DS_POKE=addr:hexbytes@v,...: PS1 RAM stores at the blank of
+        # port vsync v, as the port's RR4_POKE stores between frames there.
+        self.pokes = []
+        for item in filter(None, os.environ.get('RR4_DS_POKE', '').split(',')):
+            where, at = item.split('@')
+            addr, data = where.split(':')
+            self.pokes.append((int(at), int(addr, 16), bytes.fromhex(data)))
 
     def step(self):
         v = self.frame - self.offset
@@ -108,6 +143,9 @@ class Driver:
         return v, group, index, sub
 
     def advance(self, v):
+        for at, addr, data in self.pokes:
+            if at == v:
+                self.d.poke(addr, data)
         # the buttons the controller sends at this blank's exchange
         want = {1: set(), 2: set()}
         target = {p: v + self.lead[p] for p in (1, 2)}
@@ -123,8 +161,12 @@ class Driver:
         for port in (1, 2):
             if want[port] != self.held[port]:
                 self.d.release(port)
-                if want[port]:
-                    self.d.buttons(port=port, **{b: 1 for b in want[port]})
+                pressed = [b for b in want[port] if isinstance(b, str)]
+                axes = dict(b for b in want[port] if not isinstance(b, str))
+                if pressed:
+                    self.d.buttons(port=port, **{b: 1 for b in pressed})
+                if axes:
+                    self.d.bind(axes, port=port)
                 self.held[port] = want[port]
         self.d.advance(1)
         self.frame += 1

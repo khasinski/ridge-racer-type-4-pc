@@ -107,6 +107,10 @@ the card menus. The controller sends a step's buttons at the exchange of the
 blank before it, as the port's script does, so with one pad the receive
 buffer shows them over the step's fields on both. `RR4_DS_PADLOG=1` adds
 whether libpad's vblank handler ran, `RR4_DS_PEEK=addr:len,...` RAM bytes.
+`RR4_DS_POKE=addr:hexbytes@vsync,...` stores bytes at a field's blank like
+the port's `RR4_POKE`. Stick steps (`lx=0.6@...`, a DUAL SHOCK with
+`REGTEST_PAD1_TYPE=AnalogController`) bind the half axes so that
+DuckStation sends the byte the port sends for that value.
 
 ## Timing a call
 

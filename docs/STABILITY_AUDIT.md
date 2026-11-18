@@ -699,6 +699,10 @@ the SDK's own kernel patches and libpad/libcard/kernel work areas:
   bound (all front-end flows): now the image.
 - `SetCarBounds` (0x0, 0x4, 0x6) and `DrawCarSpecBadgePanel` (0x1D2, 0x1F0,
   0x1F3) reading unloaded slots in the TA and VS car selects: the image.
+- `AddTextSprites` reading 0x1F5 (`DrawCarSpecBadgePanel` drawing the
+  name of an unloaded car record, an empty string there) in the Extra Trial
+  car select: the image, whose 0x400 bytes equal DuckStation's low RAM at
+  that moment.
 - libsnd's `SsSeqSetVol` on a sequence that is not open (the title's mute)
   reading 0xD4 and storing the volumes at 0x94/0x96 through the null score
   pointer. PsyZ ignores the call; the volumes are 0 and those bytes stay 0 on
@@ -733,8 +737,10 @@ default blank card in slot 1, the port with `PSYZ_CARD_UNPLUG=2`): Options
 (both controller setups, adjust screen, audio, brightness) then a Grand
 Prix and its race (16000 fields), Records (lap and total records, 6500),
 the Garage's emblem editor (sample load, drawing, the exit dialog) then a
-Grand Prix and its race (16500): every field the same, the editor's cursor
-too. The low RAM accesses were only the three above. The card menus keep
+Grand Prix and its race (16500), Extra Trial (trial and car select, a
+race) and the DUAL SHOCK in analog mode through the Time Attack menus and
+a race steered with both sticks: every field the same, the editor's
+cursor and the race car's position too. The low RAM accesses were only the three above. The card menus keep
 the same mode, FrameCounter and rand sequences but not their fields
 (Garage name entry and save, Save and Load: load from the empty card,
 save, load, PocketStation; a boot with the saved card): the game's card
