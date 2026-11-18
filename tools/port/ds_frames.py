@@ -24,6 +24,8 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
   DSF_CARDPORT=1  append "cport <n>": the BIOS card driver's port byte
               (PS1 0x7264) as the line is read, the port it served at the
               blank before; the port's PSYZ_CARD_TRACE prints its own
+  RR4_DS_CARD slot:none|blank|path@vsync,...: the card taken out or
+              inserted at that field's blank, as ds_script.py does
   DSF_MASKS   pad 1 masks per port vsync ("vsync mask"), RR4_AUTODRIVE's
               input made with `masks` from the port's trace and its
               RR4_AUTODRIVE_LOG (lead 1, with one pad or two: lead 2 put
@@ -215,6 +217,11 @@ def run(fields, trace_path, log_path):
     pad2 = any(s[0] == 2 for s in steps)
     padlog = os.environ.get('DSF_PADLOG') == '1'
     cardport = os.environ.get('DSF_CARDPORT') == '1'
+    cards = []  # RR4_DS_CARD as in ds_script.py: the card verb at port vsync v's blank
+    for item in filter(None, os.environ.get('RR4_DS_CARD', '').split(',')):
+        where, at = item.rsplit('@', 1)
+        slot, what = where.split(':', 1)
+        cards.append((int(at), int(slot), what))
     anchor_mode, anchor_entry = -1, 0
     held = {1: set(), 2: set()}
     with open(log_path, 'w') as lf, open(trace_path, 'w') as out, DuckStation(log=lf, pad2=pad2) as d:
@@ -252,6 +259,9 @@ def run(fields, trace_path, log_path):
                 if add:
                     x += s32(d.mem(addr, 4))
                 d.poke(addr, struct.pack('<I', x & 0xFFFFFFFF))
+            for at, slot, what in cards:
+                if at == v:
+                    d.cmd('card %d %s' % (slot, what))
             if v == func_at:
                 names = {a: n for n, a in SYM.items()}
                 names.update({a: n for n, a in OVL.items()})

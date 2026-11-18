@@ -163,7 +163,8 @@ selections.
 
 `ds_frames.py run <fields> <trace> <log>` plays a regression scenario
 (`DSF_PADS`, `DSF_POKES` as in `regress.sh`, `DSF_MASKS` for
-`RR4_AUTODRIVE`'s input from `ds_frames.py masks`) and writes the port's
+`RR4_AUTODRIVE`'s input from `ds_frames.py masks`, `RR4_DS_CARD` as for
+`ds_script.py`) and writes the port's
 trace lines, with `regress.sh`'s watched globals, for every field from the
 game's first VSync, each line read at the same moment as the port's
 vsync of that number (DuckStation's vblank n + 296); run the port headless with

@@ -86,7 +86,7 @@
  *   RR4_CARD_SLOT=list test hook: a comma list of slot:state@vsync (slot 1 or
  *                      2, state none, formatted or unformatted) that pulls
  *                      out, plugs in or unformats the memory card of that
- *                      slot at that VSync (Psyz_CardSetSlotState; the card's
+ *                      slot at that VSync's blank (Psyz_CardSetSlotStateAtBlank; the card's
  *                      files stay in its directory), as tools/port/
  *                      ds_script.py's RR4_DS_CARD does on DuckStation.
  *   RR4_POKE=list      test hook to fast-forward game state: a comma list of
@@ -796,9 +796,14 @@ static void setup_card_steps(const char *list) {
     }
 }
 
+/* A step at vsync v takes effect at that field's blank, before the card
+ * driver's work there, as DuckStation's card verb between fields: it is
+ * queued after the field before (or applied at once before the first). */
 static void apply_card_steps(long vsync) {
     for (int i = 0; i < card_step_count; i++) {
-        if (card_steps[i].vsync == vsync)
+        if (card_steps[i].vsync == vsync + 1)
+            Psyz_CardSetSlotStateAtBlank(card_steps[i].port, card_steps[i].state);
+        else if (card_steps[i].vsync <= vsync && vsync == 1)
             Psyz_CardSetSlotState(card_steps[i].port, card_steps[i].state);
     }
 }

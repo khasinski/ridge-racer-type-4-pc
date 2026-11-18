@@ -80,12 +80,17 @@ s32 FileOpen(const char *name, s32 mode) {
             (FileHandle){FILE_KIND_LINK, -1, 0, 0, (mode & FILE_MODE_ASYNC) != 0};
         return descriptor;
     }
+    int card = FileIsDevice(name, "bu") && name[2] >= '0' && name[2] <= '1' &&
+               name[3] >= '0' && name[3] <= '3';
+    /* A card taken out: the host directory is still there, the BIOS finds
+     * no card and the open fails. */
+    if (card && !Psyz_CardFileOpen((name[2] - '0') << 4 | (name[3] - '0'))) {
+        return -1;
+    }
     int host = psyz_open(name, mode);
     if (host < 0) {
         return -1;
     }
-    int card = FileIsDevice(name, "bu") && name[2] >= '0' && name[2] <= '1' &&
-               name[3] >= '0' && name[3] <= '3';
     FileHandles[descriptor] = (FileHandle){FILE_KIND_HOST, host, card,
                                            card ? (name[2] - '0') << 4 | (name[3] - '0') : 0,
                                            (mode & FILE_MODE_ASYNC) != 0};

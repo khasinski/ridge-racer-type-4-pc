@@ -2,8 +2,9 @@
  * cards are PsyZ bu directories, which are plain memory cards: a card in a
  * direct slot rejects the PocketStation command (McxErrInvalid), an empty
  * slot (Psyz_CardSlotState) or any other channel has no card
- * (McxErrNoCard). The card driver transfers the command on the port's next
- * vblank and it is answered at the vblank after (Psyz_CardRawBegin). */
+ * (McxErrNoCard). libmcx's vblank handler sends the command at the next
+ * vblank, whichever port the BIOS card driver serves, and times it out at
+ * the vblank after (Psyz_CardRawBegin). */
 #include <string.h>
 #include <libmcx.h>
 #include <psyz/system.h>
