@@ -146,8 +146,10 @@ typedef struct SceneRaceContext {
     SceneCameraState160 *camera24C;       /* PS1 ActiveSparkEmitterCar */
     /* Presentation controller. The PS1 kept a pointer to it at +0x3D8
      * (MotionController), set by InitMotionController; it never selected
-     * anything else, and stores made before that init went through a null
-     * pointer into low RAM. The host addresses the member directly. */
+     * anything else, and accesses made before that init went through a null
+     * pointer into low RAM. The host keeps the pointer as a bound flag
+     * (nonzero once InitMotionController ran) and MotionControllerView
+     * (rr/scene_camera_state.h) picks the member or the low-RAM image. */
     PresentationController presentation250;
     u32 controllerSlot3D8;
     s32 overlayToggle3DC;         /* PS1 TitleSceneOverlayEnabled */

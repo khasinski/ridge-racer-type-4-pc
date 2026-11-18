@@ -23,15 +23,12 @@ not been reproduced.
 
 ## 1. Bugs in the game modules
 
-| ID | Sev | Where | Problem | Fix |
-| --- | --- | --- | --- | --- |
-| G8 | Low *(speculative)* | `src/main/menu/menu13.c:118-124`; `car/carwheel.c:480-489`; `menu/mnlist.c:378-405` | The port drops the PS1 store to address 7 through a null `Dialogue`. Two separate copies of low-RAM bytes 0..11 still return the kernel value 0x27 there. After the Grand Prix intro the console would read 0, so reads of unloaded car slots may differ. | Keep one shared PS1 low-RAM image that the emulated null stores write into. |
+None open.
 
 ## 2. Bugs in the host layer, tooling and PsyZ
 
 | ID | Sev | Where | Problem | Fix |
 | --- | --- | --- | --- | --- |
-| H20 | Low | `src/port/replay_session.c` | A loaded VS replay (2 cars) matched the recorded one in 2659 of 2663 frames; frames 1242, 1244, 1629 and 1630 differ by 6–23 pixels (a short dark line, likely a car spark in a tunnel). The game state in `__DATA` used by the two cars is identical at frame 1242; the load script loads car slots 2 and 3 that the VS menus never load. Time Attack (2956 frames) and Grand Prix (3133) are bit-identical. *(cause unknown)* | Load only the mode's car slots (as the previews do) and compare the spark rings and VRAM at frame 1242. |
 
 ## 3. Fidelity gaps against the console
 

@@ -1,4 +1,5 @@
 /* RODATA 0x8001129c 0x30 */
+#include "rr/scene_camera_state.h"
 #include "types.h"
 #include "game/math/shuffle.h"
 #include "rr/presentation.h"
@@ -8,14 +9,14 @@
 
 
 void InitMotionPanel(s32 arg0) {
-    PanelTrack50 *panel = &RaceContext.presentation250.panel;
+    PanelTrack50 *panel = &MotionControllerView()->panel;
     PsyqBzero(panel, sizeof(*panel));
     panel->mode = arg0;
 }
 
 void UpdateMotionPanel(MotionClock20 *clock) {
     s32 images[2][3] = {{1, 2, 4}, {5, 6, 4}};
-    PresentationController *controller = &RaceContext.presentation250;
+    PresentationController *controller = MotionControllerView();
     PanelTrack50 *panel = &controller->panel;
     int mode = panel->mode;
     u32 duration;
@@ -30,7 +31,7 @@ void UpdateMotionPanel(MotionClock20 *clock) {
             if (clock->active == 0) return;
             duration = clock->tempo / 50 * 2;
             duration = duration / 3;
-            panel->duration4A = duration - ((u16)RaceContext.presentation250.scale4C + 1);
+            panel->duration4A = duration - ((u16)MotionControllerView()->scale4C + 1);
             image = images[panel->mode][0];
             panel->elapsed48 = 0;
             panel->state = panel->state + 1;
@@ -57,7 +58,7 @@ void UpdateMotionPanel(MotionClock20 *clock) {
         case 4:
             panel->elapsed48 = panel->elapsed48 + 1;
             if ((short)panel->elapsed48 < panel->duration4A) return;
-            panel->duration4A = (clock->tempo / 100) - ((u16)RaceContext.presentation250.scale4C + 1);
+            panel->duration4A = (clock->tempo / 100) - ((u16)MotionControllerView()->scale4C + 1);
             panel->image44 = 5;
             panel->elapsed48 = 0;
             panel->state = panel->state + 1;
@@ -95,7 +96,7 @@ void UpdateMotionPanel(MotionClock20 *clock) {
 void DrawMotionControllerPanel(void) {
     s32 temp_a0;
 
-    temp_a0 = RaceContext.presentation250.panel.image44;
+    temp_a0 = MotionControllerView()->panel.image44;
     if (temp_a0 > 0) {
         EmitTexturedPanel(temp_a0 - 1);
     }

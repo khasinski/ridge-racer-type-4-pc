@@ -80,6 +80,7 @@ Environment:
 | `REGTEST_PAD2=1` | digital pad in port 2 (default empty) |
 | `REGTEST_CARD1` | `none`: no card in slot 1; a path: that card file (shared); unset: a blank non-persistent card |
 | `REGTEST_VRAM_OUT` | write the final VRAM at exit |
+| `DS_LOWRAM_LOG=<file>` | with any breakpoint set (the interpreter's checked path; `ds_script.py` with `DUMMYBP=1`), append each new code address/data address pair where game code, or the kernel called from it, reads or writes PS1 RAM 0..0xFFFF: the original's null-pointer accesses. `ds_lowram_report.py <file>` groups them by function |
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
 | `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on (with the system tick) and key-off |
 | `DUCKSTATION_ADPCM_DUMP`, `DUCKSTATION_VOICE18_DUMP` | dump voice 18's decoded blocks / output samples (XA debugging) |

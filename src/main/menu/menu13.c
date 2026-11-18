@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "rr/ps1_low_ram.h"
 /* RODATA 0x800105b0 0x18 */
 #include "game/system/pad.h"
 #include "types.h"
@@ -122,11 +123,16 @@ call1:
             s->sE = 1;
             s->st = 1;
             /* The original stores through the global Dialogue even when only
-             * another text state is live (the GP intro uses
-             * CardDialogueStatePtr and Dialogue is still null); on the PS1
-             * that write lands harmlessly at address 7. */
-            if (s->b9 == (signed char)s->b8 && Dialogue != 0) {
-                Dialogue->b7 = 0;
+             * another text state is live (an options, garage or card dialogue
+             * before the Grand Prix loads one, through CardDialogueStatePtr);
+             * while Dialogue is null that write lands at PS1 address 7, in the
+             * low RAM that unloaded car slots read. */
+            if (s->b9 == (signed char)s->b8) {
+                if (Dialogue != 0) {
+                    Dialogue->b7 = 0;
+                } else {
+                    Ps1LowRamImage.bytes[PS1_DIALOGUE_B7_OFFSET] = 0;
+                }
             }
             break;
         }

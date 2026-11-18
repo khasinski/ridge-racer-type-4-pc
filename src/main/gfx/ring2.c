@@ -1,3 +1,4 @@
+#include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "scratchpad.h"
 #include "rr/presentation.h"
@@ -14,7 +15,7 @@ void DrawRingEffects(void) {
     SceneCameraPose18 pose;
     s32 scale[3];
     MatrixWords32 light, rotation;
-    ScrollTrack40 *scroll = &RaceContext.presentation250.scroll;
+    ScrollTrack40 *scroll = &MotionControllerView()->scroll;
     for (i = 0; i < 2; i++) {
         if (scroll->channel[i].glyph > 0) {
             pose.position00.xyz.y = 0;
@@ -23,7 +24,7 @@ void DrawRingEffects(void) {
             pose.rotation10.z = 0;
             pose.rotation10.y = 0;
             pose.rotation10.x = 0;
-            SetupObjectLightMatrices(&pose, &RaceContext.presentation250.lighting20, &light, &rotation);
+            SetupObjectLightMatrices(&pose, &MotionControllerView()->lighting20, &light, &rotation);
             scale[2] = 0x800;
             scale[1] = 0x800;
             scale[0] = 0x800;

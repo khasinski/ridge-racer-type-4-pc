@@ -1,3 +1,4 @@
+#include "rr/ps1_low_ram.h"
 #include "rr/frame_interp.h"
 #include "rr/rro_model.h"
 #include "game/gfx/model.h"
@@ -493,15 +494,11 @@ LodDist6 CarModelLodDistances[5] = {{.d0 = 672, .d2 = 3200, .d4 = 8704}, {.d0 = 
 s16 ForceTailLightTrails;
 /* A slot reads its bounds before the first car model is loaded into it
  * (e.g. the VS preview resets both cars on entry); the PS1 table holds 0
- * there and the read lands in kernel RAM at address 0, whose first twelve
- * bytes are constant after boot. Unloaded slots point at those bytes so
- * the reset computes the same values; the loader replaces the pointer. */
-static CarBounds CarBoundsUnloaded = {
-    .halfWidth = 0x0003, .wheelOffsetY = 0x0000, .halfLength = 0x0C80,
-    .bodyHeight = 0x275A, .unk08 = 0x0008, .wheelRotationAxis = 0x40,
-    .reserved0B = 0x03,
-};
+ * there and the read lands in kernel RAM at address 0. Unloaded slots point
+ * at the shared image of those bytes (rr/ps1_low_ram.h), which car setup's
+ * stores through an unloaded CarRecordPtrs slot also reach; the loader
+ * replaces the pointer. */
 CarBounds *CarBoundsTable[4] = {
-    &CarBoundsUnloaded, &CarBoundsUnloaded,
-    &CarBoundsUnloaded, &CarBoundsUnloaded,
+    &Ps1LowRamImage.carBounds, &Ps1LowRamImage.carBounds,
+    &Ps1LowRamImage.carBounds, &Ps1LowRamImage.carBounds,
 };

@@ -30,6 +30,10 @@ in hex, e.g. 8010c1a6:1 for the JogCon byte of pad 1's receive buffer
 (the port's RR4_WATCH=PadPorts+6:1). REGTEST_PAD1_TYPE=JogCon (and the
 other REGTEST_* variables of DUCKSTATION.md) select the controllers.
 Absolute steps count port VSyncs (DuckStation frame - the offset).
+DUMMYBP=1 sets a never-hit breakpoint, which runs the emulator's
+interpreter with its memory checks: with DS_LOWRAM_LOG=<file> the patched
+regtest then logs game code touching PS1 RAM 0..0xFFFF (null-pointer
+accesses; ds_lowram_report.py <file> groups them by function).
 Run it through run_capped.sh with RR4_DUCKSTATION and RR4_DISC set.
 """
 import os, struct, sys
@@ -84,6 +88,8 @@ def main():
     anchor_mode, anchor_entry = -1, 0
     held = {1: set(), 2: set()}
     with DuckStation(pad2=pad2) as d:
+        if os.environ.get('DUMMYBP'):
+            d._gsend('Z0,801ffff0,4')
         for frame in range(frames + offset + 1):
             v = frame - offset
             group, index, sub = d.mode()

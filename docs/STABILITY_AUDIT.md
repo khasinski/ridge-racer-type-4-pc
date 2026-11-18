@@ -52,7 +52,8 @@ Additional fixes in the second audit pass:
   split timers are not decremented based on an undefined argument value.
 - Removed ignored, side-effect-free arguments from calls to no-argument
   functions. Completed header prototypes from their implementation signatures.
-  Remaining unspecified SDK callback declarations still need review.
+  No unspecified (empty-parenthesis) declarations remain in game code or
+  its headers; `check.sh` rejects new ones (`-Wstrict-prototypes`).
 
 The full four-scenario CPU regression passes: all 38200 field traces and all
 1273 captures are identical to HEAD's stored reference (attract 12000/400,
@@ -670,6 +671,49 @@ Player gear limits still need comparison with the actual loaded car record;
 track-node/physics values and restored context/scratch state need checks at
 the installation boundary. Other conditional arithmetic in player physics
 requires review before malformed replay state can be considered covered.
+
+## PS1 null-pointer accesses
+
+The original reads and writes through pointers that are still null on the
+console, which lands in the kernel's low RAM. The port used to answer these
+with two separate copies of the first bytes of RAM (unloaded `CarRecordPtrs`
+and `CarBoundsTable` slots), a dropped store (the dialogue page flag through
+a null `Dialogue`, PS1 address 7) and a pointer that was always bound (the
+presentation controller before `InitMotionController`). On the console all
+of them share one memory, so a store through one is seen by the reads
+through another. They now go to one image, `Ps1LowRamImage`
+(`rr/ps1_low_ram.h`, PS1 RAM 0..0x3FF read on DuckStation): the unloaded car
+slots point at its car views, the null-`Dialogue` store writes its byte 7,
+and `MotionControllerView` returns the controller once
+`InitMotionController` has set the PS1 pointer slot (`controllerSlot3D8`) and
+the image before that.
+
+To find every such access, the DuckStation patch logs game code (and BIOS
+calls made from it) touching PS1 RAM 0..0xFFFF (`DS_LOWRAM_LOG`, with
+`ds_script.py DUMMYBP=1`; `ds_lowram_report.py` groups the log). Runs of the
+attract cycle (20000 fields), the TA, GP and VS menus with their races held
+for 12000+ fields, and the four remaining main-menu entries found, apart from
+the SDK's own kernel patches and libpad/libcard/kernel work areas:
+
+- `SetPresentationDrawEnabled` storing 0 at 0x54 before the controller is
+  bound (all front-end flows): now the image.
+- `SetCarBounds` (0x0, 0x4, 0x6) and `DrawCarSpecBadgePanel` (0x1D2, 0x1F0,
+  0x1F3) reading unloaded slots in the TA and VS car selects: the image.
+- libsnd's `SsSeqSetVol` on a sequence that is not open (the title's mute)
+  reading 0xD4 and storing the volumes at 0x94/0x96 through the null score
+  pointer. PsyZ ignores the call; the volumes are 0 and those bytes stay 0 on
+  the console (they are never written otherwise), so nothing differs.
+
+The dialogue store needs a multi-page dialogue while `Dialogue` is still null
+(options, garage or card help before a Grand Prix); none of the runs showed
+one, and the code path matches the original's unconditional store. The
+presentation controller's fields after its script pointer (+0x64) sit at
+host offsets on 64-bit hosts; only +0x54 was seen before binding.
+
+The four regression scenarios stay identical. The VS replay loaded from a
+file (H20) now matches the recorded replay in all 2663 frames, at 1x on the
+CPU rasterizer and on the GPU backend, both with this change and at
+63256f22: the earlier four-frame difference no longer reproduces.
 
 ## Work still required
 

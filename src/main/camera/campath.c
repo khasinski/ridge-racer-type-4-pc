@@ -1,3 +1,4 @@
+#include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "rr/audio_state_types.h"
 #include "types.h"
@@ -33,7 +34,7 @@ void DrawPresentationTrackModel(void) {
     PresentationController *controller;
     u16 *row;
     s32 i, j, x, y, v;
-    controller = &RaceContext.presentation250;
+    controller = MotionControllerView();
     work.position.x = 0;
     work.position.y = 0;
     work.position.z = 0;
@@ -41,7 +42,7 @@ void DrawPresentationTrackModel(void) {
     work.rotation.y = (u16)controller->track.position.y;
     work.rotation.z = (u16)controller->track.position.z;
     SetupObjectLightMatrices((const SceneCameraPose18 *)&work.position, &controller->lighting20, &work.lightMatrix, &work.viewMatrix);
-    v = RaceContext.presentation250.track.scale;
+    v = MotionControllerView()->track.scale;
     work.scale.z = v;
     work.scale.y = v;
     work.scale.x = v;
@@ -77,7 +78,7 @@ void DrawPresentationTrackModel(void) {
 }
 
 void InitMotionTrack(int selection) {
-    MotionTrack44 *track = &RaceContext.presentation250.track;
+    MotionTrack44 *track = &MotionControllerView()->track;
     PsyqBzero(track, sizeof(*track));
     track->disabled = 0;
     track->key = &MotionTrackTable[selection];
@@ -97,7 +98,7 @@ void UpdateMotionTrack(MotionClock20 *clock) {
     MotionTrack44 *track;
     PresentationController *controller;
 
-    controller = &RaceContext.presentation250;
+    controller = MotionControllerView();
     track = &controller->track;
     if (track->disabled == 0) {
         switch (controller->track.state) {
@@ -167,6 +168,7 @@ void UpdateMotionTrack(MotionClock20 *clock) {
 }
 
 void InitMotionController(void) {
+    RaceContext.controllerSlot3D8 = 1; /* MotionController = &presentation250 */
     PsyqBzero(&RaceContext.presentation250, sizeof(PresentationController));
     RaceContext.presentation250.position.z = -0x1388;
     RaceContext.presentation250.viewDistance48 = 0x1B8;
@@ -211,38 +213,38 @@ void InitMotionController(void) {
 }
 
 void RestartMotionSequence(void) {
-    RaceContext.presentation250.scriptIndex68 = 0;
-    RaceContext.presentation250.scriptTimer6A = 0;
-    RaceContext.presentation250.flags60 = 0;
-    RaceContext.presentation250.script64 = MotionSequenceTable[SoundState.seqTrack2868];
-    RaceContext.presentation250.scriptOperation6C = RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].operation;
-    RaceContext.presentation250.scriptArgument70 = RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].argument;
-    switch (RaceContext.presentation250.scriptOperation6C) {
+    MotionControllerView()->scriptIndex68 = 0;
+    MotionControllerView()->scriptTimer6A = 0;
+    MotionControllerView()->flags60 = 0;
+    MotionControllerView()->script64 = MotionSequenceTable[SoundState.seqTrack2868];
+    MotionControllerView()->scriptOperation6C = MotionControllerView()->script64[MotionControllerView()->scriptIndex68].operation;
+    MotionControllerView()->scriptArgument70 = MotionControllerView()->script64[MotionControllerView()->scriptIndex68].argument;
+    switch (MotionControllerView()->scriptOperation6C) {
     case 0:
-        InitCameraMotion(RaceContext.presentation250.scriptArgument70);
+        InitCameraMotion(MotionControllerView()->scriptArgument70);
         break;
     case 1:
-        InitMotionPanel(RaceContext.presentation250.scriptArgument70);
+        InitMotionPanel(MotionControllerView()->scriptArgument70);
         break;
     case 2:
-        InitScrollTrack(RaceContext.presentation250.scriptArgument70);
+        InitScrollTrack(MotionControllerView()->scriptArgument70);
         break;
     case 3:
-        InitMotionTrack(RaceContext.presentation250.scriptArgument70);
+        InitMotionTrack(MotionControllerView()->scriptArgument70);
         break;
     }
 }
 
 void SetPresentationDrawEnabled(s32 arg0) {
-    RaceContext.presentation250.drawEnabled54 = arg0;
+    MotionControllerView()->drawEnabled54 = arg0;
 }
 
 void SetPresentationFullViewport(s32 arg0) {
-    RaceContext.presentation250.fullViewport50 = arg0;
+    MotionControllerView()->fullViewport50 = arg0;
 }
 
 void SetPresentationStencilEnabled(s32 arg0) {
-    RaceContext.presentation250.stencilEnabled58 = arg0;
+    MotionControllerView()->stencilEnabled58 = arg0;
 }
 
 /* Initial values of the globals this module owns. */

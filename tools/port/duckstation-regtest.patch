@@ -1200,3 +1200,42 @@ index 85d6fa826..54e1b0e88 100644
    RegTestHost::ProcessCoreThreadEvents();
    Core::CoreThreadShutdown();
    Core::ProcessShutdown();
+diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
+--- a/src/core/cpu_core.cpp
++++ b/src/core/cpu_core.cpp
+@@ -2530,6 +2530,35 @@ ALWAYS_INLINE_RELEASE void CPU::ExecutionBreakpointCheck(u32 pc)
+ template<MemoryAccessType type>
+ ALWAYS_INLINE_RELEASE void CPU::MemoryBreakpointCheck(VirtualMemoryAddress address)
+ {
++  {
++    // RR4 null-pointer watch: game code (outside the kernel's first 64 KB
++    // and the BIOS) touching PS1 RAM 0..0xFFFF.
++    static FILE* s_lowram_log = nullptr;
++    static bool s_lowram_init = false;
++    const u32 phys = address & 0x1FFFFFFFu;
++    const u32 pc = g_state.current_instruction_pc;
++    const u32 pcphys = pc & 0x1FFFFFFFu;
++    const u32 raphys = g_state.regs.ra & 0x1FFFFFFFu;
++    const bool game_pc = pcphys >= 0x10000u && pcphys < 0x200000u;
++    const bool game_ra = raphys >= 0x10000u && raphys < 0x200000u;
++    if (phys < 0x10000u && (game_pc || game_ra))
++    {
++      if (!s_lowram_init)
++      {
++        s_lowram_init = true;
++        if (const char* path = std::getenv("DS_LOWRAM_LOG"))
++          s_lowram_log = std::fopen(path, "a");
++      }
++      static std::unordered_map<u64, u32> s_lowram_seen;
++      u32& seen = s_lowram_seen[(u64(pc) << 32) | address];
++      if (s_lowram_log && seen++ < 2)
++      {
++        std::fprintf(s_lowram_log, "%c pc=%08x addr=%08x ra=%08x frame=%u\n", type == MemoryAccessType::Read ? 'R' : 'W',
++                     pc, address, g_state.regs.ra, System::GetFrameNumber());
++        std::fflush(s_lowram_log);
++      }
++    }
++  }
+   const BreakpointType bptype = (type == MemoryAccessType::Read) ? BreakpointType::Read : BreakpointType::Write;
+   if (CheckBreakpointList(bptype, address)) [[unlikely]]
+     s_locals.break_type = ExecutionBreakType::Breakpoint;

@@ -1,3 +1,4 @@
+#include "rr/scene_camera_state.h"
 #include "rr/geometry.h"
 #include "game/car/carbound.h"
 #include "rr/gpu.h"
@@ -26,67 +27,67 @@ void StepCameraScript(void) {
     MotionClock20 *clock;
 
     if (VSyncThreshold == 0x80) {
-        RaceContext.presentation250.scale4C = 2;
+        MotionControllerView()->scale4C = 2;
     } else {
-        RaceContext.presentation250.scale4C = 1;
+        MotionControllerView()->scale4C = 1;
     }
-    if (RaceContext.presentation250.alternateClock5C == 0) {
+    if (MotionControllerView()->alternateClock5C == 0) {
         clock = &SoundState.primaryMotionClock;
     } else {
         clock = &SoundState.secondaryMotionClock;
     }
     if (clock->active != 0) {
-        if (++RaceContext.presentation250.scriptTimer6A >= RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].duration) {
-            RaceContext.presentation250.scriptIndex68++;
-            if (RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].operation < 0) {
-                RaceContext.presentation250.scriptIndex68 = 0;
+        if (++MotionControllerView()->scriptTimer6A >= MotionControllerView()->script64[MotionControllerView()->scriptIndex68].duration) {
+            MotionControllerView()->scriptIndex68++;
+            if (MotionControllerView()->script64[MotionControllerView()->scriptIndex68].operation < 0) {
+                MotionControllerView()->scriptIndex68 = 0;
             }
-            RaceContext.presentation250.scriptOperation6C = RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].operation;
-            RaceContext.presentation250.scriptArgument70 = RaceContext.presentation250.script64[RaceContext.presentation250.scriptIndex68].argument;
+            MotionControllerView()->scriptOperation6C = MotionControllerView()->script64[MotionControllerView()->scriptIndex68].operation;
+            MotionControllerView()->scriptArgument70 = MotionControllerView()->script64[MotionControllerView()->scriptIndex68].argument;
             scriptChanged = 1;
-            RaceContext.presentation250.scriptTimer6A = 0;
+            MotionControllerView()->scriptTimer6A = 0;
         }
     }
-    switch (RaceContext.presentation250.scriptOperation6C) {
+    switch (MotionControllerView()->scriptOperation6C) {
     case 0:
         if (scriptChanged != 0) {
-            InitCameraMotion(RaceContext.presentation250.scriptArgument70);
+            InitCameraMotion(MotionControllerView()->scriptArgument70);
         }
         UpdateCameraMotion(clock);
         break;
     case 1:
         if (scriptChanged != 0) {
-            InitMotionPanel(RaceContext.presentation250.scriptArgument70);
+            InitMotionPanel(MotionControllerView()->scriptArgument70);
         }
         UpdateMotionPanel(clock);
         break;
     case 2:
         if (scriptChanged != 0) {
-            InitScrollTrack(RaceContext.presentation250.scriptArgument70);
+            InitScrollTrack(MotionControllerView()->scriptArgument70);
         }
         UpdateScrollTrack(clock);
         break;
     case 3:
         if (scriptChanged != 0) {
-            InitMotionTrack(RaceContext.presentation250.scriptArgument70);
+            InitMotionTrack(MotionControllerView()->scriptArgument70);
         }
         UpdateMotionTrack(clock);
         break;
     }
-    if (RaceContext.presentation250.drawEnabled54 != 0) {
-        scratch->view.projection.pose08.position00.vector = RaceContext.presentation250.position;
-        scratch->view.projection.pose08.angles10.vector = RaceContext.presentation250.target;
+    if (MotionControllerView()->drawEnabled54 != 0) {
+        scratch->view.projection.pose08.position00.vector = MotionControllerView()->position;
+        scratch->view.projection.pose08.angles10.vector = MotionControllerView()->target;
         BuildCameraMatrices();
-        SetGeomScreen(RaceContext.presentation250.viewDistance48);
-        if (RaceContext.presentation250.fullViewport50 == 0) {
+        SetGeomScreen(MotionControllerView()->viewDistance48);
+        if (MotionControllerView()->fullViewport50 == 0) {
             SetupViewport(6);
             SetGeomOffset(0xA0, 0xE8);
             ScaleMatrixRow1(2, (MatrixWords32 *)SCRATCH_ROT_MATRIX);
         }
         scratch->depthShift60 = 5;
         RR_GPU_SCRATCH->order = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
-        if (RaceContext.presentation250.drawEnabled54 != 0) {
-            switch (RaceContext.presentation250.scriptOperation6C) {
+        if (MotionControllerView()->drawEnabled54 != 0) {
+            switch (MotionControllerView()->scriptOperation6C) {
             case 0:
                 DrawPresentationMotionModel();
                 break;
@@ -101,7 +102,7 @@ void StepCameraScript(void) {
                 break;
             }
         }
-        if (RaceContext.presentation250.stencilEnabled58 == 0) {
+        if (MotionControllerView()->stencilEnabled58 == 0) {
             /* Splice the secondary table (entries 0..703) in front of entry 702. */
             RR_GPU_SCRATCH->order[0].address = CurrentDrawBuf->buffer.ordering70.tags[702].address;
             CurrentDrawBuf->buffer.ordering70.tags[702].address = (uintptr_t)&RR_GPU_SCRATCH->order[703];
@@ -142,26 +143,26 @@ void StepCameraScript(void) {
 }
 
 void InitCameraMotion(int selection) {
-    PsyqBzero(&RaceContext.presentation250.motion74, sizeof(CameraMotion70));
+    PsyqBzero(&MotionControllerView()->motion74, sizeof(CameraMotion70));
     if (selection < 4) {
-        RaceContext.presentation250.motion74.mode04 = 0;
-        RaceContext.presentation250.motion74.keys0C = HudTachMeterSegments[selection];
+        MotionControllerView()->motion74.mode04 = 0;
+        MotionControllerView()->motion74.keys0C = HudTachMeterSegments[selection];
     } else {
         selection -= 4;
-        RaceContext.presentation250.motion74.mode04 = 1;
-        RaceContext.presentation250.motion74.keys0C = HudGaugeArcVertices[selection];
+        MotionControllerView()->motion74.mode04 = 1;
+        MotionControllerView()->motion74.keys0C = HudGaugeArcVertices[selection];
     }
-    RaceContext.presentation250.motion74.modelScale6C = 0x2D0;
-    RaceContext.presentation250.motion74.start10[0] =
-        RaceContext.presentation250.motion74.current40[0] =
-        RaceContext.presentation250.motion74.keys0C->x;
-    RaceContext.presentation250.motion74.start10[1] =
-        RaceContext.presentation250.motion74.current40[1] =
-        RaceContext.presentation250.motion74.keys0C->y;
-    RaceContext.presentation250.motion74.start10[2] =
-        RaceContext.presentation250.motion74.current40[2] =
-        RaceContext.presentation250.motion74.keys0C->z;
-    RaceContext.presentation250.motion74.key08 = 1;
+    MotionControllerView()->motion74.modelScale6C = 0x2D0;
+    MotionControllerView()->motion74.start10[0] =
+        MotionControllerView()->motion74.current40[0] =
+        MotionControllerView()->motion74.keys0C->x;
+    MotionControllerView()->motion74.start10[1] =
+        MotionControllerView()->motion74.current40[1] =
+        MotionControllerView()->motion74.keys0C->y;
+    MotionControllerView()->motion74.start10[2] =
+        MotionControllerView()->motion74.current40[2] =
+        MotionControllerView()->motion74.keys0C->z;
+    MotionControllerView()->motion74.key08 = 1;
 }
 
 /* Initial values of the globals this module owns. */
