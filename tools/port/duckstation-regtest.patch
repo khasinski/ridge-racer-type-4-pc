@@ -1284,3 +1284,50 @@ diff --git a/src/core/pad.cpp b/src/core/pad.cpp
          if (!controller || (ack = controller->Transfer(data_out, &data_in)) == false)
          {
            if (!memory_card || (ack = memory_card->Transfer(data_out, &data_in)) == false)
+diff --git a/src/core/memory_card.cpp b/src/core/memory_card.cpp
+--- a/src/core/memory_card.cpp
++++ b/src/core/memory_card.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "memory_card.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "system_private.h"
+ 
+ #include "util/imgui_manager.h"
+@@ -108,6 +110,7 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
+ #if defined(_DEBUG) || defined(_DEVEL)
+   const State old_state = m_state;
+ #endif
++  const State trace_state = m_state;
+ 
+   switch (m_state)
+   {
+@@ -294,6 +297,26 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
+       break;
+   }
+ 
++  // DUCKSTATION_CARD_TRACE=1: each command (CARDOP, with the FLAG byte
++  // sent), each read or write's sector (CARDREAD/CARDWRITE) and the end
++  // of a frame (CARDEND, with the write's status byte), tick and frame.
++  {
++    static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
++    if (card_trace && trace_state != m_state)
++    {
++      const char* what = nullptr;
++      u32 arg = 0;
++      if (trace_state == State::Command)
++        what = "CARDOP", arg = data_in;
++      else if (m_state == State::ReadACK1 || m_state == State::WriteData)
++        what = m_state == State::ReadACK1 ? "CARDREAD" : "CARDWRITE", arg = m_address;
++      else if (m_state == State::Idle && trace_state != State::Command && trace_state != State::Idle)
++        what = "CARDEND", arg = *data_out;
++      if (what)
++        std::fprintf(stderr, "%s %x flag %02x tick %llu frame %u\n", what, arg, m_FLAG.bits,
++                     static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
++    }
++  }
+   DEBUG_LOG("Transfer, old_state={}, new_state={}, data_in=0x{:02X}, data_out=0x{:02X}, ack={}",
+             static_cast<u32>(old_state), static_cast<u32>(m_state), data_in, *data_out, ack ? "true" : "false");
+   m_last_byte = data_in;

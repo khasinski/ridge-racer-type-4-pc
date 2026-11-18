@@ -78,6 +78,8 @@ SCENARIOS = {
     'save-load': (8500, SAVE_LOAD, {}),
     'load-saved': (5000, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,circle@2600,'
                    'up@2900,circle@3000,circle@3800,circle@4200', {'card': 'saved'}),
+    'overwrite': (5000, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,up@2520,circle@2600,'
+                  'up@2900,circle@3000,up@3300,circle@3400,circle@4000,circle@4400', {'card': 'saved'}),
     'gp-rules': (24500, BOOT + ',start@m1/4:400,' + GP_RULES + ',start@m1/47:700,down@m1/47:800,'
                  'start@m1/47:1000,circle@m0/6:300,down@20300,circle@m1/50:200,circle@m1/51:200,'
                  'circle@m1/51:260,circle@m1/54:200+4%120,start@m1/22:300,cross@m1/53:100+20000',

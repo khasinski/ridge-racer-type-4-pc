@@ -84,7 +84,7 @@ Environment:
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
 | `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on (with the system tick) and key-off |
 | `DUCKSTATION_ADPCM_DUMP`, `DUCKSTATION_VOICE18_DUMP` | dump voice 18's decoded blocks / output samples (XA debugging) |
-| `DUCKSTATION_CARD_TRACE=1` | log each memory card selection (`CARDSEL`: the slot, whether it holds a card, the system tick and the frame, the vblank that started the transfer); the port's `PSYZ_CARD_TRACE` prints the BIOS card driver's port at each vblank |
+| `DUCKSTATION_CARD_TRACE=1` | log each memory card selection (`CARDSEL`: the slot, whether it holds a card), each card command (`CARDOP`: the command byte and the FLAG byte sent; 0x52 read, 0x57 write, 0x53 ID; the game's raw 0x5A probe is refused), each read or write's sector (`CARDREAD`/`CARDWRITE`) and each frame's end (`CARDEND`: the last reply, 0x47 good), with the system tick and the frame (the vblank that started it). The BIOS card driver's current port (it serves the ports on alternate vblanks, skipping a vblank it misses) is the byte at PS1 0x7264 (SCPH-1001), `RR4_DS_PEEK=80007264:1`; the port's `PSYZ_CARD_TRACE` prints its port at each vblank it takes |
 | `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`) and completes (`CDDONE`, a second response), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
@@ -122,8 +122,8 @@ every field matches, else the first field that differs and whether the
 values still come in the same order. `ds_compare.py list` names them: the
 Options screens, Records, the emblem editor and Options each followed by a
 Grand Prix race, the Garage's save, Save and Load, a boot with a saved card
-(made by the Save and Load scenario on DuckStation, exported with
-`mcd.py`), the Grand Prix rules to their end (the null-`Dialogue` store,
+and overwriting that save (the card made by the Save and Load scenario on
+DuckStation, exported with `mcd.py`), the Grand Prix rules to their end (the null-`Dialogue` store,
 with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
 race, Extra Trial (its row and a car poked into the save) and the DUAL
 SHOCK in analog mode through Time Attack with both sticks. `--lowram` adds

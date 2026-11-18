@@ -55,12 +55,12 @@ static int FileIsDevice(const char *name, const char *device) {
     return 1;
 }
 
-static s32 FileTransferDone(FileHandle *file, long count) {
+static s32 FileTransferDone(FileHandle *file, long count, int write) {
     if (count <= 0) {
         return -1; /* end of file or host error: no data was transferred */
     }
     if (file->card) {
-        Psyz_CardFileTransfer(file->channel, count, file->async);
+        Psyz_CardFileTransfer(file->channel, count, file->async, write);
     }
     return (s32)count;
 }
@@ -111,7 +111,7 @@ s32 FileRead(s32 descriptor, void *buffer, s32 count) {
     if (file->kind == FILE_KIND_LINK) {
         return (s32)Psyz_CombRead(buffer, count, file->async);
     }
-    return FileTransferDone(file, psyz_read(file->host, buffer, count));
+    return FileTransferDone(file, psyz_read(file->host, buffer, count), 0);
 }
 
 s32 FileWrite(s32 descriptor, const void *buffer, s32 count) {
@@ -123,7 +123,7 @@ s32 FileWrite(s32 descriptor, const void *buffer, s32 count) {
         return (s32)Psyz_CombWrite(buffer, count, file->async);
     }
     return FileTransferDone(
-        file, psyz_write(file->host, (char *)buffer, count));
+        file, psyz_write(file->host, (char *)buffer, count), 1);
 }
 
 s32 FileClose(s32 descriptor) {
