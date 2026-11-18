@@ -37,6 +37,9 @@ Absolute steps count port VSyncs (DuckStation frame - the offset).
 RR4_DS_POKE=addr:hexbytes@vsync[,...] stores bytes (hex PS1 address, data
 in memory order) at that field's blank, like the port's RR4_POKE, e.g.
 800f3974:01000000@1000 for SaveProgress+0x54 (the Extra Trial row).
+RR4_DS_CARD=slot:none|blank|path@vsync[,...] takes out or inserts a memory
+card at that field's blank (the regtest's card verb), like the port's
+RR4_CARD_SLOT.
 DUMMYBP=1 sets a never-hit breakpoint, which runs the emulator's
 interpreter with its memory checks: with DS_LOWRAM_LOG=<file> the patched
 regtest then logs game code touching PS1 RAM 0..0xFFFF (null-pointer
@@ -128,6 +131,13 @@ class Driver:
         self.frame = 0
         # RR4_DS_POKE=addr:hexbytes@v,...: PS1 RAM stores at the blank of
         # port vsync v, as the port's RR4_POKE stores between frames there.
+        # RR4_DS_CARD=slot:none|blank|path@v,...: the regtest's card verb at
+        # the blank of port vsync v, as the port's RR4_CARD_SLOT.
+        self.cards = []
+        for item in filter(None, os.environ.get('RR4_DS_CARD', '').split(',')):
+            where, at = item.rsplit('@', 1)
+            slot, what = where.split(':', 1)
+            self.cards.append((int(at), int(slot), what))
         self.pokes = []
         for item in filter(None, os.environ.get('RR4_DS_POKE', '').split(',')):
             where, at = item.split('@')
@@ -146,6 +156,9 @@ class Driver:
         for at, addr, data in self.pokes:
             if at == v:
                 self.d.poke(addr, data)
+        for at, slot, what in self.cards:
+            if at == v:
+                self.d.cmd('card %d %s' % (slot, what))
         # the buttons the controller sends at this blank's exchange
         want = {1: set(), 2: set()}
         target = {p: v + self.lead[p] for p in (1, 2)}

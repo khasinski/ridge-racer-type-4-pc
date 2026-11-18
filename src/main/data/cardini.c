@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/work_arena.h"
 #include "game/menu/menutra21.h"
 #include "types.h"
@@ -122,12 +123,20 @@ void ClearHwCardEvents(void) {
     TestEvent(HwCardEvNew);
 }
 
+/* The game spins here until the BIOS card driver raises the request's
+ * software event (after _card_clear). A turn of the loop is four B0
+ * TestEvent calls, 56 clocks each on DuckStation (ds_calltime.py
+ * TestEvent:tail); the port spends that time per turn, so the emulated
+ * clock reaches the driver's vblanks. */
+enum { WAIT_SW_CARD_EVENT_TURN_CYCLES = 4 * 56 };
+
 int WaitSwCardEvent(void) {
     for (;;) {
         if (TestEvent(SwCardEvIoe) == 1) return 1;
         if (TestEvent(SwCardEvError) == 1) return 2;
         if (TestEvent(SwCardEvTimeout) == 1) return 3;
         if (TestEvent(SwCardEvNew) == 1) return 4;
+        RR_CPU_CYCLES(WAIT_SW_CARD_EVENT_TURN_CYCLES);
     }
 }
 

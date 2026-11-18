@@ -83,6 +83,12 @@
  *                      RR4_TRACE_RAND=1 also prints the BIOS rand() state
  *                      (PS1: word at 0x80009010; seeded from VSync(1) at
  *                      race load, so poke it on the reference to compare).
+ *   RR4_CARD_SLOT=list test hook: a comma list of slot:state@vsync (slot 1 or
+ *                      2, state none, formatted or unformatted) that pulls
+ *                      out, plugs in or unformats the memory card of that
+ *                      slot at that VSync (Psyz_CardSetSlotState; the card's
+ *                      files stay in its directory), as tools/port/
+ *                      ds_script.py's RR4_DS_CARD does on DuckStation.
  *   RR4_POKE=list      test hook to fast-forward game state: a comma list of
  *                      name[+offset][:size]=value@vsync (store) or
  *                      name[+offset][:size]+=value@vsync (add), applied once
@@ -163,6 +169,8 @@
 #include "diagnostics.h"
 #include "rr/draw_distance.h"
 #include "diagnostics_parse.h"
+
+static void setup_card_steps(const char *list);
 
 void Psyz_Srand(unsigned int seed);
 
@@ -737,6 +745,7 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     if (pad_script_len > 0 || env_long("RR4_AUTODRIVE", 0) != 0)
         Psyz_SetPadsInputCb(pads_input);
     setup_pokes(getenv("RR4_POKE"));
+    setup_card_steps(getenv("RR4_CARD_SLOT"));
     if (path_env("RR4_AUDIO_CAPTURE"))
         start_audio_capture(path_env("RR4_AUDIO_CAPTURE"));
     autodrive = env_long("RR4_AUTODRIVE", 0) != 0;
@@ -752,12 +761,55 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     capture_base = path_env("RR4_CAPTURE") ? path_env("RR4_CAPTURE") : "capture";
 }
 
+/* RR4_CARD_SLOT steps. */
+enum { CARD_STEP_MAX = 16 };
+static struct {
+    int port, state;
+    long vsync;
+} card_steps[CARD_STEP_MAX];
+static int card_step_count;
+
+static void setup_card_steps(const char *list) {
+    while (list && *list && card_step_count < CARD_STEP_MAX) {
+        int slot = 0;
+        char state[16] = {0};
+        long vsync = 0;
+        if (sscanf(list, "%d:%15[a-z]@%ld", &slot, state, &vsync) == 3 && (slot == 1 || slot == 2)) {
+            int st = !strcmp(state, "none")          ? PSYZ_CARD_NONE
+                     : !strcmp(state, "unformatted") ? PSYZ_CARD_UNFORMATTED
+                     : !strcmp(state, "formatted")   ? PSYZ_CARD_FORMATTED
+                                                     : -1;
+            if (st >= 0) {
+                card_steps[card_step_count].port = slot - 1;
+                card_steps[card_step_count].state = st;
+                card_steps[card_step_count].vsync = vsync;
+                card_step_count++;
+            } else {
+                fprintf(stderr, "ridge-racer-type-4-pc: RR4_CARD_SLOT: unknown state %s\n", state);
+            }
+        } else {
+            fprintf(stderr, "ridge-racer-type-4-pc: RR4_CARD_SLOT: cannot parse %s\n", list);
+        }
+        list = strchr(list, ',');
+        if (list)
+            list++;
+    }
+}
+
+static void apply_card_steps(long vsync) {
+    for (int i = 0; i < card_step_count; i++) {
+        if (card_steps[i].vsync == vsync)
+            Psyz_CardSetSlotState(card_steps[i].port, card_steps[i].state);
+    }
+}
+
 int Rr4DiagnosticsVSync(long vsync, int quitting) {
     capture_at_vsync(vsync);
     gpu_dump_vsync(vsync);
     diag_vsync = vsync;
     update_anchor(vsync);
     apply_pokes(vsync);
+    apply_card_steps(vsync);
     if (trace_every > 0 && vsync % trace_every == 0) {
         fprintf(stderr, "vsync %ld frame %u mode %u/%d sub %u", vsync,
                 FrameCounter, ModeGroup, ModeIndex, SubmodeState);

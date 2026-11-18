@@ -70,6 +70,7 @@ Control verbs (one line each, answered `OK ...` or `ERR ...`):
 | `vram <path>`, `spuram <path>` | write raw VRAM (1024x512x16) or SPU RAM |
 | `audiodump [path]` | append the mixed SPU output (44100 Hz s16 stereo); no path closes it |
 | `disc <path>` | change the disc |
+| `card <slot> none\|blank\|<path>` | pull the card out of slot 1 or 2, or insert a blank card or a card file (`ds_script.py`'s `RR4_DS_CARD`) |
 | `ticks` | system tick counter (33.8688 MHz) and frame number |
 
 Environment:
@@ -79,6 +80,7 @@ Environment:
 | `REGTEST_PAD1_TYPE`, `REGTEST_PAD2_TYPE` | controller type name (`DigitalController` default on port 1, `AnalogController`, `NeGcon`, `JogCon`, ...) |
 | `REGTEST_PAD2=1` | digital pad in port 2 (default empty) |
 | `REGTEST_CARD1` | `none`: no card in slot 1; a path: that card file (shared); unset: a blank non-persistent card |
+| `REGTEST_CARD2` | slot 2: unset or `none` empty (the default), `blank` a blank non-persistent card, a path that card file (shared; a zero-filled 128 KiB file is an unformatted card) |
 | `REGTEST_VRAM_OUT` | write the final VRAM at exit |
 | `DS_LOWRAM_LOG=<file>` | with any breakpoint set (the interpreter's checked path; `ds_script.py` with `DUMMYBP=1`), append each new code address/data address pair where game code, or the kernel called from it, reads or writes PS1 RAM 0..0xFFFF: the original's null-pointer accesses. `ds_lowram_report.py <file>` groups them by function |
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
@@ -89,7 +91,7 @@ Environment:
 | `DUCKSTATION_CD_SECTORS=1` | with `DUCKSTATION_CD_TRACE`, also log each sector the drive reads (`CDSECT <absolute sector> tick <t> frame <f>`; its data interrupt comes then): compare with the port's `PSYZ_CD_TRACE` `cd irq <us> 3780 sector <n>` lines (n is the next sector, n - 1 + 150 the absolute one) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
-card slot 2 are empty, audio goes to the null backend and the renderer is
+card slot 2 are empty unless `REGTEST_PAD2` / `REGTEST_CARD2` say otherwise, audio goes to the null backend and the renderer is
 software.
 
 ## Replaying a scenario
@@ -124,7 +126,13 @@ values still come in the same order. `ds_compare.py list` names them: the
 Options screens, Records, the emblem editor and Options each followed by a
 Grand Prix race, the Garage's save, Save and Load, a boot with a saved card
 and overwriting that save (the card made by the Save and Load scenario on
-DuckStation, exported with `mcd.py`), the Grand Prix rules to their end (the null-`Dialogue` store,
+DuckStation, exported with `mcd.py`), the card paths (an
+unformatted card formatted and saved to, a full card, the card pulled out
+during a save, two cards, a card in slot 2 only, Versus with each player
+loading garage data from their own card, with two cards and with slot 2's
+only; `ds_compare.py`'s `cards` and `card_steps` set `REGTEST_CARD1/2`,
+`RR4_DS_CARD` against `PSYZ_CARD_UNPLUG`, `PSYZ_CARD_UNFORMATTED`,
+`RR4_CARD_SLOT` and the card directories), the Grand Prix rules to their end (the null-`Dialogue` store,
 with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
 race, Extra Trial (its row and a car poked into the save) and the DUAL
 SHOCK in analog mode through Time Attack with both sticks. `--lowram` adds

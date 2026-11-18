@@ -51,13 +51,19 @@ TA_STICKS = ('down@m1/4:450,start@m1/4:550,circle@m1/50:200,circle@m1/51:200,cir
              'circle@m1/54:200+4%120,start@m1/22:300,cross@m1/53:100+20000,lx=0.6@m1/53:400+60,'
              'lx=-0.45@m1/53:700+90,lx=1@m1/53:1100+30,ly=-0.5@m1/53:1300+40,lx=-1@m1/53:1500+25,'
              'rx=0.7@m1/53:1700+20')
+# Versus with two pads: player 1, then player 2 loads garage data from their
+# card (slot 1, slot 2) in the car select.
+VS_LOAD = '2:select@100,start@m2/4:700+4%300,start@m1/4:150,down@m1/4:450,down@m1/4:500,start@m1/4:550,down@2600,circle@2700,down@3000,circle@3100,circle@3500,up@3800,circle@3900,circle@4500,down@4800,circle@4900,down@5300,down@5360,circle@5450,up@5700,circle@5800,circle@6000,2:down@6300,2:circle@6400,2:down@6700,2:circle@6800,2:circle@7200,2:up@7500,2:circle@7600,2:circle@8200,2:down@8500,2:circle@8600'
 CAR_POSE = [('800abfc0:4', 'PlayerCars+200:4'), ('800ac074:2', 'PlayerCars+380:2')]
 LOW_RAM = [('80000004:4', 'Ps1LowRamImage+4:4')]
 
 # name: (fields, pads, options). Options: pokes (port RR4_POKE), ds_pokes
 # (RR4_DS_POKE), watch [(ds addr:len, port name:len[, mode prefix: compared
 # only in those modes, e.g. an overlay's variable)]], pad (dualshock),
-# card ('saved': a card holding the save the save-load scenario makes).
+# cards (slot 1, slot 2): 'blank' (DuckStation's blank card), 'none',
+# 'unformatted', 'saved' (the save the save-load scenario makes), 'full'
+# (15 blocks of other files); default ('blank', 'none'). card_steps
+# [(slot, 'none', vsync)]: the card pulled out at that field.
 SCENARIOS = {
     'options': (7000, BOOT + ',' + MENU_DOWNS(6) + ',start@m1/4:750,' + OPTIONS, {}),
     'options-gp': (16000, BOOT + ',' + ','.join('down@%d' % (1437 + 50 * i) for i in range(6)) +
@@ -77,9 +83,19 @@ SCENARIOS = {
                     'circle@5329,circle@5829,down@6029,circle@6129', {}),
     'save-load': (8500, SAVE_LOAD, {}),
     'load-saved': (5000, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,circle@2600,'
-                   'up@2900,circle@3000,circle@3800,circle@4200', {'card': 'saved'}),
+                   'up@2900,circle@3000,circle@3800,circle@4200', {'cards': ('saved', 'none')}),
     'overwrite': (5000, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,up@2520,circle@2600,'
-                  'up@2900,circle@3000,up@3300,circle@3400,circle@4000,circle@4400', {'card': 'saved'}),
+                  'up@2900,circle@3000,up@3300,circle@3400,circle@4000,circle@4400', {'cards': ('saved', 'none')}),
+    'unformatted': (5600, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,up@2520,circle@2600,'
+                    'up@2900,circle@3000,circle@3700,up@4000,up@4060,up@4120,circle@4300,up@4600,circle@4700,'
+                    'circle@5300', {'cards': ('unformatted', 'none')}),
+    'full-card': (4600, BOOT + ',' + MENU_DOWNS(5) + ',start@m1/4:700,up@2400,up@2460,up@2520,circle@2600,'
+                  'up@2900,circle@3000,circle@3600,circle@4000', {'cards': ('full', 'none')}),
+    'card-pulled': (5600, SAVE_LOAD, {'card_steps': [(1, 'none', 4470)]}),
+    'two-cards': (8500, SAVE_LOAD, {'cards': ('blank', 'blank')}),
+    'slot2-only': (8500, SAVE_LOAD, {'cards': ('none', 'blank')}),
+    'vs-two-cards': (9000, VS_LOAD, {'cards': ('saved', 'saved')}),
+    'vs-slot2-only': (9000, VS_LOAD, {'cards': ('none', 'saved')}),
     'gp-rules': (24500, BOOT + ',start@m1/4:400,' + GP_RULES + ',start@m1/47:700,down@m1/47:800,'
                  'start@m1/47:1000,circle@m0/6:300,down@20300,circle@m1/50:200,circle@m1/51:200,'
                  'circle@m1/51:260,circle@m1/54:200+4%120,start@m1/22:300,cross@m1/53:100+20000',
@@ -126,15 +142,69 @@ def make_saved_card(out):
     return card
 
 
-def run_port(out, binary, fields, pads, opts, card_dir=None):
+def make_full_card(out):
+    """A card of 15 one-block files of another game (no room left)."""
+    src = os.path.join(out, 'full-bu00')
+    shutil.rmtree(src, ignore_errors=True)
+    os.makedirs(src)
+    for k in range(15):
+        with open(os.path.join(src, 'BESLES-%05dFILL' % k), 'wb') as f:
+            f.write(bytes([0x53, 0x43, 0x11, 0x01]) + bytes(8188))
+    card = os.path.join(out, 'full.mcd')
+    subprocess.run([sys.executable, os.path.join(HERE, 'mcd.py'), 'import', src, card], check=True)
+    return card, src
+
+
+def prepare_cards(out, opts):
+    """(DuckStation REGTEST_CARD1/2 values, port env, port card dirs)."""
+    kinds = opts.get('cards', ('blank', 'none'))
+    ds, env, dirs = {}, {'PSYZ_CARD_UNPLUG': '', 'PSYZ_CARD_UNFORMATTED': ''}, {}
+    made = {}
+    for slot, kind in enumerate(kinds, 1):
+        if kind == 'none':
+            ds['REGTEST_CARD%d' % slot] = 'none'
+            env['PSYZ_CARD_UNPLUG'] += str(slot)
+        elif kind == 'blank':
+            ds['REGTEST_CARD%d' % slot] = '' if slot == 1 else 'blank'
+        elif kind == 'unformatted':
+            path = os.path.join(out, 'ds-card%d.mcd' % slot)
+            open(path, 'wb').write(bytes(131072))
+            ds['REGTEST_CARD%d' % slot] = path
+            env['PSYZ_CARD_UNFORMATTED'] += str(slot)
+        elif kind in ('saved', 'full'):
+            if kind not in made:
+                if kind == 'saved':
+                    card = make_saved_card(out)
+                    src = os.path.join(out, 'saved-bu00')
+                    shutil.rmtree(src, ignore_errors=True)
+                    subprocess.run([sys.executable, os.path.join(HERE, 'mcd.py'), 'export', card, src],
+                                   check=True)
+                else:
+                    card, src = make_full_card(out)
+                made[kind] = (card, src)
+            card, src = made[kind]
+            path = os.path.join(out, 'ds-card%d.mcd' % slot)
+            shutil.copy(card, path)
+            ds['REGTEST_CARD%d' % slot] = path
+            dirs['bu%d0' % (slot - 1)] = src
+    if opts.get('card_steps'):
+        ds['RR4_DS_CARD'] = ','.join('%d:%s@%d' % st for st in opts['card_steps'])
+        env['RR4_CARD_SLOT'] = ds['RR4_DS_CARD']
+    return ds, {k: v for k, v in env.items() if v}, dirs
+
+
+def run_port(out, binary, fields, pads, opts, card_env, card_dirs):
     run = os.path.join(out, 'port')
     shutil.rmtree(run, ignore_errors=True)
     os.makedirs(os.path.join(run, 'cfg'))
-    if card_dir:
-        shutil.copytree(card_dir, os.path.join(run, 'bu00'))
-    env = dict(os.environ, PSYZ_HEADLESS='1', SDL_AUDIODRIVER='dummy', PSYZ_CARD_UNPLUG='2',
+    for name, src in card_dirs.items():
+        shutil.copytree(src, os.path.join(run, name))
+    env = dict(os.environ, PSYZ_HEADLESS='1', SDL_AUDIODRIVER='dummy',
                RR4_CONFIG_HOME=os.path.join(run, 'cfg'), RR4_FRAME_LIMIT=str(fields),
                RR4_PAD_SCRIPT=pads, RR4_TRACE='1', RR4_TRACE_RAND='1')
+    for k in ('PSYZ_CARD_UNPLUG', 'PSYZ_CARD_UNFORMATTED', 'RR4_CARD_SLOT'):
+        env.pop(k, None)
+    env.update(card_env)
     if opts.get('pad'):
         env['RR4_PAD_TYPE'] = opts['pad']
     if opts.get('pokes'):
@@ -202,7 +272,7 @@ def main():
     if sys.argv[1] == 'list':
         for name, (fields, _, opts) in SCENARIOS.items():
             print('%-20s %6d fields %s' % (name, fields, ' '.join('%s=%s' % kv for kv in opts.items()
-                                                                if kv[0] in ('pad', 'card'))))
+                                                                if kv[0] in ('pad', 'cards', 'card_steps'))))
         return
     name, out = sys.argv[2], os.path.abspath(sys.argv[3])
     binary = os.path.join(ROOT, 'build', 'ridge-racer-type-4-pc')
@@ -210,27 +280,22 @@ def main():
         binary = os.path.abspath(sys.argv[sys.argv.index('--bin') + 1])
     fields, pads, opts = SCENARIOS[name]
     os.makedirs(out, exist_ok=True)
-    card_dir, extra = None, {}
-    if opts.get('card') == 'saved':
-        card = make_saved_card(out)
-        card_dir = os.path.join(out, 'saved-bu00')
-        shutil.rmtree(card_dir, ignore_errors=True)
-        subprocess.run([sys.executable, os.path.join(HERE, 'mcd.py'), 'export', card, card_dir], check=True)
-        shutil.copy(card, os.path.join(out, 'ds-card.mcd'))
-        extra['REGTEST_CARD1'] = os.path.join(out, 'ds-card.mcd')
+    extra, card_env, card_dirs = prepare_cards(out, opts)
+    fresh = {k: v for k, v in extra.items() if k.startswith('REGTEST_CARD') and v.endswith('.mcd')}
+    keep = {k: open(v, 'rb').read() for k, v in fresh.items()}
     run_ds(out, fields, pads, opts, extra=extra)
     if '--lowram' in sys.argv:
         log = os.path.join(out, 'lowram.log')
         if os.path.exists(log):
             os.remove(log)
-        if card_dir:
-            shutil.copy(card, extra['REGTEST_CARD1'])
+        for k, v in fresh.items():  # the same cards again
+            open(v, 'wb').write(keep[k])
         run_ds(out, fields, pads, opts, 'ds-lowram.txt', dict(extra, DUMMYBP='1', DS_LOWRAM_LOG=log))
         with open(os.path.join(out, 'lowram.txt'), 'w') as f:
             subprocess.run([sys.executable, os.path.join(HERE, 'ds_lowram_report.py'), log] +
                            ([os.environ['RR4_DECOMP']] if os.environ.get('RR4_DECOMP') else []),
                            stdout=f, check=False)
-    run_port(out, binary, fields, pads, opts, card_dir)
+    run_port(out, binary, fields, pads, opts, card_env, card_dirs)
     report = compare(out, opts)
     open(os.path.join(out, 'report.txt'), 'w').write(report + '\n')
     print(report)
