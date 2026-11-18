@@ -23,8 +23,9 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
               800-byte records)
   DSF_MASKS   pad 1 masks per port vsync ("vsync mask"), RR4_AUTODRIVE's
               input made with `masks` from the port's trace and its
-              RR4_AUTODRIVE_LOG (lead 1 with one pad, 2 with two: libpad
-              stores port 1's bytes a field earlier then)
+              RR4_AUTODRIVE_LOG (lead 1, with one pad or two: lead 2 put
+              the Versus scenario's second race a frame off at its first
+              steering after 6680)
   DSF_MARKS   name[:ret][@mG/I],...: stubs at these functions' entries (and
               returns with :ret) write a marker to EXP2 0x1F802090, which
               the patched regtest logs as XMARK with its tick (no effect on
