@@ -116,3 +116,25 @@ never-hit breakpoint, for the same run on the interpreter.
 marker to root counter 2, which `DUCKSTATION_CD_TRACE` logs with the tick):
 for calls too long for root counter 0 and for timelines across fields, such
 as the boot (`ds_mark.py 293 440 MainLoop SystemInit CdInit SsInit`).
+
+## Following a scenario with marks
+
+`ds_frames.py run <fields> <trace> <log>` plays a regression scenario
+(`DSF_PADS`, `DSF_POKES` as in `regress.sh`, `DSF_MASKS` for
+`RR4_AUTODRIVE`'s input from `ds_frames.py masks`) and writes the port's
+trace lines, with `regress.sh`'s watched globals, for every field from the
+game's first VSync (DuckStation field 296); run the port headless with
+`PSYZ_CARD_UNPLUG=2` to compare. `DSF_MARKS` marks function entries (and
+returns, `name:ret`) through writes to EXP2 0x1F802090, which the patched
+regtest logs as `XMARK` with its tick under `DUCKSTATION_CD_TRACE`; unlike
+`ds_mark.py`'s root counter 2 writes they leave the sequencer alone, so
+the game follows its course after them. `DSF_EXC=1` also marks the
+exception vector (I_STAT, DICR, the cause) and both exception returns, for
+interrupt dispatch times. `ds_frames.py timeline <log> [from to]` lists the
+marks and CD commands per field with their clocks after the vblank.
+
+The port's side: a build with `-DRR4_FUNC_MARKS=ON` (Clang or GCC) compiles
+the game and PsyZ with `-finstrument-functions`; `RR4_MARK=name,...`
+prints `XMARK <name> <clocks>` at each entry with the emulated clock
+(`Psyz_EmulatedClocks`, headless only), and `PSYZ_PAD_TRACE=1` each
+blank's exact time (`at <ns>`).

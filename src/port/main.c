@@ -70,6 +70,9 @@
 #include "replay_session.h"
 #if RR4_DIAGNOSTICS
 #include "diagnostics.h"
+#if RR4_FUNC_MARKS
+#include "func_marks.h"
+#endif
 #endif
 
 #include <SDL3/SDL.h>
@@ -123,6 +126,9 @@ static void host_vsync(void) {
     int quitting;
 
     frame_count++;
+#if RR4_FUNC_MARKS
+    Rr4FuncMarksVSync(frame_count);
+#endif
 #if RR4_DIAGNOSTICS
     quitting = Rr4DiagnosticsVSync(frame_count, Psyz_QuitRequested());
 #else

@@ -1,3 +1,22 @@
+diff --git a/src/core/bus.cpp b/src/core/bus.cpp
+index bcdab1926..dd08dd92e 100644
+--- a/src/core/bus.cpp
++++ b/src/core/bus.cpp
+@@ -1609,6 +1609,14 @@ void Bus::EXP2WriteHandler(VirtualMemoryAddress address, u32 value)
+   {
+     DEV_LOG("BIOS POST2 status: {:02X}", value & UINT32_C(0x0F));
+   }
++  else if (offset >= 0x90 && offset <= 0x9F)
++  {
++    // Timing marks (RR4 tools/port/ds_frames.py): logged with the system tick, no other effect.
++    static const bool trace = std::getenv("DUCKSTATION_CD_TRACE") != nullptr;
++    if (trace)
++      std::fprintf(stderr, "XMARK 0x%x tick %llu frame %u off %x\n", value,
++                   static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber(), offset);
++  }
+   else if (offset >= 0x81 && offset <= 0x82 && g_settings.pcsx_expansion_region_enable)
+   {
+     if (offset == 0x81)
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
 index 667aaab67..ad184982b 100644
 --- a/src/core/cdrom.cpp
