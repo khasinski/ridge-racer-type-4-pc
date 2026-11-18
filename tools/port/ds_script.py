@@ -11,7 +11,12 @@ the port's VSync hook does at that blank, then sets the buttons of the
 script's next field before the exchange of this blank: the port's script
 names the field whose receive buffer shows the press with one pad
 (libpad stores port 1's bytes when it starts the next exchange), so the
-controller holds it one exchange earlier. A pad in port 2 is connected when
+controller holds it one exchange earlier. DuckStation pauses after libpad
+has sent a blank's first command bytes: a DUAL SHOCK or JogCon reads its
+buttons at the command byte (a digital pad and a neGcon only at the
+buttons' byte), so for those the buttons are set one blank earlier still.
+RR4_DS_LEAD overrides the lead (1, or 2 for those controllers) for both
+ports. A pad in port 2 is connected when
 a step names it (REGTEST_PAD2=1).
 
 Output per field, as the port's RR4_TRACE=1 RR4_TRACE_RAND=1 lines:
@@ -67,7 +72,10 @@ def main():
     frames, script = int(sys.argv[1]), sys.argv[2]
     out = open(sys.argv[3], 'w') if len(sys.argv) > 3 else sys.stdout
     offset = int(os.environ.get('RR4_DS_FIELD_OFFSET', '225'))
-    lead = int(os.environ.get('RR4_DS_LEAD', '1'))
+    late = ('AnalogController', 'JogCon')
+    lead = {p: int(os.environ.get('RR4_DS_LEAD') or
+                   (2 if os.environ.get('REGTEST_PAD%d_TYPE' % p) in late else 1))
+            for p in (1, 2)}
     padlog = os.environ.get('RR4_DS_PADLOG') == '1'
     peeks = [(int(a, 16), int(n)) for a, n in
              (p.split(':') for p in os.environ.get('RR4_DS_PEEK', '').split(',') if p)]
@@ -94,10 +102,10 @@ def main():
                 d.poke(PAD_RAN, b'\0\0\0\0')
             # the buttons the controller sends at this blank's exchange
             want = {1: set(), 2: set()}
-            target = v + lead
+            target = {p: v + lead[p] for p in (1, 2)}
             for port, button, smode, first, count, period in steps:
-                t = (target if smode is None else
-                     target - anchor_entry if smode == anchor_mode else -1) - first
+                t = (target[port] if smode is None else
+                     target[port] - anchor_entry if smode == anchor_mode else -1) - first
                 if t < 0:
                     continue
                 if period:

@@ -301,10 +301,18 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      code around each command, the boot's directory search and the
      hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time, so
      the boot's CD commands and the sequencer's timer start within 0.13 ms
-     of DuckStation's. libpad (PadInitDirect, PadStartCom) keeps a port's
+     of DuckStation's. libpad (PadInitDirect, PadStartCom) is PSY-Q's channel
+     state machine ported from the decompilation (PsyZ `libpad.c`), run a
+     byte at a time against models of the controllers (`pad.c`, as
+     DuckStation's digital pad, DUAL SHOCK, neGcon and JogCon answer):
+     finding a DUAL SHOCK's modes and actuators takes 22 exchanges,
+     PadSetActAlign four, a digital pad refuses 0x43 eleven times, and the
+     motor bytes go out through libpad's actuator gates. It keeps a port's
      received packet until it next starts a transfer, so with two pads
      port 1's bytes reach the receive buffer at the vblank of the exchange
-     and port 2's at the next, with one pad at the next; test input
+     and port 2's at the next, with one pad at the next; answers in
+     configuration mode and failed exchanges leave the buffer as it was
+     (an unplugged pad's bytes stay for eleven vblanks); test input
      (`RR4_PAD_SCRIPT`) drives the controllers before the exchange
      (`Psyz_SetPadsInputCb`). A vblank that arrives while another interrupt
      is dispatched, after the BIOS chains tested for it, reaches only
