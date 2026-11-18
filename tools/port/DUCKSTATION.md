@@ -84,6 +84,7 @@ Environment:
 | `DUCKSTATION_SPU_REG_TRACE=1` | log CPU writes to the SPU voice registers with the frame number |
 | `DUCKSTATION_SPU_KEY_TRACE=1` | log voice key-on (with the system tick) and key-off |
 | `DUCKSTATION_ADPCM_DUMP`, `DUCKSTATION_VOICE18_DUMP` | dump voice 18's decoded blocks / output samples (XA debugging) |
+| `DUCKSTATION_CARD_TRACE=1` | log each memory card selection (`CARDSEL`: the slot, whether it holds a card, the system tick and the frame, the vblank that started the transfer); the port's `PSYZ_CARD_TRACE` prints the BIOS card driver's port at each vblank |
 | `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`) and completes (`CDDONE`, a second response), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
@@ -96,8 +97,13 @@ software.
 regression scenarios' button steps, mode anchors included) on DuckStation
 and prints the port's `RR4_TRACE=1 RR4_TRACE_RAND=1` lines (vsync,
 FrameCounter, mode, rand) for each field, so the two traces diff directly.
-Fields count from the port's first VSync (DuckStation frame - 225, the
-BIOS boot). The controller sends a step's buttons at the exchange of the
+Fields count from the port's first VSync: DuckStation frame - 295, the
+BIOS boot (`RR4_DS_FIELD_OFFSET` overrides it; `ds_frames.py` below
+explains the moment). Run the port with DuckStation's cards:
+`PSYZ_CARD_UNPLUG=2` (a blank card in slot 1, slot 2 empty). The old
+offset of 225 with the port's two cards happened to line up the boot (the
+port's second card takes about the 71 fields the offset left out) but not
+the card menus. The controller sends a step's buttons at the exchange of the
 blank before it, as the port's script does, so with one pad the receive
 buffer shows them over the step's fields on both. `RR4_DS_PADLOG=1` adds
 whether libpad's vblank handler ran, `RR4_DS_PEEK=addr:len,...` RAM bytes.
@@ -116,6 +122,10 @@ never-hit breakpoint, for the same run on the interpreter.
 marker to root counter 2, which `DUCKSTATION_CD_TRACE` logs with the tick):
 for calls too long for root counter 0 and for timelines across fields, such
 as the boot (`ds_mark.py 293 440 MainLoop SystemInit CdInit SsInit`).
+`RR4_DS_SCRIPT='pad script'` plays a script on the way (ds_script.py's
+syntax and field numbers), to mark functions in a menu; with
+`DUCKSTATION_CARD_TRACE=1` the log (`RR4_MARK_LOG`) also has the card
+selections.
 
 ## Following a scenario with marks
 

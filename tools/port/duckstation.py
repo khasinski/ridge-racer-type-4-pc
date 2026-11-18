@@ -36,7 +36,14 @@ def _acquire_slot():
     """Take one of the machine-wide run slots shared with run_capped.sh.
 
     At most RR4_RUN_SLOTS (default 2) game or emulator runs execute at once
-    across all agents and scripts; this waits for a free slot."""
+    across all agents and scripts; this waits for a free slot. Under
+    run_capped.sh (RR4_RUN_SLOT, a slot it holds) the run uses that slot:
+    waiting for a second one could block forever when every slot is held by
+    a run_capped.sh whose own emulator waits the same way. Returns None then
+    (nothing to release)."""
+    held = os.environ.get('RR4_RUN_SLOT')
+    if held and os.path.isdir(held):
+        return None
     slots = int(os.environ.get('RR4_RUN_SLOTS', '2'))
     os.makedirs(SLOT_ROOT, exist_ok=True)
     while True:
@@ -119,7 +126,8 @@ class DuckStation:
             env['REGTEST_PAD2_TYPE'] = pad2_type
         extra = shlex.split(os.environ.get('RR4_DS_ARGS', ''))
         self.slot = _acquire_slot()
-        atexit.register(shutil.rmtree, self.slot, True)
+        if self.slot:
+            atexit.register(shutil.rmtree, self.slot, True)
         self.p = subprocess.Popen([ds, '-ai-port', str(ai), '-gdb', str(gdb), '-start-paused', '-frames', '10000000',
                                    *extra, '--', cue], stdout=log or subprocess.DEVNULL,
                                   stderr=subprocess.STDOUT, env=env, cwd=os.path.dirname(os.path.abspath(ds)))

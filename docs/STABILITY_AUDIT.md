@@ -704,10 +704,50 @@ the SDK's own kernel patches and libpad/libcard/kernel work areas:
   pointer. PsyZ ignores the call; the volumes are 0 and those bytes stay 0 on
   the console (they are never written otherwise), so nothing differs.
 
-The dialogue store needs a multi-page dialogue while `Dialogue` is still null
-(options, garage or card help before a Grand Prix); none of the runs showed
-one, and the code path matches the original's unconditional store. The
-presentation controller's fields after its script pointer (+0x64) sit at
+The null-`Dialogue` store happens in the PAL release in one place: the Grand
+Prix rules (`StepIntroScene`, mode 0/2, dialogue table R4.BIN group 1 entry
+0x46, whose entry 0 has 13 pages and turns them by itself), watched to the
+last page instead of skipped with Start. `UpdateDialogue` then stores 0
+through `Dialogue`, which `LoadDialogueStep` sets only later in the Grand
+Prix. Every entry of the other front-end tables (0x44 for the title,
+options and garage, 0x45 for the card menus) has one page in all five
+languages (read from the disc and on DuckStation), so options, garage,
+emblem editor, records and card dialogues never reach it; the earlier runs
+skipped the rules. Measured with that flow (select Grand Prix, no input
+until the rules end, then the regression scenario's Grand Prix inputs with
+the throttle held, retire the four attempts, game over, Time Attack's car
+select and race; 24500 fields, `PSYZ_CARD_UNPLUG=2`, `ds_script.py`'s lines
+at DuckStation frame - 295): DuckStation's `DS_LOWRAM_LOG` has
+`UpdateDialogue` writing 0x7 (DuckStation frame 6379) and the port writes
+`Ps1LowRamImage` byte 7 at the same field (vsync 6083); PS1 0x4..0x7
+(0x275A0C80, then 0x005A0C80), the mode, FrameCounter, rand and
+`PlayerCars`' bounds height (+0x108) are the same in every field. Nothing
+reads the byte afterwards: the Grand Prix loads the player car slots, so
+the Time Attack car select's `SetCarBounds` reads loaded bounds, not low
+RAM (the log has no game access after the store). The byte would matter
+only to a car select with unloaded slots after the rules, which the game's
+flow does not allow (the Grand Prix's team select has no way back).
+
+The other front-end entries were replayed on both too (DuckStation's
+default blank card in slot 1, the port with `PSYZ_CARD_UNPLUG=2`): Options
+(both controller setups, adjust screen, audio, brightness) then a Grand
+Prix and its race (16000 fields), Records (lap and total records, 6500),
+the Garage's emblem editor (sample load, drawing, the exit dialog) then a
+Grand Prix and its race (16500): every field the same, the editor's cursor
+too. The low RAM accesses were only the three above. The card menus keep
+the same mode, FrameCounter and rand sequences but not their fields
+(Garage name entry and save, Save and Load: load from the empty card,
+save, load, PocketStation; a boot with the saved card): the game's card
+poll (`PollCardStatus` counting three equal `CardUpdate` results) runs a
+field ahead in the port from vsync 432 of the opening on, where
+DuckStation's card driver takes one more field between two polls (its
+transfers at 428 and 433 against 428 and 432 in the port, a vblank the
+driver skips there). The port's next poll result then still lands in
+mode 1/2 and clears the count, DuckStation's does not, so a card prompt
+that needs three results shows at once on DuckStation and 15 or 16 fields later
+in the port (TECH_DEBT F5).
+
+The presentation controller's fields after its script pointer (+0x64) sit at
 host offsets on 64-bit hosts; only +0x54 was seen before binding.
 
 The four regression scenarios stay identical. The VS replay loaded from a

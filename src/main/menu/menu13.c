@@ -122,11 +122,19 @@ call1:
             s->b9 = s->b9 + 1;
             s->sE = 1;
             s->st = 1;
-            /* The original stores through the global Dialogue even when only
-             * another text state is live (an options, garage or card dialogue
-             * before the Grand Prix loads one, through CardDialogueStatePtr);
-             * while Dialogue is null that write lands at PS1 address 7, in the
-             * low RAM that unloaded car slots read. */
+            /* The original stores through the global Dialogue whichever text
+             * state turned the page (CardDialogueStatePtr's too); while
+             * Dialogue is null that write lands at PS1 address 7, in the low
+             * RAM that unloaded car slots read (the high byte of the
+             * CarBounds height SetCarBounds reads in the Time Attack and VS
+             * car selects). Only a dialogue of two or more pages gets here.
+             * In the PAL release that is the Grand Prix rules (StepIntroScene,
+             * table entry 0x46: 13 pages, auto-advancing) when they are
+             * watched to the last page, before LoadDialogueStep has set
+             * Dialogue; every entry of the other front-end tables (0x44 and
+             * 0x45, all five languages) has one page. Once a Grand Prix has
+             * loaded a dialogue, Dialogue keeps pointing into
+             * CdDirectoryBuffer, as on the console. */
             if (s->b9 == (signed char)s->b8) {
                 if (Dialogue != 0) {
                     Dialogue->b7 = 0;

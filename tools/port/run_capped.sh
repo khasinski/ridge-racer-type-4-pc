@@ -39,7 +39,9 @@ while [ -z "$slot" ]; do
     [ -z "$slot" ] && sleep 2
 done
 
-"$@" &
+# A run started under this one (duckstation.py) uses this slot instead of
+# waiting for a second one, which two nested runs could wait for forever.
+RR4_RUN_SLOT=$slot "$@" &
 pid=$!
 trap 'kill -9 $pid 2>/dev/null; rm -rf "$slot"' INT TERM HUP
 trap 'rm -rf "$slot"' EXIT

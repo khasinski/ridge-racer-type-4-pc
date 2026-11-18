@@ -1258,3 +1258,29 @@ diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
    const BreakpointType bptype = (type == MemoryAccessType::Read) ? BreakpointType::Read : BreakpointType::Write;
    if (CheckBreakpointList(bptype, address)) [[unlikely]]
      s_locals.break_type = ExecutionBreakType::Breakpoint;
+diff --git a/src/core/pad.cpp b/src/core/pad.cpp
+--- a/src/core/pad.cpp
++++ b/src/core/pad.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "pad.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "controller.h"
+ #include "interrupt_controller.h"
+ #include "memory_card.h"
+@@ -774,6 +776,13 @@ void Pad::DoTransfer()
+       }
+       else
+       {
++        // DUCKSTATION_CARD_TRACE=1 logs each memory card selection (0x81)
++        // with the slot, whether it holds a card, the tick and the frame.
++        static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
++        if (card_trace && data_out == 0x81)
++          std::fprintf(stderr, "CARDSEL slot %u card %d tick %llu frame %u\n",
++                       static_cast<unsigned>(s_state.JOY_CTRL.SLOT.GetValue()), memory_card ? 1 : 0,
++                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
+         if (!controller || (ack = controller->Transfer(data_out, &data_in)) == false)
+         {
+           if (!memory_card || (ack = memory_card->Transfer(data_out, &data_in)) == false)

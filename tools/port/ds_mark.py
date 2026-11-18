@@ -17,10 +17,13 @@ instructions branch or use t8/t9 (a BIOS trampoline such as PsyqBzero) cannot
 be marked. Names come from the decomp's sym.main.txt (RR4_DECOMP), or give
 an address (0x...). Run it through run_capped.sh with RR4_DUCKSTATION and
 RR4_DISC set (duckstation.py); RR4_MARK_LOG keeps the raw log.
+RR4_DS_SCRIPT plays a pad script (ds_script.py's RR4_PAD_SCRIPT syntax and
+field numbering) up to `until`, to mark functions in a menu.
 """
 import bisect, os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ds_calltime as dc
+import ds_script
 from duckstation import DuckStation
 
 CLOCK = 33868800
@@ -59,8 +62,20 @@ def main():
     os.environ['DUCKSTATION_CD_TRACE'] = '1'
     log = os.environ.get('RR4_MARK_LOG') or os.path.join(
         os.environ.get('TMPDIR', '/tmp'), 'ds_mark.%d.log' % os.getpid())
-    with open(log, 'w') as lf, DuckStation(log=lf) as d:
-        d.advance(at)
+    script = os.environ.get('RR4_DS_SCRIPT', '')
+    pad2 = any(st[0] == 2 for st in ds_script.parse(script))
+    with open(log, 'w') as lf, DuckStation(log=lf, pad2=pad2) as d:
+        drv = ds_script.Driver(d, script)
+
+        def run_to(frame):
+            if not script:
+                d.advance(frame - drv.frame)
+                drv.frame = frame
+            while drv.frame < frame:
+                v, *_ = drv.step()
+                drv.advance(v)
+
+        run_to(at)
         for k, name in enumerate(names):
             fn = int(name, 16) if name.startswith('0x') else dc.SYMS[name]
             stub = 0x8000C000 + k * 0x40
@@ -73,7 +88,7 @@ def main():
             d.poke(fn, dc.words([dc.j(stub), dc.NOP]))
             lf.write('MARK %d %s\n' % (0x100 + k, name))
             lf.flush()
-        d.advance(until - at)
+        run_to(until)
     report(log, names[0])
 
 

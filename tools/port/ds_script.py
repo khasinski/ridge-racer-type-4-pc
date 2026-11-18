@@ -22,9 +22,10 @@ a step names it (REGTEST_PAD2=1).
 Output per field, as the port's RR4_TRACE=1 RR4_TRACE_RAND=1 lines:
   vsync <n> frame <FrameCounter> mode <g>/<i> sub <s> rand=<state>
   [pad <exchanges>]
-where n = DuckStation frame - RR4_DS_FIELD_OFFSET (default 225, the boot
-fields the port does not run), and with RR4_DS_PADLOG=1 also whether
-libpad's vblank handler ran at the blank before it (the flag _padIntPad
+where n = DuckStation frame - 295, the BIOS boot the port does not run
+(field_offset(); RR4_DS_FIELD_OFFSET overrides it). Run the port with the
+same cards: PSYZ_CARD_UNPLUG=2 for DuckStation's default (a blank card in
+slot 1, slot 2 empty). With RR4_DS_PADLOG=1 also whether libpad's vblank handler ran at the blank before it (the flag _padIntPad
 sets). RR4_DS_PEEK=addr:len[,...] (hex PS1 addresses) appends those bytes
 in hex, e.g. 8010c1a6:1 for the JogCon byte of pad 1's receive buffer
 (the port's RR4_WATCH=PadPorts+6:1). REGTEST_PAD1_TYPE=JogCon (and the
@@ -72,30 +73,76 @@ def parse(script):
     return steps
 
 
+def field_offset():
+    """DuckStation frames before the port's first VSync: the BIOS boot. The
+    game's first CD command comes just after DuckStation's vblank 296 with
+    or without cards, and line n read at the pause after frame n + 295 is
+    the moment of port vsync n (ds_frames.py). RR4_DS_FIELD_OFFSET
+    overrides it."""
+    return int(os.environ.get('RR4_DS_FIELD_OFFSET') or 295)
+
+
+class Driver:
+    """Plays a pad script on d one field at a time: step() returns the
+    port's field number v of the blank the emulator is paused at (and the
+    mode read there), and advance() sets the buttons for the next exchange
+    and runs one field."""
+
+    def __init__(self, d, script, offset=None):
+        late = ('AnalogController', 'JogCon')
+        self.d, self.steps = d, parse(script)
+        self.offset = field_offset() if offset is None else offset
+        self.lead = {p: int(os.environ.get('RR4_DS_LEAD') or
+                            (2 if os.environ.get('REGTEST_PAD%d_TYPE' % p) in late else 1))
+                     for p in (1, 2)}
+        self.anchor_mode, self.anchor_entry = -1, 0
+        self.held = {1: set(), 2: set()}
+        self.frame = 0
+
+    def step(self):
+        v = self.frame - self.offset
+        group, index, sub = self.d.mode()
+        mode = (group << 8) | (index & 0xFF)
+        if mode != self.anchor_mode:
+            self.anchor_mode, self.anchor_entry = mode, v
+        return v, group, index, sub
+
+    def advance(self, v):
+        # the buttons the controller sends at this blank's exchange
+        want = {1: set(), 2: set()}
+        target = {p: v + self.lead[p] for p in (1, 2)}
+        for port, button, smode, first, count, period in self.steps:
+            t = (target[port] if smode is None else
+                 target[port] - self.anchor_entry if smode == self.anchor_mode else -1) - first
+            if t < 0:
+                continue
+            if period:
+                t %= period
+            if t < count:
+                want[port].add(button)
+        for port in (1, 2):
+            if want[port] != self.held[port]:
+                self.d.release(port)
+                if want[port]:
+                    self.d.buttons(port=port, **{b: 1 for b in want[port]})
+                self.held[port] = want[port]
+        self.d.advance(1)
+        self.frame += 1
+
+
 def main():
     frames, script = int(sys.argv[1]), sys.argv[2]
     out = open(sys.argv[3], 'w') if len(sys.argv) > 3 else sys.stdout
-    offset = int(os.environ.get('RR4_DS_FIELD_OFFSET', '225'))
-    late = ('AnalogController', 'JogCon')
-    lead = {p: int(os.environ.get('RR4_DS_LEAD') or
-                   (2 if os.environ.get('REGTEST_PAD%d_TYPE' % p) in late else 1))
-            for p in (1, 2)}
     padlog = os.environ.get('RR4_DS_PADLOG') == '1'
     peeks = [(int(a, 16), int(n)) for a, n in
              (p.split(':') for p in os.environ.get('RR4_DS_PEEK', '').split(',') if p)]
-    steps = parse(script)
-    pad2 = any(s[0] == 2 for s in steps)
-    anchor_mode, anchor_entry = -1, 0
-    held = {1: set(), 2: set()}
+    pad2 = any(s[0] == 2 for s in parse(script))
     with DuckStation(pad2=pad2) as d:
         if os.environ.get('DUMMYBP'):
             d._gsend('Z0,801ffff0,4')
-        for frame in range(frames + offset + 1):
-            v = frame - offset
-            group, index, sub = d.mode()
-            mode = (group << 8) | (index & 0xFF)
-            if mode != anchor_mode:
-                anchor_mode, anchor_entry = mode, v
+        drv = Driver(d, script)
+        for _ in range(frames + drv.offset + 1):
+            v, group, index, sub = drv.step()
             if v >= 1:
                 line = 'vsync %d frame %u mode %u/%d sub %u rand=%08x' % (
                     v, d.u32(FRAME_COUNTER), group, index, sub, d.u32(RAND_STATE))
@@ -106,25 +153,7 @@ def main():
                 out.write(line + '\n')
             if padlog:
                 d.poke(PAD_RAN, b'\0\0\0\0')
-            # the buttons the controller sends at this blank's exchange
-            want = {1: set(), 2: set()}
-            target = {p: v + lead[p] for p in (1, 2)}
-            for port, button, smode, first, count, period in steps:
-                t = (target[port] if smode is None else
-                     target[port] - anchor_entry if smode == anchor_mode else -1) - first
-                if t < 0:
-                    continue
-                if period:
-                    t %= period
-                if t < count:
-                    want[port].add(button)
-            for port in (1, 2):
-                if want[port] != held[port]:
-                    d.release(port)
-                    if want[port]:
-                        d.buttons(port=port, **{b: 1 for b in want[port]})
-                    held[port] = want[port]
-            d.advance(1)
+            drv.advance(v)
     out.close()
 
 
