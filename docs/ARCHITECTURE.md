@@ -286,9 +286,11 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      VSync(0) in 480-line interlace returns late on the console's fields.
      Busy waits that DuckStation measures with interrupts in them are fitted
      as CPU time with the interrupts on top (StGetNext), so a second pad's
-     libpad exchange (4.8k clocks a vblank) lengthens them; DrawOTag spends
-     DuckStation's list DMA for the whole table (8 clocks a node, 5 and the
-     RAM's 17 per 16 words a packet). Interrupts are exceptions with a
+     libpad exchange (4.8k clocks a vblank) lengthens them. The GPU's
+     drawing time and its list DMA follow DuckStation's model (PsyZ
+     `gpu_timing.c`: each command's GPU ticks by kind and area, a run-ahead
+     of 128 ticks, the DMA's CPU stalls while it moves data, 8 clocks a
+     node, at the times it moves them), and DrawSync(0) waits for the GPU. Interrupts are exceptions with a
      window (the root counters', the CD drive's sector, acknowledge and
      completion interrupts): a vblank arriving inside one after the BIOS
      chains tested for it reaches only libetc, so libpad and the card

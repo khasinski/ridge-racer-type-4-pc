@@ -93,10 +93,11 @@ enum {
      * sizes (the executable's arguments) */
     RR_PS1_AUDIO_STATE_BYTES = 0xA8D0,
     RR_PS1_RACE_CONTEXT_BYTES = 1404,
-    /* 00df23a8: loads with a save on the card. PadUpdate takes 2.0k or
-     * 5.7k on the recompiler depending on its path (not its callees), so
-     * the breakpoint value stays [call] */
-    RR_CYCLES_PAD_UPDATE = 6248, // PadUpdate, with the routines it calls
+    /* PadUpdate, with the routines it calls [ret]: 1961 in 3771 of 8216
+     * calls over the Grand Prix scenario's first 9600 fields (the stubs'
+     * clocks included); the calls of 6.6k (loads, the movie) take the
+     * previous DrawOTag's list DMA, which PsyZ spends in DrawOTag. */
+    RR_CYCLES_PAD_UPDATE = 1930,
     /* SoundUpdate with the routines it calls but the two below, with no
      * sound slot active and the listener off (attract, DS fields 2000-2200)
      * [rec]; in a race (Time Attack, DS fields 3266-3700) an active slot's
