@@ -52,6 +52,35 @@ enum {
     RR_CYCLES_FONT_GLYPH = 186,            // and each glyph it draws
     /* the menus of a Time Attack run (DS fields 283-3266) */
     RR_CYCLES_UPDATE_MENU_SCRIPT = 433,    // UpdateMenuScript [rec ratio] 0.855
+    /* SetMenuTextRow, entry to return [ret] (tools/port/ds_frames.py
+     * DSF_MARKS name:ret, Time Attack's results setup, 55 calls): 159 and
+     * 44 a template character (6 to 22: 423 to 1127), the row's format on
+     * top (digits and a race time 235, a race time 195, a record row 985,
+     * digits 70, a CLUT row 30), an empty row 505 */
+    RR_CYCLES_MENU_TEXT_ROW = 159,
+    RR_CYCLES_MENU_TEXT_ROW_CHAR = 44,
+    RR_CYCLES_MENU_TEXT_ROW_DIGITS_TIME = 235,
+    RR_CYCLES_MENU_TEXT_ROW_TIME = 195,
+    RR_CYCLES_MENU_TEXT_ROW_RECORD = 985,
+    RR_CYCLES_MENU_TEXT_ROW_DIGITS = 70,
+    RR_CYCLES_MENU_TEXT_ROW_CLUT = 30,
+    RR_CYCLES_MENU_TEXT_ROW_CLEAR = 505,
+    /* Time Attack's results setup (InitPostRaceScreen) [ret]/[mark]:
+     * ovl660_rank_standings and each ovl660_insert_record */
+    RR_CYCLES_TA_RANK_STANDINGS = 209,
+    RR_CYCLES_TA_INSERT_RECORD = 1290,
+    /* SoundCloseVabsAndReset's steps, entry to the next call [mark]: the
+     * SDK calls of ReverbReset (SsUtReverbOff, SsUtSetReverbType,
+     * SsUtReverbOn, SsUtSetReverbDepth) and SoundStopAll's own code and
+     * calls besides SsUtAllKeyOff (before it, and after it to the return) */
+    RR_CYCLES_SOUND_MASTER_VOLUME_RESET = 19,
+    RR_CYCLES_RESET_PLAYER_VOICES = 96, // with InitLoopVoices
+    RR_CYCLES_RESET_SOUND_CHANNEL_VOL = 30,
+    RR_CYCLES_SOUND_QUEUE_CLEAR = 51,
+    RR_CYCLES_SOUND_LOOP_RESET = 17,
+    RR_CYCLES_REVERB_RESET = 2293,
+    RR_CYCLES_SOUND_STOP_ALL = 558,
+    RR_CYCLES_SOUND_STOP_ALL_REST = 2245,
     /* 1d28cb93: boot (DS fields 282-600) */
     RR_CYCLES_INIT_DEFAULT_TIME_RECORDS = 10428, // InitDefaultTimeRecords [rec]
     RR_CYCLES_INIT_TIM_TEMPLATE = 2119,          // InitTimTemplate [rec]

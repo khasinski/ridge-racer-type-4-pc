@@ -1,4 +1,5 @@
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/audio_state_types.h"
 #include "game/sound/cdstart.h"
 #include "game/sound/sndbgm3.h"
@@ -107,6 +108,7 @@ void SetCdMixMode(int a0) {
 }
 
 void SoundStopAll(void) {
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_STOP_ALL);
     int i;
     for (i = 0; i < 4; i++) {
         if (SoundState.slots38[i].flags00 & 1) {
@@ -125,9 +127,11 @@ void SoundStopAll(void) {
     SoundReverbOffAll();
     DisableEngineSoundUpdates();
     SoundState.muted04 = 1;
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_STOP_ALL_REST);
 }
 
 void SoundMasterVolumeReset(void) {
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_MASTER_VOLUME_RESET);
     SoundState.gain18 = 0x80;
     SoundState.fadeLength1A = 0;
     SoundState.fadeTick1C = 0;

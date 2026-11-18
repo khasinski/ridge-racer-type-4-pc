@@ -10,6 +10,7 @@
 #include "rr/string_tail_copy.h"
 #include "rr/menu_choice.h"
 #include "game/menu/mntext.h"
+#include "rr/cpu_time.h"
 
 extern char StrStarSpacePrefix[];
 extern char LapTimeTemplateStr[];
@@ -35,6 +36,22 @@ s32 InitMenuTextRows(MenuTextRow60 *rows) {
     return size;
 }
 
+/* SetMenuTextRow's PS1 time besides its template copy, by the row's format
+ * (rr/cpu_time.h): the digits, record names and times it writes. */
+static unsigned MenuTextRowFormatCycles(s32 formatKind) {
+    if (formatKind >= 1 && formatKind <= 3)
+        return RR_CYCLES_MENU_TEXT_ROW_DIGITS_TIME;
+    if (formatKind == 4)
+        return RR_CYCLES_MENU_TEXT_ROW_TIME;
+    if (formatKind >= 5 && formatKind <= 14)
+        return RR_CYCLES_MENU_TEXT_ROW_RECORD;
+    if (formatKind >= 15 && formatKind <= 21)
+        return RR_CYCLES_MENU_TEXT_ROW_DIGITS;
+    if (formatKind == 30 || formatKind == 31)
+        return RR_CYCLES_MENU_TEXT_ROW_CLUT;
+    return 0;
+}
+
 void SetMenuTextRow(s32 row, s32 position, s32 phase, s32 style, s32 label) {
     s32 templateIndex;
     s32 formatKind;
@@ -56,10 +73,13 @@ void SetMenuTextRow(s32 row, s32 position, s32 phase, s32 style, s32 label) {
                 MenuTextRows[row].rendering.text[column] = MenuTextTemplate(templateIndex)[column];
                 column++;
             }
+            RR_CPU_CYCLES(RR_CYCLES_MENU_TEXT_ROW + RR_CYCLES_MENU_TEXT_ROW_CHAR * column +
+                          MenuTextRowFormatCycles(formatKind));
         } else {
             for (; column < 0x16; column++) {
                 MenuTextRows[row].rendering.text[column] = 0;
             }
+            RR_CPU_CYCLES(RR_CYCLES_MENU_TEXT_ROW_CLEAR);
             return;
         }
         switch (formatKind) {

@@ -1,4 +1,5 @@
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/audio_loop.h"
 #include "game/sound/sndbgm3.h"
 #include "rr/channels.h"
@@ -70,6 +71,7 @@ void UpdateLoopVoices(void) {
 }
 
 void ResetSoundChannelVolLR(void) {
+    RR_CPU_CYCLES(RR_CYCLES_RESET_SOUND_CHANNEL_VOL);
     int i;
     for (i = 0; i < 2; i++) {
         SoundState.chVolL19BC[i] = 0;
