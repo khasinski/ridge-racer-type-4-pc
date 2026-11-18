@@ -20,5 +20,11 @@
     _Static_assert(sizeof(type) == (size), #type " size")
 #define RR_ASSERT_OFFSET(type, field, offset) \
     _Static_assert(RR_FIELD_OFFSET(type, field) == (offset), #type "." #field " offset")
+/* Bytes from field `first` up to (not including) field `next`: the extent
+ * of a run of fields that the original clears or copies as one block. */
+#define RR_FIELD_SPAN(type, first, next) \
+    (RR_FIELD_OFFSET(type, next) - RR_FIELD_OFFSET(type, first))
+/* Bytes from field `first` to the end of the object. */
+#define RR_FIELD_TAIL(type, first) (sizeof(type) - RR_FIELD_OFFSET(type, first))
 
 #endif

@@ -210,5 +210,8 @@ RR_ASSERT_OFFSET(AudioState,tick26D0,0x26D0+AUDIO_CD_DELTA);
 RR_ASSERT_OFFSET(AudioState,rate26F4,0x26F4+AUDIO_CD_DELTA);
 RR_ASSERT_OFFSET(AudioState,toc28C8,0x28C8+AUDIO_SEQUENCE_DELTA);
 RR_ASSERT_OFFSET(AudioState,bankA8CC,0xA8CC+AUDIO_SEQUENCE_DELTA);
+/* The PS1 clears 0x1C bytes from each motion clock (cdplay.c, fxplay.c). */
+_Static_assert(RR_FIELD_SPAN(AudioState,tick26D0,reserved26EC)==0x1C,"CD motion clock clear");
+_Static_assert(RR_FIELD_SPAN(AudioState,seqTick286C,seqVol2888)==0x1C,"sequence motion clock clear");
 extern AudioState SoundState;
 #endif

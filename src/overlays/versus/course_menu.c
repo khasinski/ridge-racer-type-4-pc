@@ -72,10 +72,10 @@ void ovl661_update_menu(void) {
             if (UiRows[22].byte02 != 0) {
                 do {
                     if (var_s0 == (s16) SelectedCourseChoice) {
-                        *((u8 *)UiRows+var_s0+0x324) = 2;
+                        UiRows[22].cells[var_s0] = 2;
                         UiRows[22].byte16 = var_s0;
                     } else {
-                        *((u8 *)UiRows+var_s0+0x324) = 0;
+                        UiRows[22].cells[var_s0] = 0;
                     }
                     var_s0 += 1;
                 } while (var_s0 < UiRows[22].byte02);

@@ -16,6 +16,12 @@
 # RR4_CHECK_ILP32=0 skips it; =1 requires it. RR4_MINGW32_SYSROOT overrides
 # the shared MinGW sysroot when the two header sets live separately.
 #
+# With no arguments it also runs the layout sweep (sweep_layout.py) when the
+# decompilation tree is there: RR4_DECOMP (default ../ridge-racer-type-4-decomp
+# next to this repository) and a Python with the pinned libclang binding
+# (tools/port/requirements-sweep.txt; RR4_SWEEP_PYTHON, default python3).
+# RR4_CHECK_SWEEP=0 skips it, =1 makes a missing tree or binding fail.
+#
 # All passes need Clang (-Wno-everything, -ferror-limit, --target): CC
 # defaults to clang, and any other compiler is refused.
 cd "$(dirname "$0")/../.." || exit 1
@@ -31,7 +37,8 @@ CFLAGS="-x c -std=c11 -c -o /dev/null -D__psyz -Iinclude -isystem third_party/ps
 # Implicit 64-to-32-bit truncations and printf formats differ only under LLP64
 # for long; elsewhere they are the same on every 64-bit host.
 LLP64_FLAGS="-Wshorten-64-to-32 -Wformat"
-[ $# -eq 0 ] && set -- src/main src/overlays src/native include
+full=0
+[ $# -eq 0 ] && full=1 && set -- src/main src/overlays src/native include
 LIST=$(for a in "$@"; do if [ -d "$a" ]; then find "$a" \( -name '*.c' -o -name '*.h' \); else echo "$a"; fi; done | sort)
 total=$(echo "$LIST" | wc -l | tr -d ' ')
 
@@ -102,6 +109,19 @@ if [ "${RR4_CHECK_ILP32:-auto}" != 0 ]; then
     status=1
   else
     echo "check (ILP32): skipped, no Clang i686 MinGW headers"
+  fi
+fi
+if [ "$full" = 1 ] && [ "${RR4_CHECK_SWEEP:-auto}" != 0 ]; then
+  decomp=${RR4_DECOMP:-../ridge-racer-type-4-decomp}
+  py=${RR4_SWEEP_PYTHON:-python3}
+  if [ -f "$decomp/configs/PAL/sym.main.txt" ] && "$py" -c 'import clang.cindex' > /dev/null 2>&1; then
+    echo "check (layout sweep): $decomp"
+    "$py" tools/port/sweep_layout.py "$decomp" || status=1
+  elif [ "${RR4_CHECK_SWEEP:-auto}" = 1 ]; then
+    echo "check (layout sweep): needs RR4_DECOMP and $py with tools/port/requirements-sweep.txt"
+    status=1
+  else
+    echo "check (layout sweep): skipped, no decompilation tree or libclang binding"
   fi
 fi
 exit "$status"

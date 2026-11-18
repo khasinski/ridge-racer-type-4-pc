@@ -187,13 +187,17 @@ cf0:
  * on (the PAL release's BESCESP01706...): saves do not carry over. */
 void MenuModeSelectRelease(void) {
     static const char product[] = "BISLPSP01800";
+    /* The product prefix of each card file name, without its terminator;
+     * D_800115A4 holds three 24-byte card file names. */
+    enum { CARD_NAME_STRIDE = 24 };
+    const size_t prefix = sizeof(product) - 1;
     if (!RR_RELEASE_JP)
         return;
-    memcpy(D_800115A4, product, 12);
-    memcpy(D_800115A4 + 24, product, 12);
-    memcpy(D_800115A4 + 48, product, 12);
-    memcpy(CardSaveFileName, product, 12);
-    memcpy(CardFileNameTemplate, product, 12);
+    memcpy(D_800115A4, product, prefix);
+    memcpy(D_800115A4 + CARD_NAME_STRIDE, product, prefix);
+    memcpy(D_800115A4 + 2 * CARD_NAME_STRIDE, product, prefix);
+    memcpy(CardSaveFileName, product, prefix);
+    memcpy(CardFileNameTemplate, product, prefix);
 }
 
 /* Initial values of the globals this module owns. */

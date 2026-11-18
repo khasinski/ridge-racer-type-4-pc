@@ -31,7 +31,7 @@ void CdAudioStopStep(void)
         SoundState.state269C = -1;
         SoundState.action2670 = -1;
         SoundState.step2678 = 0;
-        PsyqBzero(&SoundState.tick26D0, 0x1C);
+        PsyqBzero(&SoundState.tick26D0, RR_FIELD_SPAN(AudioState, tick26D0, reserved26EC));
         break;
     }
 }

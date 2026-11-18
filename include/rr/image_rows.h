@@ -1,7 +1,7 @@
 #ifndef RR_IMAGE_ROWS_H
 #define RR_IMAGE_ROWS_H
 
-#include "types.h"
+#include "rr/layout.h"
 
 /* Animated image rows allocated by AllocImageRows. f1 is the row state
  * (preview menus drive row 0 through 0..7) and f2 its frame tick. */
@@ -18,6 +18,7 @@ typedef struct {
     unsigned char b0, b1;
     char reserved[2];
 } ImageRow20;
+RR_ASSERT_SIZE(ImageRow20, 20);
 
 extern ImageRow20 *ImageRows;
 

@@ -17,7 +17,7 @@ void ovl662_read_analog_cursor_delta(GaragePoint *output)
     GaragePoint point;
     s32 step,delta;
     u32 axis;
-    PsyqMemset(&point,0,4);
+    PsyqMemset(&point,0,sizeof(point));
     if (PlayerControllers[0].input00.fields.type == 0x73 && PlayerControllers[0].kind1C != 0 && PlayerControllers[0].flag40 == 0) {
         step=1;
         if (PlayerControllers[0].input00.fields.buttons & 8) step=4;
@@ -58,7 +58,7 @@ void ovl662_read_mouse_cursor_delta(GaragePoint *output)
     GaragePoint point;
     s32 value;
     s32 y;
-    PsyqMemset(&point,0,4);
+    PsyqMemset(&point,0,sizeof(point));
     if (PlayerControllers[1].input00.fields.type == 0x12) {
         value = (s32)(PlayerControllers[1].axes14.bytes[0] * 0x1000000U) >> 25;
         if (value < -3 || value > 3) value += value / 2;
@@ -78,7 +78,7 @@ void ovl662_read_dpad_cursor_delta(GaragePoint *output)
     GaragePoint point;
     u32 buttons;
     s32 step;
-    PsyqMemset(&point,0,4);
+    PsyqMemset(&point,0,sizeof(point));
     if (PlayerControllers[0].input00.fields.type != 0x12) {
         buttons = PlayerControllers[0].input00.fields.buttons;
         step=1;
@@ -320,7 +320,7 @@ void ovl662_update_editor_cursor(void) {
     u16 ySum;
     u16 xSum;
 
-    PsyqMemset(&movement, 0, 4);
+    PsyqMemset(&movement, 0, sizeof(movement));
     events = 0;
     if (!(ovl662_editor_cursor_state.words[0] & 1)) {
         if (ovl662_editor_cursor_state.words[0] & 2) {

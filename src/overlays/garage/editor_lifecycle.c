@@ -66,6 +66,18 @@ void ovl662_reset_editor_state(void){
  ovl662_editor_cursor_state.words[14]=0;
 }
 
+/* The editor's arena: four emblem TIMs (the saved and working image and
+ * palette of each layer), the 512-word preview image and two 8-word palette
+ * scratch blocks, 0x2940 bytes from the word-aligned arena base. */
+typedef struct {
+    EmblemTimImage840 tims[4];
+    u32 scratch[512];
+    Palette16 paletteScratch[2];
+} GarageEditorArena;
+RR_ASSERT_SIZE(GarageEditorArena, 0x2940);
+RR_ASSERT_OFFSET(GarageEditorArena, scratch, 0x2100);
+RR_ASSERT_OFFSET(GarageEditorArena, paletteScratch, 0x2900);
+
 void ovl662_init_editor_arenas(void)
 {
     s32 stage,i;
@@ -78,6 +90,7 @@ void ovl662_init_editor_arenas(void)
     u32 *clear;
     u8 *second;
     GarageSelectionPrefix *owner;
+    GarageEditorArena *arena;
     stage=(ovl662_arena_init_stage+1U);
     ovl662_arena_init_stage=stage;
     switch (stage) {
@@ -89,28 +102,29 @@ void ovl662_init_editor_arenas(void)
         base.ptr=MenuArenas.second+4;
         owner=&ovl662_editor_workspace;
         base.ptr-=((GarageArenaAddress)MenuArenas.second&3U);
-        second=base.ptr+0x840;
+        arena=(GarageEditorArena *)base.raw;
+        second=arena->tims[1].file.bytes;
         /* Retain each publication of the shared arena cursor. */
         LoadCursor = base.ptr;
         *(void *volatile*)&LoadCursor=second;
-        owner->buffers24[1]=*(void **)&LoadCursor=(u32*)(base.ptr+0x1080);
-        alloc.ptr = base.ptr + 0x18C0;
+        owner->buffers24[1]=*(void **)&LoadCursor=arena->tims[2].words;
+        alloc.ptr = arena->tims[3].file.bytes;
         LoadCursor = alloc.ptr;
         owner->tim2C[1]=alloc.tim;
-        owner->scratch34=*(void **)&LoadCursor=(u32*)(base.ptr+0x2100);
-        owner->paletteScratch58[0]=*(void **)&LoadCursor=(u32*)(base.ptr+0x2900);
-        owner->paletteScratch58[1]=*(void **)&LoadCursor=(u32*)(base.ptr+0x2920);
-        *(void **)&LoadCursor=base.ptr+0x2940;
-        owner->image38[0]=(u32*)(base.ptr+0x40);
-        owner->image40[0]=(u32*)(base.ptr+0x880);
-        owner->palette48[0]=(u32*)(base.ptr+0x14);
-        owner->paletteBackup50[0]=(u32*)(base.ptr+0x854);
-        owner->image38[1]=(u32*)(base.ptr+0x10C0);
-        owner->image40[1]=(u32*)(base.ptr+0x1900);
-        owner->palette48[1]=(u32*)(base.ptr+0x1094);
-        owner->paletteBackup50[1]=(u32*)(base.ptr+0x18D4);
-        GarageSavedDecalTimA=(EmblemTim840 *)base.ptr;
-        owner->buffers24[0]=(u32*)base.ptr;
+        owner->scratch34=*(void **)&LoadCursor=arena->scratch;
+        owner->paletteScratch58[0]=*(void **)&LoadCursor=arena->paletteScratch[0].words;
+        owner->paletteScratch58[1]=*(void **)&LoadCursor=arena->paletteScratch[1].words;
+        *(void **)&LoadCursor=arena+1;
+        owner->image38[0]=arena->tims[0].layout.pixels;
+        owner->image40[0]=arena->tims[1].layout.pixels;
+        owner->palette48[0]=arena->tims[0].layout.palette.words;
+        owner->paletteBackup50[0]=arena->tims[1].layout.palette.words;
+        owner->image38[1]=arena->tims[2].layout.pixels;
+        owner->image40[1]=arena->tims[3].layout.pixels;
+        owner->palette48[1]=arena->tims[2].layout.palette.words;
+        owner->paletteBackup50[1]=arena->tims[3].layout.palette.words;
+        GarageSavedDecalTimA=&arena->tims[0].file;
+        owner->buffers24[0]=arena->tims[0].words;
         owner->tim2C[0]=(GarageTimBytes*)second;
         GarageSavedDecalTimB=(EmblemTim840 *)second;
         break;

@@ -246,7 +246,7 @@ void SeqFadeVolume(int a0, int a1) {
             if (SoundState.seqHandle2864 >= 0) {
                 SsSeqStop((s16)SoundState.seqHandle2864);
                 SsSeqClose((s16)SoundState.seqHandle2864);
-                PsyqBzero(&SoundState.seqTick286C, 0x1C);
+                PsyqBzero(&SoundState.seqTick286C, RR_FIELD_SPAN(AudioState, seqTick286C, seqVol2888));
             }
             SoundState.seqHandle2864 = -1;
             SoundState.seqTrack2868 = -1;

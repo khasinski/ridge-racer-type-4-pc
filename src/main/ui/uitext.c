@@ -334,8 +334,13 @@ void DrawUiBox(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6)
     RR_GPU_SCRATCH->cursor = AddTilePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], g, a0, a1, x[0], y[0], a4, a5, a6);
 }
 
+/* The original reserves (and clears) 28 bytes per 20-byte row; the extra
+ * bytes keep the arena layout of the rows allocated after these. */
+enum { IMAGE_ROW_ALLOC_BYTES = 28 };
+_Static_assert(IMAGE_ROW_ALLOC_BYTES >= sizeof(ImageRow20), "image row allocation stride");
+
 int AllocImageRows(void *a) {
-    int sz = ImageRowCount * 28;
+    int sz = ImageRowCount * IMAGE_ROW_ALLOC_BYTES;
     ImageRows = (ImageRow20 *)a;
     PsyqBzero(a, sz);
     return sz;

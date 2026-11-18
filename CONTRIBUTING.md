@@ -72,12 +72,24 @@ and a build for each recorded commit.
 ## Layout sweep
 
 `tools/port/sweep_layout.py <decomp-root>` finds host globals that do not
-cover their original storage (aliases, interior symbols, truncated tables).
-It needs the libclang Python binding (`pip install clang`) and the libclang
-library: set `LIBCLANG` to `libclang.dylib`, `libclang.so` or
-`libclang.dll`, or let it try the Xcode Command Line Tools, Xcode and
-`/usr/lib/llvm-*/lib`. Accepted findings are listed in
+cover their original storage (aliases, interior symbols, truncated tables)
+and exits 1 on a finding that is not accepted or an accepted entry that no
+longer matches. It needs the decompilation tree, the pinned libclang Python
+binding (`pip install -r tools/port/requirements-sweep.txt`, e.g. in a
+virtualenv) and the libclang library: set `LIBCLANG` to `libclang.dylib`,
+`libclang.so` or `libclang.dll`, or let it try the Xcode Command Line
+Tools, Xcode and `/usr/lib/llvm-*/lib`. `tools/port/check.sh` (without
+arguments) runs it when `RR4_DECOMP` (default `../ridge-racer-type-4-decomp`)
+and `RR4_SWEEP_PYTHON` (default `python3`) provide both; CI has no
+decompilation tree and skips it. `RR4_CHECK_SWEEP=1` makes a missing tree
+fail. Accepted findings, each with its reason, are listed in
 `tools/port/sweep_layout_allow.txt`.
+
+The "Initial values of the globals this module owns" blocks were generated
+once from the decompilation's data files when the game was first linked; the
+generator was a one-off and is not kept. They are ordinary source now: edit
+them by hand, and the sweep checks that each object still covers its
+original extent.
 
 ## Documentation
 

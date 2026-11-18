@@ -87,7 +87,7 @@ void DrawTrackObjects(s32 arg0) {
     s32 q;
     u32 interp;
 
-    PsyqMemset(&sp98, 0, 8);
+    PsyqMemset(&sp98, 0, sizeof(sp98));
     s3 = (s32 *)((u8 *)SCRATCHPAD + sizeof(RroSceneScratchPrefix));
     scene = (RroSceneScratchPrefix *)SCRATCHPAD;
     interp = InterpBegin(INTERP_OBJECT, 0);

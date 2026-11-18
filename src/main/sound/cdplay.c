@@ -31,7 +31,7 @@ void CdAudioSelectTrack(int bank, int track) {
         sector += state->streamBanks[bank].sector;
         CdAudioSetTarget(sector, filter, 0);
         state->end2690 = (((AudioStreamEntry *)state->streamBanks[bank].table)[track].sectors - 2U) * 8;
-        PsyqBzero(&state->tick26D0, 0x1C);
+        PsyqBzero(&state->tick26D0, RR_FIELD_SPAN(AudioState, tick26D0, reserved26EC));
         { const s32 *base = CdTrackTables.timing[0]; timing = base + track * 3; }
         state->reserved26EC = 0;
         state->base26F0 = 0;

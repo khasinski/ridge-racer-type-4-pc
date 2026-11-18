@@ -60,8 +60,8 @@ void UpdateGrandPrixStageProgress(void) {
             j++;
         } while (j < 8);
         v1 = 0;
-        PsyqBzero(SelectionRows.bytes, 0x20);
-        PsyqBzero(SelectionState.signedBytes, 0x2C);
+        PsyqBzero(&SelectionRows, sizeof(SelectionRows));
+        PsyqBzero(&SelectionState, sizeof(SelectionState));
         a0 = 0;
         v1 = 0;
         a2 = -1;

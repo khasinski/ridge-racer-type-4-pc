@@ -83,7 +83,7 @@ void BuildSaveData(int mode) {
         emblemSave = (EmblemSaveData1380 *)SaveBuffer;
         emblemSave->editFrames280 = EmblemEditFrames;
         for (j = 0; j < 2; j++) {
-            for (i = 0; i < 0x840; i++) {
+            for (i = 0; i < RR_EMBLEM_TIM_BYTES; i++) {
                 if (j == 0) {
                     emblemSave->decals300[0].bytes[i] = GarageActiveDecalTimA->bytes[i];
                 } else {

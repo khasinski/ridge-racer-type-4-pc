@@ -1,0 +1,3 @@
+# libclang Python binding for sweep_layout.py (the library itself comes from
+# the Xcode Command Line Tools, Xcode, an LLVM package or LIBCLANG).
+clang==20.1.5

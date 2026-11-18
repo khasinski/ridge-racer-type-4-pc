@@ -27,4 +27,5 @@ typedef struct {
     s16 fade26, fade28, fade2A;
     u16 spriteTick;
 } FrameTaskFieldsJp;
+RR_ASSERT_SIZE(FrameTaskFieldsJp, 0x2E);
 #endif

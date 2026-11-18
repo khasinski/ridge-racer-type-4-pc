@@ -5,6 +5,8 @@
 # Host-enlarged objects: their PS1 size bounds the extent check.
 SIZE CdFileTable 0x1DB0  # 950 PAL entries at 0x801094A8; the host table also holds the Japanese R4.BIN's 969 (RR_R4_ENTRIES_MAX)
 SIZE DrawBuffers 0x44EF0  # two 0x22778-byte banks on PS1 (0x800ADAF0..0x800F29E0); the host packet arena is larger for 16-byte tags
+SIZE PrimaryVisibleViews 0x400  # PS1 count + 255 record pointers up to ActiveVisibleViews; the host holds every u16 record index for the extended draw distance (COURSE_VISIBLE_CAPACITY)
+SIZE MenuScripts 0x2C  # 11 PS1 menu scripts up to LoadIndex; the host appends MENU_SCRIPT_REPLAY for the replay menu
 SPAN SharedWorkArena  # host-sized for MenuTextState at +0x4E20 and ReplayStorage; the PS1 two-player replay (0x60E8) already ran into SceneOffsetLookupBuf, which is reloaded before each dialogue scene (ldscn1.c)
 
 # Unnamed original objects the port defines under a descriptive name.

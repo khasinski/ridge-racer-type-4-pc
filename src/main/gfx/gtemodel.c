@@ -287,7 +287,8 @@ void InitIntroSceneLights(void) {
     } while (i >= 0);
     AllocMenuGridRecords(SharedWorkArena, 1);
     InitMenuGrid(0, 1, 3, 0xB4, 0x60);
-    PsyqMemset((u8 *)MenuGridRecords + 0x1C, 0, 0x10);
+    /* rot_z1C, rot_y20, rot_x24 and unk28 of the first record. */
+    PsyqMemset(&MenuGridRecords->rot_z1C, 0, RR_FIELD_SPAN(MenuGrid38, rot_z1C, count2C));
     *(VectorWords16 *)&MenuGridRecords->x0C = MenuGridInitialOffset;
 }
 

@@ -115,7 +115,7 @@ void ovl662_update_team_car_select(void) {
     RaceVehicle *vehicleBase;
     s32 playerIndex;
     s32 *tick;
-    u8 *temp_v1;
+    const CourseChoice4 *temp_v1;
     UiRow24 *temp_v1_2;
     UiRow24 *temp_v1_3;
     UiRow24 *temp_v1_4;
@@ -155,9 +155,9 @@ void ovl662_update_team_car_select(void) {
             LoadCursor = MenuArenas.first;
             UnpackChoiceGlyph((s8*)&SelectionRows.selection, CourseChoiceTable[1][ovl662_selected_car_slot].glyph);
             ImageRows->f1 = 6;
-            temp_v1 = (u8 *)(void *)&CourseChoiceTable + ovl662_selected_car_slot * sizeof(CourseChoice4);
-            PlayerCourseChoices[0].first = (s16) (s8) ((CourseChoice4 *)(void *)(temp_v1 + sizeof(CourseChoiceTable[0])))->first;
-            PlayerCourseChoices[0].second = (s16) (s8) ((CourseChoice4 *)(void *)(temp_v1 + sizeof(CourseChoiceTable[0])))->second;
+            temp_v1 = &CourseChoiceTable[1][ovl662_selected_car_slot];
+            PlayerCourseChoices[0].first = (s16) (s8) temp_v1->first;
+            PlayerCourseChoices[0].second = (s16) (s8) temp_v1->second;
         }
         UiRows[MenuCursor].cells[0] = 0;
         StepMenuValue(0, 2, (char*)&MenuCursor, 4, 0);

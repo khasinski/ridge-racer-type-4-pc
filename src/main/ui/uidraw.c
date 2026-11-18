@@ -125,7 +125,7 @@ void UpdateBadgeRowAnim(int index) {
 }
 
 int AllocRect16Rows(void *a0) {
-    int n = Rect16RowCount << 4;
+    int n = Rect16RowCount * (int)sizeof(*Rect16Rows);
     Rect16Rows = a0;
     PsyqBzero(a0, n);
     DebugPrintStub(StrSizeEqLdFmt, n);

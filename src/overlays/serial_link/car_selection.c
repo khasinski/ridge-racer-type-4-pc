@@ -122,11 +122,6 @@ void ovl667_init_session_menus(void){
  typedef struct {s8 first,second;} Pair;
  s32 i;
  s32 j;
- s32 offset;
- s32 pos;
- u8 *repeat;
- u8 *destBase;
- u8 *sourceBase;
  SetDispMask(0);
  SetupDrawDispEnvs(0,0,0,2);
  UpdateLinkHandshake(1);
@@ -141,16 +136,13 @@ void ovl667_init_session_menus(void){
      (&SelectionRows.records[i])->bytes[3]=0;
      LinkPlayerWinCounts[i]=0;
  }
- i=0;
- destBase=(u8 *)&LinkCarChoiceTable;
- sourceBase=(u8 *)&CourseChoiceTable;
- offset=0;
  CourseIndex=0;SelectedCourseChoice=0;NumLaps=3;
  ActivePlayerIndex=(1-(s16)LinkHostFlag)*2;
- for(;i<2;i++,offset+=36)for(j=0,repeat=sourceBase,pos=offset;j<9;repeat+=4,j++,pos+=4) {
-  u8 *dest=((u8 *)(pos+(uintptr_t)destBase));
-  __builtin_memcpy(dest,(u8 *)(pos+(uintptr_t)sourceBase),4);
-  __builtin_memcpy(dest+72,repeat,4);
+ /* Bank 0 copies choice groups 0 and 1; bank 1 repeats group 0 in both rows
+  * (as the versus overlay's ovl661_car_choices). */
+ for(i=0;i<2;i++)for(j=0;j<9;j++) {
+  LinkCarChoiceTable[0][i][j]=CourseChoiceTable[i][j];
+  LinkCarChoiceTable[1][i][j]=CourseChoiceTable[0][j];
  }
  for(i=0;i<2;i++)CopyStringClearTail(LinkPlayerNames[ActivePlayerIndex+i],ovl667_default_player_names[ActivePlayerIndex+i]);
  ovl667_init_car_selection((1-(s16)LinkHostFlag)*2);

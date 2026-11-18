@@ -32,7 +32,8 @@ void SeqStartTrack(int a0) {
         SetReverbDepthBoth(0x32);
         SsSeqPlay((s16)SoundState.seqHandle2864, 1, 0);
         SeqSetVolume((s16)arr[a0]);
-        PsyqBzero(&SoundState.seqTick286C, 0x1C);
+        /* The sequence beat clock, seqMark2880 and seqReserved2884. */
+        PsyqBzero(&SoundState.seqTick286C, RR_FIELD_SPAN(AudioState, seqTick286C, seqVol2888));
         SoundState.seqTempo287C = RR_PAL_NTSC(ReplayCamTargetDistTable[a0].a, ReplayCamTargetDistNtscFrames[a0]);
         RestartMotionSequence();
     }

@@ -478,8 +478,12 @@ Local validation:
 Artifacts: `/tmp/rr4-project-audit/layout/`, including the preliminary
 native/Windows assertion inventory and precise pre-change header copies.
 The literal-memory-operation sweep found the reviewed fixed clears in pad,
-audio and options state to be scalar ranges; it does not yet close D3's
-broader pointer-stride and allocator review.
+audio and options state to be scalar ranges. The follow-up review (D3,
+closed) rewrote every remaining literal size, stride and byte offset on a
+structured object as sizeof, field spans (`RR_FIELD_SPAN`/`RR_FIELD_TAIL`)
+or indexing, with static assertions where the PS1 value is relied on; the
+literals left are offsets into serialized disc, dialogue and save data and
+the menu arena budget.
 
 ## Replay codec and car-history validation
 

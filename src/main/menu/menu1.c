@@ -13,6 +13,7 @@
 #include "rr/load_cursor.h"
 #include "types.h"
 #include "scratchpad.h"
+#include "rr/projection_state.h"
 #include "game/menu/menu8.h"
 #include "game/menu/menutran.h"
 #include "game/menu/mnsel.h"
@@ -164,7 +165,7 @@ void CarStandingsModeEnter(void)
     MenuGrid38 *p;
     AllocMenuGridRecords(SharedWorkArena, 1);
     InitMenuGrid(0, 0, 3, 0xF0, 0xA0);
-    PsyqBzero((void *)(SCRATCHPAD + 0x8), 0x20);
+    PsyqBzero(&RR_PROJECTION_SCRATCH->pose08, sizeof(RR_PROJECTION_SCRATCH->pose08));
     p = MenuGridRecords;
     p->rot_z1C = 0x60;
     p->rot_y20 = -0x110;

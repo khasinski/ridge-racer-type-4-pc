@@ -37,7 +37,7 @@ void ovl662_init_available_cars(void){
  s32 arenaOffset;
  s32 i,count;s32 j;
  s16 *status;GarageAvailableCar *entry;
- u8 *choice;
+ const CourseChoice4 *choice;
  GarageAvailableCar *captured;
  ModeFrame=0;
  ScreenFrame=0;
@@ -60,13 +60,13 @@ void ovl662_init_available_cars(void){
    entry->value=PackChoiceGlyph(&SelectionRows.choice);
    j=0;
    captured=entry;
-   choice=(u8*)&CourseChoiceTable;
+   choice=CourseChoiceTable[1];
    do{
-    UnpackChoiceGlyph((s8*)parts,((CourseChoice4*)(choice+36))->glyph);
+    UnpackChoiceGlyph((s8*)parts,choice->glyph);
     if(parts[2]<39)parts[2]%=20;
     decoded=PackChoiceGlyph(parts);
     if(captured->value==(s16)decoded)*status=2;
-    j++;choice+=4;
+    j++;choice++;
    }while(j<8);
    entry++;count++;
   }

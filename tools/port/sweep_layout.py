@@ -16,7 +16,10 @@ the original 32-bit layout and reports:
             through the other)
 
 usage: sweep_layout.py <decomp-root> [--json out.json]
-Requires the libclang Python binding (pip install clang) and libclang.
+Exits 1 when a finding is not in sweep_layout_allow.txt or an allow entry is
+stale; tools/port/check.sh runs it when the decompilation tree is there.
+Requires the libclang Python binding (pip install -r
+tools/port/requirements-sweep.txt) and libclang.
 LIBCLANG=<path to libclang.dylib / libclang.so / libclang.dll> picks the
 library; without it the sweep tries the Xcode Command Line Tools, Xcode and
 the usual Linux LLVM locations, then the binding's own search.
@@ -308,7 +311,8 @@ def main():
             used.add(key)
         else:
             kept.append(f)
-    for key in sorted(set(allow) - used):
+    stale = sorted(set(allow) - used)
+    for key in stale:
         print(f"STALE    allowlist entry {key[0]} {key[1]} no longer matches a finding")
     findings = kept
     order = {'ALIAS': 0, 'OVERLAP': 1, 'TRUNC': 2, 'INTERIOR': 3}
@@ -332,7 +336,8 @@ def main():
     print('summary', counts, 'allowlisted', len(used))
     if '--json' in sys.argv:
         json.dump(findings, open(sys.argv[sys.argv.index('--json') + 1], 'w'), indent=1)
+    return 1 if findings or stale else 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

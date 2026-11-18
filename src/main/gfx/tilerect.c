@@ -52,6 +52,8 @@ typedef struct {
     short s48;
     short s4A;
 } S_8010BF70;
+RR_ASSERT_SIZE(S_8010BF70, 0x4C);
+RR_ASSERT_OFFSET(S_8010BF70, w38, 0x38);
 
 /* Queue one GP0 state command at ordering entry index. */
 static void EmitTileRectCommand(s32 index, u32 command) {
@@ -160,6 +162,8 @@ typedef struct {
     short light6C, light6E;
     short interp70;
 } TileRectSceneJp;
+RR_ASSERT_SIZE(TileRectSceneJp, 0x74);
+RR_ASSERT_OFFSET(TileRectSceneJp, w38, 0x38);
 
 static void TileRectSceneModeUpdateJp(void) {
     static const s16 starts[10] = {8, 0x20, 0x34, 0x40, 0x4C, 0x58, 0x64, 0x70, 0x7C, 0x94};
@@ -213,11 +217,11 @@ static void TileRectSceneModeUpdateJp(void) {
         }
         SkyCommandListPtr = (u8 *)LoadCursor;
         TileRectScene = (S_8010BF70 *)(LoadCursor = (u8 *)LoadCursor + s1);
-        LoadCursor = (char *)TileRectScene + 0x74;
+        LoadCursor = (u8 *)TileRectScene + sizeof(TileRectSceneJp);
         SetupRenderer(3);
         p = (TileRectSceneJp *)TileRectScene;
         p->unk20 = TileRectDefaultAngles;
-        PsyqMemset(p->unk28, 0, 0x10);
+        PsyqMemset(p->unk28, 0, RR_FIELD_SPAN(TileRectSceneJp, unk28, w38)); /* unk28..unk34 */
         TileRectUploadPhase = 6;
         p->fade66 = 0x100;
         p->light6E = 0x40;
@@ -361,10 +365,10 @@ void TileRectSceneModeUpdate(void) {
         }
         SkyCommandListPtr = (u8 *)LoadCursor; /* sky records stay wire offsets (sky.c) */
         TileRectScene = (S_8010BF70 *)(LoadCursor = (u8 *)LoadCursor + s1);
-        LoadCursor = (char *)TileRectScene + 0x4C;
+        LoadCursor = (u8 *)(TileRectScene + 1);
         SetupRenderer(3);
         TileRectScene->unk20 = TileRectDefaultAngles;
-        PsyqMemset(TileRectScene->unk28, 0, 0x10);
+        PsyqMemset(TileRectScene->unk28, 0, RR_FIELD_SPAN(S_8010BF70, unk28, w38)); /* unk28..unk34 */
         {
             S_8010BF70 *p = TileRectScene;
             TileRectUploadPhase = 6;

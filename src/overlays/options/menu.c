@@ -14,7 +14,7 @@ void ovl665_init_scene(void)
     SetDispMask(0);
     SetupDrawDispEnvs(0,0,0,2);
     state=&ovl665_options_state.visual;
-    PsyqBzero(state,160);
+    PsyqBzero(state,sizeof(*state));
     state->lighting4C.matrix.signedHalves[6]=4500;
     state->lighting4C.matrix.signedHalves[7]=-4096;
     state->lighting4C.matrix.signedHalves[8]=-8000;

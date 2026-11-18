@@ -78,11 +78,12 @@ void InitDefaultTimeRecords(void) {
 void InitCourseChoices(void)
 {
     int i, j;
-    PsyqBzero(CourseChoiceTable, 0x90);
-    /* The PS1 then clears 0x90 bytes from +0x24 (0x800ABE2C..0x800ABEBB):
+    PsyqBzero(CourseChoiceTable, sizeof(CourseChoiceTable));
+    /* The PS1 then clears 0x90 bytes from CourseChoiceTable[1] (+0x24,
+     * 0x800ABE2C..0x800ABEBB):
      * the rest of the table and the nine words the linker placed after it,
      * which therefore start from zero once the frame environment is set up. */
-    PsyqBzero((char *)CourseChoiceTable + 0x24, sizeof(CourseChoiceTable) - 0x24);
+    PsyqBzero(CourseChoiceTable[1], sizeof(CourseChoiceTable) - sizeof(CourseChoiceTable[0]));
     RR_CPU_CYCLES(0x24 * RR_CYCLES_BIOS_FILL_BYTE); // the PS1's bzero past the table
     BackColorR = 0;               /* 0x800ABE98 */
     RelFileOffsetPtr7 = NULL;
@@ -107,14 +108,14 @@ void InitCourseChoices(void)
 
 void BackupSaveData(void) {
     int i;
-    for (i = 0; i < 0x840; i++) {
+    for (i = 0; i < (int)sizeof(SaveDataWork.file); i++) {
         CustomEmblemBuffers.bytes[i] = SaveDataWork.file.bytes[i];
     }
 }
 
 void RestoreSaveData(void) {
     int i;
-    for (i = 0; i < 0x840; i++) {
+    for (i = 0; i < (int)sizeof(SaveDataWork.file); i++) {
         SaveDataWork.file.bytes[i] = CustomEmblemBuffers.bytes[i];
     }
 }

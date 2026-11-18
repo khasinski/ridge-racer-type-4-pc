@@ -12,6 +12,7 @@
 #include "rr/frame_storage_types.h"
 #include "rr/load_cursor.h"
 #include "scratchpad.h"
+#include "rr/projection_state.h"
 #include "rr_asm.h"
 #include "rr/animated_sprite_grid.h"
 #include "game/data/cdfile2.h"
@@ -253,7 +254,7 @@ case 0x6:
     if (G->s44 < 0x20) {
         goto block_197;
     }
-    PsyqMemset((void *)(SCRATCHPAD + 0x18), 0, 0x10);
+    PsyqMemset(&RR_PROJECTION_SCRATCH->pose08.angles10, 0, sizeof(RR_PROJECTION_SCRATCH->pose08.angles10));
     src = &IntroCameraPosKeyframes[1];
     st = &TitleSceneStage;
     sp2 = (int *)(SCRATCHPAD + 0x8);

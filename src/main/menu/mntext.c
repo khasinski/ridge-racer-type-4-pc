@@ -29,7 +29,7 @@ extern TimeRecord16 LapRecords[2][8][5];
 extern s32 TotalRaceTime;
 
 s32 InitMenuTextRows(MenuTextRow60 *rows) {
-    u32 size = MenuTextRowCount * 60U;
+    u32 size = MenuTextRowCount * (u32)sizeof(*rows);
     MenuTextRows = rows;
     PsyqBzero(rows, size);
     return size;

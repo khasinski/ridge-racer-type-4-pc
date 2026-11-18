@@ -9,8 +9,9 @@ typedef struct {
     s32 timing[64][3];
 } CdTrackTableSet;
 extern CdTrackTableSet CdTrackTables;
-/* PS1 CdTrackTitleStrings (0x800A095C) + track * 32, within CdTrackTables. */
-#define CD_TRACK_TITLE(track) ((char *)&CdTrackTables + 22 * 4 + ((track) << 5))
+/* PS1 CdTrackTitleStrings (0x800A095C, CdTrackTables.volumes[22]) + track
+ * * 32: 32-byte labels read through the table's words (see cdplay.c). */
+#define CD_TRACK_TITLE(track) ((char *)&CdTrackTables.volumes[22] + ((track) << 5))
 extern s16 *OpeningDateGlyphListsPal[], *OpeningDateGlyphListsJp[];
 extern s16 *OpeningTimeGlyphListsPal[], *OpeningTimeGlyphListsJp[];
 extern s16 *OpeningStageGlyphListsPal[], *OpeningStageGlyphListsJp[];

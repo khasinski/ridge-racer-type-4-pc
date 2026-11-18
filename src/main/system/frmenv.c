@@ -101,8 +101,8 @@ void SystemInit(void)
     NumLaps = 2;
     MirrorRenderFlag = 0;
     PsyqBzero(&SaveProgress, sizeof(SaveProgress));
-    PsyqBzero(SelectionRows.bytes, 0x20);
-    PsyqBzero(SelectionState.signedBytes, 0x2C);
+    PsyqBzero(&SelectionRows, sizeof(SelectionRows));
+    PsyqBzero(&SelectionState, sizeof(SelectionState));
     SelectionState.signedBytes[0x17] = -1;
     PsyqBzero(RankEntries, 8 * sizeof(*RankEntries));
     i = 7;

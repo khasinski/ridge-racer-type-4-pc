@@ -169,7 +169,7 @@ B:
   { int t = PadInfoMode(s2, 1, 0); v1 = PadInfoMode(s2, 2, 0); s0 = t; }
   if (s0 == 0xE && v1 == 0x300)
   {
-    PsyqBzero(&s1->flag40, 0x1C);
+    PsyqBzero(&s1->flag40, RR_FIELD_TAIL(ControllerState5C, flag40));
     s1->flag40 = 1;
     s1->protocol10 = 2;
     PadSetAct(s2, &s1->actuator44, 1);

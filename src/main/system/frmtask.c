@@ -90,7 +90,7 @@ static void FrmTaskModeUpdateJp(void) {
         FrmTaskState = FRAME_TASK_REVEAL;
         st = (FrameTaskFieldsJp *)LoadCursor;
         ActiveFrameTaskScript = (FrameTaskState *)st;
-        LoadCursor = (u8 *)st + 0x2E;
+        LoadCursor = (u8 *)(st + 1);
         memset(st, 0, sizeof(*st));
         st->ramp[8] = 8;
         st->fade26 = 0x100;

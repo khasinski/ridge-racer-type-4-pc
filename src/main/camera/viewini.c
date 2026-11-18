@@ -62,7 +62,7 @@ void InitCourseViewState(void) {
             SetAnimatedTrackObjectState(i, 6, 0, 0);
         }
     }
-    i = 0x1F;
+    i = (int)sizeof(ExtraCourseViewTable) - 1;
     p = (char *)&ExtraCourseViewTable + i;
     do {
         *p-- = 0;

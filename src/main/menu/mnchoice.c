@@ -21,7 +21,7 @@ void StepResultsMenuChoice(void) {
     s32 state;
     u32 selected=SelectionRows.choice.bytes[1];
     SelectedMakerIndex=selected;
-    ((u8 *)UiRows)[12+selected]=0;
+    UiRows[0].cells[selected]=0;
     if ((MenuSelectedCarSlot & 0x2000) && SelectedMakerIndex < 3) {
         SelectedMakerIndex = SelectedMakerIndex + 1;
         MenuStepDirection = 2;

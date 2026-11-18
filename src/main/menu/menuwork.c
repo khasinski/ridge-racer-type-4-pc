@@ -190,7 +190,7 @@ void GarageCarPreviewModeUpdate(void)
             if (rowState == optionCount) {
                 selection = SelectionRows.bytes;
                 rows[selection[3] + 1].cells[0] = 0;
-                StepMenuValue(0, 1, (char *)selection + 3, optionCount, 0);
+                StepMenuValue(0, 1, (char *)&selection[3], optionCount, 0);
                 UiRows[selection[3] + 1].cells[0] = optionCount;
                 if (MenuReturnSubmodeIndex != 0) {
                     PlaySfx(1);

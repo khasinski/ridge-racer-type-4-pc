@@ -163,7 +163,7 @@ int ApplySaveData(int mode) {
         emblemFrames = (emblemSave = (EmblemSaveData1380 *)SaveBuffer)->editFrames280;
         EmblemEditFrames = GarageExtraDefaultTimes[GpSaveSlotCursor] = emblemFrames;
         for (j = 0; j < 2; j++) {
-            for (i = 0; i < 0x840; i++) {
+            for (i = 0; i < RR_EMBLEM_TIM_BYTES; i++) {
                 if (j == 0) {
                     GarageSavedDecalTimA->bytes[i] = emblemSave->decals300[0].bytes[i];
                 } else {

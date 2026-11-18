@@ -103,7 +103,7 @@ void ovl661_init_preview(s32 mode) {
     ovl661_available_car_counts[1][1]=CountChoiceGlyphs(ovl661_car_choices[1][1]);
     if(ovl661_available_car_counts[mode&1][1]==0)ovl661_selected_groups[mode&1]=0;
     if(ovl661_selected_cars[ActivePlayerIndex&1]>=ovl661_available_car_counts[ActivePlayerIndex&1][ovl661_selected_groups[ActivePlayerIndex&1]])ovl661_selected_cars[ActivePlayerIndex&1]=0;
-    UnpackChoiceGlyph((s8*)&SelectionRows+ActivePlayerIndex*4,ovl661_car_choices[ActivePlayerIndex&1][ovl661_selected_groups[ActivePlayerIndex&1]][ovl661_selected_cars[ActivePlayerIndex&1]].glyph);
+    UnpackChoiceGlyph((s8*)&SelectionRows.records[ActivePlayerIndex],ovl661_car_choices[ActivePlayerIndex&1][ovl661_selected_groups[ActivePlayerIndex&1]][ovl661_selected_cars[ActivePlayerIndex&1]].glyph);
     PlayerCourseChoices[ActivePlayerIndex].first=ovl661_car_choices[ActivePlayerIndex&1][ovl661_selected_groups[ActivePlayerIndex&1]][ovl661_selected_cars[ActivePlayerIndex&1]].first;
     PlayerCourseChoices[ActivePlayerIndex].second=ovl661_car_choices[ActivePlayerIndex&1][ovl661_selected_groups[ActivePlayerIndex&1]][ovl661_selected_cars[ActivePlayerIndex&1]].second;
 }
@@ -137,8 +137,8 @@ void ovl661_init_menu(void)
     CopyStringClearTail(ovl661_player_names[1], ovl661_player2_default_name);
     SetupDrawDispEnvs(0, 0, 0, 2);
     ovl661_init_preview(0);
-    UnpackChoiceGlyph((s8 *)&SelectionRows, CourseChoiceTable[0][0].glyph);
-    UnpackChoiceGlyph((s8 *)&SelectionRows + 4, CourseChoiceTable[0][0].glyph);
+    UnpackChoiceGlyph((s8 *)&SelectionRows.records[0], CourseChoiceTable[0][0].glyph);
+    UnpackChoiceGlyph((s8 *)&SelectionRows.records[1], CourseChoiceTable[0][0].glyph);
     SeqStartTrack(0);
     ovl661_available_course_count = 8;
     ModeGroup = 1;
@@ -152,7 +152,7 @@ void ovl661_reset_preview_selection(void)
 {
     ResetScreenCounters();
     LoadCursor = MenuArenas.first;
-    UnpackChoiceGlyph((s8 *)&SelectionRows + ActivePlayerIndex * 4, ovl661_car_choices[ActivePlayerIndex & 1][ovl661_selected_groups[ActivePlayerIndex & 1]][ovl661_selected_cars[ActivePlayerIndex & 1]].glyph);
+    UnpackChoiceGlyph((s8 *)&SelectionRows.records[ActivePlayerIndex], ovl661_car_choices[ActivePlayerIndex & 1][ovl661_selected_groups[ActivePlayerIndex & 1]][ovl661_selected_cars[ActivePlayerIndex & 1]].glyph);
     PlayerCourseChoices[ActivePlayerIndex].first = ovl661_car_choices[ActivePlayerIndex & 1][ovl661_selected_groups[ActivePlayerIndex & 1]][ovl661_selected_cars[ActivePlayerIndex & 1]].first;
     PlayerCourseChoices[ActivePlayerIndex].second = ovl661_car_choices[ActivePlayerIndex & 1][ovl661_selected_groups[ActivePlayerIndex & 1]][ovl661_selected_cars[ActivePlayerIndex & 1]].second;
     ImageRows->f1 = 6;
