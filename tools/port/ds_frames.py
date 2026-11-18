@@ -31,6 +31,13 @@ BIOS boot); compare with the port run headless with PSYZ_CARD_UNPLUG=2.
               Names come from the decomp's sym.main.txt and overlay JSONs.
   DSF_EXC=1   also mark every exception at the vector (I_STAT, DICR and the
               cause) and its two returns (rfe), for interrupt dispatch times
+  DSF_PADLOG=1  append "pad <n>": whether libpad's vblank handler ran at
+              the blank before the field (its flag, read and cleared between
+              fields: no effect on the emulation)
+  DSF_PAUSES=1  log "PAUSE <n> tick <t>" at each field's pause (the trace
+              line n is read there, just before DuckStation field n + 297's
+              vblank; port vsync n's blank is field n + 296)
+  DSF_A0=1    also log each BIOS A0 call's number (rand 2f, srand 30)
   DSF_FUNCAT  at that port vsync, print the mode function's address
 
 timeline prints the log's marks, CD commands and completions per field with
@@ -52,6 +59,7 @@ MASKBITS = [(0x0100, 'Select'), (0x0800, 'Start'), (0x1000, 'Up'), (0x2000, 'Rig
             (0x8000, 'Left'), (0x0001, 'L2'), (0x0002, 'R2'), (0x0004, 'L1'), (0x0008, 'R1'),
             (0x0010, 'Triangle'), (0x0020, 'Circle'), (0x0040, 'Cross'), (0x0080, 'Square')]
 FRAME_COUNTER, RAND_STATE, MODE_FUNC_TABLE = 0x800ABEAC, 0x80009010, 0x8009E9F0
+PAD_RAN = 0x800ABCD0  # libpad's flag that its vblank handler ran
 HOST_CAR, PS1_CAR = 816, 800  # RaceVehicle
 RACE_MODES = {'1/26', '1/38', '1/47', '1/53', '1/82'}  # RR4_AUTODRIVE's
 SYM = dict(dc.SYMS)
@@ -125,7 +133,7 @@ K0, K1 = 26, 27
 def install_exception_marks(d):
     """XMARK (I_STAT << 16) | 0x8000 | (Cause & 0x7C) at the vector, the DICR
     at offset 9c before it, and the return address at the two rfe sites."""
-    x = 0x8000BC00
+    x = 0x8000D000
     code = [I(0x0F, 0, K0, 0x1F80), I(0x23, K0, K1, 0x10F4), 0, I(0x2B, K0, K1, 0x209C),
             I(0x23, K0, K1, 0x1070), 0, I(0x0C, K1, K1, 0x7FF),
             (K1 << 16) | (K1 << 11) | (16 << 6),          # sll k1, k1, 16
@@ -145,6 +153,18 @@ def install_exception_marks(d):
         d.poke(site, dc.words([dc.j(r), 0]))
 
 
+def install_a0_marks(d):
+    """XMARK at offset 9a with the function number of each BIOS A0 call
+    (rand 0x2F, srand 0x30, ...)."""
+    stub = 0x8000D200
+    if d.mem(0x800000A0, 16) != dc.words([0x3C080000, 0x250805C4, 0x01000008, 0]):
+        raise SystemExit('unexpected A0 vector')
+    t1, t8 = 9, 24
+    d.poke(stub, dc.words([I(0x0F, 0, t8, 0x1F80), I(0x28, t8, t1, 0x209A),
+                           0x3C080000, 0x250805C4, dc.j(0x800000A8), 0]))
+    d.poke(0x800000A0, dc.words([dc.j(stub), 0]))
+
+
 def install_mark(d, k, spec):
     name, *flags = spec.split(':')
     fn = int(name, 16) if name.startswith('0x') else (SYM.get(name) or OVL[name])
@@ -157,7 +177,7 @@ def install_mark(d, k, spec):
             raise SystemExit('%s: its first instructions cannot be moved (%08x)' % (name, w))
     code = [dc.lui('t8', 0x1F80), dc.ori('t9', 'zero', 0x100 + k), dc.sw('t9', 0x2090, 't8')]
     if 'ret' in flags:  # not nest-safe
-        slot = 0x8000BB00 + 4 * k
+        slot = 0x8000D300 + 4 * k
         back = stub + 4 * 11
         code += [dc.lui('t8', dc.hi(slot)), dc.sw('ra', dc.lo(slot), 't8'),
                  dc.lui('ra', dc.hi(back)), dc.addiu('ra', 'ra', dc.lo(back))]
@@ -184,6 +204,7 @@ def run(fields, trace_path, log_path):
     lead = int(os.environ.get('DSF_LEAD', '1'))
     func_at = int(os.environ['DSF_FUNCAT']) if os.environ.get('DSF_FUNCAT') else None
     pad2 = any(s[0] == 2 for s in steps)
+    padlog = os.environ.get('DSF_PADLOG') == '1'
     anchor_mode, anchor_entry = -1, 0
     held = {1: set(), 2: set()}
     with open(log_path, 'w') as lf, open(trace_path, 'w') as out, DuckStation(log=lf, pad2=pad2) as d:
@@ -201,6 +222,8 @@ def run(fields, trace_path, log_path):
             if frame == mark_at:
                 if os.environ.get('DSF_EXC') == '1':
                     install_exception_marks(d)
+                if os.environ.get('DSF_A0') == '1':
+                    install_a0_marks(d)
                 for k, m in enumerate(marks):
                     if '@' not in m:
                         install_mark(d, k, m)
@@ -225,11 +248,18 @@ def run(fields, trace_path, log_path):
                 table = d.u32(MODE_FUNC_TABLE + 4 * group)
                 fn = d.u32(table + 4 * index)
                 sys.stderr.write('MODEFUNC %d/%d %08x %s\n' % (group, index, fn, names.get(fn)))
+            if os.environ.get('DSF_PAUSES') == '1':
+                lf.write('PAUSE %d tick %d\n' % (v, d.ticks()[0]))
             if v >= 1:
                 line = 'vsync %d frame %u mode %u/%d sub %u' % (v, d.u32(FRAME_COUNTER), group, index, sub)
                 for label, base, off in WATCH:
                     line += ' %s=%d' % (label, s32(d.mem(SYM[base] + ps1_offset(off), 4)))
-                out.write(line + ' rand=%08x\n' % d.u32(RAND_STATE))
+                line += ' rand=%08x' % d.u32(RAND_STATE)
+                if padlog:
+                    line += ' pad %d' % d.u32(PAD_RAN)
+                out.write(line + '\n')
+            if padlog:
+                d.poke(PAD_RAN, b'\0\0\0\0')
             want = {1: set(), 2: set()}
             target = v + lead
             for port, button, smode, first, count, period in steps:
@@ -285,7 +315,9 @@ def timeline(log_path, first=0, last=1 << 30):
             rows.append((int(f[3]), f[0] + ' ' + f[1]))
         elif f[0] == 'XMARK':
             x, t = int(f[1], 16), int(f[3])
-            if len(f) > 7 and f[7] != '90':
+            if len(f) > 7 and f[7] == '9a':
+                rows.append((t, 'A0:%02x' % x))
+            elif len(f) > 7 and f[7] != '90':
                 rows.append((t, 'RET' + f[7]))
             elif x & 0x8000:
                 if (x & 0x7C) == 0:
