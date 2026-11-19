@@ -99,7 +99,10 @@ extern int RrWorkDepth;
 extern void (*RrWorkPassHook)(int pass, const void *cursor);
 
 /* The race frame's routines (cpuwork.c has the fits). */
-extern const RrWorkCost RrCostReadCarInput, RrCostUpdatePlayerCar, RrCostUpdateComCars;
+extern const RrWorkCost RrCostReadCarInput;
+/* by the race's state (cpuwork.c) */
+const RrWorkCost *RrCostUpdatePlayerCar(void);
+const RrWorkCost *RrCostUpdateComCars(void);
 extern const RrWorkCost RrCostCarStages[7];
 extern const RrWorkCost RrCostUpdateTrackObjects, RrCostChaseCamera, RrCostCameraMatrices;
 extern const RrWorkCost RrCostDrawPlayerCar, RrCostDrawOpponentCar, RrCostDrawCars;

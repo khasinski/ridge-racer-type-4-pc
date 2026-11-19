@@ -1,4 +1,6 @@
 #include "rr/geometry.h"
+#include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
 #include "rr/audio_state_types.h"
@@ -65,10 +67,13 @@ static void RenderSubOtModel(u8 *object, GpuDmaTag *subOrdering, s32 bank, s32 d
     RroSceneScratchPrefix *scene = (RroSceneScratchPrefix *)SCRATCHPAD;
     ObjectTransform38 *transform = &((RroModelScratch *)SCRATCHPAD)->work7C.transform;
     int s1;
+    RR_CPU_CYCLES(RR_CYCLES_SHOWCASE_OBJECT);
     BuildObjectLightAndRotMatrices(object, &sp10);
     SetGteObjectTransform(transform, (const s16 *)object, sp10.w);
     s1 = RotTransPersOrigin();
     if (s1 > 0) {
+        RrWork work;
+        RR_CPU_CYCLES(RR_CYCLES_SHOWCASE_DRAW);
         ClearOTagR(subOrdering, 0x15F);
         RR_GPU_SCRATCH->order = subOrdering;
         scene->depthShift60 = s1 >> 7;
@@ -78,11 +83,15 @@ static void RenderSubOtModel(u8 *object, GpuDmaTag *subOrdering, s32 bank, s32 d
         SelectModelBank(bank);
         SetGteObjectTransform(transform, (const s16 *)object, sp10.w);
         scene->draw74.draw.counter = 0;
+        /* a race frame holds SubmitModel's own charge (RrWorkFrame) */
+        RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
         SubmitModel(scene, ModelBankFormat < 1, 0, 0);
+        RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
         s1 >>= depthShift;
         s1 += 0x6E;
         if (s1 > 0) {
             GpuDmaTag *entry = &CurrentDrawBuf->buffer.ordering70.tags[s1];
+            RR_CPU_CYCLES(RR_CYCLES_SPOTLIGHT_CONE);
             EmitSpotlightConePolys(s1 + 1);
             /* Reverse-cleared table: entry 0x15E is the head, entry 0 the tail. */
             subOrdering[0].address = entry->address;
@@ -161,6 +170,7 @@ int FindCameraTrackTrigger(RaceVehicle *a0, int a1, int a2) {
     if (s0 < 0) {
         return 1;
     }
+    RR_CPU_CYCLES(RR_CYCLES_CAMERA_TRACK_TRIGGER);
     if (RaceContext.opening88.triggerA4 != s3) {
         ResetCarSlotBuffers();
         RaceContext.opening88.triggerA4 = s3;
@@ -233,6 +243,7 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
     SceneRaceContext *gD;
     SceneRaceContext *gS;
     SceneRaceContext *gT;
+    RR_CPU_CYCLES(RR_CYCLES_LENS_FLARE);
     s0 = 0;
     do {
         SlotSetPause(s0, 1);
@@ -276,6 +287,7 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
             s0 = 0x100;
             s0 -= d;
         }
+        RR_CPU_CYCLES(RR_CYCLES_RACE_OPENING_OVERLAY);
         UpdateRaceOpeningOverlay(RR_PAL_NTSC(0x1C2, 0x21C));
         pk = (GpuTilePacket *)RR_GPU_SCRATCH->cursor;
         pk->code = 0x62;

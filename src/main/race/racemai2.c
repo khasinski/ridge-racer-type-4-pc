@@ -54,31 +54,31 @@ void StepRaceFrame(unsigned int gameMode)
     case 0:
     default:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       break;
 
     case 1:
     case 6:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 2:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
       RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
       break;
 
     case 3:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
       RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 4:
@@ -90,14 +90,14 @@ void StepRaceFrame(unsigned int gameMode)
       {
         if (CarTable[i]->half1E8 != (-1))
         {
-          RR_WORK_CALL(UpdatePlayerCar(CarTable[i], i), &RrCostUpdatePlayerCar);
+          RR_WORK_CALL(UpdatePlayerCar(CarTable[i], i), RrCostUpdatePlayerCar());
         }
       }
       break;
 
     case 5:
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
   }
 

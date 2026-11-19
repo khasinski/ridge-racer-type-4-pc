@@ -101,8 +101,22 @@ void RrWorkHoldEnd(const void *cursor) {
 #define W(call, bytes, rtpt, rtps, nclip, dpcs, intpl, mvmva)                  \
     {{(call), (bytes), (rtpt), (rtps), (nclip), (dpcs), (intpl), (mvmva), 0, 0, 0, 0}}
 const RrWorkCost RrCostReadCarInput = W(12622, 0, 0, 0, 0, 0, 0, 0);       /* 218; 42, 158 */
-const RrWorkCost RrCostUpdatePlayerCar = W(156324, 0, 0, 0, 0, 0, 0, 0);   /* 2637; 608, 2266 */
-const RrWorkCost RrCostUpdateComCars = W(426793, 0, 0, 0, 0, 0, 0, 438764); /* 30520; 3137, 8654 */
+/* UpdatePlayerCar and UpdateComCars by the race's state, their paths:
+ * before the start (RaceState 0) the player's car 177 a call and the AI
+ * 8538, in the countdown (1) 2440 and 3530, racing 3060 and 3530 + 7716 an
+ * AI car it drives (its projection, the one MVMVA each; 57k-59k with
+ * seven). One cost for every state had the AI 3k short racing, 3k long in
+ * the countdown and the player's car 2.3k long before the start. */
+static const RrWorkCost CostUpdatePlayerCar[3] = {
+    W(11328, 0, 0, 0, 0, 0, 0, 0), W(156160, 0, 0, 0, 0, 0, 0, 0), W(195840, 0, 0, 0, 0, 0, 0, 0)};
+static const RrWorkCost CostUpdateComCars[2] = {
+    W(546432, 0, 0, 0, 0, 0, 0, 493824), W(225920, 0, 0, 0, 0, 0, 0, 493824)};
+const RrWorkCost *RrCostUpdatePlayerCar(void) {
+    return &CostUpdatePlayerCar[RaceState <= 0 ? 0 : RaceState == 1 ? 1 : 2];
+}
+const RrWorkCost *RrCostUpdateComCars(void) {
+    return &CostUpdateComCars[RaceState <= 0 ? 0 : 1];
+}
 /* ClampAiCarLateralMotion, UpdateCarSteering, DecayCarOffset,
  * IntegrateCarMotion, UpdateCarTrackNode, ComputeWheelOffsets,
  * ConstrainCarToTrack: a car each */
@@ -137,10 +151,12 @@ const RrWorkCost RrCostDrawTrackScenery = W(50928, 140, 6787, 915, 7702, 915, 11
 const RrWorkCost RrCostSubmitModel = W(6975, 174, 3466, 3943, 3466, 0, 0, 1993); /* 26916; 28, 133 */
 #undef W
 
-/* StepRaceFrame less the calls above, without its stalls: 5114 with one
- * car (Time Attack), 10488 with two (Versus), 47.1k-48.6k with eight, seven
- * of them the AI's (the Grand Prix), medians; a replay's 450 a car and 520
- * an AI car more (5.6k-5.8k, 11.2k, 54.9k). */
+/* StepRaceFrame less the calls above, without its stalls, by the cars it
+ * ran and the AI cars it drove: before the start (RaceState 0-1) 5006 with
+ * one car (Time Attack), 10365 with two (Versus), 47.1k with eight, seven
+ * of them the AI's (the Grand Prix); racing (from RaceState 2) 250 a car
+ * and 650 an AI car more (5.4k, 10.7k, 53.6k), a replay 160 a car more
+ * again (5.6k-5.8k, 11.2k, 54.9k). Medians, DuckStation's exact timing. */
 void RrSpendStepRaceFrameOwn(int comCars) {
     int cars = 0, ai = 0;
     for (int i = 0; i < NumCars; i++)
@@ -149,9 +165,11 @@ void RrSpendStepRaceFrameOwn(int comCars) {
         for (int i = 0; i < 11; i++)
             ai += (short)ComCars[i].flags1E4 > 0;
     if (cars > 0) {
-        int own = 5374 * cars + 706 * ai - 260;
+        int own = 5359 * cars + 660 * ai - 353;
+        if (RaceState >= 2)
+            own += 250 * cars + 650 * ai;
         if (ModeGroup == 1 && ModeIndex == 22) /* ReplayModeUpdate */
-            own += 450 * cars + 520 * ai;
+            own += 160 * cars;
         RR_CPU_CYCLES((unsigned)own);
     }
 }
@@ -159,7 +177,8 @@ void RrSpendStepRaceFrameOwn(int comCars) {
 /* The race modes' frame functions less the routines above, their stalls
  * and the lap list (DrawLapTimeList, charged by its laps: rr/cpu_time.h),
  * by RaceState (0 the start, 1 the countdown, 2-3 racing, from 4 the
- * finish); the Grand Prix's start includes its grid's fly-by. Medians of
+ * finish); the Grand Prix's start without its fly-by (rr/cpu_time.h
+ * RR_CYCLES_LENS_FLARE ...). Medians of
  * 75-786 frames (the Grand Prix's four races 8.4k-8.5k racing, its third
  * 10.6k; Time Attack's on course 7 1.9k longer racing: its overlay
  * sprites and lap timing). */
@@ -167,7 +186,7 @@ void RrSpendRaceModeOwn(int mode) {
     static const unsigned own[3][4] = {
         {3439, 10293, 8214, 1020},
         {6061, 18649, 13965, 1944},
-        {78000, 11550, 8475, 1590},
+        {1960, 11550, 8475, 1590},
     };
     int state = RaceState < 0 ? 0 : RaceState >= 4 ? 3 : RaceState == 3 ? 2 : RaceState;
     if (mode >= 0 && mode < 3)

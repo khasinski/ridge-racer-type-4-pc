@@ -140,7 +140,13 @@ enum {
     RR_CYCLES_UPDATE_SOUND_SLOT_VOICE = 410,
     RR_CYCLES_SLOT_INTERP_CURVE = 72,
     RR_CYCLES_SLOT_INTERP_KEY = 9,
-    RR_CYCLES_SOUND_LISTENER = 2695,     // SoundListenerUpdate, listener on
+    /* SoundListenerUpdate, listener on, with SoundUpdateComSlots: 2695 in
+     * Time Attack's race, 3325 with the Grand Prix's eight cars, 7021 in its
+     * replays, whose listener follows the camera (DSF_MARKS, DuckStation's
+     * exact timing; a flat 2695 before) [mark] */
+    RR_CYCLES_SOUND_LISTENER = 2605,
+    RR_CYCLES_SOUND_LISTENER_CAR = 90,
+    RR_CYCLES_SOUND_LISTENER_CAMERA = 3696,
     /* The boot, measured [mark]: entry-to-entry clocks on DuckStation's
      * recompiler, from a stub at each function entry that writes root
      * counter 2 (unused before SsStart), logged with DUCKSTATION_CD_TRACE
@@ -207,6 +213,28 @@ enum {
  * (cpuwork.c) included it for the courses they were fitted on, so course
  * 7's frames came 3.2k early and the Grand Prix's two-lap races 1k late.
  * [mark] */
+/* The Grand Prix's opening fly-by in a race frame (DrawLensFlareAndSun,
+ * RaceState 0): its own besides the calls charged themselves (the slots'
+ * pause, the channel volume), the opening overlay of its first 12 frames,
+ * the camera track's key search and interpolation (FindCameraTrackTrigger,
+ * ApplyCameraState besides BuildCameraMatrices), and the team's showcase
+ * objects (RenderSubOtObject: one, two on course 7): an object's light and
+ * rotation matrices, transform and projected origin, when it is in front
+ * its sub-ordering table's clear, transform again and model bank, its
+ * SubmitModel by its work (rr/cpu_work.h, held in a race frame otherwise)
+ * and its spotlight cone. DuckStation's exact timing, gp-ending's first and
+ * eighth races (DSF_MARKS, DSF_EXC, the list DMA's stalls taken out): a
+ * frame's fly-by 5.6k-142k clocks; the Grand Prix's race mode own cost had
+ * a flat 75k for it in every start frame. [mark] */
+enum {
+    RR_CYCLES_LENS_FLARE = 471,
+    RR_CYCLES_RACE_OPENING_OVERLAY = 11300,
+    RR_CYCLES_CAMERA_TRACK_TRIGGER = 1016,
+    RR_CYCLES_SHOWCASE_OBJECT = 2550,
+    RR_CYCLES_SHOWCASE_DRAW = 1500,
+    RR_CYCLES_SPOTLIGHT_CONE = 4908,
+};
+
 enum {
     RR_CYCLES_DRAW_LAP_TIME_LIST = 1089,
     RR_CYCLES_DRAW_LAP_TIME_ROW = 1052,
