@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/video_timing.h"
 #include "game/data/menuvars.h"
 #include "rr/runtime_settings.h"
@@ -48,6 +49,7 @@ void DrawCourseInfoPanel(int arg0, int arg1) {
     void *p;
     char *b;
 
+    RR_CPU_CYCLES(RR_CYCLES_COURSE_INFO_PANEL);
     p = RR_GPU_SCRATCH->cursor;
     for (i = 0; i < 4; i++) {
         int v = CourseInfoRowOrder[i + (arg1 << 2)];

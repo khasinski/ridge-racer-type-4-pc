@@ -531,12 +531,18 @@ static void SubmitModelStream(RroSceneScratchPrefix *scene, s32 modelIndex, u32 
 /* 8005F0D0 */
 void SubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex, s32 flags, s32 depthBias)
 {
+    /* its PS1 time by its work outside a race frame and the routines whose
+     * fits include it (the menus' car models: rr/cpu_work.h) */
+    int charge = !RrWorkFrame && RrWorkDepth == 0;
+    RrWork work;
+    if (charge) RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
     InterpPollOutput();
     RroFogColorFT4 = *(const u32 *)&DefaultScreenClearColor;
     RroFogColorGT4 = *(const u32 *)&LoadingScreenClearColor;
     RroLightingMode = flags;
     RroDepthBias = depthBias;
     SubmitModelStream(scene, modelIndex, 4, 0);
+    if (charge) RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
 }
 
 /* 8005F14C: depth-cued faces, mirrored when renderFlags64 is set. The depth
@@ -3983,34 +3989,46 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
 /* Each pass's PS1 time by its work (rr/cpu_work.h; per[] in the order of
  * RR_WORK_CALL .. RR_WORK_CELLS, 1/64 clocks): fitted to DuckStation's
  * clocks from a pass's entry to the next's, its interrupts' time taken out
- * (DSF_MARKS at the program's entries, DSF_EXC), over the standard
- * program's 4285 calls in Time Attack's, Versus's and the Grand Prix's
- * four races; the residual's median and 90th percentile in clocks. The
- * course 7 and 8 programs' own passes were not measured and take pass 6's
- * costs. [mark] */
+ * (DSF_MARKS at the program's entries, DSF_EXC) and the CPU's stalls for
+ * the list DMA the port models apart (PsyZ gpu_timing.c, PSYZ_STALL_TRACE
+ * in the same pass of the same frame: pass 4 had 4.1k a call, which the
+ * fit took as work), over Time Attack's race on courses 0 and 7, Versus's
+ * and the Grand Prix's four races (7396 calls of the standard passes, 1403
+ * of course 7's own). The comments give DuckStation's mean less the stalls,
+ * the residual's median and 90th percentile in clocks. Course 8's own two
+ * passes (the epilogue's) were not measured and take pass 6's costs. [mark] */
 static const RrWorkCost HorizonPassCosts[] = {
-    /* LitTiles: mean 467, |resid| 38, 125 */
-    {{26058, 67, 0, 0, 5937, 0, 0, 0, 0, 89, 0, 0}},
-    /* 1: 416; 40, 136 */
-    {{26166, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 2: 582; 40, 131 */
-    {{26169, 46, 1845, 1845, 3689, 0, 0, 0, 0, 0, 0, 0}},
-    /* 3: 414; 40, 133 */
-    {{26159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 4: 66637; 3111, 6975 (Time Attack's course 7.1k short) */
-    {{192334, 88, 0, 4983, 0, 950, 0, 0, 4983, 2711, 0, 3784}},
-    /* 5: 29516; 96, 365 */
-    {{20214, 45, 8280, 736, 653, 0, 2763, 0, 0, 2962, 4876, 0}},
-    /* 6: 97693; 707, 1545 (Time Attack's 2.0k short, the Grand Prix's 0.5k long) */
-    {{143324, 50, 2701, 6998, 0, 0, 4435, 0, 0, 3035, 16787, 0}},
-    /* 7: 53114; 118, 332 */
-    {{30690, 34, 4456, 2830, 1355, 0, 2602, 0, 0, 3100, 14673, 0}},
-    /* 8: 3967; 73, 233 */
-    {{42191, 97, 7442, 3701, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 9: 969; 22, 98 */
-    {{25438, 79, 6772, 0, 0, 1104, 0, 0, 0, 3825, 0, 0}},
-    /* 10: 559; 23, 97 */
-    {{26649, 39, 2251, 0, 2005, 3425, 0, 0, 2332, 3484, 0, 0}},
+    /* LitTiles: 387; 45, 156 */
+    {{24139, 68, 0, 0, 5896, 0, 0, 0, 0, 467, 0, 0}},
+    /* 1: 363; 44, 156 */
+    {{24060, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 2: 436; 44, 155 */
+    {{24040, 38, 0, 0, 5576, 0, 0, 0, 0, 95, 0, 0}},
+    /* 3: 366; 50, 156 */
+    {{24117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 4: 55762; 238, 820 (with the stalls in the fit: 3220, by course
+     * 2.6k-4.1k long) */
+    {{16752, 59, 543, 9309, 0, 931, 3412, 0, 0, 3511, 11407, 771}},
+    /* 5: 30880; 117, 432 */
+    {{18170, 48, 7729, 1419, 496, 0, 2375, 0, 0, 3000, 6004, 820}},
+    /* 6: 78729; 450, 1223 */
+    {{36478, 51, 5051, 2440, 0, 0, 2661, 0, 2440, 3087, 6715, 1267}},
+    /* 7: 45675; 110, 364 */
+    {{26596, 33, 2742, 4729, 1303, 0, 3274, 0, 0, 3094, 16815, 0}},
+    /* 8: 3752; 94, 253 */
+    {{42652, 102, 8097, 2822, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 9: 728; 49, 123 */
+    {{24787, 86, 6761, 0, 0, 984, 0, 0, 0, 3701, 0, 0}},
+    /* 10: 488; 43, 124 */
+    {{25963, 38, 0, 0, 2262, 3699, 0, 0, 4362, 3467, 0, 0}},
+    /* course 7's: C7a 28357; 527, 1585 */
+    {{7394, 95, 9595, 0, 0, 0, 0, 0, 0, 4073, 9247, 1862}},
+    /* C7b 52461; 310, 945 */
+    {{5669, 50, 6100, 3393, 549, 831, 0, 0, 0, 2494, 18620, 2241}},
+    /* C7c 17796; 275, 1009 */
+    {{10077, 45, 0, 10751, 0, 0, 0, 0, 0, 2064, 39076, 7034}},
+    /* C7d 10103; 129, 454 */
+    {{15231, 38, 7791, 0, 863, 342, 0, 0, 0, 4167, 9915, 1722}},
 };
 
 /* The passes by number (the standard ones, then courses 7's and 8's). */

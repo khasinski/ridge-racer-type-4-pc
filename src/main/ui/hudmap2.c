@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/save_slots.h"
 #include "rr/save_progress.h"
@@ -129,6 +130,7 @@ void DrawMapBitmapIso(struct GpuDmaTag *arg0, u8 *arg1, s32 *arg2) {
     SetDrawMode(mode, 0, 1, 0x19, 0);
     RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[11], mode);
     RR_GPU_SCRATCH->cursor = (u8 *)(mode + 1);
+    RR_CPU_CYCLES(RR_CYCLES_MAP_BITMAP_ISO);
     DrawTrackNodeMap(arg2);
 }
 
@@ -147,6 +149,8 @@ void DrawTrackNodeMap(s32 *arg0) {
     TrackSample3C *sec;
 
     tile = (GpuTilePacket *)RR_GPU_SCRATCH->cursor;
+    RR_CPU_CYCLES(RR_CYCLES_TRACK_NODE_MAP +
+                  (unsigned)TrackNodeCount * RR_CYCLES_TRACK_NODE_MAP_NODE_X100 / 100);
     sp10.vx = CarAccelCurveThresholds[CourseIndex].x;
     sp10.vy = CarAccelCurveThresholds[CourseIndex].y;
 

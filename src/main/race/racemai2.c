@@ -45,6 +45,7 @@ void StepRaceFrame(unsigned int gameMode)
   int impactCosine;
   RaceVehicle *car;
   int *carIndex;
+  RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
@@ -187,8 +188,8 @@ void StepRaceFrame(unsigned int gameMode)
     UpdateComCarTrackProjections();
   }
   /* Its own work and the later stages' (collisions, shake, wheel nodes and
-   * bumps) by the cars it ran (rr/cpu_work.h) */
-  RrSpendStepRaceFrameOwn();
+   * bumps) by the cars it ran and the AI cars it drove (rr/cpu_work.h) */
+  RrSpendStepRaceFrameOwn(updateComProjections);
 }
 
 unsigned PointInQuad(int corner0, int corner1, int corner2, int corner3, int point) {

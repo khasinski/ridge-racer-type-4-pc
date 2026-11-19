@@ -186,6 +186,18 @@ enum {
      * out: the median of 1618 frames (10th-90th percentile 7957-9183)
      * [mark] (it was the whole frame's least, 502k, fixed) */
     RR_CYCLES_ATTRACT_DEMO_OWN = 8574,
+    /* The course menus' map preview (DrawCourseMapPreview: Time Attack's,
+     * the Grand Prix's, Versus's): DrawMapBitmapIso's 24x24 sprites of the
+     * height map without DrawTrackNodeMap, 74.0k-79.3k by the cells the
+     * window shows (courses 0 and 7, 584 frames; the median), and
+     * DrawTrackNodeMap's tile a track node (1063 on course 0: 74.1k, 809 on
+     * course 7: 56.6k) besides the primitives the port charges itself;
+     * DrawCourseInfoPanel's own code past its primitives' (6267 against
+     * 3340) [mark] */
+    RR_CYCLES_MAP_BITMAP_ISO = 77100,
+    RR_CYCLES_TRACK_NODE_MAP = 435,
+    RR_CYCLES_TRACK_NODE_MAP_NODE_X100 = 6886,
+    RR_CYCLES_COURSE_INFO_PANEL = 2927,
 };
 
 /* The menus' row, box and dialogue drawing and the card menu's frame, each

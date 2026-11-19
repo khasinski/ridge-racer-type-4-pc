@@ -80,12 +80,18 @@ void RrWorkHoldEnd(const void *cursor);
         RrWorkSpend(&rrWork_, RR_GPU_SCRATCH->cursor, (cost));                 \
     } while (0)
 
-/* Non-zero once a routine of the race frame's work model has run in this
- * frame (RrWorkBegin; the frame loop clears it): the race modes' own costs
+/* Non-zero once StepRaceFrame has run in this frame (a race, a replay, the
+ * attract demo; the frame loop clears it): the race modes' own costs
  * (RrSpendRaceModeOwn, fitted to DuckStation's clocks) include the HUD's
- * primitives, so the primitive setters' own charges (AddSpritePrim,
- * AddDrawAreaPrim, AddDrawModePrim: the menus') are held then. */
+ * primitives and the models drawn outside the routines above, so the
+ * primitive setters' own charges (AddSpritePrim, AddDrawAreaPrim,
+ * AddDrawModePrim: the menus') and SubmitModel's are held then. The menus
+ * that use the race frame's routines (the car selects' BuildCameraMatrices)
+ * are not race frames: RrWorkBegin set it before, which held their
+ * primitives' time. */
 extern int RrWorkFrame;
+/* The routines of the model running (RrWorkBegin to RrWorkSpend). */
+extern int RrWorkDepth;
 
 /* Diagnostics (RR4_FUNC_MARKS builds, RR4_MARK_WORK): called before each
  * course pass with its number and after it with number | 0x100, the
@@ -98,9 +104,10 @@ extern const RrWorkCost RrCostCarStages[7];
 extern const RrWorkCost RrCostUpdateTrackObjects, RrCostChaseCamera, RrCostCameraMatrices;
 extern const RrWorkCost RrCostDrawPlayerCar, RrCostDrawOpponentCar, RrCostDrawCars;
 extern const RrWorkCost RrCostViewSegmentList, RrCostSegmentVisibility, RrCostCourseView;
-extern const RrWorkCost RrCostDrawTrackObjects, RrCostDrawTrackScenery;
-/* StepRaceFrame's own work and its later stages', by the cars it ran. */
-void RrSpendStepRaceFrameOwn(void);
+extern const RrWorkCost RrCostDrawTrackObjects, RrCostDrawTrackScenery, RrCostSubmitModel;
+/* StepRaceFrame's own work and its later stages', by the cars it ran and,
+ * comCars set (the frame ran UpdateComCars), the AI cars. */
+void RrSpendStepRaceFrameOwn(int comCars);
 /* A race mode's own work (the HUD, timing, ranking) at the end of its
  * frame: mode 0 Time Attack, 1 Versus, 2 the Grand Prix. */
 void RrSpendRaceModeOwn(int mode);
