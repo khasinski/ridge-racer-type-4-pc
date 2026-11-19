@@ -223,7 +223,7 @@ diff --git a/src/core/dma.cpp b/src/core/dma.cpp
 index 73493c9e7..600ae3a55 100644
 --- a/src/core/dma.cpp
 +++ b/src/core/dma.cpp
-@@ -26,11 +26,26 @@
+@@ -26,10 +26,25 @@
  #include "fmt/format.h"
  
  #include <array>
@@ -233,7 +233,7 @@ index 73493c9e7..600ae3a55 100644
  #include <vector>
  
  LOG_CHANNEL(DMA);
- 
++
 +// RR4 tools/port: DUCKSTATION_DMA_TRACE=1 logs DMA transfers, halts and completions with the system tick.
 +static bool DmaTraceOn()
 +{
@@ -246,11 +246,10 @@ index 73493c9e7..600ae3a55 100644
 +    if (DmaTraceOn())                                                                                                  \
 +      std::fprintf(stderr, __VA_ARGS__);                                                                               \
 +  } while (0)
-+
+ 
  namespace DMA {
  namespace {
- 
-@@ -533,6 +548,8 @@ ALWAYS_INLINE_RELEASE void DMA::CompleteTransfer(Channel channel, ChannelState&
+@@ -533,6 +548,8 @@
    // start/busy bit is cleared on end of transfer
    DEBUG_LOG("DMA transfer for channel {} complete", channel);
    cs.channel_control.enable_busy = false;
@@ -259,7 +258,7 @@ index 73493c9e7..600ae3a55 100644
    if (s_state.DICR.ShouldSetIRQFlag(channel))
    {
      DEBUG_LOG("Setting DMA interrupt for channel {}", channel);
-@@ -571,6 +588,9 @@ bool DMA::TransferChannel()
+@@ -571,6 +588,9 @@
  
    // start/trigger bit is cleared on beginning of transfer
    cs.channel_control.start_trigger = false;
@@ -269,7 +268,24 @@ index 73493c9e7..600ae3a55 100644
  
    PhysicalMemoryAddress current_address = cs.base_address;
    const PhysicalMemoryAddress increment = cs.channel_control.address_step_reverse ? static_cast<u32>(-4) : UINT32_C(4);
-@@ -728,6 +748,8 @@ bool DMA::TransferChannel()
+@@ -653,12 +673,16 @@
+         {
+           // Terminator is 24 bits, so is MADR, so it'll always be 0xFFFFFF.
+           cs.base_address = LINKED_LIST_TERMINATOR;
++          DMA_TRACE("DMAS %u used %d done 1 tick %llu\n", static_cast<u32>(channel), slice_ticks - remaining_ticks,
++                    static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+           CompleteTransfer(channel, cs);
+           return true;
+         }
+       }
+ 
+       cs.base_address = current_address;
++      DMA_TRACE("DMAS %u used %d done 0 tick %llu\n", static_cast<u32>(channel), slice_ticks - remaining_ticks,
++                static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+       if (cs.request)
+       {
+         // stall the transfer for a bit if we ran for too long
+@@ -728,6 +752,8 @@
  
        cs.base_address = current_address;
        cs.block_control.request.block_count = blocks_remaining;
@@ -278,7 +294,7 @@ index 73493c9e7..600ae3a55 100644
  
        // finish transfer later if the request was cleared
        if (blocks_remaining > 0)
-@@ -758,6 +780,8 @@ bool DMA::TransferChannel()
+@@ -758,6 +784,8 @@
  void DMA::HaltTransfer(TickCount duration)
  {
    s_state.halt_ticks_remaining += duration;
@@ -287,7 +303,7 @@ index 73493c9e7..600ae3a55 100644
    DEBUG_LOG("Halting DMA for {} ticks", s_state.halt_ticks_remaining);
    if (s_state.unhalt_event.IsActive())
      return;
-@@ -771,6 +795,10 @@ void DMA::UnhaltTransfer(void*, TickCount ticks)
+@@ -771,6 +799,10 @@
    DEBUG_LOG("Resuming DMA after {} ticks", ticks, -(s_state.halt_ticks_remaining - ticks));
    s_state.halt_ticks_remaining -= ticks;
    s_state.unhalt_event.Deactivate();

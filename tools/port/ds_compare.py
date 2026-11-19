@@ -116,9 +116,17 @@ VS_AUTO = ('2:select@100,start@m2/4:700+4%300,start@m1/4:150,down@m1/4:450,down@
 CAR2_POSE = [('800ac2e0:4', 'PlayerCars+1016:4'), ('800ac394:2', 'PlayerCars+1196:2'),
              ('800ac39c:4', 'PlayerCars+1204:4')]
 LOW_RAM = [('80000004:4', 'Ps1LowRamImage+4:4')]
+# The Grand Prix to its ending: the throttle held and nine laps' distance
+# poked into each race (as regress.sh gp), the stage poked to the seventh
+# in the first race (SelectionState+0x17, so that race's result is the
+# seventh's), the eighth race, the ending's scenes, the epilogue's credits
+# over course 8, the ending movie and the title after it.
+GP_STAGE = [('800ad4ef:1', 'SelectionState+23:1'), ('800f3914:4', 'CourseIndex:4')]
+GP_LAPS = ','.join('PlayerCars+388+=TrackLength@m1/47:%d' % d for d in range(700, 1600, 100))
 
 # name: (fields, pads, options). Options: pokes (port RR4_POKE), ds_pokes
-# (RR4_DS_POKE), watch [(ds addr:len, port name:len[, mode prefix: compared
+# (RR4_DS_POKE; sym_pokes: the port's pokes on DuckStation too, through
+# RR4_DS_SYMPOKE, mode anchors and globals as values included), watch [(ds addr:len, port name:len[, mode prefix: compared
 # only in those modes, e.g. an overlay's variable)]], pad (dualshock),
 # cards (slot 1, slot 2): 'blank' (DuckStation's blank card), 'none',
 # 'unformatted', 'saved' (the save the save-load scenario makes), 'full'
@@ -174,6 +182,9 @@ SCENARIOS = {
     'ta-course6': (4500, TA_COURSE(4), TA_COURSE_OPTS),
     'ta-course3': (4500, TA_COURSE(5), TA_COURSE_OPTS),
     'ta-course7': (4500, TA_COURSE(7), TA_COURSE_OPTS),
+    'gp-ending': (26500, BOOT + ',start@m1/4:400,' + GP + ',circle@m1/33:200+4%154',
+                  {'pokes': GP_LAPS + ',SelectionState+23:1=6@7700', 'sym_pokes': True,
+                   'watch': CAR_POSE + RACE_STATE + GP_STAGE}),
     'ta-full': (32000, TA_AUTO, {'autodrive': True, 'watch': CAR_POSE + RACE_STATE}),
     'vs-full': (28500, VS_AUTO, {'autodrive': 2, 'watch': CAR_POSE + RACE_STATE + CAR2_POSE}),
 }
@@ -190,6 +201,8 @@ def ds_env(opts, extra=None):
         env['REGTEST_PAD1_TYPE'] = 'AnalogController'
     if opts.get('ds_pokes'):
         env['RR4_DS_POKE'] = opts['ds_pokes']
+    if opts.get('sym_pokes'):
+        env['RR4_DS_SYMPOKE'] = opts['pokes']
     env['RR4_DS_PEEK'] = ','.join([w[0] for w in opts.get('watch', [])] + [CARD_PORT])
     env['RR4_DS_PADLOG'] = '1'
     env.update(extra or {})

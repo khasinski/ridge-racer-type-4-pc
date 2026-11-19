@@ -200,6 +200,18 @@ enum {
     RR_CYCLES_COURSE_INFO_PANEL = 2927,
 };
 
+/* The race HUD's lap list (DrawLapTimeList): its own and a lap's row with
+ * its time (DrawRaceTime) and sprite, DuckStation's exact timing (DSF_MARKS,
+ * DSF_EXC, the list DMA's stalls taken out): 4245 a frame on Time Attack's
+ * three laps, 7359-7485 on course 7's six. The race modes' own costs
+ * (cpuwork.c) included it for the courses they were fitted on, so course
+ * 7's frames came 3.2k early and the Grand Prix's two-lap races 1k late.
+ * [mark] */
+enum {
+    RR_CYCLES_DRAW_LAP_TIME_LIST = 1089,
+    RR_CYCLES_DRAW_LAP_TIME_ROW = 1052,
+};
+
 /* The menus' row, box and dialogue drawing and the card menu's frame, each
  * routine's own code without the routines it calls that are charged
  * themselves (DSF_MARKS name:ret on every routine below and its callees,

@@ -3990,12 +3990,13 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
  * RR_WORK_CALL .. RR_WORK_CELLS, 1/64 clocks): fitted to DuckStation's
  * clocks from a pass's entry to the next's, its interrupts' time taken out
  * (DSF_MARKS at the program's entries, DSF_EXC) and the CPU's stalls for
- * the list DMA the port models apart (PsyZ gpu_timing.c, PSYZ_STALL_TRACE
- * in the same pass of the same frame: pass 4 had 4.1k a call, which the
- * fit took as work), over Time Attack's race on courses 0 and 7, Versus's
- * and the Grand Prix's four races (7396 calls of the standard passes, 1403
- * of course 7's own). The comments give DuckStation's mean less the stalls,
- * the residual's median and 90th percentile in clocks. Course 8's own two
+ * the list DMA in that pass (DuckStation's: DUCKSTATION_DMA_TRACE; the
+ * port models them apart, PsyZ gpu_timing.c; pass 4 has 3.5k a call), over
+ * Time Attack's race on courses 0 and 7, Versus's and the Grand Prix's
+ * four races (5735 calls of the standard passes, 1403 of course 7's own;
+ * the small passes 0-3, 9 and 10 from 7396 calls with the port's stalls,
+ * which are as good there). The comments give DuckStation's mean less the
+ * stalls, the residual's median and 90th percentile in clocks. Course 8's own two
  * passes (the epilogue's) were not measured and take pass 6's costs. [mark] */
 static const RrWorkCost HorizonPassCosts[] = {
     /* LitTiles: 387; 45, 156 */
@@ -4006,29 +4007,29 @@ static const RrWorkCost HorizonPassCosts[] = {
     {{24040, 38, 0, 0, 5576, 0, 0, 0, 0, 95, 0, 0}},
     /* 3: 366; 50, 156 */
     {{24117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 4: 55762; 238, 820 (with the stalls in the fit: 3220, by course
-     * 2.6k-4.1k long) */
-    {{16752, 59, 543, 9309, 0, 931, 3412, 0, 0, 3511, 11407, 771}},
-    /* 5: 30880; 117, 432 */
-    {{18170, 48, 7729, 1419, 496, 0, 2375, 0, 0, 3000, 6004, 820}},
-    /* 6: 78729; 450, 1223 */
-    {{36478, 51, 5051, 2440, 0, 0, 2661, 0, 2440, 3087, 6715, 1267}},
-    /* 7: 45675; 110, 364 */
-    {{26596, 33, 2742, 4729, 1303, 0, 3274, 0, 0, 3094, 16815, 0}},
-    /* 8: 3752; 94, 253 */
-    {{42652, 102, 8097, 2822, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 4: 57742; 157, 477 (with the port's stalls in the fit: 238, 820;
+     * with the stalls in the work: 3220, by course 2.6k-4.1k long) */
+    {{24425, 62, 0, 4920, 0, 558, 3450, 0, 4920, 3634, 14544, 1714}},
+    /* 5: 29271; 77, 277 */
+    {{20207, 48, 6878, 1897, 586, 0, 3292, 0, 0, 3288, 5822, 0}},
+    /* 6: 76184; 235, 791 */
+    {{37832, 51, 548, 9314, 0, 0, 3397, 0, 0, 3219, 15937, 2155}},
+    /* 7: 41368; 115, 327 */
+    {{28023, 34, 4378, 3047, 1306, 0, 2629, 0, 0, 3086, 13311, 79}},
+    /* 8: 4011; 105, 251 */
+    {{44211, 100, 8035, 2872, 0, 0, 0, 0, 0, 0, 0, 0}},
     /* 9: 728; 49, 123 */
     {{24787, 86, 6761, 0, 0, 984, 0, 0, 0, 3701, 0, 0}},
     /* 10: 488; 43, 124 */
     {{25963, 38, 0, 0, 2262, 3699, 0, 0, 4362, 3467, 0, 0}},
-    /* course 7's: C7a 28357; 527, 1585 */
-    {{7394, 95, 9595, 0, 0, 0, 0, 0, 0, 4073, 9247, 1862}},
-    /* C7b 52461; 310, 945 */
-    {{5669, 50, 6100, 3393, 549, 831, 0, 0, 0, 2494, 18620, 2241}},
-    /* C7c 17796; 275, 1009 */
-    {{10077, 45, 0, 10751, 0, 0, 0, 0, 0, 2064, 39076, 7034}},
-    /* C7d 10103; 129, 454 */
-    {{15231, 38, 7791, 0, 863, 342, 0, 0, 0, 4167, 9915, 1722}},
+    /* course 7's: C7a 28654; 294, 503 */
+    {{19607, 87, 7129, 2671, 0, 1218, 0, 0, 0, 3880, 13551, 0}},
+    /* C7b 52641; 82, 283 */
+    {{18588, 51, 2633, 6820, 441, 2372, 0, 0, 0, 2811, 14986, 147}},
+    /* C7c 18021; 39, 155 */
+    {{23401, 54, 2750, 7336, 0, 4556, 0, 0, 0, 3494, 6655, 0}},
+    /* C7d 10449; 47, 121 */
+    {{26546, 42, 3616, 2164, 1045, 1562, 1562, 0, 2164, 3118, 9897, 0}},
 };
 
 /* The passes by number (the standard ones, then courses 7's and 8's). */

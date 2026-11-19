@@ -128,9 +128,13 @@ def parse_pokes(script):
         lhs, at = item.rsplit('@', 1)
         add = '+=' in lhs
         name, val = lhs.split('+=' if add else '=')
+        size = 4
+        if ':' in name:  # name[+offset]:size, as the port's RR4_POKE
+            name, n = name.split(':')
+            size = int(n)
         base, off = (name.split('+') + ['0'])[:2]
         mode, first = anchor(at)
-        out.append((SYM[base] + ps1_offset(int(off, 0)), add, val, mode, first))
+        out.append((SYM[base] + ps1_offset(int(off, 0)), add, val, mode, first, size))
     return out
 
 
@@ -259,14 +263,14 @@ def run(fields, trace_path, log_path):
                         g, i = at[1:].split('/')
                         if mode == ((int(g) << 8) | int(i)):
                             install_mark(d, k, spec)
-            for addr, add, val, pmode, first in pokes:
+            for addr, add, val, pmode, first, size in pokes:
                 t = v if pmode is None else (v - anchor_entry if pmode == anchor_mode else -1)
                 if t != first:
                     continue
                 x = s32(d.mem(SYM[val], 4)) if val in SYM else int(val, 0)
                 if add:
-                    x += s32(d.mem(addr, 4))
-                d.poke(addr, struct.pack('<I', x & 0xFFFFFFFF))
+                    x += int.from_bytes(d.mem(addr, size), 'little', signed=True)
+                d.poke(addr, (x & ((1 << (8 * size)) - 1)).to_bytes(size, 'little'))
             for at, slot, what in cards:
                 if at == v:
                     d.cmd('card %d %s' % (slot, what))

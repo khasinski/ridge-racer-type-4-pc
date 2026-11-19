@@ -73,6 +73,10 @@ extern int RotTransPers(const short *vector, int *screen, int *interpolation, in
 void UpdateRaceCamera(int arg0, void *arg1);
 void InitTrackStartPos(void);
 
+/* The kind of camera the last call ran (its node's, for arg0 >= 2), for
+ * the replay's charge of its time (rr/cpu_work.h RrSpendReplayFrame). */
+int RaceCameraKind;
+
 void UpdateRaceCamera(int arg0, void *arg1) {
     int sp10[4];
     int sp20[4];
@@ -95,6 +99,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         ViewUsesCarTrackNode = 0;
         arg0 = s2->f30 & 0xF;
     }
+    RaceCameraKind = arg0;
     RaceContext.cameraNodeChanged1C = 0;
     a1 = RaceContext.cameraNodeFrames48 + 1;
     RaceContext.cameraNodeFrames48 = a1;

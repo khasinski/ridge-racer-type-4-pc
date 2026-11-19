@@ -635,6 +635,8 @@ void DrawLapTimeList(int a0) {
     int y;
     SpritePacket *p;
 
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_LAP_TIME_LIST +
+                  RR_CYCLES_DRAW_LAP_TIME_ROW * (NumLaps > 0 ? (unsigned)NumLaps : 1u));
     s7 = PlayerCars[a0].control.dynamics94.steering.finish20;
     p0 = &PlayerCars[a0];
     v = NumLaps;

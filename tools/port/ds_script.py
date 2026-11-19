@@ -37,6 +37,12 @@ Absolute steps count port VSyncs (DuckStation frame - the offset).
 RR4_DS_POKE=addr:hexbytes@vsync[,...] stores bytes (hex PS1 address, data
 in memory order) at that field's blank, like the port's RR4_POKE, e.g.
 800f3974:01000000@1000 for SaveProgress+0x54 (the Extra Trial row).
+RR4_DS_SYMPOKE=list takes the port's RR4_POKE syntax itself
+(name[+offset][:size]=value or +=value, @vsync or @mG/I:d once per entry
+into that mode; the value a number or a 32-bit global such as
+TrackLength): the names are the PS1 symbols of the decompilation and a
+car record's host offset is mapped to the PS1's (ds_frames.py
+ps1_offset), e.g. PlayerCars+388+=TrackLength@m1/47:700.
 RR4_DS_MASKS=<file> also holds pad 1's buttons of a "vsync mask [mask2]" list
 (pad 2's in the third column)
 (ds_frames.py masks: RR4_AUTODRIVE's input from a port run).
@@ -54,6 +60,7 @@ Run it through run_capped.sh with RR4_DUCKSTATION and RR4_DISC set.
 import os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from duckstation import DuckStation
+import ds_frames
 
 BUTTONS = {'select': 'Select', 'start': 'Start', 'up': 'Up', 'right': 'Right', 'down': 'Down',
            'left': 'Left', 'l2': 'L2', 'r2': 'R2', 'l1': 'L1', 'r1': 'R1', 'triangle': 'Triangle',
@@ -162,12 +169,42 @@ class Driver:
             addr, data = where.split(':')
             self.pokes.append((int(at), int(addr, 16), bytes.fromhex(data)))
 
+        # RR4_DS_SYMPOKE: the port's RR4_POKE list on the PS1's symbols
+        self.sympokes = []
+        for item in filter(None, (x.strip() for x in os.environ.get('RR4_DS_SYMPOKE', '').split(','))):
+            lhs, at = item.rsplit('@', 1)
+            add = '+=' in lhs
+            name, val = lhs.split('+=' if add else '=')
+            size = 4
+            if ':' in name:
+                name, n = name.split(':')
+                size = int(n)
+            base, off = (name.split('+') + ['0'])[:2]
+            mode, first = ds_frames.anchor(at)
+            self.sympokes.append((ds_frames.SYM[base] + ds_frames.ps1_offset(int(off, 0)), size, add, val,
+                                  mode, first))
+
     def step(self):
         v = self.frame - self.offset
         group, index, sub = self.d.mode()
         mode = (group << 8) | (index & 0xFF)
         if mode != self.anchor_mode:
             self.anchor_mode, self.anchor_entry = mode, v
+        # before the field's line, as the port's trace shows its pokes
+        for addr, size, add, val, pmode, first in self.sympokes:
+            t = v if pmode is None else (v - self.anchor_entry if pmode == self.anchor_mode else -1)
+            if t != first:
+                continue
+            if val in ds_frames.SYM:
+                x = struct.unpack('<i', self.d.mem(ds_frames.SYM[val], 4))[0]
+            elif '+' in val and val.split('+')[0] in ds_frames.SYM:
+                vb, vo = val.split('+')
+                x = struct.unpack('<i', self.d.mem(ds_frames.SYM[vb] + ds_frames.ps1_offset(int(vo, 0)), 4))[0]
+            else:
+                x = int(val, 0)
+            if add:
+                x += int.from_bytes(self.d.mem(addr, size), 'little', signed=True)
+            self.d.poke(addr, (x & ((1 << (8 * size)) - 1)).to_bytes(size, 'little'))
         return v, group, index, sub
 
     def advance(self, v):

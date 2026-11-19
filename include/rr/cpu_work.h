@@ -111,5 +111,9 @@ void RrSpendStepRaceFrameOwn(int comCars);
 /* A race mode's own work (the HUD, timing, ranking) at the end of its
  * frame: mode 0 Time Attack, 1 Versus, 2 the Grand Prix. */
 void RrSpendRaceModeOwn(int mode);
+/* A replay frame's own (ReplayModeUpdate) and its node camera's
+ * (UpdateRaceCamera besides the calls charged themselves), after the
+ * camera's call. */
+void RrSpendReplayFrame(void);
 
 #endif
