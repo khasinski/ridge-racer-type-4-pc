@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/menu/menutra21.h"
 #include "types.h"
@@ -19,6 +20,7 @@ void DrawCardMenuCommandRows(int a0, int a1);
 void MainLoopStartupHook(void);
 
 void UpdateCardSlotUiRows(int a0, int a1) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_CARD_SLOT_ROWS);
     int i = 0;
     UiRow24 *p, *q;
     int v;
@@ -48,6 +50,7 @@ void CardSlotUiNoop(void) {
 }
 
 void DrawCardMenuCommandRows(int a0, int a1) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_CARD_MENU_COMMANDS);
  int n, i;
  if (CardMenuOperation == 0) n = 4; else if (CardMenuOperation == 6) n = 3; else n = 2;
  i = 0;

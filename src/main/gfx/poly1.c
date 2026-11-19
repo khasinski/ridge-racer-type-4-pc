@@ -1,3 +1,4 @@
+#include <string.h>
 #include "game/gfx/poly1.h"
 #include "rr/player_cars.h"
 #include "game/math/rotmat.h"
@@ -191,8 +192,11 @@ void InitAnimatedTrackObjects(void *memory)
     const AnimatedTrackColorKey **firstKeys,**secondKeys;
     const u8 *colorBase;
     AnimatedTrackObject *state;
-    /* A fresh load of the file gives zeroed pools (rr/animated_track_types.h). */
-    PsyqMemset(&AnimatedTrackPools, 0, sizeof(AnimatedTrackPools));
+    /* A fresh load of the file gives zeroed pools (rr/animated_track_types.h):
+     * the PS1 calls no memset here, so this host clear takes no PS1 time
+     * (the BIOS memset's 132 clocks a byte charged 17M clocks, half a
+     * second, for the host pools). */
+    memset(&AnimatedTrackPools, 0, sizeof(AnimatedTrackPools));
     TrackParticlePoolPtr = AnimatedTrackPools.particles;
     packet = AnimatedTrackPools.packets;
     buffer = 0;

@@ -10,6 +10,7 @@
 unsigned long long Psyz_GteOpCount(unsigned op);
 
 unsigned long long RrWorkCount[RR_WORK_UNITS];
+int RrWorkFrame;
 
 /* GTE opcodes of the counted kinds */
 static const unsigned char WorkOpcodes[RR_WORK_UNITS] = {
@@ -31,6 +32,7 @@ static void WorkRaw(unsigned long long raw[RR_WORK_UNITS]) {
 
 void RrWorkBegin(RrWork *work, const void *cursor) {
     unsigned long long raw[RR_WORK_UNITS];
+    RrWorkFrame = 1;
     WorkRaw(raw);
     for (int k = 0; k < RR_WORK_UNITS; k++)
         work->unit[k] = raw[k] - Held[k];

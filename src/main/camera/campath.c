@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "rr/audio_state_types.h"
@@ -79,7 +80,7 @@ void DrawPresentationTrackModel(void) {
 
 void InitMotionTrack(int selection) {
     MotionTrack44 *track = &MotionControllerView()->track;
-    PsyqBzero(track, sizeof(*track));
+    PsyqBzeroPs1(track, sizeof(*track), RR_PS1_MOTION_TRACK_BYTES);
     track->disabled = 0;
     track->key = &MotionTrackTable[selection];
     track->scale = 0x1000;
@@ -169,7 +170,7 @@ void UpdateMotionTrack(MotionClock20 *clock) {
 
 void InitMotionController(void) {
     RaceContext.controllerSlot3D8 = 1; /* MotionController = &presentation250 */
-    PsyqBzero(&RaceContext.presentation250, sizeof(PresentationController));
+    PsyqBzeroPs1(&RaceContext.presentation250, sizeof(PresentationController), RR_PS1_PRESENTATION_CONTROLLER_BYTES);
     RaceContext.presentation250.position.z = -0x1388;
     RaceContext.presentation250.viewDistance48 = 0x1B8;
     RaceContext.presentation250.lighting20.matrix.fields.vectors[0].x = 0x1C1;

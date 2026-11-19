@@ -1,4 +1,5 @@
 /* RODATA 0x80011588 0x1c */
+#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/mode_menu_state.h"
 #include "game/data/cardini.h"
@@ -215,6 +216,7 @@ void CardMenuModeEnter(void) {
 }
 
 void CardMenuModeUpdate(void) {
+    RR_CPU_CYCLES(RR_CYCLES_CARD_MENU_MODE_UPDATE);
     ModeFrame += 1;
     if (GameModeType == 4) {
         UpdateLinkHandshake(2);

@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "game/ui/badge1.h"
 #include "rr/release.h"
 #include "rr/widescreen.h"
@@ -73,6 +74,7 @@ static s32 Vec2sWord(const Vec2s *v) {
 }
 
 void UpdateScreenFade(int a0) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SCREEN_FADE);
     B4 sp;
     int a, t, a1;
     ScreenFadeState0C *st = &ScreenFadeState;
@@ -131,6 +133,7 @@ void ClearScreenOverlayState(void) {
 
 
 void DrawMenuFrame(int arg0) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_MENU_FRAME);
     R4 sp30;
     int s7;
     int y;

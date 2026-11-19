@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "psyq/libgte/gtemat5.h"
 #include "game/race/racegrid.h"
 #include "rr/vehicle_table.h"
@@ -126,7 +127,7 @@ void SetCarBounds(RaceVehicle *vehicle)
 
 void ResetCarState(RaceVehicle *a)
 {
-    PsyqBzero(a, sizeof(RaceVehicle));
+    PsyqBzeroPs1(a, sizeof(RaceVehicle), RR_PS1_RACE_VEHICLE_BYTES);
     SetCarBounds(a);
     a->ang80 = (unsigned short)a->rot50;
     a->ang82 = (unsigned short)a->rot54;

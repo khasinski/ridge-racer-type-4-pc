@@ -34,6 +34,7 @@ typedef struct {
     int card;
     long channel; /* card port << 4 | slot */
     int async;
+    int mode; /* the open's FREAD / FWRITE / FCREAT bits */
 } FileHandle;
 
 static FileHandle FileHandles[FILE_HANDLE_COUNT];
@@ -77,14 +78,16 @@ s32 FileOpen(const char *name, s32 mode) {
     }
     if (FileIsDevice(name, "sio:")) {
         FileHandles[descriptor] =
-            (FileHandle){FILE_KIND_LINK, -1, 0, 0, (mode & FILE_MODE_ASYNC) != 0};
+            (FileHandle){FILE_KIND_LINK, -1, 0, 0, (mode & FILE_MODE_ASYNC) != 0, mode};
         return descriptor;
     }
     int card = FileIsDevice(name, "bu") && name[2] >= '0' && name[2] <= '1' &&
                name[3] >= '0' && name[3] <= '3';
     /* A card taken out: the host directory is still there, the BIOS finds
      * no card and the open fails. */
-    if (card && !Psyz_CardFileOpen((name[2] - '0') << 4 | (name[3] - '0'))) {
+    if (card && !Psyz_CardFileOpen((name[2] - '0') << 4 | (name[3] - '0'),
+                                   mode & (PSYZ_CARD_FILE_READ | PSYZ_CARD_FILE_WRITE |
+                                           PSYZ_CARD_FILE_CREATE))) {
         return -1;
     }
     int host = psyz_open(name, mode);
@@ -93,9 +96,9 @@ s32 FileOpen(const char *name, s32 mode) {
     }
     FileHandles[descriptor] = (FileHandle){FILE_KIND_HOST, host, card,
                                            card ? (name[2] - '0') << 4 | (name[3] - '0') : 0,
-                                           (mode & FILE_MODE_ASYNC) != 0};
+                                           (mode & FILE_MODE_ASYNC) != 0, mode};
     if (FileHandles[descriptor].card && (mode & FILE_MODE_CREATE)) {
-        Psyz_CardFileCreate();
+        Psyz_CardFileCreate(FileHandles[descriptor].channel);
     }
     return descriptor;
 }
@@ -139,6 +142,9 @@ s32 FileClose(s32 descriptor) {
     }
     if (file->kind == FILE_KIND_HOST && psyz_close(file->host) != 0) {
         result = -1;
+    }
+    if (file->kind == FILE_KIND_HOST && file->card) {
+        Psyz_CardFileClose(file->channel, file->mode);
     }
     file->kind = FILE_KIND_FREE;
     return result;

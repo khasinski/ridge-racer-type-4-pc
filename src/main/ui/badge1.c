@@ -1,5 +1,6 @@
 #include "rr/release.h"
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "game/ui/badge1.h"
 #include "types.h"
 #include "rr/badge_rows.h"
@@ -15,6 +16,8 @@
 
 
 void *AddDrawAreaPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width, s32 height) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_DRAW_AREA_PRIM);
     GpuDrawModePacket *packet = cursor;
     GpuRectangleFields rectangle;
     int bank;
@@ -34,6 +37,8 @@ void *AddDrawAreaPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width
 }
 
 void *AddDrawModePrim(GpuDmaTag *ordering, GpuDrawModePacket *packet, u16 page) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_DRAW_MODE_PRIM);
     SetDrawMode(packet, 0, 1, page, 0);
     RR_GPU_LINK(ordering, packet);
     packet++;

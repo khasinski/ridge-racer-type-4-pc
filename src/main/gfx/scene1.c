@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "rr/release.h"
 #include "game/system/pad.h"
 #include "game/gfx/gtepoly1.h"
@@ -185,7 +186,7 @@ void InitCameraState(int mode, int flags)
     u32 bit;
     SceneCameraState160 *camera;
     RaceContext.camera24C = &RaceContext.cameraEC;
-    PsyqBzero(RaceContext.camera24C, sizeof(SceneCameraState160));
+    PsyqBzeroPs1(RaceContext.camera24C, sizeof(SceneCameraState160), RR_PS1_SCENE_CAMERA_STATE_BYTES);
     RaceContext.camera24C->lighting78.matrix.fields.vectors[0].x = 0x1C1;
     RaceContext.camera24C->lighting78.matrix.fields.vectors[0].y = -0xDF8;
     RaceContext.camera24C->lighting78.matrix.fields.vectors[0].z = -0x79A;

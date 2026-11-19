@@ -80,6 +80,13 @@ void RrWorkHoldEnd(const void *cursor);
         RrWorkSpend(&rrWork_, RR_GPU_SCRATCH->cursor, (cost));                 \
     } while (0)
 
+/* Non-zero once a routine of the race frame's work model has run in this
+ * frame (RrWorkBegin; the frame loop clears it): the race modes' own costs
+ * (RrSpendRaceModeOwn, fitted to DuckStation's clocks) include the HUD's
+ * primitives, so the primitive setters' own charges (AddSpritePrim,
+ * AddDrawAreaPrim, AddDrawModePrim: the menus') are held then. */
+extern int RrWorkFrame;
+
 /* The race frame's routines (cpuwork.c has the fits). */
 extern const RrWorkCost RrCostReadCarInput, RrCostUpdatePlayerCar, RrCostUpdateComCars;
 extern const RrWorkCost RrCostCarStages[7];

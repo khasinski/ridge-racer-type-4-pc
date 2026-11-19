@@ -1,4 +1,5 @@
 /* RODATA 0x800108e8 0x3c */
+#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/frame_storage_types.h"
 #include "scratchpad.h"
@@ -209,6 +210,7 @@ void InitUiRow(s32 index,s32 a,s32 b,s32 c,s32 d,s32 e,s32 f,s32 count,s32 g,s32
 }
 
 void DrawUiWindowRowText(s32 arg0, s32 arg1, s32 arg2) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT);
     s32 pad[8];
     s32 s0;
     s32 s1;

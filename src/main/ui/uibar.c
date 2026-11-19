@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "scratchpad.h"
 #include "rr/frame_storage_types.h"
@@ -60,6 +61,7 @@ SpritePacket *DrawBadgeTitleBar(GpuDmaTag *ordering,SpritePacket *cursor,s32 x,s
 
 
 void DrawBadgeRow(s32 index) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_BADGE_ROW);
     s32 y;
     s32 x;
     s32 width;

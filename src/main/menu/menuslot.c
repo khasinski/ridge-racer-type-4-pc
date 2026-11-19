@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "game/ui/uitext.h"
 #include "game/system/pad.h"
 #include "rr/menu_arena_state.h"
@@ -93,7 +94,7 @@ void YesNoPromptModeUpdate(void) {
 }
 
 void InitDialogueState(MenuTextState *a0) {
-    PsyqBzero(a0, sizeof(*a0));
+    PsyqBzeroPs1(a0, sizeof(*a0), RR_PS1_MENU_TEXT_STATE_BYTES);
     a0->b5 = -1;
     a0->b4 = 0;
     if (DialogueSceneMode == 1) {

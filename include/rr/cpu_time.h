@@ -37,7 +37,7 @@ enum {
     /* d1dff76a: the attract cycle's loading screen (DS fields 8400-9100) */
     RR_CYCLES_INTRO_SCRIPT_STEP = 1282,    // IntroScriptStep [call]
     RR_CYCLES_ADD_TILE_PRIM = 184,         // AddTilePrim [rec]
-    RR_CYCLES_ADD_TILE_GRID_2X2 = 321,     // AddTileGrid2x2 [call]
+    RR_CYCLES_ADD_TILE_GRID_2X2 = 277,     // AddTileGrid2x2 [mark], besides its AddTilePrims (321 [call])
     RR_CYCLES_ADD_VERTICAL_GRADIENT = 270, // AddVerticalGradientRect [rec]
     RR_CYCLES_ADD_GOURAUD_RECT = 284,      // AddGouraudRect [rec]
     RR_CYCLES_ADD_LINE_F2 = 125,           // AddLineF2Prim [rec]
@@ -186,6 +186,49 @@ enum {
      * out: the median of 1618 frames (10th-90th percentile 7957-9183)
      * [mark] (it was the whole frame's least, 502k, fixed) */
     RR_CYCLES_ATTRACT_DEMO_OWN = 8574,
+};
+
+/* The menus' row, box and dialogue drawing and the card menu's frame, each
+ * routine's own code without the routines it calls that are charged
+ * themselves (DSF_MARKS name:ret on every routine below and its callees,
+ * DuckStation's exact timing, Save and Load's card menu over port fields
+ * 4104-4444: 329 frames, the stubs' clocks included) [mark]. A card menu
+ * frame (CardMenuModeUpdate) takes 87.9k on DuckStation, 12k before these;
+ * the frame after a save's file creation starts its VSync on DuckStation
+ * 44k (the Garage's) to 60k (Save and Load's) after CardWriteFile returns,
+ * so the game's VSync(0) reads the interlaced field's line parity after
+ * the display range has started and the next frame runs a field sooner
+ * than the port's, which read it in the blank. */
+enum {
+    RR_CYCLES_ADD_SPRITE_PRIM = 212,          // AddSpritePrim, brightness set
+    RR_CYCLES_ADD_SPRITE_PRIM_SHADE_TEX = 14, // its SetShadeTex call instead
+    RR_CYCLES_ADD_DRAW_AREA_PRIM = 320,       // AddDrawAreaPrim
+    RR_CYCLES_ADD_DRAW_MODE_PRIM = 140,       // AddDrawModePrim
+    RR_CYCLES_DRAW_UI_ROW = 628,              // DrawUiRow (535-900 by its state)
+    RR_CYCLES_DRAW_UI_BOX = 2677,             // DrawUiBox, besides its AddTilePrim
+    RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT = 663,  // DrawUiWindowRowText
+    RR_CYCLES_DRAW_MENU_FRAME = 2182,         // DrawMenuFrame
+    RR_CYCLES_UPDATE_SCREEN_FADE = 247,       // UpdateScreenFade
+    RR_CYCLES_STEP_CAMERA_SCRIPT = 400,       // StepCameraScript (217 idle)
+    RR_CYCLES_UPDATE_BADGE_ROW_ANIM = 173,    // UpdateBadgeRowAnim
+    RR_CYCLES_DRAW_BADGE_ROW = 2304,          // DrawBadgeRow
+    RR_CYCLES_UPDATE_DIALOGUE = 130,          // UpdateDialogue
+    /* DrawAnimatedText: 123, 69 for each glyph it draws, 25 for each other
+     * entry; DrawAnimatedGlyph 345 */
+    RR_CYCLES_DRAW_ANIMATED_TEXT = 123,
+    RR_CYCLES_DRAW_ANIMATED_TEXT_GLYPH = 69,
+    RR_CYCLES_DRAW_ANIMATED_TEXT_ENTRY = 25,
+    RR_CYCLES_DRAW_ANIMATED_GLYPH = 345,
+    RR_CYCLES_CARD_MENU_MODE_UPDATE = 138,    // CardMenuModeUpdate
+    /* StepCardMenuStateMachine 356, 294 more with its card poll;
+     * DrawCardMenuStatusText 203, 79 more for a status lookup */
+    RR_CYCLES_STEP_CARD_MENU = 356,
+    RR_CYCLES_STEP_CARD_MENU_POLL = 294,
+    RR_CYCLES_DRAW_CARD_MENU_STATUS = 203,
+    RR_CYCLES_DRAW_CARD_MENU_STATUS_LOOKUP = 79,
+    RR_CYCLES_POLL_CARD_STATUS = 472,         // PollCardStatus
+    RR_CYCLES_UPDATE_CARD_SLOT_ROWS = 193,    // UpdateCardSlotUiRows
+    RR_CYCLES_DRAW_CARD_MENU_COMMANDS = 269,  // DrawCardMenuCommandRows
 };
 
 void Psyz_SpendCycles(unsigned cycles);

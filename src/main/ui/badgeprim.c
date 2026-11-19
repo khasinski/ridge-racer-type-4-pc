@@ -1,3 +1,4 @@
+#include "rr/cpu_work.h"
 #include "game/ui/badgeprim.h"
 #include "rr/sprite_emit.h"
 #include "types.h"
@@ -7,6 +8,8 @@
 
 void *AddSpritePrim(GpuDmaTag *ordering, void *packet, s32 x, s32 y, const UiUvRect *region, u16 clut, s32 flags) {
     s32 brightness = flags >> 1;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_SPRITE_PRIM + (brightness == 0 ? RR_CYCLES_ADD_SPRITE_PRIM_SHADE_TEX : 0));
     SetSprt(packet);
     if (brightness == 0) {
         SetShadeTex(packet, 1);

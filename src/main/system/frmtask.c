@@ -1,3 +1,4 @@
+#include "rr/cpu_work.h"
 #include <string.h>
 #include "rr/cpu_time.h"
 #include "rr/gpu_address.h"
@@ -282,6 +283,7 @@ void MainLoop(void) {
         /* The previous frame's ordering table went to the GPU (DrawOTag
          * below, which copies its precise vertices along). */
         Psyz_PgxpNextFrame();
+        RrWorkFrame = 0;
         {
             s32 length=0x2C0;
             FrameStorage *frames;

@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/gfx/sprefct.h"
 #include "rr/save_progress.h"
@@ -41,6 +42,7 @@ extern ImagePreset10 PreviewImageRowPresets[];
 
 
 s32 DrawUiRow(s32 arg0) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_ROW);
     RectS16 sp28;
     s32 sp30;
     s32 sp34;
@@ -300,6 +302,7 @@ s32 DrawUiRow(s32 arg0) {
 
 void DrawUiBox(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6)
 {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_BOX);
     int *px;
     int *py;
     GpuDmaTag *t;

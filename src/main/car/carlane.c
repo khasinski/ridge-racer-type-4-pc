@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "rr/video_timing.h"
 #include "types.h"
 #include "game/car/carspec2.h"
@@ -25,7 +26,7 @@ void InitComCars(s32 count) {
 
     car = ComCars;
     RaceContext.comCarCount10 = count;
-    PsyqBzero(ComCars, sizeof ComCars);
+    PsyqBzeroPs1(ComCars, sizeof ComCars, RR_PS1_RACE_VEHICLE_BYTES * (s32)(sizeof ComCars / sizeof ComCars[0]));
     for (i = 0; i < count; i++) {
         sub = &car->control;
         spec = &RaceContext.carSpecs540[i];

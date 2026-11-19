@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_entrypoints.h"
 #include "game/menu/menu8.h"
 #include "rr/release.h"
@@ -659,10 +660,12 @@ int ReadCardSlotHeaderStep(int a0, int a1) {
 
 
 void DrawCardMenuStatusText(int a0, int a1, int a2, int a3, int a4, int a5) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_CARD_MENU_STATUS);
     unsigned char *v1;
     unsigned char *end;
     int s0 = a1;
     if (a2 != 0) {
+        RR_CPU_CYCLES(RR_CYCLES_DRAW_CARD_MENU_STATUS_LOOKUP);
         int c14 = 0x14, c16 = 0x16, c4 = 4, c1 = 1;
         v1 = GaragePreviewCamPresets;
         end = v1 + c14;

@@ -1,3 +1,4 @@
+#include "rr/ps1_sizes.h"
 #include "game/ui/badge1.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
@@ -312,7 +313,7 @@ int IntroScriptStep(void) {
 
 void IntroInit(void) {
     SetDispMask(0);
-    PsyqBzero(&RaceContext.work444.intro, sizeof(RaceContext.work444.intro));
+    PsyqBzeroPs1(&RaceContext.work444.intro, sizeof(RaceContext.work444.intro), RR_PS1_INTRO_SCENE_STATE_BYTES);
     InitDemoFadeContext(0);
     SelectDemoFadePreset(0);
     LoadCursor = CdDirectoryBuffer;

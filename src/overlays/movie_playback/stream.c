@@ -1,3 +1,5 @@
+#include "rr/bios_devices.h"
+#include "rr/ps1_sizes.h"
 #include "rr/release.h"
 #include <stdio.h>
 #include "rr/overlay_module.h"
@@ -67,7 +69,7 @@ void ovl668_init_stream_playback(void)
     LoadCursor = state;
     RaceContext.streamStateB8 = state;
     LoadCursor = (u8 *)state + sizeof(*state);
-    PsyqBzero(state, sizeof(*state));
+    PsyqBzeroPs1(state, sizeof(*state), RR_PS1_STR_PLAYBACK_STATE_BYTES);
     ResetGraph(3);
     CdSync(0, 0);
     CdControl(9, 0, 0);
