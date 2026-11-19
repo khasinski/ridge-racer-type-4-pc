@@ -229,6 +229,11 @@ enum {
     RR_CYCLES_POLL_CARD_STATUS = 472,         // PollCardStatus
     RR_CYCLES_UPDATE_CARD_SLOT_ROWS = 193,    // UpdateCardSlotUiRows
     RR_CYCLES_DRAW_CARD_MENU_COMMANDS = 269,  // DrawCardMenuCommandRows
+    /* InitAnimatedTrackObjects (course 7's fireworks pools: 2 x 5 x 255
+     * line packets set up and linked, then 18 key pointers): 74230 on
+     * DuckStation [mark], of which its SetLineG2 calls charge 2550 x 5 */
+    RR_CYCLES_INIT_ANIMATED_TRACK_OBJECTS = 74230 - 2550 * 5,
+    RR_CYCLES_LOAD_TIM_IMAGE = 201, // LoadTimImage, besides its LoadImage and DrawSync calls
 };
 
 void Psyz_SpendCycles(unsigned cycles);

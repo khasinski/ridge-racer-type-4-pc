@@ -3,6 +3,7 @@
 #include "rr/player_cars.h"
 #include "game/math/rotmat.h"
 #include "rr/timing.h"
+#include "rr/cpu_time.h"
 #include "game/camera/viewini.h"
 #include "rr_asm.h"
 #include "rr/projection_state.h"
@@ -234,6 +235,7 @@ void InitAnimatedTrackObjects(void *memory)
         firstKeys++;
         secondKeys++;
     } while (buffer < 9);
+    RR_CPU_CYCLES(RR_CYCLES_INIT_ANIMATED_TRACK_OBJECTS);
 }
 
 void SetAnimatedTrackObjectState(int index, int flags, const s32 *position, int style) {

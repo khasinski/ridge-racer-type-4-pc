@@ -79,10 +79,20 @@ TA_STICKS = ('down@m1/4:450,start@m1/4:550,circle@m1/50:200,circle@m1/51:200,cir
              'circle@m1/54:200+4%120,start@m1/22:300,cross@m1/53:100+20000,lx=0.6@m1/53:400+60,'
              'lx=-0.45@m1/53:700+90,lx=1@m1/53:1100+30,ly=-0.5@m1/53:1300+40,lx=-1@m1/53:1500+25,'
              'rx=0.7@m1/53:1700+20')
+# Time Attack on another course: every course unlocked (SaveProgress's
+# cleared-course bits at +0x0C, poked in the main menu), the course menu's
+# choice stepped there with right (or left past 4, wrapping) 40 fields apart
+# (choice -> course: 0 4 2 1 6 3 5 7).
+TA_COURSE = lambda choice: (BOOT + ',' + TA_STICKS.replace('circle@m1/50:200', ','.join(
+    '%s@m1/50:%d+6' % ('right' if choice <= 4 else 'left', 100 + 40 * i)
+    for i in range(choice if choice <= 4 else 8 - choice)) + ',circle@m1/50:%d' % (
+    100 + 40 * (choice if choice <= 4 else 8 - choice) + 60)))
 # Versus with two pads: player 1, then player 2 loads garage data from their
 # card (slot 1, slot 2) in the car select.
 VS_LOAD = '2:select@100,start@m2/4:700+4%300,start@m1/4:150,down@m1/4:450,down@m1/4:500,start@m1/4:550,down@2600,circle@2700,down@3000,circle@3100,circle@3500,up@3800,circle@3900,circle@4500,down@4800,circle@4900,down@5300,down@5360,circle@5450,up@5700,circle@5800,circle@6000,2:down@6300,2:circle@6400,2:down@6700,2:circle@6800,2:circle@7200,2:up@7500,2:circle@7600,2:circle@8200,2:down@8500,2:circle@8600'
 CAR_POSE = [('800abfc0:4', 'PlayerCars+200:4'), ('800ac074:2', 'PlayerCars+380:2')]
+TA_COURSE_OPTS = {'pad': 'dualshock', 'watch': CAR_POSE,
+                  'pokes': 'SaveProgress+12:4=255@1200', 'ds_pokes': '800f392c:ff000000@1200'}
 RACE_STATE = [('800ff6b0:4', 'RaceState:4'), ('800ac07c:4', 'PlayerCars+388:4')]
 # Time Attack driven by RR4_AUTODRIVE (the port's run first, its input
 # replayed on DuckStation: ds_frames.py masks, RR4_DS_MASKS): three laps,
@@ -148,6 +158,13 @@ SCENARIOS = {
                      'ds_pokes': '800f3974:01000000@900,800abe2c:0000@900', 'watch': CAR_POSE}),
     'dualshock-ta': (12000, 'start@m1/4:150,' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     'dualshock-movie-ta': (6000, BOOT + ',' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
+    # the courses no other scenario loads (0 every race above, 5 the Extra Trial's)
+    'ta-course4': (4500, TA_COURSE(1), TA_COURSE_OPTS),
+    'ta-course2': (4500, TA_COURSE(2), TA_COURSE_OPTS),
+    'ta-course1': (4500, TA_COURSE(3), TA_COURSE_OPTS),
+    'ta-course6': (4500, TA_COURSE(4), TA_COURSE_OPTS),
+    'ta-course3': (4500, TA_COURSE(5), TA_COURSE_OPTS),
+    'ta-course7': (4500, TA_COURSE(7), TA_COURSE_OPTS),
     'ta-full': (32000, TA_AUTO, {'autodrive': True, 'watch': CAR_POSE + RACE_STATE}),
     'vs-full': (28500, VS_AUTO, {'autodrive': 2, 'watch': CAR_POSE + RACE_STATE + CAR2_POSE}),
 }
