@@ -173,6 +173,14 @@ SCENARIOS = {
                     'circle@m1/80:300,circle@m1/80:600,cross@m1/82:100+20000',
                     {'pokes': 'SaveProgress+84:4=1@900,CourseChoiceTable+36:2=0@900',
                      'ds_pokes': '800f3974:01000000@900,800abe2c:0000@900', 'watch': CAR_POSE}),
+    # the Extra Trial's race to its end (the throttle held, nine laps'
+    # distance poked), its replay, the results and the retry's race
+    'extra-trial-race': (10300, BOOT + ',' + MENU_DOWNS(7) + ',start@m1/4:800,circle@m1/79:300,'
+                         'circle@m1/80:300,circle@m1/80:600,cross@m1/82:100+20000,start@m1/22:300,'
+                         'circle@m1/83:300+4%154',
+                         {'pokes': 'SaveProgress+84:4=1@900,CourseChoiceTable+36:2=0@900,' +
+                          ','.join('PlayerCars+388+=TrackLength@m1/82:%d' % d for d in range(700, 1600, 100)),
+                          'sym_pokes': True, 'watch': CAR_POSE + RACE_STATE}),
     'dualshock-ta': (12000, 'start@m1/4:150,' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     'dualshock-movie-ta': (6000, BOOT + ',' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     # the courses no other scenario loads (0 every race above, 5 the Extra Trial's)
