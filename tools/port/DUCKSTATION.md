@@ -136,9 +136,55 @@ only; `ds_compare.py`'s `cards` and `card_steps` set `REGTEST_CARD1/2`,
 with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
 race, Extra Trial (its row and a car poked into the save) and the DUAL
 SHOCK in analog mode through Time Attack with both sticks. `--lowram` adds
-the `DS_LOWRAM_LOG` run and `lowram.txt`. The scripts are
+the `DS_LOWRAM_LOG` run and `lowram.txt`.
+
+Both sides also record, per blank, whether libpad made its exchange and
+whether the BIOS card driver took its turn (DuckStation: `RR4_DS_PADLOG`
+and the driver's port byte between fields, which do not change its course;
+the port: `PSYZ_PAD_TRACE`, `PSYZ_CARD_TRACE`), and the report lists where
+they differ before the first field that differs, each with the port's
+position in the dispatch window that decided it and its `margin`, the
+clocks to the nearest boundary of that window (the chain test or the
+dispatcher's exit, `BIOS_CHAIN_*_TEST_CLOCKS`, `LIBETC_DISPATCH_EXIT_CLOCKS`).
+A difference within 50 clocks of a boundary is reported as within
+DuckStation's variance (below). `--force-blanks` then reruns the port with
+those blanks forced to DuckStation's outcome (`PSYZ_BLANK_FORCE=<vsync>:pad=<0|1>:card=<0|1>,...`),
+adding the ones each rerun shows, and reports where the scenario first
+differs then. The scripts are
 `RR4_PAD_SCRIPT`s; the port alone runs one with
 `RR4_PAD_SCRIPT=... RR4_FRAME_LIMIT=...`.
+
+## Determinism and resolution
+
+The reference runs are deterministic: three runs of the Save and Load and
+the Versus two-card scenarios gave the same trace with the pad flag, and
+three `ds_frames.py` runs with every exception marked (`DSF_EXC`) the same
+log to the clock. Marks are not free, though: each stub takes about 12.5
+clocks (`_SsVmKeyOn` with its six callees marked takes 150 more than with
+itself only), and an exception mark's stub delays the BIOS chains' vblank
+tests, so a marked run's outcomes differ from the reference's: with
+`DSF_EXC` libpad makes its exchange at Save and Load's blanks 642, 773 and
+904, which the reference misses, and the scenario's fields differ from 2603
+on. Take positions and durations from marked runs and outcomes (fields, the
+pad flag, the card driver's port) from unmarked ones (`ds_script.py`,
+`ds_compare.py`).
+
+DuckStation's recompiler raises an interrupt and runs its timing events
+(the vblank among them) at the end of the block being executed, so an
+exception's entry and a vblank move by tens of clocks with the code that
+runs when they are due: root counter 2's exceptions enter 0 to 50 clocks
+after their period (most 5-35; Save and Load, fields 300-1100), and the
+same blank's offset into the same root counter exception differs by up to
+18 clocks between two scenarios. The port's positions are linear (the blank
+every 131 fields 32.8 clocks further into the 120 Hz timer's exception), so
+a decision within that spread of a window's boundary can go either way on
+DuckStation for the same port position: at blank 1166, 1165 clocks into a
+root counter exception on the port in both, the card driver misses its turn
+in Save and Load and takes it in Versus with two cards (642: libpad's
+exchange, 1034 clocks in, missed in one and made in the other). No single
+`BIOS_CHAIN_*_TEST_CLOCKS` matches both; a scenario whose first difference
+comes from such a blank matches DuckStation within its variance, which
+`ds_compare.py --force-blanks` checks.
 
 ## Timing a call
 

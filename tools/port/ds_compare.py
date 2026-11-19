@@ -2,7 +2,7 @@
 """ds_compare.py: replay a scenario on DuckStation and the port, compare per field.
 
     ds_compare.py list
-    ds_compare.py run <scenario> <out-dir> [--lowram] [--bin <port binary>]
+    ds_compare.py run <scenario> <out-dir> [--lowram] [--force-blanks] [--bin <port binary>]
 
 Each scenario is an RR4_PAD_SCRIPT (with its pokes, controller and card)
 played on the patched duckstation-regtest through ds_script.py and on the
@@ -16,15 +16,39 @@ the fields differ). --lowram adds a DuckStation run on the interpreter
 logging game accesses to PS1 RAM 0..0xFFFF (DS_LOWRAM_LOG, DUMMYBP=1),
 grouped by ds_lowram_report.py into lowram.txt.
 
+Both sides also log, per blank, whether libpad made its exchange and
+whether the BIOS card driver took its turn (DuckStation: RR4_DS_PADLOG and
+the driver's port byte, read between fields; the port: PSYZ_PAD_TRACE,
+PSYZ_CARD_TRACE). The report lists the blanks where they differ, with the
+port's distance to the boundary of the dispatch window that decided it
+("margin"). DuckStation is deterministic (a run repeats to the clock), but
+where it enters an exception and when its vblank event fires move by up to
+about 50 clocks with the code running (it dispatches them at the end of a
+recompiled block), so the same port position can go either way on
+DuckStation in two scenarios (Save and Load and Versus with two cards,
+blank 1166: the card driver's turn 1165 clocks into a root counter
+exception is missed in one and taken in the other). A difference within
+BAND_CLOCKS of a boundary is reported as within that variance, and
+--force-blanks reruns the port with such blanks forced to DuckStation's
+outcome (PSYZ_BLANK_FORCE), adding those each rerun shows, and reports where
+the scenario then first differs.
+
 Environment: RR4_DUCKSTATION, RR4_DISC (as for duckstation.py), RR4_DECOMP
 (the decompilation, for ds_lowram_report.py's names). Files in <out-dir>:
-ds.txt, port.txt, port.log, report.txt (and lowram.log/.txt).
+ds.txt, port.txt, port.log, report.txt (and lowram.log/.txt; port-force*.log
+with --force-blanks).
 
 The absolute steps of the scenarios are port vsyncs (DuckStation frame -
 295); the mode-anchored ones repeat at each entry into their mode, so a
 flow that comes back to a mode uses absolute steps instead.
 """
 import os, subprocess, shutil, sys
+
+# The BIOS card driver's current port (PS1 0x7264), read between fields.
+CARD_PORT = '80007264:1'
+# DuckStation's spread of exception entry and vblank times against the
+# port's linear ones, in clocks (see the docstring).
+BAND_CLOCKS = 50
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
@@ -120,8 +144,8 @@ def ds_env(opts, extra=None):
         env['REGTEST_PAD1_TYPE'] = 'AnalogController'
     if opts.get('ds_pokes'):
         env['RR4_DS_POKE'] = opts['ds_pokes']
-    if opts.get('watch'):
-        env['RR4_DS_PEEK'] = ','.join(w[0] for w in opts['watch'])
+    env['RR4_DS_PEEK'] = ','.join([w[0] for w in opts.get('watch', [])] + [CARD_PORT])
+    env['RR4_DS_PADLOG'] = '1'
     env.update(extra or {})
     return env
 
@@ -193,7 +217,7 @@ def prepare_cards(out, opts):
     return ds, {k: v for k, v in env.items() if v}, dirs
 
 
-def run_port(out, binary, fields, pads, opts, card_env, card_dirs):
+def run_port(out, binary, fields, pads, opts, card_env, card_dirs, force='', log_name='port.log'):
     run = os.path.join(out, 'port')
     shutil.rmtree(run, ignore_errors=True)
     os.makedirs(os.path.join(run, 'cfg'))
@@ -201,7 +225,8 @@ def run_port(out, binary, fields, pads, opts, card_env, card_dirs):
         shutil.copytree(src, os.path.join(run, name))
     env = dict(os.environ, PSYZ_HEADLESS='1', SDL_AUDIODRIVER='dummy',
                RR4_CONFIG_HOME=os.path.join(run, 'cfg'), RR4_FRAME_LIMIT=str(fields),
-               RR4_PAD_SCRIPT=pads, RR4_TRACE='1', RR4_TRACE_RAND='1')
+               RR4_PAD_SCRIPT=pads, RR4_TRACE='1', RR4_TRACE_RAND='1',
+               PSYZ_PAD_TRACE='1', PSYZ_CARD_TRACE='1', PSYZ_BLANK_FORCE=force)
     for k in ('PSYZ_CARD_UNPLUG', 'PSYZ_CARD_UNFORMATTED', 'RR4_CARD_SLOT'):
         env.pop(k, None)
     env.update(card_env)
@@ -211,10 +236,11 @@ def run_port(out, binary, fields, pads, opts, card_env, card_dirs):
         env['RR4_POKE'] = opts['pokes']
     if opts.get('watch'):
         env['RR4_WATCH'] = ','.join(w[1] for w in opts['watch'])
-    with open(os.path.join(out, 'port.log'), 'w') as log:
+    with open(os.path.join(out, log_name), 'w') as log:
         subprocess.run(capped(binary, os.environ['RR4_DISC']), cwd=run, env=env, stdout=log,
                        stderr=subprocess.STDOUT, check=False)
-    with open(os.path.join(out, 'port.log')) as log, open(os.path.join(out, 'port.txt'), 'w') as t:
+    with open(os.path.join(out, log_name)) as log, \
+            open(os.path.join(out, log_name.replace('.log', '.txt')), 'w') as t:
         t.writelines(l for l in log if l.startswith('vsync '))
 
 
@@ -242,6 +268,63 @@ def columns(path, opts, ds):
     return rows
 
 
+def ds_blanks(path):
+    """{blank: (libpad exchange, card driver turn)} from DuckStation's trace:
+    line v+1 tells about blank v (the flag libpad's handler sets, the
+    driver's port changing from line v); {} without RR4_DS_PADLOG."""
+    rows = []
+    for line in open(path):
+        t = line.split()
+        if not t or t[0] != 'vsync' or 'pad' not in t:
+            continue
+        port = next((x for x in t if x.startswith(CARD_PORT.split(':')[0] + '=')), None)
+        rows.append((int(t[1]), t[t.index('pad') + 1] != '0', port))
+    return {v: (pad, port is not None and port != nport)
+            for (v, _, port), (_, pad, nport) in zip(rows, rows[1:])}
+
+
+def port_blanks(path):
+    """{blank: (exchange, card turn, '+since/cycles', pad margin, card margin)}
+    from the port's PSYZ_PAD_TRACE / PSYZ_CARD_TRACE lines."""
+    rows, cur = {}, None
+    for line in open(path, errors='replace'):
+        if line.startswith('pad: blank '):
+            t = line.split()
+            m = t[t.index('margin') + 1:t.index('margin') + 3] if 'margin' in t else ['-1', '-1']
+            cur = int(t[2])
+            rows[cur] = [t[4] != '0', False, t[9], int(m[0]), int(m[1])]
+        elif line.startswith('card: vblank port') and cur in rows:
+            rows[cur][1] = True
+    return rows
+
+
+def blank_diffs(out, log_name='port.log'):
+    """[(blank, 'pad'|'card', DuckStation's outcome, the port's, margin, where)]."""
+    a, b = ds_blanks(os.path.join(out, 'ds.txt')), port_blanks(os.path.join(out, log_name))
+    diffs = []
+    for v in sorted(set(a) & set(b)):
+        for k, name in ((0, 'pad'), (1, 'card')):
+            if a[v][k] != b[v][k]:
+                diffs.append((v, name, a[v][k], b[v][k], b[v][3 + k], b[v][2]))
+    return diffs
+
+
+def in_band(d):
+    return 0 <= d[4] <= BAND_CLOCKS
+
+
+def describe(d):
+    return '%d %s (DuckStation %s, port %s; port %s, margin %s)%s' % (
+        d[0], 'libpad exchange' if d[1] == 'pad' else 'card driver turn',
+        'yes' if d[2] else 'no', 'yes' if d[3] else 'no', d[5], d[4] if d[4] >= 0 else '-',
+        ': within DuckStation\'s variance' if in_band(d) else '')
+
+
+def first_field_diff(out, opts, port_txt='port.txt'):
+    a, b = columns(os.path.join(out, 'ds.txt'), opts, True), columns(os.path.join(out, port_txt), opts, False)
+    return next((v for v in sorted(set(a) & set(b)) if a[v] != b[v]), None)
+
+
 def compare(out, opts):
     a, b = columns(os.path.join(out, 'ds.txt'), opts, True), columns(os.path.join(out, 'port.txt'), opts, False)
     fields = sorted(set(a) & set(b))
@@ -263,6 +346,43 @@ def compare(out, opts):
             lines.append('%s: %d fields differ, first %d (DuckStation %s, port %s); the sequence of values is %s'
                          % (col, len(bad), bad[0], a[bad[0]].get(col), b[bad[0]].get(col),
                             'the same' if same else 'different'))
+    if ds_blanks(os.path.join(out, 'ds.txt')) and os.path.exists(os.path.join(out, 'port.log')):
+        diffs = blank_diffs(out)
+        first = first_field_diff(out, opts)
+        before = [d for d in diffs if first is None or d[0] < first]
+        lines.append('blanks: %d libpad exchange / card driver turn differences, %d before the first '
+                     'field that differs, %d of those within %d clocks of a window boundary'
+                     % (len(diffs), len(before), sum(map(in_band, before)), BAND_CLOCKS))
+        lines.extend('  ' + describe(d) for d in before[:8])
+    return '\n'.join(lines)
+
+
+def force_blanks(out, binary, fields, pads, opts, card_env, card_dirs, rounds=6):
+    """Rerun the port with the differences within the variance band before
+    the first field that differs forced to DuckStation's outcome, adding
+    the ones each rerun shows, until a rerun shows none new."""
+    forced, lines = {}, []
+    log_name, txt = 'port.log', 'port.txt'
+    for k in range(rounds + 1):
+        first = first_field_diff(out, opts, txt)
+        shown = ','.join('%d%s' % (v, n[0]) for v, n in sorted(forced)) or 'none'
+        if first is None:
+            lines.append('forced %s: every field the same' % shown)
+            break
+        new = [d for d in blank_diffs(out, log_name) if d[0] < first and in_band(d) and
+               (d[0], d[1]) not in forced]
+        lines.append('forced %s: first field that differs %d' % (shown, first))
+        if not new or k == rounds:
+            break
+        for d in new:
+            forced[(d[0], d[1])] = d[2]
+        by = {}
+        for (v, n), x in forced.items():
+            by.setdefault(v, []).append('%s=%d' % (n, x))
+        spec = ','.join('%d:%s' % (v, ':'.join(sorted(f))) for v, f in sorted(by.items()))
+        log_name = 'port-force%d.log' % (k + 1)
+        txt = log_name.replace('.log', '.txt')
+        run_port(out, binary, fields, pads, opts, card_env, card_dirs, spec, log_name)
     return '\n'.join(lines)
 
 
@@ -297,6 +417,8 @@ def main():
                            stdout=f, check=False)
     run_port(out, binary, fields, pads, opts, card_env, card_dirs)
     report = compare(out, opts)
+    if '--force-blanks' in sys.argv:
+        report += '\n' + force_blanks(out, binary, fields, pads, opts, card_env, card_dirs)
     open(os.path.join(out, 'report.txt'), 'w').write(report + '\n')
     print(report)
 
