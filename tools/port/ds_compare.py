@@ -3,6 +3,7 @@
 
     ds_compare.py list
     ds_compare.py run <scenario> <out-dir> [--lowram] [--force-blanks] [--bin <port binary>]
+                      [--refs <dir> [--save-ref]]
 
 Each scenario is an RR4_PAD_SCRIPT (with its pokes, controller and card)
 played on the patched duckstation-regtest through ds_script.py and on the
@@ -35,6 +36,14 @@ Environment: RR4_DUCKSTATION, RR4_DISC (as for duckstation.py), RR4_DECOMP
 (the decompilation, for ds_lowram_report.py's names). Files in <out-dir>:
 ds.txt, port.txt, port.log, report.txt (and lowram.log/.txt; port-force*.log
 with --force-blanks).
+
+--refs <dir> takes DuckStation's side from a stored reference,
+<dir>/<scenario>/ds.txt (and saved.mcd for the scenarios that start from
+the Save and Load scenario's card), instead of running it: DuckStation is
+deterministic, so the trace only changes with the scenario. An autodrive
+scenario's reference holds the input it replayed (masks.txt) and is used
+only while the port chooses the same; otherwise DuckStation runs.
+--save-ref stores what DuckStation ran there.
 
 A scenario with the autodrive option (ta-full; vs-full, both pads in the
 Versus race) runs the port first with
@@ -194,11 +203,18 @@ def run_ds(out, fields, pads, opts, name='ds.txt', extra=None):
                        stderr=subprocess.STDOUT, check=False)
 
 
+# --refs: the stored reference of the scenario being run (see the docstring)
+REF = None
+
+
 def make_saved_card(out):
     """The save-load scenario on DuckStation up to its save, on a card file."""
     card = os.path.join(out, 'saved.mcd')
     if os.path.exists(card):
         os.remove(card)
+    if REF and os.path.exists(os.path.join(REF, 'saved.mcd')):
+        shutil.copy(os.path.join(REF, 'saved.mcd'), card)
+        return card
     run_ds(out, 5100, SAVE_LOAD, {}, 'saved-card.txt', {'REGTEST_CARD1': card})
     return card
 
@@ -440,6 +456,9 @@ def main():
         binary = os.path.abspath(sys.argv[sys.argv.index('--bin') + 1])
     fields, pads, opts = SCENARIOS[name]
     os.makedirs(out, exist_ok=True)
+    global REF
+    if '--refs' in sys.argv:
+        REF = os.path.join(os.path.abspath(sys.argv[sys.argv.index('--refs') + 1]), name)
     extra, card_env, card_dirs = prepare_cards(out, opts)
     fresh = {k: v for k, v in extra.items() if k.startswith('REGTEST_CARD') and v.endswith('.mcd')}
     keep = {k: open(v, 'rb').read() for k, v in fresh.items()}
@@ -450,7 +469,22 @@ def main():
         ds_frames.make_masks(os.path.join(out, 'port.txt'), os.path.join(out, 'port.ad'),
                              os.path.join(out, 'masks.txt'), 1)
         extra = dict(extra, RR4_DS_MASKS=os.path.join(out, 'masks.txt'))
-    run_ds(out, fields, pads, opts, extra=extra)
+    def same(a, b):
+        return os.path.exists(a) and os.path.exists(b) and open(a, 'rb').read() == open(b, 'rb').read()
+    stored = REF and os.path.exists(os.path.join(REF, 'ds.txt')) and '--save-ref' not in sys.argv and (
+        not opts.get('autodrive') or same(os.path.join(REF, 'masks.txt'), os.path.join(out, 'masks.txt')))
+    if stored:
+        shutil.copy(os.path.join(REF, 'ds.txt'), os.path.join(out, 'ds.txt'))
+        print('DuckStation: the stored reference', REF)
+    else:
+        if REF and opts.get('autodrive'):
+            print('DuckStation: no stored reference with this input, running it')
+        run_ds(out, fields, pads, opts, extra=extra)
+        if REF and '--save-ref' in sys.argv:
+            os.makedirs(REF, exist_ok=True)
+            for f in ('ds.txt', 'masks.txt', 'saved.mcd'):
+                if os.path.exists(os.path.join(out, f)):
+                    shutil.copy(os.path.join(out, f), os.path.join(REF, f))
     if '--lowram' in sys.argv:
         log = os.path.join(out, 'lowram.log')
         if os.path.exists(log):

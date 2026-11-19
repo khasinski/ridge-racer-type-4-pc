@@ -91,6 +91,22 @@ index 667aaab67..e94c29305 100644
    s_state.current_subq_lba = s_state.current_lba;
    s_state.last_subq_needs_update = false;
    s_state.subq_lba_update_tick = System::GetGlobalTickCounter();
+@@ -3592,6 +3618,15 @@ std::tuple<s16, s16> CDROM::GetAudioFrame()
+ 
+ void CDROM::AddCDAudioFrame(s16 left, s16 right)
+ {
++  // DUCKSTATION_XA_OUT_DUMP=<file>: every resampled XA frame as it enters the CD audio FIFO (s16 L, R),
++  // before the CD volume (the port's PSYZ_XA_DUMP)
++  static std::FILE* xa_out_dump = std::getenv("DUCKSTATION_XA_OUT_DUMP") ? std::fopen(std::getenv("DUCKSTATION_XA_OUT_DUMP"), "wb") : nullptr;
++  if (xa_out_dump)
++  {
++    const s16 lr[2] = {left, right};
++    std::fwrite(lr, sizeof(lr), 1, xa_out_dump);
++    std::fflush(xa_out_dump);
++  }
+   s_state.audio_fifo.Push(ZeroExtend32(static_cast<u16>(left)) | (ZeroExtend32(static_cast<u16>(right)) << 16));
+ }
+ 
 diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
 index cf80b066c..05691c02e 100644
 --- a/src/core/cpu_core.cpp

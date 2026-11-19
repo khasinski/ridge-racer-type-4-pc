@@ -4013,14 +4013,22 @@ static const RrWorkCost HorizonPassCosts[] = {
     {{26649, 39, 2251, 0, 2005, 3425, 0, 0, 2332, 3484, 0, 0}},
 };
 
-static const RrWorkCost *HorizonPassCost(HorizonPass pass)
+/* The passes by number (the standard ones, then courses 7's and 8's). */
+static int HorizonPassNumber(HorizonPass pass)
 {
     static const HorizonPass passes[] = {
         HorizonPassLitTiles, HorizonPass1, HorizonPass2, HorizonPass3, HorizonPass4, HorizonPass5,
-        HorizonPass6, HorizonPass7, HorizonPass8, HorizonPass9, HorizonPass10};
-    for (size_t i = 0; i < sizeof passes / sizeof passes[0]; i++)
-        if (passes[i] == pass) return &HorizonPassCosts[i];
-    return &HorizonPassCosts[6];
+        HorizonPass6, HorizonPass7, HorizonPass8, HorizonPass9, HorizonPass10,
+        HorizonPassC7a, HorizonPassC7b, HorizonPassC7c, HorizonPassC7d, HorizonPassC8a, HorizonPassC8b};
+    for (int i = 0; i < (int)(sizeof passes / sizeof passes[0]); i++)
+        if (passes[i] == pass) return i;
+    return -1;
+}
+
+static const RrWorkCost *HorizonPassCost(int number)
+{
+    return number >= 0 && number < (int)(sizeof HorizonPassCosts / sizeof HorizonPassCosts[0])
+               ? &HorizonPassCosts[number] : &HorizonPassCosts[6];
 }
 
 /* 80060C70: run the course's pass program (D_800A229C, or D_800A22C0 when
@@ -4038,9 +4046,12 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     Horizon.cursor = RR_GPU_SCRATCH->cursor;
     for (; *program != NULL; program++) {
         RrWork work;
+        int number = HorizonPassNumber(*program);
+        if (RrWorkPassHook) RrWorkPassHook(number, Horizon.cursor);
         RrWorkBegin(&work, Horizon.cursor);
         (*program)(views);
-        RrWorkSpend(&work, Horizon.cursor, HorizonPassCost(*program));
+        RrWorkSpend(&work, Horizon.cursor, HorizonPassCost(number));
+        if (RrWorkPassHook) RrWorkPassHook(number | 0x100, Horizon.cursor);
     }
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);

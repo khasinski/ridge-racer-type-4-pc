@@ -10,6 +10,7 @@
 unsigned long long Psyz_GteOpCount(unsigned op);
 
 unsigned long long RrWorkCount[RR_WORK_UNITS];
+void (*RrWorkPassHook)(int pass, const void *cursor);
 int RrWorkFrame;
 
 /* GTE opcodes of the counted kinds */

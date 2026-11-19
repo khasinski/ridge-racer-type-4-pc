@@ -92,6 +92,7 @@ Environment:
 | `DUCKSTATION_CARD_TRACE=1` | log each memory card selection (`CARDSEL`: the slot, whether it holds a card), each card command (`CARDOP`: the command byte and the FLAG byte sent; 0x52 read, 0x57 write, 0x53 ID; the game's raw 0x5A probe is refused), each read or write's sector (`CARDREAD`/`CARDWRITE`) and each frame's end (`CARDEND`: the last reply, 0x47 good), with the system tick and the frame (the vblank that started it). The BIOS card driver's current port (it serves the ports on alternate vblanks, skipping a vblank it misses) is the byte at PS1 0x7264 (SCPH-1001), `RR4_DS_PEEK=80007264:1`; the port's `PSYZ_CARD_TRACE` prints its port at each vblank it takes |
 | `DUCKSTATION_CD_TRACE=1` | log each CD command as it executes (`CDCMD`) and completes (`CDDONE`, a second response), each seek-time draw of the drive's generator (`CDSEEK n ... from to jitter`, absolute sectors), each vblank start (`VBLANK`) and each root counter 2 write (`RCNT2`), with the system tick and frame; compare with the port's `PSYZ_CD_TRACE` (its `cd seek draw n` lines count the same draws) |
 | `DUCKSTATION_DMA_TRACE=1` | log the DMA's work and the MDEC's units with the system tick, which a run does not change: each channel's transfer start (`DMAT <channel> sync <mode> blocks <left>`), a request-mode transfer stopping with blocks left (`DMAE`, `req` 0 when its device stopped asking), each completion (`DMAC`, the transfer's interrupt follows), each DMA halt (`DMAH`) and its end (`DMAU`, with `lag`: how many clocks after its time the event ran, the end of the recompiler block being executed, and the CPU's `pc` then), each MDEC unit's decode start (`MDSB`) and its copy into the output FIFO (`MDCO`, with `lag` and `pc`), and each interrupt exception's entry (`IRQX` with the PC and I_STAT); `ds_script.py` keeps the log with `RR4_DS_LOG=<file>` |
+| `DUCKSTATION_XA_OUT_DUMP=<file>` | append every XA frame the resampler makes as it enters the CD audio FIFO (s16 left, right; before the CD volume): compare with the port's `PSYZ_XA_DUMP` |
 | `DUCKSTATION_CD_SECTORS=1` | with `DUCKSTATION_CD_TRACE`, also log each sector the drive reads (`CDSECT <absolute sector> tick <t> frame <f>`; its data interrupt comes then): compare with the port's `PSYZ_CD_TRACE` `cd irq <us> 3780 sector <n>` lines (n is the next sector, n - 1 + 150 the absolute one) |
 
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
@@ -198,7 +199,13 @@ first and DuckStation replays the input it chose, `ds_script.py`'s
 `vs-full`, a Versus race over its three laps with both cars driven
 (`RR4_AUTODRIVE=2`, pad 2's mask the masks file's third column), the
 two-player replay to its end and the results. `--lowram` adds
-the `DS_LOWRAM_LOG` run and `lowram.txt`.
+the `DS_LOWRAM_LOG` run and `lowram.txt`. `--refs <dir>` takes DuckStation's
+side from a stored reference (`<dir>/<scenario>/ds.txt`, and the Save and
+Load card for the scenarios that start from it) instead of running it, as
+DuckStation is deterministic; an autodrive scenario's reference keeps the
+input it replayed (`masks.txt`) and is used only while the port chooses the
+same. `--save-ref` stores the run's. The exact-timing references of all 27
+scenarios are kept in `~/.cache/rr4-work/dsref-exact`.
 
 Both sides also record, per blank, whether libpad made its exchange and
 whether the BIOS card driver took its turn (DuckStation: `RR4_DS_PADLOG`
@@ -297,7 +304,10 @@ prints `XMARK <name> <clocks>` at each entry with the emulated clock
 blank's exact time (`at <ns>`). `RR4_MARK_WORK=1` adds an `XWORK` line
 after each mark: the packet cursor and the GTE commands executed so far by
 opcode, the counts the race frame's CPU time model takes
-(`include/rr/cpu_work.h`). PsyZ's `PSYZ_SPU_KEY_TIME=1` logs each key-on
+(`include/rr/cpu_work.h`), and an `XHZ <pass> <clocks> <cursor> <counts>` line
+before and after each of the course renderer's passes (the pass's number,
+256 more after it: its tests, facing tiles, grids, cells and GTE commands so
+far), to set against `DSF_MARKS` at the pass programs' entries. PsyZ's `PSYZ_SPU_KEY_TIME=1` logs each key-on
 register write with the clock it lands at (in a handler, where its code
 has got to); compare it with `DSF_MARKS=SsSeqCalledTbyT,SpuSetKey`, not
 with `DUCKSTATION_SPU_KEY_TRACE`, whose tick is the SPU's batch time (the

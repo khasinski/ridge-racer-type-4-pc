@@ -23,6 +23,7 @@
 
 #define NO_INSTRUMENT __attribute__((no_instrument_function))
 #include "rr/gpu_scratch_types.h"
+#include "rr/cpu_work.h"
 #include <stdint.h>
 
 unsigned long long Psyz_GteOpCount(unsigned op);
@@ -31,12 +32,27 @@ unsigned long long Psyz_GteOpCount(unsigned op);
  * NCLIP, DPCS, INTPL, MVMVA, NCDS, NCDT, NCCS, CC, NCS, NCT, SQR, DPCT,
  * AVSZ3, AVSZ4, RTPT, GPF, GPL, NCCT): the work the race frame's CPU time
  * model counts (rr/cpu_work.h), for fitting it. */
+static const int ops[] = {0x01, 0x06, 0x10, 0x11, 0x12, 0x13, 0x16, 0x1B, 0x1C, 0x1E,
+                          0x20, 0x28, 0x2A, 0x2D, 0x2E, 0x30, 0x3D, 0x3E, 0x3F};
+
+/* "XHZ <pass> <clocks> <cursor> <tested faced grids cells> <ops>" before
+ * and after each course pass (pass | 256 after), counts so far. */
+NO_INSTRUMENT static void pass_hook(int pass, const void *cursor) {
+    fprintf(stderr, "XHZ %d %llu %lu", pass, Psyz_EmulatedClocks(), (unsigned long)(uintptr_t)cursor);
+    for (int k = RR_WORK_TESTED; k < RR_WORK_UNITS; k++)
+        fprintf(stderr, " %llu", RrWorkCount[k]);
+    for (unsigned i = 0; i < sizeof ops / sizeof ops[0]; i++)
+        fprintf(stderr, " %llu", Psyz_GteOpCount(ops[i]));
+    fprintf(stderr, "\n");
+}
+
 NO_INSTRUMENT static void work(void) {
     static int on = -1;
-    if (on < 0) on = getenv("RR4_MARK_WORK") != NULL;
+    if (on < 0) {
+        on = getenv("RR4_MARK_WORK") != NULL;
+        if (on) RrWorkPassHook = pass_hook;
+    }
     if (!on) return;
-    static const int ops[] = {0x01, 0x06, 0x10, 0x11, 0x12, 0x13, 0x16, 0x1B, 0x1C, 0x1E,
-                              0x20, 0x28, 0x2A, 0x2D, 0x2E, 0x30, 0x3D, 0x3E, 0x3F};
     fprintf(stderr, "XWORK %lu", (unsigned long)(uintptr_t)RR_GPU_SCRATCH->cursor);
     for (unsigned i = 0; i < sizeof ops / sizeof ops[0]; i++)
         fprintf(stderr, " %llu", Psyz_GteOpCount(ops[i]));

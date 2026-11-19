@@ -87,6 +87,11 @@ void RrWorkHoldEnd(const void *cursor);
  * AddDrawAreaPrim, AddDrawModePrim: the menus') are held then. */
 extern int RrWorkFrame;
 
+/* Diagnostics (RR4_FUNC_MARKS builds, RR4_MARK_WORK): called before each
+ * course pass with its number and after it with number | 0x100, the
+ * packet cursor then. */
+extern void (*RrWorkPassHook)(int pass, const void *cursor);
+
 /* The race frame's routines (cpuwork.c has the fits). */
 extern const RrWorkCost RrCostReadCarInput, RrCostUpdatePlayerCar, RrCostUpdateComCars;
 extern const RrWorkCost RrCostCarStages[7];
