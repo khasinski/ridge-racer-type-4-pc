@@ -39,7 +39,7 @@ void SoundMasterFadeStep(void) {
 }
 
 void SoundUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE);
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_HEAD);
 
     int slotIndex;
     AudioSlot620 *slot;
@@ -57,6 +57,7 @@ void SoundUpdate(void) {
     slotIndex = 0;
     SoundState.seqPrevBeat2878 = SoundState.seqBeat2874;
     CdAudioUpdate();
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_FADES);
     SeqFadeStep();
     SoundMasterFadeStep();
     SoundListenerUpdate();
@@ -70,6 +71,7 @@ void SoundUpdate(void) {
     UpdateMasterSoundVolumes();
     SoundQueueUpdate();
     SoundLoopUpdate();
+    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE - RR_CYCLES_SOUND_UPDATE_HEAD - RR_CYCLES_SOUND_UPDATE_FADES);
 }
 
 void SetVoiceVolumeScaled(s32 voice, s32 left, s32 right) {

@@ -11,8 +11,8 @@
 extern u16 MenuCarTextureFileOffsets[];
 
 void UpdateSoundSlot(int slotIndex) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SOUND_SLOT);
     AudioSlot620 *slot = &SoundState.slots38[slotIndex];
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SOUND_SLOT_VOICE * (unsigned)(slot->count0C > 0 ? slot->count0C : 0));
     u16 spread = 0;
     int voice, programIndex;
     u16 pitchOffset;
@@ -123,6 +123,7 @@ int SlotInterpCurve(int curveIndex, int position, int programGroup, int slotInde
     for (upperIndex = 1; upperIndex < 9; upperIndex++) {
         if (position < data->curves[programGroup][curveIndex].keys[upperIndex]) break;
     }
+    RR_CPU_CYCLES(RR_CYCLES_SLOT_INTERP_CURVE + RR_CYCLES_SLOT_INTERP_KEY * (unsigned)upperIndex);
     lowerIndex = upperIndex - 1;
     lowerValue = SlotCurveWord(data, curve, 9 + lowerIndex);
     upperValue = SlotCurveWord(data, curve, 9 + upperIndex);

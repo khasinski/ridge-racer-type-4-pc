@@ -1,4 +1,5 @@
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/audio_cd_controller.h"
 #include "psyq/libsnd/ssmvol.h"
 #include "psyq/libsnd/ssvolset.h"
@@ -28,6 +29,7 @@ void CdAudioUpdate(void) {
     s32 temp_v1;
     s32 temp_v1_3;
 
+    RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_UPDATE);
     if (SoundState.sector2664 < 0) {
         switch (SoundState.action2670) {
         case 1:
@@ -125,6 +127,7 @@ block_27:
         }
     }
     if (SoundState.state269C == 1) {
+        RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_TICK);
         temp_v0_4 = SoundState.toc28C8[SoundState.bankA8CC][SoundState.index2698].position;
         SoundState.previous26DC = SoundState.tick26D8;
         SoundState.base26F0 = temp_v0_4;
@@ -179,6 +182,7 @@ block_27:
         case 1:
             break;
         case 2:
+            RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_POSITION);
             if (CdLastCom() == 0x11) {
                 temp_v0_6 = CdPosToInt(&SoundState.status265C[5]);
                 if (temp_v0_6 > 0) {
@@ -206,6 +210,7 @@ block_27:
 void CdAudioReadyCallback(u8 status, u8 *result) {
     (void)result;
     if (status == 1) {
+        RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_READY);
         s32 bank = SoundState.reservedA8C8;
         CdGetSector((u8 *)SoundState.toc28C8[bank], 0x20);
         SoundState.bankA8CC = bank;

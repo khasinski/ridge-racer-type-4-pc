@@ -38,6 +38,11 @@ Environment: RR4_DUCKSTATION, RR4_DISC (as for duckstation.py), RR4_DECOMP
 ds.txt, port.txt, port.log, report.txt (and lowram.log/.txt; port-force*.log
 with --force-blanks).
 
+A scenario with the autodrive option (ta-full) runs the port first with
+RR4_AUTODRIVE and replays the input it chose on DuckStation (ds_frames.py
+masks, ds_script.py's RR4_DS_MASKS); --force-blanks reruns of it drive on
+their own, so a forced blank that changes the input ends the comparison.
+
 The absolute steps of the scenarios are port vsyncs (DuckStation frame -
 295); the mode-anchored ones repeat at each entry into their mode, so a
 flow that comes back to a mode uses absolute steps instead.
@@ -79,6 +84,11 @@ TA_STICKS = ('down@m1/4:450,start@m1/4:550,circle@m1/50:200,circle@m1/51:200,cir
 # card (slot 1, slot 2) in the car select.
 VS_LOAD = '2:select@100,start@m2/4:700+4%300,start@m1/4:150,down@m1/4:450,down@m1/4:500,start@m1/4:550,down@2600,circle@2700,down@3000,circle@3100,circle@3500,up@3800,circle@3900,circle@4500,down@4800,circle@4900,down@5300,down@5360,circle@5450,up@5700,circle@5800,circle@6000,2:down@6300,2:circle@6400,2:down@6700,2:circle@6800,2:circle@7200,2:up@7500,2:circle@7600,2:circle@8200,2:down@8500,2:circle@8600'
 CAR_POSE = [('800abfc0:4', 'PlayerCars+200:4'), ('800ac074:2', 'PlayerCars+380:2')]
+RACE_STATE = [('800ff6b0:4', 'RaceState:4'), ('800ac07c:4', 'PlayerCars+388:4')]
+# Time Attack driven by RR4_AUTODRIVE (the port's run first, its input
+# replayed on DuckStation: ds_frames.py masks, RR4_DS_MASKS): three laps,
+# the replay to its end, the results and the retry's race.
+TA_AUTO = BOOT + ',down@m1/4:450,start@m1/4:550,circle@m1/50:200,circle@m1/51:200,circle@m1/51:260,circle@m1/54:200+4%120'
 LOW_RAM = [('80000004:4', 'Ps1LowRamImage+4:4')]
 
 # name: (fields, pads, options). Options: pokes (port RR4_POKE), ds_pokes
@@ -86,7 +96,8 @@ LOW_RAM = [('80000004:4', 'Ps1LowRamImage+4:4')]
 # only in those modes, e.g. an overlay's variable)]], pad (dualshock),
 # cards (slot 1, slot 2): 'blank' (DuckStation's blank card), 'none',
 # 'unformatted', 'saved' (the save the save-load scenario makes), 'full'
-# (15 blocks of other files); default ('blank', 'none'). card_steps
+# (15 blocks of other files); default ('blank', 'none'); autodrive:
+# RR4_AUTODRIVE's input (the port first, then DuckStation). card_steps
 # [(slot, 'none', vsync)]: the card pulled out at that field.
 SCENARIOS = {
     'options': (7000, BOOT + ',' + MENU_DOWNS(6) + ',start@m1/4:750,' + OPTIONS, {}),
@@ -130,6 +141,7 @@ SCENARIOS = {
                      'ds_pokes': '800f3974:01000000@900,800abe2c:0000@900', 'watch': CAR_POSE}),
     'dualshock-ta': (12000, 'start@m1/4:150,' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     'dualshock-movie-ta': (6000, BOOT + ',' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
+    'ta-full': (32000, TA_AUTO, {'autodrive': True, 'watch': CAR_POSE + RACE_STATE}),
 }
 
 
@@ -232,6 +244,9 @@ def run_port(out, binary, fields, pads, opts, card_env, card_dirs, force='', log
     env.update(card_env)
     if opts.get('pad'):
         env['RR4_PAD_TYPE'] = opts['pad']
+    if opts.get('autodrive'):
+        env['RR4_AUTODRIVE'] = '1'
+        env['RR4_AUTODRIVE_LOG'] = os.path.join(out, log_name.replace('.log', '.ad'))
     if opts.get('pokes'):
         env['RR4_POKE'] = opts['pokes']
     if opts.get('watch'):
@@ -403,6 +418,13 @@ def main():
     extra, card_env, card_dirs = prepare_cards(out, opts)
     fresh = {k: v for k, v in extra.items() if k.startswith('REGTEST_CARD') and v.endswith('.mcd')}
     keep = {k: open(v, 'rb').read() for k, v in fresh.items()}
+    if opts.get('autodrive'):
+        # the port drives first; DuckStation replays its input
+        run_port(out, binary, fields, pads, opts, card_env, card_dirs)
+        import ds_frames
+        ds_frames.make_masks(os.path.join(out, 'port.txt'), os.path.join(out, 'port.ad'),
+                             os.path.join(out, 'masks.txt'), 1)
+        extra = dict(extra, RR4_DS_MASKS=os.path.join(out, 'masks.txt'))
     run_ds(out, fields, pads, opts, extra=extra)
     if '--lowram' in sys.argv:
         log = os.path.join(out, 'lowram.log')
@@ -415,7 +437,8 @@ def main():
             subprocess.run([sys.executable, os.path.join(HERE, 'ds_lowram_report.py'), log] +
                            ([os.environ['RR4_DECOMP']] if os.environ.get('RR4_DECOMP') else []),
                            stdout=f, check=False)
-    run_port(out, binary, fields, pads, opts, card_env, card_dirs)
+    if not opts.get('autodrive'):
+        run_port(out, binary, fields, pads, opts, card_env, card_dirs)
     report = compare(out, opts)
     if '--force-blanks' in sys.argv:
         report += '\n' + force_blanks(out, binary, fields, pads, opts, card_env, card_dirs)

@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/audio_cd_controller.h"
 
 
@@ -34,6 +35,7 @@ void CdAudioPlayStep(void)
 {
     int r;
     AudioState *p;
+    RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_PLAY_STEP);
     switch (SoundState.step2678) {
     case 0:
         if (CdSync(1, 0) == 0) break;

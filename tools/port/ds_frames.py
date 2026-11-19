@@ -41,6 +41,9 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
               Names come from the decomp's sym.main.txt and overlay JSONs.
   DSF_EXC=1   also mark every exception at the vector (I_STAT, DICR and the
               cause) and its two returns (rfe), for interrupt dispatch times
+  DSF_PEEK    addr:len,... (hex PS1 addresses): append those bytes in hex
+              as ds_script.py's RR4_DS_PEEK does (800abef8:4 for the first
+              player car's position; the port's RR4_WATCH=PlayerCars+0)
   DSF_PADLOG=1  append "pad <n>": whether libpad's vblank handler ran at
               the blank before the field (its flag, read and cleared between
               fields: no effect on the emulation)
@@ -217,6 +220,8 @@ def run(fields, trace_path, log_path):
     pad2 = any(s[0] == 2 for s in steps)
     padlog = os.environ.get('DSF_PADLOG') == '1'
     cardport = os.environ.get('DSF_CARDPORT') == '1'
+    peeks = [(int(a, 16), int(n)) for a, n in
+             (p.split(':') for p in os.environ.get('DSF_PEEK', '').split(',') if p)]
     cards = []  # RR4_DS_CARD as in ds_script.py: the card verb at port vsync v's blank
     for item in filter(None, os.environ.get('RR4_DS_CARD', '').split(',')):
         where, at = item.rsplit('@', 1)
@@ -279,6 +284,8 @@ def run(fields, trace_path, log_path):
                     line += ' pad %d' % d.u32(PAD_RAN)
                 if cardport:
                     line += ' cport %d' % d.mem(CARD_PORT, 1)[0]
+                for a, n in peeks:
+                    line += ' %x=%s' % (a, d.mem(a, n).hex())
                 out.write(line + '\n')
             if padlog:
                 d.poke(PAD_RAN, b'\0\0\0\0')

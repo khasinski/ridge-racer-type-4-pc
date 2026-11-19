@@ -103,7 +103,44 @@ enum {
      * [rec]; in a race (Time Attack, DS fields 3266-3700) an active slot's
      * UpdateSoundSlot and the listener's car search add these [rec]. */
     RR_CYCLES_SOUND_UPDATE = 1105,
-    RR_CYCLES_UPDATE_SOUND_SLOT = 3873,  // UpdateSoundSlot, a call
+    /* ... split where it runs on DuckStation (DSF_MARKS SoundUpdate:ret,
+     * CdAudioUpdate:ret, CdSync:ret, CdControlF:ret and SoundUpdate's
+     * callees, Time Attack race fields 3324-8006 and the attract demo, the
+     * stubs' 12.5 clocks taken off): 38 before CdAudioUpdate, whose CD
+     * command (the XA player's ReadS, its GetlocP every frame) comes with
+     * its own path's time, 68 for the fades after it and the rest after the
+     * voices' and the queue's updates at its end, so the command's
+     * acknowledge and the stream's sectors come at DuckStation's clocks
+     * (the whole charge first put them 700-1100 clocks late). CdAudioUpdate
+     * on the playing stream: 39 to its switch, 206 for the tick from the
+     * TOC position before its CdSync(1), 100 from a completed CdSync to the
+     * next GetlocP (CdLastCom, CdPosToInt), and the XA player's step 45 to
+     * its CdSync. [mark] */
+    RR_CYCLES_SOUND_UPDATE_HEAD = 38,
+    RR_CYCLES_SOUND_UPDATE_FADES = 68,
+    RR_CYCLES_CD_AUDIO_UPDATE = 39,
+    RR_CYCLES_CD_AUDIO_TICK = 206,
+    RR_CYCLES_CD_AUDIO_POSITION = 100,
+    RR_CYCLES_CD_AUDIO_PLAY_STEP = 45,
+    /* CdAudioReadyCallback in a sector's exception (the XA stream's TOC
+     * sector, 32 words fetched): on DuckStation 230 clocks of a 3029-clock
+     * exception [mark] (PsyZ takes CdRead's callback out of that sector's
+     * exception, CD_READ_CALLBACK_CLOCKS) */
+    RR_CYCLES_CD_AUDIO_READY = 230,
+    /* UpdateSoundSlot by its work: its own code for each of the slot's
+     * voices, SlotInterpCurve twice a voice (72 and 9 for each key it looks
+     * at: 81 at a curve's start, 153 past its last key), the utility calls
+     * in PsyZ (SsUtChangePitch, SsUtSetVVol, SsUtKeyOnV: timing_profile.h).
+     * On DuckStation the player's slot (4 voices) takes 2770-2839 in the
+     * menus and the attract demo (its voices not keyed on), 4398 in a race
+     * (the median; 4044-4568), 7637 when its program changes (two key-ons),
+     * an opponent's (3 voices) 2150 (Time Attack fields 2700-8000, the
+     * attract demo 7700-9300, DSF_MARKS UpdateSoundSlot and its callees
+     * against the port's slot and voice counts); the flat 3873 of a race's
+     * call was 1.6k short there and 1.1k long in the menus. [mark] */
+    RR_CYCLES_UPDATE_SOUND_SLOT_VOICE = 410,
+    RR_CYCLES_SLOT_INTERP_CURVE = 72,
+    RR_CYCLES_SLOT_INTERP_KEY = 9,
     RR_CYCLES_SOUND_LISTENER = 2695,     // SoundListenerUpdate, listener on
     /* The boot, measured [mark]: entry-to-entry clocks on DuckStation's
      * recompiler, from a stub at each function entry that writes root

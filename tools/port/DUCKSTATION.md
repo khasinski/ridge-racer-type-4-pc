@@ -136,7 +136,10 @@ only; `ds_compare.py`'s `cards` and `card_steps` set `REGTEST_CARD1/2`,
 `RR4_CARD_SLOT` and the card directories), the Grand Prix rules to their end (the null-`Dialogue` store,
 with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
 race, Extra Trial (its row and a car poked into the save) and the DUAL
-SHOCK in analog mode through Time Attack with both sticks. `--lowram` adds
+SHOCK in analog mode through Time Attack with both sticks, and `ta-full`, a
+Time Attack race over its three laps driven by RR4_AUTODRIVE (the port runs
+first and DuckStation replays the input it chose, `ds_script.py`'s
+`RR4_DS_MASKS`), its whole replay, the results and the retry's race. `--lowram` adds
 the `DS_LOWRAM_LOG` run and `lowram.txt`.
 
 Both sides also record, per blank, whether libpad made its exchange and
@@ -218,7 +221,11 @@ selections.
 trace lines, with `regress.sh`'s watched globals, for every field from the
 game's first VSync, each line read at the same moment as the port's
 vsync of that number (DuckStation's vblank n + 296); run the port headless with
-`PSYZ_CARD_UNPLUG=2` to compare. `DSF_MARKS` marks function entries (and
+`PSYZ_CARD_UNPLUG=2` to compare. A run without `DSF_PADS` (the attract)
+compares with `REGTEST_PAD1_TYPE=None`: the port's unscripted run has no
+controller in port 1, and libpad's exchange with an empty port is 3.8k
+clocks shorter. `DSF_PEEK=addr:len,...` appends RAM bytes as
+`ds_script.py`'s `RR4_DS_PEEK` does. `DSF_MARKS` marks function entries (and
 returns, `name:ret`) through writes to EXP2 0x1F802090, which the patched
 regtest logs as `XMARK` with its tick under `DUCKSTATION_CD_TRACE`; unlike
 `ds_mark.py`'s root counter 2 writes they leave the sequencer alone, so

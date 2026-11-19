@@ -37,6 +37,8 @@ Absolute steps count port VSyncs (DuckStation frame - the offset).
 RR4_DS_POKE=addr:hexbytes@vsync[,...] stores bytes (hex PS1 address, data
 in memory order) at that field's blank, like the port's RR4_POKE, e.g.
 800f3974:01000000@1000 for SaveProgress+0x54 (the Extra Trial row).
+RR4_DS_MASKS=<file> also holds pad 1's buttons of a "vsync mask" list
+(ds_frames.py masks: RR4_AUTODRIVE's input from a port run).
 RR4_DS_CARD=slot:none|blank|path@vsync[,...] takes out or inserts a memory
 card at that field's blank (the regtest's card verb), like the port's
 RR4_CARD_SLOT.
@@ -56,6 +58,9 @@ BUTTONS = {'select': 'Select', 'start': 'Start', 'up': 'Up', 'right': 'Right', '
            'left': 'Left', 'l2': 'L2', 'r2': 'R2', 'l1': 'L1', 'r1': 'R1', 'triangle': 'Triangle',
            'circle': 'Circle', 'cross': 'Cross', 'square': 'Square'}
 FRAME_COUNTER, RAND_STATE, PAD_RAN = 0x800ABEAC, 0x80009010, 0x800ABCD0
+MASKBITS = [(0x0100, 'Select'), (0x0800, 'Start'), (0x1000, 'Up'), (0x2000, 'Right'), (0x4000, 'Down'),
+            (0x8000, 'Left'), (0x0001, 'L2'), (0x0002, 'R2'), (0x0004, 'L1'), (0x0008, 'R1'),
+            (0x0010, 'Triangle'), (0x0020, 'Circle'), (0x0040, 'Cross'), (0x0080, 'Square')]
 # The DUAL SHOCK's sticks (the port's lx ly rx ry, -1..1): DuckStation's
 # AnalogController binds its half axes after its 17 buttons (LLeft, LRight,
 # LDown, LUp, RLeft, RRight, RDown, RUp); a negative value is left / up.
@@ -140,6 +145,14 @@ class Driver:
             where, at = item.rsplit('@', 1)
             slot, what = where.split(':', 1)
             self.cards.append((int(at), int(slot), what))
+        # RR4_DS_MASKS=<file>: pad 1 masks per port vsync ("vsync mask",
+        # ds_frames.py masks: RR4_AUTODRIVE's input from the port's run)
+        # held besides the script's buttons, as ds_frames.py's DSF_MASKS
+        self.masks = {}
+        if os.environ.get('RR4_DS_MASKS'):
+            for line in open(os.environ['RR4_DS_MASKS']):
+                mv, mm = line.split()
+                self.masks[int(mv)] = int(mm)
         self.pokes = []
         for item in filter(None, os.environ.get('RR4_DS_POKE', '').split(',')):
             where, at = item.split('@')
@@ -173,6 +186,9 @@ class Driver:
                 t %= period
             if t < count:
                 want[port].add(button)
+        for bit, button in MASKBITS:
+            if self.masks.get(target[1], 0) & bit:
+                want[1].add(button)
         for port in (1, 2):
             if want[port] != self.held[port]:
                 self.d.release(port)
