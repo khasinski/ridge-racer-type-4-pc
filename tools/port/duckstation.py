@@ -23,6 +23,11 @@ Environment (see tools/port/DUCKSTATION.md for building the emulator):
   RR4_DS_PORTS     "ai,gdb" port pair (default: a free pair in 47300-47999;
                    ai=/gdb= arguments override it)
   RR4_DS_ARGS      extra regtest arguments (e.g. -slowboot)
+  RR4_DS_TIMING    exact (default): the interpreter with an event at its exact
+                   clock on the recompiler's instruction costs (REGTEST_EXACT=1,
+                   the reference); recompiler: the recompiler, which runs
+                   interrupts and DMA events at the end of a recompiled block
+                   (the references before 2026-11-19)
 The REGTEST_* variables of DUCKSTATION.md pass through to the emulator.
 Use it as a context manager (or call close()) so the emulator always exits.
 """
@@ -70,6 +75,14 @@ def _acquire_slot():
                 f.write(str(os.getpid()))
             return d
         time.sleep(2)
+
+
+def timing():
+    """'exact' or 'recompiler' (RR4_DS_TIMING, default exact)."""
+    t = os.environ.get('RR4_DS_TIMING', 'exact')
+    if t not in ('exact', 'recompiler'):
+        raise RuntimeError('RR4_DS_TIMING must be exact or recompiler, not %r' % t)
+    return t
 
 
 def _binary():
@@ -124,6 +137,10 @@ class DuckStation:
             env['REGTEST_PAD1_TYPE'] = pad1_type
         if pad2_type:
             env['REGTEST_PAD2_TYPE'] = pad2_type
+        self.timing = timing()
+        env.pop('REGTEST_EXACT', None)
+        if self.timing == 'exact':
+            env['REGTEST_EXACT'] = '1'
         extra = shlex.split(os.environ.get('RR4_DS_ARGS', ''))
         self.slot = _acquire_slot()
         if self.slot:
@@ -143,6 +160,10 @@ class DuckStation:
             self.g.settimeout(10)
             for s in (self.ai, self.g):
                 s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            got = self.cmd('timing')
+            if got != 'OK timing=' + ('exact' if self.timing == 'exact' else 'Recompiler'):
+                raise RuntimeError('%s answers %r to timing (RR4_DS_TIMING=%s): rebuild it from '
+                                   'tools/port/duckstation-regtest.patch' % (ds, got, self.timing))
         except BaseException:
             self.close()
             raise

@@ -21,17 +21,15 @@ whether the BIOS card driver took its turn (DuckStation: RR4_DS_PADLOG and
 the driver's port byte, read between fields; the port: PSYZ_PAD_TRACE,
 PSYZ_CARD_TRACE). The report lists the blanks where they differ, with the
 port's distance to the boundary of the dispatch window that decided it
-("margin"). DuckStation is deterministic (a run repeats to the clock), but
-where it enters an exception and when its vblank event fires move by up to
-about 50 clocks with the code running (it dispatches them at the end of a
-recompiled block), so the same port position can go either way on
-DuckStation in two scenarios (Save and Load and Versus with two cards,
-blank 1166: the card driver's turn 1165 clocks into a root counter
-exception is missed in one and taken in the other). A difference within
-BAND_CLOCKS of a boundary is reported as within that variance, and
---force-blanks reruns the port with such blanks forced to DuckStation's
-outcome (PSYZ_BLANK_FORCE), adding those each rerun shows, and reports where
-the scenario then first differs.
+("margin"). DuckStation is deterministic (a run repeats to the clock) and,
+on its exact timing (the default, tools/port/DUCKSTATION.md), raises
+interrupts and the vblank at their clock; on the recompiler
+(RR4_DS_TIMING=recompiler) they moved by up to about 50 clocks with the code
+running, so the same port position could go either way there. A difference
+within BAND_CLOCKS of a boundary, within the port's own resolution, is
+marked, and --force-blanks reruns the port with such blanks forced to
+DuckStation's outcome (PSYZ_BLANK_FORCE), adding those each rerun shows,
+and reports where the scenario then first differs.
 
 Environment: RR4_DUCKSTATION, RR4_DISC (as for duckstation.py), RR4_DECOMP
 (the decompilation, for ds_lowram_report.py's names). Files in <out-dir>:
@@ -51,8 +49,8 @@ import os, subprocess, shutil, sys
 
 # The BIOS card driver's current port (PS1 0x7264), read between fields.
 CARD_PORT = '80007264:1'
-# DuckStation's spread of exception entry and vblank times against the
-# port's linear ones, in clocks (see the docstring).
+# How near a window's boundary a difference is marked, in clocks (see the
+# docstring).
 BAND_CLOCKS = 50
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -332,7 +330,7 @@ def describe(d):
     return '%d %s (DuckStation %s, port %s; port %s, margin %s)%s' % (
         d[0], 'libpad exchange' if d[1] == 'pad' else 'card driver turn',
         'yes' if d[2] else 'no', 'yes' if d[3] else 'no', d[5], d[4] if d[4] >= 0 else '-',
-        ': within DuckStation\'s variance' if in_band(d) else '')
+        ': within %d clocks of the boundary' % BAND_CLOCKS if in_band(d) else '')
 
 
 def first_field_diff(out, opts, port_txt='port.txt'):
@@ -373,7 +371,7 @@ def compare(out, opts):
 
 
 def force_blanks(out, binary, fields, pads, opts, card_env, card_dirs, rounds=6):
-    """Rerun the port with the differences within the variance band before
+    """Rerun the port with the differences within the band (BAND_CLOCKS) before
     the first field that differs forced to DuckStation's outcome, adding
     the ones each rerun shows, until a rerun shows none new."""
     forced, lines = {}, []

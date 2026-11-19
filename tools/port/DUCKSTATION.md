@@ -6,7 +6,8 @@ patch is `duckstation-regtest.patch`; it applies to upstream DuckStation
 commit `2c527f4f2c689f3db06246a2c9c566fbc2323dd8`
 (<https://github.com/stenzek/duckstation>, "Qt: Add reset buttons for
 tolerance/depth threshold", 2026-06-13). Other commits change emulation and
-are not the reference.
+are not the reference. The reference runs use its exact timing mode
+(below), not the recompiler.
 
 ## Build (macOS)
 
@@ -72,11 +73,13 @@ Control verbs (one line each, answered `OK ...` or `ERR ...`):
 | `disc <path>` | change the disc |
 | `card <slot> none\|blank\|<path>` | pull the card out of slot 1 or 2, or insert a blank card or a card file (`ds_script.py`'s `RR4_DS_CARD`) |
 | `ticks` | system tick counter (33.8688 MHz) and frame number |
+| `timing` | `OK timing=exact` with `REGTEST_EXACT=1`, else the CPU mode (`Recompiler`, `Interpreter`, `CachedInterpreter`) |
 
 Environment:
 
 | Variable | Effect |
 | --- | --- |
+| `REGTEST_EXACT=1` | exact timing (below): the interpreter on the recompiler's instruction costs |
 | `REGTEST_PAD1_TYPE`, `REGTEST_PAD2_TYPE` | controller type name (`DigitalController` default on port 1, `AnalogController`, `NeGcon`, `JogCon`, ...) |
 | `REGTEST_PAD2=1` | digital pad in port 2 (default empty) |
 | `REGTEST_CARD1` | `none`: no card in slot 1; a path: that card file (shared); unset: a blank non-persistent card |
@@ -94,6 +97,58 @@ Environment:
 Port 1 is a digital pad (upstream regtest uses an analog one), port 2 and
 card slot 2 are empty unless `REGTEST_PAD2` / `REGTEST_CARD2` say otherwise, audio goes to the null backend and the renderer is
 software.
+
+## Timing modes
+
+The recompiler (DuckStation's default CPU mode) runs its timing events, the
+interrupts, DMA steps, the vblank and the MDEC's units among them, only at
+the end of the recompiled block being executed, so they land up to a block
+late: tens of clocks in the game's code, about 270 in the kernel's register
+restore before an exception's `rfe` (0x80000f40..0x80001014), whole BIOS
+loops. A console raises them at their clock. `REGTEST_EXACT=1` (the
+`timing` verb answers `exact`) runs DuckStation's interpreter, which checks
+for events after every instruction, with the recompiler's costs: it skips
+the interpreter's instruction cache fills and its multiply/divide stalls,
+which the recompiler does not model (`src/core/cpu_core_private.h`,
+`cpu_core.cpp` in the patch), so the CPU, GTE, memory and DMA costs are the
+same and only the events' placement differs. Compared on the same build:
+
+| Measurement | Recompiler | Exact |
+| --- | --- | --- |
+| VSync(1) poll (`ds_calltime.py`, fields 2000-2300) | 104 | 104 (the interpreter with its cache: 112) |
+| PadUpdate | 2003 | 2003 |
+| exception lengths by I_STAT (`DSF_EXC`, boot fields 120-140) | same | same |
+| MDEC macroblock (`DUCKSTATION_DMA_TRACE`, the opening movie) | 2959.8 | 2958.3 |
+| opening movie slice (11 macroblocks) | 32.54k (27%) or 32.77k (61%) | 32.53k (83%), 32.3k after a sector copy |
+
+The 32.77k slices are the recompiler's: the second macroblock's DMA halt
+falls in the kernel's register restore and ends after it. Exact runs take
+about as long as recompiler ones for these scripts.
+
+`tools/port/duckstation.py` runs exact timing unless `RR4_DS_TIMING=recompiler`,
+and refuses a build whose `timing` answer does not match (an older build
+without the verb). Every reference trace was regenerated in exact mode on
+2026-11-19 (`ds_compare.py`'s 19 scenarios, `ds_frames.py`'s four). What
+changed against the recompiler's references, with the same scripts:
+
+- The boot: SystemInit starts 717 clocks sooner after DuckStation's vblank
+  296 (the BIOS's boot and its CD waits); the SPU reverb clear's two vblanks
+  come after its chunks' DMA exceptions instead of inside them (2549 clocks
+  more over the 96 chunks); the AudioState bzero's 30 exceptions, taken in
+  the ROM's code, refetch its uncached instructions (1239 more). SsStart's
+  SetRCnt lands 1909 clocks later, so the 120 Hz timer's exceptions sit
+  that much later against the vblanks for the whole run, and the blanks
+  libpad and the card driver miss in them (F14) are other blanks: the card
+  scenarios' driver port alternation and pad flags differ from the boot on,
+  while modes, FrameCounter and rand stay the same in most scenarios (Grand
+  Prix from field 4922 with the old autodrive input, Save and Load and the
+  card menus around the card's prompt, two cards from 290).
+- With the events at their clock the windows in which a root counter's
+  exception hides a vblank have sharp edges in all 19 scenarios: libpad
+  makes its exchange at every blank up to 1179 clocks into one and at none
+  from 1207, the card driver takes its turn up to 1278 and at none from
+  1311 (the recompiler's references put both edges about 100 clocks
+  sooner).
 
 ## Replaying a scenario
 
@@ -176,33 +231,31 @@ pad flag, the card driver's port) from unmarked ones (`ds_script.py`,
 marks in the Versus movie put it 78 frames behind by field 1381): check a
 marked run's trace against the reference before using its times.
 
-DuckStation's recompiler raises an interrupt and runs its timing events
-(the vblank among them) at the end of the block being executed, so an
-exception's entry and a vblank move by tens of clocks with the code that
-runs when they are due: root counter 2's exceptions enter 0 to 50 clocks
-after their period (most 5-35; Save and Load, fields 300-1100), and the
-same blank's offset into the same root counter exception differs by up to
-18 clocks between two scenarios. The port's positions are linear (the blank
-every 131 fields 32.8 clocks further into the 120 Hz timer's exception), so
-a decision within that spread of a window's boundary can go either way on
-DuckStation for the same port position: at blank 1166, 1165 clocks into a
-root counter exception on the port in both, the card driver misses its turn
-in Save and Load and takes it in Versus with two cards (642: libpad's
-exchange, 1034 clocks in, missed in one and made in the other). No single
-`BIOS_CHAIN_*_TEST_CLOCKS` matches both; a scenario whose first difference
-comes from such a blank matches DuckStation within its variance, which
-`ds_compare.py --force-blanks` checks.
+On the recompiler (`RR4_DS_TIMING=recompiler`) an exception's entry and a
+vblank move by tens of clocks with the code that runs when they are due
+(the events wait for the end of the recompiled block): root counter 2's
+exceptions entered 0 to 50 clocks after their period, and the same blank's
+offset into the same root counter exception differed by up to 18 clocks
+between two scenarios, so a decision near a window's boundary could go
+either way for the same port position (blank 1166 in Save and Load against
+Versus with two cards). Exact timing has no such spread. `ds_compare.py`
+still marks a difference within 50 clocks of a window boundary, now the
+port's own resolution, and `--force-blanks` reruns the port with those
+forced.
 
 ## Timing a call
 
-A GDB breakpoint, and single-stepping, switch DuckStation from its
-recompiler to its interpreter, whose clocks differ per routine by -45% to
-+20%; the reference runs use the recompiler. `ds_calltime.py` measures
-calls there without breakpoints: it writes a timing stub into kernel RAM
+On the recompiler a GDB breakpoint, and single-stepping, switch DuckStation
+to its interpreter, whose clocks (with its instruction cache and
+multiply/divide stalls) differ per routine by -45% to +20%. Exact timing
+is the interpreter already, on the recompiler's costs, so a breakpoint
+does not change its timing. `ds_calltime.py` measures calls without
+breakpoints: it writes a timing stub into kernel RAM
 the game leaves unused and points each function at it, then prints the
 clocks of each call (`ds_calltime.py 2000 2200 PadUpdate PsyqBzero:tail:arg=a1`,
 through `run_capped.sh`; its docstring has the options). `DUMMYBP=1` sets a
-never-hit breakpoint, for the same run on the interpreter.
+never-hit breakpoint, which on the recompiler runs DuckStation's own
+interpreter.
 `ds_mark.py` logs when functions are entered instead (a stub writes a
 marker to root counter 2, which `DUCKSTATION_CD_TRACE` logs with the tick):
 for calls too long for root counter 0 and for timelines across fields, such

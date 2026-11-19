@@ -1,4 +1,4 @@
-"""ds_mark.py at until name... : when functions are entered on DuckStation's recompiler, without breakpoints.
+"""ds_mark.py at until name... : when functions are entered on DuckStation, without breakpoints.
 
 At DS field `at` it points the first two instructions of each function at a
 stub in kernel RAM the game leaves unused (0x8000C000) that writes a marker

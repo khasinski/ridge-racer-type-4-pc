@@ -1,9 +1,11 @@
-"""ds_calltime.py at until spec... : PS1 time of game and SDK calls on DuckStation's recompiler,
-without breakpoints.
+"""ds_calltime.py at until spec... : PS1 time of game and SDK calls on DuckStation, without
+breakpoints.
 
-GDB breakpoints and single-stepping switch DuckStation to its interpreter,
-whose timing differs from the recompiler the reference runs use by -45% to
-+20% per routine (docs/ARCHITECTURE.md, PS1 time model). This tool instead
+On the recompiler (RR4_DS_TIMING=recompiler) GDB breakpoints and
+single-stepping switch DuckStation to its own interpreter, whose timing
+differs by -45% to +20% per routine (tools/port/DUCKSTATION.md); the
+reference's exact timing is the interpreter on the recompiler's costs
+already, where a breakpoint changes nothing. This tool
 writes a small timing stub into kernel RAM that stays unused (0x8000A000,
 0x8000C000, 0x8000F000) and points each function's first words at it
 through GDB RAM writes, which DuckStation recompiles: the stub reads root
@@ -18,7 +20,8 @@ tail: the function is an A0/B0/C0 BIOS trampoline (li t2; jr t2; li t1),
 r8: restart root counter 2 at system clock / 8 at entry, for calls longer
 than 65535 clocks (not nest-safe), arg=a1: log (clocks, a1 at entry) pairs.
 The default stub is nest-safe and costs about 10 clocks of its own.
-DUMMYBP=1 sets a never-hit breakpoint, for the same run on the interpreter.
+DUMMYBP=1 sets a never-hit breakpoint (on the recompiler: the same run on
+DuckStation's interpreter).
 Run it through run_capped.sh with RR4_DUCKSTATION, RR4_DISC and
 RR4_DS_PORTS set (duckstation.py).
 """

@@ -88,7 +88,6 @@ enum {
      * host table holds, at the BIOS fill's 132 clocks a byte (PsyZ
      * BIOS_FILL_BYTE_CYCLES, which the recompiler confirms) */
     RR_CYCLES_BIOS_FILL_BYTE = 132,
-    RR_CYCLES_BIOS_FILL = 328, // and the call (PsyZ BIOS_FILL_CYCLES)
     /* SoundSystemInit's bzero of AudioState and RaceContext: their PS1
      * sizes (the executable's arguments) */
     RR_PS1_AUDIO_STATE_BYTES = 0xA8D0,
@@ -149,8 +148,11 @@ enum {
      * the executable 10.7 ms into a field; its crt0 reaches MainLoop
      * 6.484 ms after the next vblank, and libetc's first ResetCallback
      * takes 62.3k clocks: SystemInit starts 8.324 ms after that vblank.
-     * The port starts its fields there and spends both in MainLoop. */
-    RR_CYCLES_BOOT_TO_MAIN_LOOP = 219610,
+     * The port starts its fields there and spends both in MainLoop. On
+     * DuckStation's exact timing (tools/port/DUCKSTATION.md) SystemInit
+     * starts 717 clocks sooner, 281198 clocks after the vblank (the BIOS's
+     * boot, its CD waits, ends sooner where events run at their clock). */
+    RR_CYCLES_BOOT_TO_MAIN_LOOP = 219610 - 717,
     RR_CYCLES_FIRST_RESET_CALLBACK = 62308,
     /* CdFileStep, the frame loop's CD file state machine, around its
      * CdSync(1) poll and state handler: to the poll 23, an idle step (no

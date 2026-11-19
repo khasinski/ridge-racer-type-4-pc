@@ -270,12 +270,14 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      Prix, Time Attack, Extra Trial). The costs are in two tables, PsyZ's
      `src/timing_profile.h` (BIOS, SDK, devices, interrupts) and the game's
      `include/rr/cpu_time.h` (`RR_CPU_CYCLES`), each value with how it was
-     fitted and the commit of its run. Measure costs on DuckStation's
-     recompiler, the CPU mode of the reference runs: a GDB breakpoint or
-     single-stepping switches it to its interpreter, whose clocks differ
-     by -45% to +20% per routine (SoundUpdate 1648 against 1105, PadStartCom
-     1606 against 1317), while frame advances and RAM reads and writes
-     (`tools/port/duckstation.py`) keep the recompiler.
+     fitted and the commit of its run. Measure costs on the reference's
+     exact timing (`tools/port/DUCKSTATION.md`: DuckStation's interpreter,
+     an event at its clock, on the recompiler's instruction costs), the
+     default of `tools/port/duckstation.py`. On the recompiler a GDB
+     breakpoint or single-stepping switches to DuckStation's own
+     interpreter, whose clocks (its instruction cache, multiply/divide
+     stalls) differ by -45% to +20% per routine (SoundUpdate 1648 against
+     1105, PadStartCom 1606 against 1317).
      `tools/port/ds_calltime.py` times calls without breakpoints: it
      patches a stub that reads root counter 0 at the call and its return
      into RAM. The
