@@ -20,6 +20,7 @@
 #include "rr/track_sample_types.h"
 #include "rr/audio_loop.h"
 #include "game/math/rotmat.h"
+#include "rr/cpu_work.h"
 
 
 extern unsigned char CourseStartSteeringBias[];
@@ -51,51 +52,51 @@ void StepRaceFrame(unsigned int gameMode)
   {
     case 0:
     default:
-      ReadCarInput(PlayerCars, 0);
-      UpdatePlayerCar(PlayerCars, 0);
+      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
       break;
 
     case 1:
     case 6:
-      ReadCarInput(PlayerCars, 0);
-      UpdatePlayerCar(PlayerCars, 0);
+      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
       updateComProjections = 1;
-      UpdateComCars();
+      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
       break;
 
     case 2:
-      ReadCarInput(PlayerCars, 0);
-      ReadCarInput(PlayerCars + 1, 1);
-      UpdatePlayerCar(PlayerCars, 0);
-      UpdatePlayerCar(PlayerCars + 1, 1);
+      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
+      RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), &RrCostUpdatePlayerCar);
       break;
 
     case 3:
-      ReadCarInput(PlayerCars, 0);
-      ReadCarInput(PlayerCars + 1, 1);
-      UpdatePlayerCar(PlayerCars, 0);
-      UpdatePlayerCar(PlayerCars + 1, 1);
+      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
+      RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), &RrCostUpdatePlayerCar);
+      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), &RrCostUpdatePlayerCar);
       updateComProjections = 1;
-      UpdateComCars();
+      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
       break;
 
     case 4:
       for (i = 0; i < NumCars; i++)
       {
-        ReadCarInput(CarTable[i], i);
+        RR_WORK_CALL(ReadCarInput(CarTable[i], i), &RrCostReadCarInput);
       }
       for (i = 0; i < NumCars; i++)
       {
         if (CarTable[i]->half1E8 != (-1))
         {
-          UpdatePlayerCar(CarTable[i], i);
+          RR_WORK_CALL(UpdatePlayerCar(CarTable[i], i), &RrCostUpdatePlayerCar);
         }
       }
       break;
 
     case 5:
       updateComProjections = 1;
-      UpdateComCars();
+      RR_WORK_CALL(UpdateComCars(), &RrCostUpdateComCars);
       break;
   }
 
@@ -105,7 +106,7 @@ void StepRaceFrame(unsigned int gameMode)
     {
       if (CarTable[*carIndex]->half1E8 != (-1))
       {
-        CarUpdateStages[i](CarTable[*carIndex]);
+        RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
       }
     }
   }
@@ -185,6 +186,9 @@ void StepRaceFrame(unsigned int gameMode)
   {
     UpdateComCarTrackProjections();
   }
+  /* Its own work and the later stages' (collisions, shake, wheel nodes and
+   * bumps) by the cars it ran (rr/cpu_work.h) */
+  RrSpendStepRaceFrameOwn();
 }
 
 unsigned PointInQuad(int corner0, int corner1, int corner2, int corner3, int point) {

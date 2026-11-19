@@ -37,7 +37,8 @@ Absolute steps count port VSyncs (DuckStation frame - the offset).
 RR4_DS_POKE=addr:hexbytes@vsync[,...] stores bytes (hex PS1 address, data
 in memory order) at that field's blank, like the port's RR4_POKE, e.g.
 800f3974:01000000@1000 for SaveProgress+0x54 (the Extra Trial row).
-RR4_DS_MASKS=<file> also holds pad 1's buttons of a "vsync mask" list
+RR4_DS_MASKS=<file> also holds pad 1's buttons of a "vsync mask [mask2]" list
+(pad 2's in the third column)
 (ds_frames.py masks: RR4_AUTODRIVE's input from a port run).
 RR4_DS_CARD=slot:none|blank|path@vsync[,...] takes out or inserts a memory
 card at that field's blank (the regtest's card verb), like the port's
@@ -148,11 +149,13 @@ class Driver:
         # RR4_DS_MASKS=<file>: pad 1 masks per port vsync ("vsync mask",
         # ds_frames.py masks: RR4_AUTODRIVE's input from the port's run)
         # held besides the script's buttons, as ds_frames.py's DSF_MASKS
-        self.masks = {}
+        self.masks, self.masks2 = {}, {}
         if os.environ.get('RR4_DS_MASKS'):
             for line in open(os.environ['RR4_DS_MASKS']):
-                mv, mm = line.split()
+                mv, mm, *m2 = line.split()
                 self.masks[int(mv)] = int(mm)
+                if m2:  # pad 2's (a two-pad Versus race)
+                    self.masks2[int(mv)] = int(m2[0])
         self.pokes = []
         for item in filter(None, os.environ.get('RR4_DS_POKE', '').split(',')):
             where, at = item.split('@')
@@ -189,6 +192,8 @@ class Driver:
         for bit, button in MASKBITS:
             if self.masks.get(target[1], 0) & bit:
                 want[1].add(button)
+            if self.masks2.get(target[2], 0) & bit:
+                want[2].add(button)
         for port in (1, 2):
             if want[port] != self.held[port]:
                 self.d.release(port)

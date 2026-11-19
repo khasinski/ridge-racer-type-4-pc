@@ -155,10 +155,12 @@ void BuildViewSegmentObjectList(int player) {
             i++;
         } while (i < PrimaryVisibleViews.stream[0].count);
     }
+    CourseHostViewsFirst = PrimaryVisibleViews.stream[0].count;
     if (WideMarginX)
         AddWideNeighbourViews(player);
     if (ExtendedDrawDistance)
         AddExtendedViews();
+    CourseHostViewsEnd = PrimaryVisibleViews.stream[0].count;
 }
 
 void UpdateVisibleViewRecords(void) {
@@ -208,4 +210,5 @@ CourseViewRecord *RelFileViewRecords;
 Vec3sFields8 LightSourceAngles[3];
 AdditionalCourseViews ExtraCourseViewTable;
 VisibleCourseViews PrimaryVisibleViews;
+u32 CourseHostViewsFirst, CourseHostViewsEnd;
 VisibleCourseViews *ActiveVisibleViews;

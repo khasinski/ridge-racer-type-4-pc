@@ -267,10 +267,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      SDK calls, CD, card, SPU, GPU and interrupt handlers), measured on
      DuckStation; mode entries, `FrameCounter` and `rand` then match it
      field for field (splash, opening movie, title, attract, menus, Grand
-     Prix, Time Attack, Extra Trial). The costs are in two tables, PsyZ's
-     `src/timing_profile.h` (BIOS, SDK, devices, interrupts) and the game's
-     `include/rr/cpu_time.h` (`RR_CPU_CYCLES`), each value with how it was
-     fitted and the commit of its run. Measure costs on the reference's
+     Prix, Time Attack, Extra Trial). The costs are in three tables, PsyZ's
+     `src/timing_profile.h` (BIOS, SDK, devices, interrupts), the game's
+     `include/rr/cpu_time.h` (`RR_CPU_CYCLES`) and, for the race frame's
+     routines (physics, AI, camera, the course's and the cars' GTE
+     geometry), `src/main/system/cpuwork.c` and the course renderer's
+     passes in `src/main/gfx/submodel.c`: those spend by the work each
+     call does (`include/rr/cpu_work.h`: GTE commands by kind, packet
+     bytes, tiles and grid cells), each value with how it was fitted and
+     the commit of its run. Measure costs on the reference's
      exact timing (`tools/port/DUCKSTATION.md`: DuckStation's interpreter,
      an event at its clock, on the recompiler's instruction costs), the
      default of `tools/port/duckstation.py`. On the recompiler a GDB

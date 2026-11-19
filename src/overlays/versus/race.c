@@ -5,6 +5,7 @@
 #include "rr/overlay661_race_controller.h"
 #include "rr/frame_storage_types.h"
 #include "rr/video_timing.h"
+#include "rr/cpu_work.h"
 
 extern s32 RaceVoiceFlags;
 
@@ -211,6 +212,8 @@ block_7:
         PlayerCars[0].half1EE = 1U;
         PlayerCars[1].half1EE = 0U;
     }
+    /* the frame's own work before its step (rr/cpu_work.h) */
+    RrSpendRaceModeOwn(1);
     StepRaceFrame(GameModeType);
     if (RaceState < 4) {
         DrawStartCountdown(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, ModeFrame);

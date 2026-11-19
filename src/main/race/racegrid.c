@@ -53,6 +53,7 @@ extern int TrackLength;
 extern int TotalRaceTime;
 
 #include "game/gfx/spremit.h"
+#include "rr/cpu_work.h"
 /* Aggregate coordinate arguments still need one recovered public contract. */
 extern unsigned char PauseMenuChoiceMap[][4];
 extern char SioDeviceName[];
@@ -106,7 +107,7 @@ void SetupMenuCarCamera(int a)
   }
 }
 
-void UpdateRaceChaseCamera(RaceVehicle *p) {
+static void UpdateRaceChaseCameraWork(RaceVehicle *p) {
     struct {
         MatrixWords32 a, b;
         short v[3], reserved46;
@@ -162,6 +163,11 @@ void UpdateRaceChaseCamera(RaceVehicle *p) {
     g->position00.words[0] += s.w[0];
     g->position00.words[1] += s.w[1];
     g->position00.words[2] += s.w[2];
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void UpdateRaceChaseCamera(RaceVehicle *p) {
+    RR_WORK_CALL(UpdateRaceChaseCameraWork(p), &RrCostChaseCamera);
 }
 
 void DrawStartCountdown(GpuDmaTag *ordering, s32 frame) {

@@ -97,9 +97,11 @@ void AttractDemoRaceUpdate(void) {
   }
   StepRaceFrame(5);
   UpdateTrackObjects();
-  /* The demo race's PS1 time: after a long CD wait at its start the
-   * frame runs past the next vblank, as on the console (rr/cpu_time.h). */
-  RR_CPU_CYCLES(RR_CYCLES_ATTRACT_DEMO_LOGIC);
+  /* The demo race's PS1 time: its routines spend theirs by their work
+   * (rr/cpu_work.h), this frame function its own (rr/cpu_time.h); after a
+   * long CD wait at its start the frame runs past the next vblank, as on
+   * the console. */
+  RR_CPU_CYCLES(RR_CYCLES_ATTRACT_DEMO_OWN);
   MaskBitSetting = (one = 1);
   RaceContext.attract4BC.frame00 = RaceContext.attract4BC.frame00 + one;
   RaceContext.attract4BC.cameraTimer08 = RaceContext.attract4BC.cameraTimer08 + one;
@@ -430,7 +432,6 @@ void AttractDemoRaceUpdate(void) {
       DrawOpponentCar(CarTable[k], 2);
     }
   }
-  RR_CPU_CYCLES(RR_CYCLES_ATTRACT_DEMO_DRAW);
   ((int *)SCRATCHPAD)[0x78 / 4] = RaceQuitTargetMode;
   SetupPlayerView(0);
   DrawTrackObjects(0);

@@ -36,7 +36,8 @@ Environment: RR4_DUCKSTATION, RR4_DISC (as for duckstation.py), RR4_DECOMP
 ds.txt, port.txt, port.log, report.txt (and lowram.log/.txt; port-force*.log
 with --force-blanks).
 
-A scenario with the autodrive option (ta-full) runs the port first with
+A scenario with the autodrive option (ta-full; vs-full, both pads in the
+Versus race) runs the port first with
 RR4_AUTODRIVE and replays the input it chose on DuckStation (ds_frames.py
 masks, ds_script.py's RR4_DS_MASKS); --force-blanks reruns of it drive on
 their own, so a forced blank that changes the input ends the comparison.
@@ -87,6 +88,14 @@ RACE_STATE = [('800ff6b0:4', 'RaceState:4'), ('800ac07c:4', 'PlayerCars+388:4')]
 # replayed on DuckStation: ds_frames.py masks, RR4_DS_MASKS): three laps,
 # the replay to its end, the results and the retry's race.
 TA_AUTO = BOOT + ',down@m1/4:450,start@m1/4:550,circle@m1/50:200,circle@m1/51:200,circle@m1/51:260,circle@m1/54:200+4%120'
+# Versus with two pads, both cars driven by RR4_AUTODRIVE over the whole
+# race (no laps poked), the two-player replay to its end and the results.
+VS_AUTO = ('2:select@100,start@m2/4:700+4%300,start@m1/4:150,down@m1/4:450,down@m1/4:500,'
+           'start@m1/4:550,circle@m1/56:150,circle@m1/56:300,2:circle@m1/56:450,'
+           '2:circle@m1/56:600,circle@m1/57:200')
+# the second player's car (PS1 records 800 bytes apart, the host's 816)
+CAR2_POSE = [('800ac2e0:4', 'PlayerCars+1016:4'), ('800ac394:2', 'PlayerCars+1196:2'),
+             ('800ac39c:4', 'PlayerCars+1204:4')]
 LOW_RAM = [('80000004:4', 'Ps1LowRamImage+4:4')]
 
 # name: (fields, pads, options). Options: pokes (port RR4_POKE), ds_pokes
@@ -140,6 +149,7 @@ SCENARIOS = {
     'dualshock-ta': (12000, 'start@m1/4:150,' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     'dualshock-movie-ta': (6000, BOOT + ',' + TA_STICKS, {'pad': 'dualshock', 'watch': CAR_POSE}),
     'ta-full': (32000, TA_AUTO, {'autodrive': True, 'watch': CAR_POSE + RACE_STATE}),
+    'vs-full': (28500, VS_AUTO, {'autodrive': 2, 'watch': CAR_POSE + RACE_STATE + CAR2_POSE}),
 }
 
 
@@ -243,7 +253,7 @@ def run_port(out, binary, fields, pads, opts, card_env, card_dirs, force='', log
     if opts.get('pad'):
         env['RR4_PAD_TYPE'] = opts['pad']
     if opts.get('autodrive'):
-        env['RR4_AUTODRIVE'] = '1'
+        env['RR4_AUTODRIVE'] = str(int(opts['autodrive']))  # 2: both Versus pads
         env['RR4_AUTODRIVE_LOG'] = os.path.join(out, log_name.replace('.log', '.ad'))
     if opts.get('pokes'):
         env['RR4_POKE'] = opts['pokes']

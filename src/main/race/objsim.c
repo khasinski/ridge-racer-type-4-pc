@@ -15,6 +15,7 @@
 #include "rr/overlay661_init.h"
 #include "rr/overlay668_camera.h"
 #include "rr/audio_loop.h"
+#include "rr/cpu_work.h"
 
 extern int MenuSoundEffectMap;
 extern int RaceState;
@@ -91,7 +92,7 @@ void InterpolateObjectKeyframe(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
     }
 }
 
-void UpdateTrackObjects(void) {
+static void UpdateTrackObjectsWork(void) {
     int i;
     int s0;
     int *sp = (int *)(SCRATCHPAD + 0x7C);
@@ -361,6 +362,11 @@ void UpdateTrackObjects(void) {
 next_iter:
         ;
     }
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void UpdateTrackObjects(void) {
+    RR_WORK_CALL(UpdateTrackObjectsWork(), &RrCostUpdateTrackObjects);
 }
 
 /* Initial values of the globals this module owns. */

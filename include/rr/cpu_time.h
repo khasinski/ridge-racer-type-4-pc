@@ -179,16 +179,13 @@ enum {
      * clocks before CdReset's first acknowledge (the boot's Getstat), the
      * work between them as charged [exc] */
     RR_CYCLES_R4_DIRECTORY_READ_END = 251,
-    /* The attract demo's race frame, AttractDemoRaceUpdate up to the
-     * frame's DrawSync: the least of 169 frames (502k-614k, median 614k)
-     * [mark], so a frame that starts on time stays in its field. Its logic
-     * (StepRaceFrame and UpdateTrackObjects: 97.5k in the demo's first
-     * frame and the least of 517) comes before the cars are drawn, the
-     * rest after them (DuckStation: the cars' wheel effects draw rand()
-     * 111k-258k after the frame starts, on the console's side of a vblank
-     * the whole frame's time charged first put them past) [mark] */
-    RR_CYCLES_ATTRACT_DEMO_LOGIC = 97489,
-    RR_CYCLES_ATTRACT_DEMO_DRAW = 502220 - 97489,
+    /* The attract demo's race frame, AttractDemoRaceUpdate less the
+     * routines that spend their time by their work (rr/cpu_work.h:
+     * StepRaceFrame, UpdateTrackObjects, DrawCars, SetupPlayerView,
+     * DrawTrackObjects, DrawTrackSceneryForPlayer), interrupts' time taken
+     * out: the median of 1618 frames (10th-90th percentile 7957-9183)
+     * [mark] (it was the whole frame's least, 502k, fixed) */
+    RR_CYCLES_ATTRACT_DEMO_OWN = 8574,
 };
 
 void Psyz_SpendCycles(unsigned cycles);

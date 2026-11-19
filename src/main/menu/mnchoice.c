@@ -9,10 +9,12 @@
 #include "game/car/aipath.h"
 #include "game/menu/title.h"
 #include "game/gfx/sky.h"
+#include "rr/cpu_work.h"
 
 extern int ViewUsesCarTrackNode;
 
 void DrawTrackSceneryForPlayer(int a0);
+static void DrawTrackSceneryForPlayerWork(int a0);
 void UnpackChoiceGlyph(signed char *a0, int a1);
 s32 PackChoiceGlyph(void *arg0);
 s32 CountChoiceGlyphs(const CourseChoice4 *a0);
@@ -95,7 +97,7 @@ skip_step:;
     }
 }
 
-void DrawTrackSceneryForPlayer(int a0) {
+static void DrawTrackSceneryForPlayerWork(int a0) {
     int v;
     if (ViewUsesCarTrackNode == 1) {
         if (a0 < 2) {
@@ -108,6 +110,11 @@ void DrawTrackSceneryForPlayer(int a0) {
         v = FindTrackNodeAtXZ(p[2], p[4]);
     }
     DrawTrackScenery(v);
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void DrawTrackSceneryForPlayer(int a0) {
+    RR_WORK_DRAW(DrawTrackSceneryForPlayerWork(a0), &RrCostDrawTrackScenery);
 }
 
 void UnpackChoiceGlyph(signed char *a0, int a1) {

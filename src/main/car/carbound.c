@@ -19,10 +19,11 @@
 #include "game/race/racesamp.h"
 #include "game/data/selection.h"
 #include "game/math/rotmat.h"
+#include "rr/cpu_work.h"
 
 void SetCarBounds(RaceVehicle *a);
 
-void DrawCars(s32 a0) {
+static void DrawCarsWork(s32 a0) {
     int z; 
     int i, s2;
     RaceVehicle **p;
@@ -87,6 +88,11 @@ void DrawCars(s32 a0) {
         }
         break;
     }
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void DrawCars(s32 a0) {
+    RR_WORK_CALL(DrawCarsWork(a0), &RrCostDrawCars);
 }
 
 void SetCarBounds(RaceVehicle *vehicle)

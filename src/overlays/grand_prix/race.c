@@ -6,6 +6,7 @@
 #include "rr/frame_storage_types.h"
 #include "rr/scene_camera_state.h"
 #include "rr/video_timing.h"
+#include "rr/cpu_work.h"
 
 void ovl659_exit_race(void) {
     SetupRaceAndSceneId();
@@ -130,6 +131,8 @@ void ovl659_update_race(void) {
         UpdateFinalLapHudSprite(0);
         SubmitRaceHudPackets(GameModeType);
     }
+    /* the frame's own work before its step (rr/cpu_work.h) */
+    RrSpendRaceModeOwn(2);
     StepRaceFrame(GameModeType);
     if (RaceState == 0) {
         DrawLensFlareAndSun(PlayerCars);

@@ -22,6 +22,7 @@
 #include "rr/player_cars.h"
 #include "game/race/racemai2.h"
 #include "game/math/rotmat.h"
+#include "rr/cpu_work.h"
 
 #define G ((Scratch2D784 *)SCRATCHPAD)
 
@@ -475,13 +476,13 @@ void DrawPreviewCar(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {
 
 void DrawPlayerCar(RaceVehicle *arg0, s32 viewMode) {
     u32 interp = InterpBegin(INTERP_CAR, InterpCarId(arg0));
-    DrawPlayerCarParts(arg0, viewMode);
+    RR_WORK_DRAW(DrawPlayerCarParts(arg0, viewMode), &RrCostDrawPlayerCar);
     InterpEnd(interp);
 }
 
 void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     u32 interp = InterpBegin(INTERP_CAR, InterpCarId(arg0));
-    DrawOpponentCarParts(arg0, arg1);
+    RR_WORK_DRAW(DrawOpponentCarParts(arg0, arg1), &RrCostDrawOpponentCar);
     InterpEnd(interp);
 }
 

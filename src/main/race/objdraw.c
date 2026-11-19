@@ -41,6 +41,7 @@
 #include "game/math/rotmat.h"
 #include "rr/trig.h"
 #include "rr/vehicle_drive.h"
+#include "rr/cpu_work.h"
 
 typedef SemiTransSVec SVec;
 typedef SemiTransCVec CVec;
@@ -62,7 +63,7 @@ extern s32 TrackObjVisibleFrame[];
 extern Vec16 TrackObjWorldOrigin;
 
 
-void DrawTrackObjects(s32 arg0) {
+static void DrawTrackObjectsWork(s32 arg0) {
     MatrixWords32 sp18;
     MatrixWords32 sp38;
     MatrixWords32 sp58;
@@ -752,6 +753,11 @@ void DrawTrackObjects(s32 arg0) {
         }
     }
     InterpEnd(interp);
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void DrawTrackObjects(s32 arg0) {
+    RR_WORK_DRAW(DrawTrackObjectsWork(arg0), &RrCostDrawTrackObjects);
 }
 
 void BuildObjectMatrix(int unused, const s16 *p, MatrixWords32 *out, int flag) {

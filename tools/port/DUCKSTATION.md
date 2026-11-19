@@ -191,10 +191,13 @@ only; `ds_compare.py`'s `cards` and `card_steps` set `REGTEST_CARD1/2`,
 `RR4_CARD_SLOT` and the card directories), the Grand Prix rules to their end (the null-`Dialogue` store,
 with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
 race, Extra Trial (its row and a car poked into the save) and the DUAL
-SHOCK in analog mode through Time Attack with both sticks, and `ta-full`, a
+SHOCK in analog mode through Time Attack with both sticks, `ta-full`, a
 Time Attack race over its three laps driven by RR4_AUTODRIVE (the port runs
 first and DuckStation replays the input it chose, `ds_script.py`'s
-`RR4_DS_MASKS`), its whole replay, the results and the retry's race. `--lowram` adds
+`RR4_DS_MASKS`), its whole replay, the results and the retry's race, and
+`vs-full`, a Versus race over its three laps with both cars driven
+(`RR4_AUTODRIVE=2`, pad 2's mask the masks file's third column), the
+two-player replay to its end and the results. `--lowram` adds
 the `DS_LOWRAM_LOG` run and `lowram.txt`.
 
 Both sides also record, per blank, whether libpad made its exchange and
@@ -291,4 +294,12 @@ The port's side: a build with `-DRR4_FUNC_MARKS=ON` (Clang or GCC) compiles
 the game and PsyZ with `-finstrument-functions`; `RR4_MARK=name,...`
 prints `XMARK <name> <clocks>` at each entry with the emulated clock
 (`Psyz_EmulatedClocks`, headless only), and `PSYZ_PAD_TRACE=1` each
-blank's exact time (`at <ns>`).
+blank's exact time (`at <ns>`). `RR4_MARK_WORK=1` adds an `XWORK` line
+after each mark: the packet cursor and the GTE commands executed so far by
+opcode, the counts the race frame's CPU time model takes
+(`include/rr/cpu_work.h`). PsyZ's `PSYZ_SPU_KEY_TIME=1` logs each key-on
+register write with the clock it lands at (in a handler, where its code
+has got to); compare it with `DSF_MARKS=SsSeqCalledTbyT,SpuSetKey`, not
+with `DUCKSTATION_SPU_KEY_TRACE`, whose tick is the SPU's batch time (the
+next sync after the write, often the next vblank: its key-ons look up to a
+field late).

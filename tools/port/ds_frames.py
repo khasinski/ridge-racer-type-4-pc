@@ -26,7 +26,8 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
               blank before; the port's PSYZ_CARD_TRACE prints its own
   RR4_DS_CARD slot:none|blank|path@vsync,...: the card taken out or
               inserted at that field's blank, as ds_script.py does
-  DSF_MASKS   pad 1 masks per port vsync ("vsync mask"), RR4_AUTODRIVE's
+  DSF_MASKS   pad 1 masks per port vsync ("vsync mask [mask2]", pad 2's
+              in a two-pad Versus race), RR4_AUTODRIVE's
               input made with `masks` from the port's trace and its
               RR4_AUTODRIVE_LOG (lead 1, with one pad or two: lead 2 put
               the Versus scenario's second race a frame off at its first
@@ -208,11 +209,13 @@ def run(fields, trace_path, log_path):
     os.environ['DUCKSTATION_CD_TRACE'] = '1'
     steps = parse_pads(os.environ.get('DSF_PADS', ''))
     pokes = parse_pokes(os.environ.get('DSF_POKES', ''))
-    masks = {}
+    masks, masks2 = {}, {}
     if os.environ.get('DSF_MASKS'):
         for line in open(os.environ['DSF_MASKS']):
-            v, m = line.split()
+            v, m, *m2 = line.split()
             masks[int(v)] = int(m)
+            if m2:
+                masks2[int(v)] = int(m2[0])
     marks = [m for m in os.environ.get('DSF_MARKS', '').split(',') if m]
     mark_at = int(os.environ.get('DSF_MARK_AT', '600'))
     lead = int(os.environ.get('DSF_LEAD', '1'))
@@ -303,6 +306,8 @@ def run(fields, trace_path, log_path):
             for bit, button in MASKBITS:
                 if masks.get(target, 0) & bit:
                     want[1].add(button)
+                if masks2.get(target, 0) & bit:
+                    want[2].add(button)
             for port in (1, 2):
                 if want[port] != held[port]:
                     d.release(port)
@@ -315,8 +320,12 @@ def run(fields, trace_path, log_path):
 def make_masks(trace_path, log_path, out_path, lead):
     """RR4_AUTODRIVE_LOG lines are written at each blank the driver runs
     (race mode, RaceState 2..3), with the state the trace line of that
-    vsync shows; the controller sends the mask at that blank."""
-    drive = [int(line.split()[1]) for line in open(log_path)]
+    vsync shows; the controller sends the mask at that blank. Pad 2's
+    lines ("ModeFrame mask 2", a Versus race with two pads) come after pad
+    1's of the same blank and give a third column, pad 2's mask."""
+    lines = [line.split() for line in open(log_path)]
+    drive = [int(f[1]) for f in lines if len(f) == 2]
+    drive2 = [int(f[1]) for f in lines if len(f) == 3]
     k = 0
     with open(out_path, 'w') as o:
         for line in open(trace_path):
@@ -326,7 +335,10 @@ def make_masks(trace_path, log_path, out_path, lead):
             state = dict(x.split('=', 1) for x in f if '=' in x)
             if f[5] in RACE_MODES and 2 <= int(state.get('RaceState', 0)) <= 3:
                 if k < len(drive):
-                    o.write('%d %d\n' % (int(f[1]) + lead, drive[k]))
+                    if drive2:
+                        o.write('%d %d %d\n' % (int(f[1]) + lead, drive[k], drive2[k] if k < len(drive2) else 0))
+                    else:
+                        o.write('%d %d\n' % (int(f[1]) + lead, drive[k]))
                 k += 1
 
 

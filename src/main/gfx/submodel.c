@@ -25,6 +25,8 @@
 #include "rr/relative_file.h"
 #include "rr/course_view_types.h"
 #include "rr/camera_matrices.h"
+#include "rr/cpu_work.h"
+#include "game/camera/viewini.h"
 #include "rr/animated_track_types.h"
 #include "rr/overlay665_render_types.h"
 #include "game/data/screenframe.h"
@@ -1193,6 +1195,23 @@ static int HorizonInterpNear;
 /* Flags of a grid piece's packets (HorizonInterpPieceKept). */
 static unsigned HorizonInterpPieceFlags;
 
+/* The loop over a pass's views: nonzero while view is one of them. The
+ * views the host added (CourseHostViewsFirst..End) are drawn as host-only
+ * work, outside the PS1 time model (rr/cpu_work.h). */
+static int HorizonView(u32 view, const VisibleCourseViews *views)
+{
+    static int holding;
+    int more = view <= views->stream[0].count;
+    int host = more && views == &PrimaryVisibleViews && view > CourseHostViewsFirst &&
+               view <= CourseHostViewsEnd;
+    if (host != holding) {
+        if (host) RrWorkHoldBegin(Horizon.cursor);
+        else RrWorkHoldEnd(Horizon.cursor);
+        holding = host;
+    }
+    return more;
+}
+
 static void HorizonInterpTile(const void *record, size_t size)
 {
     static unsigned output_poll;
@@ -1234,6 +1253,8 @@ static int HorizonNearTileSkipped(void)
  * so are the grid pieces of a near tile that face away. */
 static int HorizonInterpFacing(int front, int corners)
 {
+    RrWorkCount[RR_WORK_TESTED]++; /* the PS1's test, not the host's keep */
+    RrWorkCount[RR_WORK_FACED] += front != 0;
     if (!InterpObject)
         return front;
     HorizonInterpNear = !((corners == 3 || 0x122 < gte_mfc2(GTE_SZ0)) && 0x122 < gte_mfc2(GTE_SZ1) &&
@@ -1278,11 +1299,14 @@ static int HorizonInterpLodChanged(s32 levelU, s32 levelV, s32 *previousU, s32 *
  * grid into the midpoint (see HorizonInterpLodChanged). */
 #define HORIZON_GRID(grid, levelU, levelV, ...)                                       \
     do {                                                                              \
+        RrWorkCount[RR_WORK_GRIDS]++;                                                 \
         s32 previousU_, previousV_;                                                   \
         if (HorizonInterpLodChanged((levelU), (levelV), &previousU_, &previousV_)) {  \
             const unsigned flags_ = HorizonInterpFlags;                               \
             HorizonInterpFlags = flags_ | INTERP_MIDPOINT_ONLY;                       \
+            RrWorkHoldBegin(Horizon.cursor); /* the host's midpoint grid */          \
             grid(previousU_, previousV_, __VA_ARGS__);                                \
+            RrWorkHoldEnd(Horizon.cursor);                                            \
             HorizonInterpFlags = flags_ | INTERP_FRAME_ONLY;                          \
             grid((levelU), (levelV), __VA_ARGS__);                                    \
             HorizonInterpFlags = flags_;                                              \
@@ -1499,6 +1523,7 @@ static void HorizonEmitLitGridLevels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
+            RrWorkCount[RR_WORK_CELLS]++;
             HorizonInterpSetPiece(HorizonInterpCell(levelU, levelV, t, j));
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
@@ -1571,7 +1596,7 @@ static void HorizonPassLitTiles(const VisibleCourseViews *views)
 {
     RroSceneScratchPrefix *scene = Horizon.scene;
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[0];
         const HorizonTile *tile = (const HorizonTile *)RelFileSection00 + range->first;
         u32 n;
@@ -1968,6 +1993,7 @@ static void HorizonEmitFlatGridLevels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
+            RrWorkCount[RR_WORK_CELLS]++;
             HorizonInterpSetPiece(HorizonInterpCell(levelU, levelV, t, j));
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
@@ -2018,7 +2044,7 @@ static void HorizonLitSection(const VisibleCourseViews *views, int section, cons
         gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
         gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
     }
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const u8 *record = base + (size_t)range->first * stride;
         u32 n;
@@ -2126,7 +2152,7 @@ static void HorizonFlatSection(const VisibleCourseViews *views, int section, con
     int windowed = kind != HORIZON_FLAT_PLAIN;
     int lit = kind == HORIZON_FLAT_LIT_WINDOWED;
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const u8 *record = base + (size_t)range->first * stride;
         u32 n;
@@ -2371,7 +2397,7 @@ static void HorizonPass5(const VisibleCourseViews *views)
 {
     u32 view;
     HorizonRestoreFarColor();
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[5];
         const HorizonWindowTile5 *rec = (const HorizonWindowTile5 *)RelFileSection05 + range->first;
         u32 n;
@@ -2503,7 +2529,7 @@ static void HorizonPass6(const VisibleCourseViews *views)
 {
     u32 view;
     HorizonRestoreFarColor();
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[6];
         const HorizonFlatTile6 *tile = (const HorizonFlatTile6 *)RelFileOffsetPtr6 + range->first;
         u32 n;
@@ -2517,7 +2543,7 @@ static void HorizonPass7(const VisibleCourseViews *views)
 {
     u32 view;
     HorizonRestoreFarColor();
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[7];
         const HorizonFlatWindowTile7 *rec = (const HorizonFlatWindowTile7 *)RelFileOffsetPtr7 + range->first;
         u32 n;
@@ -2560,7 +2586,7 @@ static void HorizonEmitBillboards(const VisibleCourseViews *views, int section, 
 {
     RroSceneScratchPrefix *scene = Horizon.scene;
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const HorizonBillboard8 *b = (const HorizonBillboard8 *)table + range->first;
         u32 n;
@@ -2905,7 +2931,7 @@ static void HorizonPassTris(const VisibleCourseViews *views, int section,
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const u8 *record = records + (size_t)range->first * stride;
         u32 n;
@@ -3233,6 +3259,7 @@ static void HorizonC8GridLevels(s32 levelU, s32 levelV, const u32 uv[4])
         cur[last].w.uv = (u16)HorizonDpcs((s16)c[3].w.uv, c[2].f.u << 4, c[2].f.v << 4, c[2].f.z);
         HorizonC8InterpRow(cur, last, stepCols);
         for (j = 0; j < last; j++) {
+            RrWorkCount[RR_WORK_CELLS]++;
             HorizonInterpSetPiece(HorizonInterpCell(levelU, levelV, t, j));
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             if (QuadOutsideViewport(scene, ScreenX(p0->w.xy), ScreenX(p1->w.xy), ScreenX(p2->w.xy), ScreenX(p3->w.xy),
@@ -3303,7 +3330,7 @@ static void HorizonC8Pass(const VisibleCourseViews *views, int section, u32 stri
     RroSceneScratchPrefix *scene = Horizon.scene;
     u32 viewMask = HorizonC8ScratchWord(0x128);
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const u8 *rec = records + (u32)range->first * stride;
         u32 viewFlag = (viewMask >> (view & 31)) & 1;
@@ -3691,7 +3718,7 @@ static void HorizonPassNormalTiles(const VisibleCourseViews *views, int section,
                                    u32 stride, int windowed)
 {
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[section];
         const u8 *cursor = base + (u32)range->first * stride;
         u32 n;
@@ -3852,6 +3879,7 @@ static void HorizonEmitFlatGridC7Levels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
+            RrWorkCount[RR_WORK_CELLS]++;
             HorizonInterpSetPiece(HorizonInterpCell(levelU, levelV, t, j));
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
@@ -3894,7 +3922,7 @@ static void HorizonEmitFlatGridC7Levels(s32 levelU, s32 levelV, const u32 uv[4])
 static void HorizonPassC7c(const VisibleCourseViews *views)
 {
     u32 view;
-    for (view = 1; view <= views->stream[0].count; view++) {
+    for (view = 1; HorizonView(view, views); view++) {
         const CoursePrimitiveRange *range = &views->stream[view].record->ranges10[13];
         const HorizonFlatNormalTile *tile = (const HorizonFlatNormalTile *)RelFileOffsetPtr13 + range->first;
         u32 n;
@@ -3952,6 +3980,49 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
     HorizonProgramStdMirror, HorizonProgramStdMirror, HorizonProgramStdMirror,
     HorizonProgramStdMirror, HorizonProgramCourse7Mirror, HorizonProgramCourse8};
 
+/* Each pass's PS1 time by its work (rr/cpu_work.h; per[] in the order of
+ * RR_WORK_CALL .. RR_WORK_CELLS, 1/64 clocks): fitted to DuckStation's
+ * clocks from a pass's entry to the next's, its interrupts' time taken out
+ * (DSF_MARKS at the program's entries, DSF_EXC), over the standard
+ * program's 4285 calls in Time Attack's, Versus's and the Grand Prix's
+ * four races; the residual's median and 90th percentile in clocks. The
+ * course 7 and 8 programs' own passes were not measured and take pass 6's
+ * costs. [mark] */
+static const RrWorkCost HorizonPassCosts[] = {
+    /* LitTiles: mean 467, |resid| 38, 125 */
+    {{26058, 67, 0, 0, 5937, 0, 0, 0, 0, 89, 0, 0}},
+    /* 1: 416; 40, 136 */
+    {{26166, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 2: 582; 40, 131 */
+    {{26169, 46, 1845, 1845, 3689, 0, 0, 0, 0, 0, 0, 0}},
+    /* 3: 414; 40, 133 */
+    {{26159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 4: 66637; 3111, 6975 (Time Attack's course 7.1k short) */
+    {{192334, 88, 0, 4983, 0, 950, 0, 0, 4983, 2711, 0, 3784}},
+    /* 5: 29516; 96, 365 */
+    {{20214, 45, 8280, 736, 653, 0, 2763, 0, 0, 2962, 4876, 0}},
+    /* 6: 97693; 707, 1545 (Time Attack's 2.0k short, the Grand Prix's 0.5k long) */
+    {{143324, 50, 2701, 6998, 0, 0, 4435, 0, 0, 3035, 16787, 0}},
+    /* 7: 53114; 118, 332 */
+    {{30690, 34, 4456, 2830, 1355, 0, 2602, 0, 0, 3100, 14673, 0}},
+    /* 8: 3967; 73, 233 */
+    {{42191, 97, 7442, 3701, 0, 0, 0, 0, 0, 0, 0, 0}},
+    /* 9: 969; 22, 98 */
+    {{25438, 79, 6772, 0, 0, 1104, 0, 0, 0, 3825, 0, 0}},
+    /* 10: 559; 23, 97 */
+    {{26649, 39, 2251, 0, 2005, 3425, 0, 0, 2332, 3484, 0, 0}},
+};
+
+static const RrWorkCost *HorizonPassCost(HorizonPass pass)
+{
+    static const HorizonPass passes[] = {
+        HorizonPassLitTiles, HorizonPass1, HorizonPass2, HorizonPass3, HorizonPass4, HorizonPass5,
+        HorizonPass6, HorizonPass7, HorizonPass8, HorizonPass9, HorizonPass10};
+    for (size_t i = 0; i < sizeof passes / sizeof passes[0]; i++)
+        if (passes[i] == pass) return &HorizonPassCosts[i];
+    return &HorizonPassCosts[6];
+}
+
 /* 80060C70: run the course's pass program (D_800A229C, or D_800A22C0 when
  * mirrored), keeping the packet cursor in Horizon and the far colour saved. */
 void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
@@ -3965,7 +4036,12 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     Horizon.savedFarColor[2] = gte_cfc2(GTE_FC_B);
     program = (Horizon.scene->renderFlags64 == 0 ? HorizonPrograms : HorizonMirrorPrograms)[course];
     Horizon.cursor = RR_GPU_SCRATCH->cursor;
-    for (; *program != NULL; program++) (*program)(views);
+    for (; *program != NULL; program++) {
+        RrWork work;
+        RrWorkBegin(&work, Horizon.cursor);
+        (*program)(views);
+        RrWorkSpend(&work, Horizon.cursor, HorizonPassCost(*program));
+    }
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);

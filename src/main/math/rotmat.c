@@ -11,6 +11,7 @@
 #include "game/math/rotmat.h"
 #include "game/data/globals.h"
 #include "rr/frame_interp.h"
+#include "rr/cpu_work.h"
 
 extern short AtanTable[];
 
@@ -78,7 +79,7 @@ void SetIdentityMatrix(MatrixWords32 *matrix) {
     matrix->fields.translation14[2] = 0;
 }
 
-void BuildCameraMatrices(void) {
+static void BuildCameraMatricesWork(void) {
     MatrixWords32 rotation;
     ProjectionScratchPrefix *view = (ProjectionScratchPrefix *)SCRATCHPAD;
     BuildRotMatrixY((MatrixWords32 *)SCRATCH_ROT_MATRIX, view->pose08.angles10.xyz.y);
@@ -105,6 +106,11 @@ void BuildCameraMatrices(void) {
     RearViewMirrorMatrix.halves[2] = -RearViewMirrorMatrix.halves[2];
     SetRotMatrix((int *)SCRATCH_ROT_MATRIX);
     InterpViewCamera(ActiveViewportIndex, view->pose08.position00.words, view->pose08.angles10.words);
+}
+
+/* With its PS1 time (rr/cpu_work.h). */
+void BuildCameraMatrices(void) {
+    RR_WORK_CALL(BuildCameraMatricesWork(), &RrCostCameraMatrices);
 }
 
 void BuildRotMatrixAngles(int *a0) {

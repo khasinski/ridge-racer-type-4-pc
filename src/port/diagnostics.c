@@ -108,9 +108,13 @@
  *                      (RaceState 2..3) pad 1 holds accelerate (cross) and
  *                      steers left/right towards the course centre line
  *                      from the player car's track heading and lateral
- *                      offset. Combines with RR4_PAD_SCRIPT. With
+ *                      offset; with RR4_AUTODRIVE=2, in a Versus race with
+ *                      a script that names pad 2, pad 2 drives the second
+ *                      car the same way.
+ *                      Combines with RR4_PAD_SCRIPT. With
  *                      RR4_AUTODRIVE_LOG=file it writes one line
- *                      "ModeFrame mask" per VSync it drives, which
+ *                      "ModeFrame mask" per VSync it drives (pad 2's
+ *                      "ModeFrame mask 2"), which
  *                      tools/port/duckstation.py replays on the reference
  *                      (same ModeFrame -> same buttons) for comparison;
  *                      RR4_AUTODRIVE_REPLAY=file drives from such a log;
@@ -386,12 +390,17 @@ static void load_autodrive_replay(void) {
     fclose(in);
 }
 
-static unsigned short autodrive_mask(void) {
+static unsigned short autodrive_mask(int port) {
     short lateral, track, heading;
     int error;
     unsigned short mask;
 
     if (!autodrive || RaceState < 2 || RaceState > 3)
+        return 0;
+    /* RR4_AUTODRIVE=2: pad 2 drives the second player's car in a Versus
+     * race too, when the script names pad 2 (its log lines carry a third
+     * field). */
+    if (port != 0 && (autodrive < 2 || ModeGroup != 1 || ModeIndex != 38 || !pad_script_ports[1]))
         return 0;
     /* Only in the race update modes (RaceState is stale in menus after a
      * replay): VS 1/38, GP 1/47, TA 1/53, link 1/26, Extra trial 1/82. */
@@ -402,10 +411,10 @@ static unsigned short autodrive_mask(void) {
     if (autodrive_replay_state < 0)
         load_autodrive_replay();
     if (autodrive_replay_state > 0)
-        return ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
-    lateral = PlayerCars[0].lateralOffset172;
-    track = (short)PlayerCars[0].trackAngle1EC;
-    heading = (short)PlayerCars[0].rot54;
+        return port == 0 && ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
+    lateral = PlayerCars[port].lateralOffset172;
+    track = (short)PlayerCars[port].trackAngle1EC;
+    heading = (short)PlayerCars[port].rot54;
     error = lateral / 2;
     if (error > 400)
         error = 400;
@@ -420,8 +429,12 @@ static unsigned short autodrive_mask(void) {
         mask |= 0x8000; /* left */
     if (autodrive_hold >= 0 && ModeFrame < autodrive_hold)
         mask = 0x0040; /* straight on until that ModeFrame */
-    if (autodrive_log)
-        fprintf(autodrive_log, "%d %u\n", ModeFrame, mask);
+    if (autodrive_log) {
+        if (port == 0)
+            fprintf(autodrive_log, "%d %u\n", ModeFrame, mask);
+        else
+            fprintf(autodrive_log, "%d %u 2\n", ModeFrame, mask);
+    }
     return mask;
 }
 
@@ -438,7 +451,7 @@ static unsigned char pad_stick_byte(float v) {
 }
 
 static void apply_pad_port(int port, long vsync) {
-    unsigned short mask = port == 0 ? autodrive_mask() : 0;
+    unsigned short mask = autodrive_mask(port);
     float axes[RR4_PAD_AXES] = {0};
     int moved = 0;
     for (int i = 0; i < pad_script_len; i++) {
@@ -748,7 +761,7 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     setup_card_steps(getenv("RR4_CARD_SLOT"));
     if (path_env("RR4_AUDIO_CAPTURE"))
         start_audio_capture(path_env("RR4_AUDIO_CAPTURE"));
-    autodrive = env_long("RR4_AUTODRIVE", 0) != 0;
+    autodrive = (int)env_long("RR4_AUTODRIVE", 0);
     autodrive_hold = env_long("RR4_AUTODRIVE_HOLD", -1);
     if (autodrive && path_env("RR4_AUTODRIVE_LOG"))
         autodrive_log = Psyz_FileOpen(path_env("RR4_AUTODRIVE_LOG"), "w");

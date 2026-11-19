@@ -22,6 +22,26 @@
 #include "func_marks.h"
 
 #define NO_INSTRUMENT __attribute__((no_instrument_function))
+#include "rr/gpu_scratch_types.h"
+#include <stdint.h>
+
+unsigned long long Psyz_GteOpCount(unsigned op);
+/* RR4_MARK_WORK=1: after each mark "XWORK <packet cursor> <counts>", the
+ * GTE commands executed so far of these opcodes (Psyz_GteOpCount: RTPS,
+ * NCLIP, DPCS, INTPL, MVMVA, NCDS, NCDT, NCCS, CC, NCS, NCT, SQR, DPCT,
+ * AVSZ3, AVSZ4, RTPT, GPF, GPL, NCCT): the work the race frame's CPU time
+ * model counts (rr/cpu_work.h), for fitting it. */
+NO_INSTRUMENT static void work(void) {
+    static int on = -1;
+    if (on < 0) on = getenv("RR4_MARK_WORK") != NULL;
+    if (!on) return;
+    static const int ops[] = {0x01, 0x06, 0x10, 0x11, 0x12, 0x13, 0x16, 0x1B, 0x1C, 0x1E,
+                              0x20, 0x28, 0x2A, 0x2D, 0x2E, 0x30, 0x3D, 0x3E, 0x3F};
+    fprintf(stderr, "XWORK %lu", (unsigned long)(uintptr_t)RR_GPU_SCRATCH->cursor);
+    for (unsigned i = 0; i < sizeof ops / sizeof ops[0]; i++)
+        fprintf(stderr, " %llu", Psyz_GteOpCount(ops[i]));
+    fprintf(stderr, "\n");
+}
 
 enum { MARK_MAX = 256, MARK_HASH = 1024 };
 static struct {
@@ -80,6 +100,7 @@ NO_INSTRUMENT void __cyg_profile_func_enter(void *fn, void *site) {
     for (slot = mark_slot(fn); marks[slot].fn; slot = (slot + 1) % MARK_HASH) {
         if (marks[slot].fn == fn) {
             fprintf(stderr, "XMARK %s %llu\n", marks[slot].name, Psyz_EmulatedClocks());
+            work();
             return;
         }
     }
@@ -92,8 +113,10 @@ NO_INSTRUMENT void __cyg_profile_func_exit(void *fn, void *site) {
         return;
     for (slot = mark_slot(fn); marks[slot].fn; slot = (slot + 1) % MARK_HASH) {
         if (marks[slot].fn == fn) {
-            if (marks[slot].ret)
+            if (marks[slot].ret) {
                 fprintf(stderr, "XMARK %s.ret %llu\n", marks[slot].name, Psyz_EmulatedClocks());
+                work();
+            }
             return;
         }
     }

@@ -29,6 +29,7 @@
 #include "rr/animated_glyph.h"
 #include "rr/widescreen.h"
 #include <psyz/video.h>
+#include "rr/cpu_work.h"
 static GpuRectangleFields CourseSelectPreviewUvsJp[2][7];
 static const s16 CourseSelectLabelPosYJp[8];
 static const s16 CourseSelectMapCoordsYJp[8];
@@ -120,8 +121,9 @@ void SetupViewLighting(void) {
 
 
 void SetupPlayerView(int player) {
-    BuildViewSegmentObjectList(player);
-    ApplySegmentVisibilityMask();
+    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
+    RR_WORK_CALL(ApplySegmentVisibilityMask(), &RrCostSegmentVisibility);
+    RrWorkSpend(NULL, NULL, &RrCostCourseView);
     SetupViewLighting();
     /* Lead car's angles (rot50..58) and position words. */
     SetupHorizonViewTransform(&PlayerCars[0].rot50, PlayerCars[0].position20.words);
@@ -131,9 +133,10 @@ void SetupPlayerView(int player) {
 }
 
 void RenderPlayerCourseView(int player) {
-    BuildViewSegmentObjectList(player);
+    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
     UpdateVisibleViewRecords();
-    ApplySegmentVisibilityMask();
+    RR_WORK_CALL(ApplySegmentVisibilityMask(), &RrCostSegmentVisibility);
+    RrWorkSpend(NULL, NULL, &RrCostCourseView);
     SetupViewLighting();
     SetupViewMatrix();
     WideCourseView();
@@ -146,7 +149,8 @@ void RenderMirrorCourseView(int player) {
     unsigned int v; int unused[12];
     CameraTargetTrackNode = (unsigned short)g[0x2E];
     g[0x2E] = -1;
-    BuildViewSegmentObjectList(player);
+    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
+    RrWorkSpend(NULL, NULL, &RrCostCourseView);
     v = LookupOctantVisibility();
     if (!ExtendedDrawDistance && v < PrimaryVisibleViews.objects.count) {
         PrimaryVisibleViews.objects.count = v;
