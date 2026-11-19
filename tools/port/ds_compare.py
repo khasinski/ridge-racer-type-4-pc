@@ -370,7 +370,9 @@ def port_blanks(path):
             m = t[t.index('margin') + 1:t.index('margin') + 3] if 'margin' in t else ['-1', '-1']
             cur = int(t[2])
             rows[cur] = [t[4] != '0', False, t[9], int(m[0]), int(m[1])]
-        elif line.startswith('card: vblank port') and cur in rows:
+        elif line.startswith('card: vblank port') and cur in rows and 'times out' not in line:
+            # the vblank where the driver times out a transfer to an empty
+            # port keeps its port, as DuckStation's port byte does there
             rows[cur][1] = True
     return rows
 

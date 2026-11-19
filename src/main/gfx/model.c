@@ -363,6 +363,8 @@ void RelocateModelTable(RroModelTableWire *table) {
     mesh = DecodedModelTable->entries;
     RroScene.modelEntries = mesh;
     ActiveModelVertexCount = count;
+    RR_CPU_CYCLES(RR_CYCLES_RELOCATE_MODEL_TABLE +
+                  (count > 0 ? (unsigned)count : 0u) * RR_CYCLES_RELOCATE_MODEL_ENTRY);
     while (i < count) {
         i++;
         mesh->vertices = (const Vec3s8 *)((const u8 *)table + entry[RRO_MODEL_VERTEX_WORD]);

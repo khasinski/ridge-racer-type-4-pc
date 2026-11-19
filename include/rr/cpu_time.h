@@ -296,6 +296,18 @@ enum {
      * DuckStation [mark], of which its SetLineG2 calls charge 2550 x 5 */
     RR_CYCLES_INIT_ANIMATED_TRACK_OBJECTS = 74230 - 2550 * 5,
     RR_CYCLES_LOAD_TIM_IMAGE = 201, // LoadTimImage, besides its LoadImage and DrawSync calls
+    /* A course load's relocations by their work (DSF_MARKS name:ret, DSF_EXC:
+     * course 7 and course 4's loads, 80 and 134 segments, 396 and 666 track
+     * nodes, 28 and 8 models; 7 of each base the mark's stub):
+     * RelocateRelativeFile 14300 and 23804 (176 a segment's 8 view slots),
+     * SetTrackNodeData 8000 and 13400 (20 a node's length), RelocateModelTable
+     * 671 and 211 (23 an entry) [mark] */
+    RR_CYCLES_RELOCATE_RELATIVE_FILE = 220 - 7,
+    RR_CYCLES_RELOCATE_RELATIVE_SEGMENT = 176,
+    RR_CYCLES_SET_TRACK_NODE_DATA = 80 - 7,
+    RR_CYCLES_SET_TRACK_NODE = 20,
+    RR_CYCLES_RELOCATE_MODEL_TABLE = 27 - 7,
+    RR_CYCLES_RELOCATE_MODEL_ENTRY = 23,
 };
 
 void Psyz_SpendCycles(unsigned cycles);

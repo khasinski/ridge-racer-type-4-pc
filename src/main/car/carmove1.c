@@ -1,4 +1,5 @@
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "scratchpad.h"
 #include "game/car/car.h"
 #include "game/car/carsp.h"
@@ -317,6 +318,8 @@ void SetTrackNodeData(void *data)
     for (i = 0; i < TrackNodeCount; i++) {
         TrackLength += TrackNodes[i].road.segmentLength;
     }
+    RR_CPU_CYCLES(RR_CYCLES_SET_TRACK_NODE_DATA +
+                  (TrackNodeCount > 0 ? (unsigned)TrackNodeCount : 0u) * RR_CYCLES_SET_TRACK_NODE);
     TrackLengthKilometers = TrackLength / 1024;
     TrackLengthSectorCount = (TrackLength >> 8) + 1;
 }
