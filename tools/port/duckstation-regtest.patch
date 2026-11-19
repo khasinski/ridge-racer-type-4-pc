@@ -18,7 +18,7 @@ index bcdab1926..dd08dd92e 100644
    {
      if (offset == 0x81)
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
-index 667aaab67..ad184982b 100644
+index 667aaab67..e94c29305 100644
 --- a/src/core/cdrom.cpp
 +++ b/src/core/cdrom.cpp
 @@ -38,6 +38,8 @@
@@ -91,6 +91,147 @@ index 667aaab67..ad184982b 100644
    s_state.current_subq_lba = s_state.current_lba;
    s_state.last_subq_needs_update = false;
    s_state.subq_lba_update_tick = System::GetGlobalTickCounter();
+diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
+index cf80b066c..035573ced 100644
+--- a/src/core/cpu_core.cpp
++++ b/src/core/cpu_core.cpp
+@@ -2,6 +2,7 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "cpu_core.h"
++#include "interrupt_controller.h"
+ #include "bus.h"
+ #include "cpu_code_cache_private.h"
+ #include "cpu_core_private.h"
+@@ -2122,6 +2123,13 @@ void CPU::DispatchInterrupt()
+     GTE::ExecuteInstruction(g_state.next_instruction.bits);
+   }
+ 
++  {
++    // RR4 tools/port: DUCKSTATION_DMA_TRACE=1 logs each interrupt exception's entry (no effect on timing)
++    static const bool trace = std::getenv("DUCKSTATION_DMA_TRACE") != nullptr;
++    if (trace)
++      std::fprintf(stderr, "IRQX pc %08x istat %03x tick %llu\n", g_state.pc,
++                   InterruptController::ReadRegister(0) & 0x7FF, static_cast<unsigned long long>(System::GetGlobalTickCounter()));
++  }
+   // Interrupt raising occurs before the start of the instruction.
+   RaiseException(
+     Cop0Registers::CAUSE::MakeValueForException(Exception::INT, g_state.next_instruction_is_branch_delay_slot,
+@@ -2530,6 +2538,35 @@ ALWAYS_INLINE_RELEASE void CPU::ExecutionBreakpointCheck(u32 pc)
+ template<MemoryAccessType type>
+ ALWAYS_INLINE_RELEASE void CPU::MemoryBreakpointCheck(VirtualMemoryAddress address)
+ {
++  {
++    // RR4 null-pointer watch: game code (outside the kernel's first 64 KB
++    // and the BIOS) touching PS1 RAM 0..0xFFFF.
++    static FILE* s_lowram_log = nullptr;
++    static bool s_lowram_init = false;
++    const u32 phys = address & 0x1FFFFFFFu;
++    const u32 pc = g_state.current_instruction_pc;
++    const u32 pcphys = pc & 0x1FFFFFFFu;
++    const u32 raphys = g_state.regs.ra & 0x1FFFFFFFu;
++    const bool game_pc = pcphys >= 0x10000u && pcphys < 0x200000u;
++    const bool game_ra = raphys >= 0x10000u && raphys < 0x200000u;
++    if (phys < 0x10000u && (game_pc || game_ra))
++    {
++      if (!s_lowram_init)
++      {
++        s_lowram_init = true;
++        if (const char* path = std::getenv("DS_LOWRAM_LOG"))
++          s_lowram_log = std::fopen(path, "a");
++      }
++      static std::unordered_map<u64, u32> s_lowram_seen;
++      u32& seen = s_lowram_seen[(u64(pc) << 32) | address];
++      if (s_lowram_log && seen++ < 2)
++      {
++        std::fprintf(s_lowram_log, "%c pc=%08x addr=%08x ra=%08x frame=%u\n", type == MemoryAccessType::Read ? 'R' : 'W',
++                     pc, address, g_state.regs.ra, System::GetFrameNumber());
++        std::fflush(s_lowram_log);
++      }
++    }
++  }
+   const BreakpointType bptype = (type == MemoryAccessType::Read) ? BreakpointType::Read : BreakpointType::Write;
+   if (CheckBreakpointList(bptype, address)) [[unlikely]]
+     s_locals.break_type = ExecutionBreakType::Breakpoint;
+diff --git a/src/core/dma.cpp b/src/core/dma.cpp
+index 73493c9e7..600ae3a55 100644
+--- a/src/core/dma.cpp
++++ b/src/core/dma.cpp
+@@ -26,11 +26,26 @@
+ #include "fmt/format.h"
+ 
+ #include <array>
++#include <cstdio>
++#include <cstdlib>
+ #include <memory>
+ #include <vector>
+ 
+ LOG_CHANNEL(DMA);
+ 
++// RR4 tools/port: DUCKSTATION_DMA_TRACE=1 logs DMA transfers, halts and completions with the system tick.
++static bool DmaTraceOn()
++{
++  static const bool on = std::getenv("DUCKSTATION_DMA_TRACE") != nullptr;
++  return on;
++}
++#define DMA_TRACE(...)                                                                                                 \
++  do                                                                                                                   \
++  {                                                                                                                    \
++    if (DmaTraceOn())                                                                                                  \
++      std::fprintf(stderr, __VA_ARGS__);                                                                               \
++  } while (0)
++
+ namespace DMA {
+ namespace {
+ 
+@@ -533,6 +548,8 @@ ALWAYS_INLINE_RELEASE void DMA::CompleteTransfer(Channel channel, ChannelState&
+   // start/busy bit is cleared on end of transfer
+   DEBUG_LOG("DMA transfer for channel {} complete", channel);
+   cs.channel_control.enable_busy = false;
++  DMA_TRACE("DMAC %u tick %llu\n", static_cast<u32>(channel),
++            static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+   if (s_state.DICR.ShouldSetIRQFlag(channel))
+   {
+     DEBUG_LOG("Setting DMA interrupt for channel {}", channel);
+@@ -571,6 +588,9 @@ bool DMA::TransferChannel()
+ 
+   // start/trigger bit is cleared on beginning of transfer
+   cs.channel_control.start_trigger = false;
++  DMA_TRACE("DMAT %u sync %u blocks %u tick %llu\n", static_cast<u32>(channel),
++            static_cast<u32>(cs.channel_control.sync_mode.GetValue()), cs.block_control.request.GetBlockCount(),
++            static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ 
+   PhysicalMemoryAddress current_address = cs.base_address;
+   const PhysicalMemoryAddress increment = cs.channel_control.address_step_reverse ? static_cast<u32>(-4) : UINT32_C(4);
+@@ -728,6 +748,8 @@ bool DMA::TransferChannel()
+ 
+       cs.base_address = current_address;
+       cs.block_control.request.block_count = blocks_remaining;
++      DMA_TRACE("DMAE %u left %u req %d tick %llu\n", static_cast<u32>(channel), blocks_remaining, cs.request ? 1 : 0,
++                static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ 
+       // finish transfer later if the request was cleared
+       if (blocks_remaining > 0)
+@@ -758,6 +780,8 @@ bool DMA::TransferChannel()
+ void DMA::HaltTransfer(TickCount duration)
+ {
+   s_state.halt_ticks_remaining += duration;
++  DMA_TRACE("DMAH %d active %d tick %llu\n", duration, s_state.unhalt_event.IsActive() ? 1 : 0,
++            static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+   DEBUG_LOG("Halting DMA for {} ticks", s_state.halt_ticks_remaining);
+   if (s_state.unhalt_event.IsActive())
+     return;
+@@ -771,6 +795,10 @@ void DMA::UnhaltTransfer(void*, TickCount ticks)
+   DEBUG_LOG("Resuming DMA after {} ticks", ticks, -(s_state.halt_ticks_remaining - ticks));
+   s_state.halt_ticks_remaining -= ticks;
+   s_state.unhalt_event.Deactivate();
++  DMA_TRACE("DMAU %d lag %lld pc %08x tick %llu\n", ticks,
++            static_cast<long long>(TimingEvents::GetEventRunTickCounter() - TimingEvents::GetGlobalTickCounter()),
++            CPU::g_state.pc,
++            static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ 
+   // TODO: Use channel priority. But doing it in ascending order is probably good enough.
+   // Main thing is that OTC happens after GPU, because otherwise it'll wipe out the LL.
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
 index d31bc5d83..3299937c9 100644
 --- a/src/core/gpu.cpp
@@ -117,6 +258,117 @@ index d31bc5d83..3299937c9 100644
        InterruptController::SetLineState(InterruptController::IRQ::VBLANK, new_vblank);
        s_locals.crtc_state.in_vblank = new_vblank;
      }
+diff --git a/src/core/mdec.cpp b/src/core/mdec.cpp
+index 258080e50..f12d9246f 100644
+--- a/src/core/mdec.cpp
++++ b/src/core/mdec.cpp
+@@ -19,6 +19,8 @@
+ #include "imgui.h"
+ 
+ #include <array>
++#include <cstdio>
++#include <cstdlib>
+ #include <memory>
+ 
+ LOG_CHANNEL(MDEC);
+@@ -646,6 +648,9 @@ void MDEC::ScheduleBlockCopyOut(TickCount ticks)
+ {
+   DebugAssert(!HasPendingBlockCopyOut());
+   DEBUG_LOG("Scheduling block copy out in {} ticks", ticks);
++  static const bool trace = std::getenv("DUCKSTATION_DMA_TRACE") != nullptr;
++  if (trace)
++    std::fprintf(stderr, "MDSB %d tick %llu\n", ticks, static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ 
+   s_state.block_copy_out_event.SetIntervalAndSchedule(ticks);
+ }
+@@ -654,6 +659,12 @@ void MDEC::CopyOutBlock(void* param, TickCount ticks)
+ {
+   Assert(s_state.state == State::WritingMacroblock);
+   s_state.block_copy_out_event.Deactivate();
++  static const bool trace = std::getenv("DUCKSTATION_DMA_TRACE") != nullptr;
++  if (trace)
++    std::fprintf(stderr, "MDCO lag %lld pc %08x tick %llu\n",
++                 static_cast<long long>(TimingEvents::GetEventRunTickCounter() - TimingEvents::GetGlobalTickCounter()),
++                 CPU::g_state.pc,
++                 static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ 
+   switch (s_state.status.data_output_depth)
+   {
+diff --git a/src/core/memory_card.cpp b/src/core/memory_card.cpp
+index 97212e727..31e3758c6 100644
+--- a/src/core/memory_card.cpp
++++ b/src/core/memory_card.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "memory_card.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "system_private.h"
+ 
+ #include "util/imgui_manager.h"
+@@ -108,6 +110,7 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
+ #if defined(_DEBUG) || defined(_DEVEL)
+   const State old_state = m_state;
+ #endif
++  const State trace_state = m_state;
+ 
+   switch (m_state)
+   {
+@@ -294,6 +297,26 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
+       break;
+   }
+ 
++  // DUCKSTATION_CARD_TRACE=1: each command (CARDOP, with the FLAG byte
++  // sent), each read or write's sector (CARDREAD/CARDWRITE) and the end
++  // of a frame (CARDEND, with the write's status byte), tick and frame.
++  {
++    static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
++    if (card_trace && trace_state != m_state)
++    {
++      const char* what = nullptr;
++      u32 arg = 0;
++      if (trace_state == State::Command)
++        what = "CARDOP", arg = data_in;
++      else if (m_state == State::ReadACK1 || m_state == State::WriteData)
++        what = m_state == State::ReadACK1 ? "CARDREAD" : "CARDWRITE", arg = m_address;
++      else if (m_state == State::Idle && trace_state != State::Command && trace_state != State::Idle)
++        what = "CARDEND", arg = *data_out;
++      if (what)
++        std::fprintf(stderr, "%s %x flag %02x tick %llu frame %u\n", what, arg, m_FLAG.bits,
++                     static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
++    }
++  }
+   DEBUG_LOG("Transfer, old_state={}, new_state={}, data_in=0x{:02X}, data_out=0x{:02X}, ack={}",
+             static_cast<u32>(old_state), static_cast<u32>(m_state), data_in, *data_out, ack ? "true" : "false");
+   m_last_byte = data_in;
+diff --git a/src/core/pad.cpp b/src/core/pad.cpp
+index fd6db47d8..7d6c00ef5 100644
+--- a/src/core/pad.cpp
++++ b/src/core/pad.cpp
+@@ -2,6 +2,8 @@
+ // SPDX-License-Identifier: CC-BY-NC-ND-4.0
+ 
+ #include "pad.h"
++#include <cstdio>
++#include <cstdlib>
+ #include "controller.h"
+ #include "interrupt_controller.h"
+ #include "memory_card.h"
+@@ -774,6 +776,13 @@ void Pad::DoTransfer()
+       }
+       else
+       {
++        // DUCKSTATION_CARD_TRACE=1 logs each memory card selection (0x81)
++        // with the slot, whether it holds a card, the tick and the frame.
++        static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
++        if (card_trace && data_out == 0x81)
++          std::fprintf(stderr, "CARDSEL slot %u card %d tick %llu frame %u\n",
++                       static_cast<unsigned>(s_state.JOY_CTRL.SLOT.GetValue()), memory_card ? 1 : 0,
++                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
+         if (!controller || (ack = controller->Transfer(data_out, &data_in)) == false)
+         {
+           if (!memory_card || (ack = memory_card->Transfer(data_out, &data_in)) == false)
 diff --git a/src/core/spu.cpp b/src/core/spu.cpp
 index 824a9ae9a..613295791 100644
 --- a/src/core/spu.cpp
@@ -383,6 +635,7 @@ literal 0
 HcmV?d00001
 
 diff --git a/src/duckstation-regtest/regtest_host.cpp b/src/duckstation-regtest/regtest_host.cpp
+index 85d6fa826..16ed321b2 100644
 --- a/src/duckstation-regtest/regtest_host.cpp
 +++ b/src/duckstation-regtest/regtest_host.cpp
 @@ -2,20 +2,26 @@
@@ -1266,115 +1519,3 @@ diff --git a/src/duckstation-regtest/regtest_host.cpp b/src/duckstation-regtest/
    RegTestHost::ProcessCoreThreadEvents();
    Core::CoreThreadShutdown();
    Core::ProcessShutdown();
-diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
---- a/src/core/cpu_core.cpp
-+++ b/src/core/cpu_core.cpp
-@@ -2530,6 +2530,35 @@ ALWAYS_INLINE_RELEASE void CPU::ExecutionBreakpointCheck(u32 pc)
- template<MemoryAccessType type>
- ALWAYS_INLINE_RELEASE void CPU::MemoryBreakpointCheck(VirtualMemoryAddress address)
- {
-+  {
-+    // RR4 null-pointer watch: game code (outside the kernel's first 64 KB
-+    // and the BIOS) touching PS1 RAM 0..0xFFFF.
-+    static FILE* s_lowram_log = nullptr;
-+    static bool s_lowram_init = false;
-+    const u32 phys = address & 0x1FFFFFFFu;
-+    const u32 pc = g_state.current_instruction_pc;
-+    const u32 pcphys = pc & 0x1FFFFFFFu;
-+    const u32 raphys = g_state.regs.ra & 0x1FFFFFFFu;
-+    const bool game_pc = pcphys >= 0x10000u && pcphys < 0x200000u;
-+    const bool game_ra = raphys >= 0x10000u && raphys < 0x200000u;
-+    if (phys < 0x10000u && (game_pc || game_ra))
-+    {
-+      if (!s_lowram_init)
-+      {
-+        s_lowram_init = true;
-+        if (const char* path = std::getenv("DS_LOWRAM_LOG"))
-+          s_lowram_log = std::fopen(path, "a");
-+      }
-+      static std::unordered_map<u64, u32> s_lowram_seen;
-+      u32& seen = s_lowram_seen[(u64(pc) << 32) | address];
-+      if (s_lowram_log && seen++ < 2)
-+      {
-+        std::fprintf(s_lowram_log, "%c pc=%08x addr=%08x ra=%08x frame=%u\n", type == MemoryAccessType::Read ? 'R' : 'W',
-+                     pc, address, g_state.regs.ra, System::GetFrameNumber());
-+        std::fflush(s_lowram_log);
-+      }
-+    }
-+  }
-   const BreakpointType bptype = (type == MemoryAccessType::Read) ? BreakpointType::Read : BreakpointType::Write;
-   if (CheckBreakpointList(bptype, address)) [[unlikely]]
-     s_locals.break_type = ExecutionBreakType::Breakpoint;
-diff --git a/src/core/pad.cpp b/src/core/pad.cpp
---- a/src/core/pad.cpp
-+++ b/src/core/pad.cpp
-@@ -2,6 +2,8 @@
- // SPDX-License-Identifier: CC-BY-NC-ND-4.0
- 
- #include "pad.h"
-+#include <cstdio>
-+#include <cstdlib>
- #include "controller.h"
- #include "interrupt_controller.h"
- #include "memory_card.h"
-@@ -774,6 +776,13 @@ void Pad::DoTransfer()
-       }
-       else
-       {
-+        // DUCKSTATION_CARD_TRACE=1 logs each memory card selection (0x81)
-+        // with the slot, whether it holds a card, the tick and the frame.
-+        static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
-+        if (card_trace && data_out == 0x81)
-+          std::fprintf(stderr, "CARDSEL slot %u card %d tick %llu frame %u\n",
-+                       static_cast<unsigned>(s_state.JOY_CTRL.SLOT.GetValue()), memory_card ? 1 : 0,
-+                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
-         if (!controller || (ack = controller->Transfer(data_out, &data_in)) == false)
-         {
-           if (!memory_card || (ack = memory_card->Transfer(data_out, &data_in)) == false)
-diff --git a/src/core/memory_card.cpp b/src/core/memory_card.cpp
---- a/src/core/memory_card.cpp
-+++ b/src/core/memory_card.cpp
-@@ -2,6 +2,8 @@
- // SPDX-License-Identifier: CC-BY-NC-ND-4.0
- 
- #include "memory_card.h"
-+#include <cstdio>
-+#include <cstdlib>
- #include "system_private.h"
- 
- #include "util/imgui_manager.h"
-@@ -108,6 +110,7 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
- #if defined(_DEBUG) || defined(_DEVEL)
-   const State old_state = m_state;
- #endif
-+  const State trace_state = m_state;
- 
-   switch (m_state)
-   {
-@@ -294,6 +297,26 @@ bool MemoryCard::Transfer(const u8 data_in, u8* data_out)
-       break;
-   }
- 
-+  // DUCKSTATION_CARD_TRACE=1: each command (CARDOP, with the FLAG byte
-+  // sent), each read or write's sector (CARDREAD/CARDWRITE) and the end
-+  // of a frame (CARDEND, with the write's status byte), tick and frame.
-+  {
-+    static const bool card_trace = std::getenv("DUCKSTATION_CARD_TRACE") != nullptr;
-+    if (card_trace && trace_state != m_state)
-+    {
-+      const char* what = nullptr;
-+      u32 arg = 0;
-+      if (trace_state == State::Command)
-+        what = "CARDOP", arg = data_in;
-+      else if (m_state == State::ReadACK1 || m_state == State::WriteData)
-+        what = m_state == State::ReadACK1 ? "CARDREAD" : "CARDWRITE", arg = m_address;
-+      else if (m_state == State::Idle && trace_state != State::Command && trace_state != State::Idle)
-+        what = "CARDEND", arg = *data_out;
-+      if (what)
-+        std::fprintf(stderr, "%s %x flag %02x tick %llu frame %u\n", what, arg, m_FLAG.bits,
-+                     static_cast<unsigned long long>(System::GetGlobalTickCounter()), System::GetFrameNumber());
-+    }
-+  }
-   DEBUG_LOG("Transfer, old_state={}, new_state={}, data_in=0x{:02X}, data_out=0x{:02X}, ack={}",
-             static_cast<u32>(old_state), static_cast<u32>(m_state), data_in, *data_out, ack ? "true" : "false");
-   m_last_byte = data_in;

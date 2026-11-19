@@ -44,6 +44,8 @@ DUMMYBP=1 sets a never-hit breakpoint, which runs the emulator's
 interpreter with its memory checks: with DS_LOWRAM_LOG=<file> the patched
 regtest then logs game code touching PS1 RAM 0..0xFFFF (null-pointer
 accesses; ds_lowram_report.py <file> groups them by function).
+RR4_DS_LOG=<file> keeps the emulator's output (the patched regtest's
+DUCKSTATION_*_TRACE lines), which a run does not change.
 Run it through run_capped.sh with RR4_DUCKSTATION and RR4_DISC set.
 """
 import os, struct, sys
@@ -192,7 +194,8 @@ def main():
     peeks = [(int(a, 16), int(n)) for a, n in
              (p.split(':') for p in os.environ.get('RR4_DS_PEEK', '').split(',') if p)]
     pad2 = any(s[0] == 2 for s in parse(script))
-    with DuckStation(pad2=pad2) as d:
+    log = open(os.environ['RR4_DS_LOG'], 'w') if os.environ.get('RR4_DS_LOG') else None
+    with DuckStation(pad2=pad2, log=log) as d:
         if os.environ.get('DUMMYBP'):
             d._gsend('Z0,801ffff0,4')
         drv = Driver(d, script)
