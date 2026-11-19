@@ -1,7 +1,8 @@
 /* RR4_FUNC_MARKS builds: the game modules and PsyZ are compiled with
  * -finstrument-functions and this prints, for the functions named in
  * RR4_MARK (a comma list of exported names), "XMARK <name> <clocks>" at
- * each entry, with the emulated clock (psyz/system.h Psyz_EmulatedClocks:
+ * each entry (and "XMARK <name>.ret <clocks>" at its return for a name
+ * given as name:ret), with the emulated clock (psyz/system.h Psyz_EmulatedClocks:
  * system clocks, the interrupt handlers' time owed included), and
  * "PVBLANK <vsync> <clocks>" at each VSync: the port's side of
  * tools/port/ds_frames.py's DuckStation marks, to compare where routines
@@ -26,6 +27,7 @@ enum { MARK_MAX = 256, MARK_HASH = 1024 };
 static struct {
     void *fn;
     const char *name;
+    int ret;
 } marks[MARK_HASH];
 static int state; /* 0 not set up, 1 marking, -1 off */
 
@@ -45,8 +47,12 @@ NO_INSTRUMENT static void setup(void) {
     if (!copy)
         return;
     for (tok = strtok_r(copy, ",", &save); tok && count < MARK_MAX; tok = strtok_r(NULL, ",", &save)) {
-        void *fn = dlsym(RTLD_DEFAULT, tok);
+        char *flag = strchr(tok, ':');
+        void *fn;
         unsigned slot;
+        if (flag)
+            *flag++ = '\0';
+        fn = dlsym(RTLD_DEFAULT, tok);
         if (!fn) {
             fprintf(stderr, "RR4_MARK: no symbol %s\n", tok);
             continue;
@@ -55,6 +61,7 @@ NO_INSTRUMENT static void setup(void) {
         }
         marks[slot].fn = fn;
         marks[slot].name = tok;
+        marks[slot].ret = flag && strcmp(flag, "ret") == 0;
         count++;
     }
     state = count ? 1 : -1;
@@ -79,8 +86,17 @@ NO_INSTRUMENT void __cyg_profile_func_enter(void *fn, void *site) {
 }
 
 NO_INSTRUMENT void __cyg_profile_func_exit(void *fn, void *site) {
-    (void)fn;
+    unsigned slot;
     (void)site;
+    if (state <= 0)
+        return;
+    for (slot = mark_slot(fn); marks[slot].fn; slot = (slot + 1) % MARK_HASH) {
+        if (marks[slot].fn == fn) {
+            if (marks[slot].ret)
+                fprintf(stderr, "XMARK %s.ret %llu\n", marks[slot].name, Psyz_EmulatedClocks());
+            return;
+        }
+    }
 }
 
 NO_INSTRUMENT void Rr4FuncMarksVSync(long vsync) {

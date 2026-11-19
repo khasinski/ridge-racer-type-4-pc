@@ -11,10 +11,22 @@
 #include "rr/overlay668_decode.h"
 #include "rr/cd.h"
 #include "rr/cpu_time.h"
+
 #include "rr/interrupts.h"
 #include "rr/overlay668_display.h"
 #include "rr/overlay668_frame_submit.h"
 #include "rr/overlay668_frame_acquire.h"
+
+/* PS1 time of the MDEC output callback from its entry to its DecDCTout
+ * (the flag test, the slice rectangle, ovl668_mdec_out's call): on
+ * DuckStation the callback starts 1883 clocks into the DMA interrupt's
+ * exception and DecDCTout 2086 into it (the attract movie, DSF_EXC and
+ * DSF_MARKS). Its later work is LoadImage's (PsyZ). */
+#define SLICE_CALLBACK_TO_DCTOUT_CYCLES 203
+/* ... and of a frame's step from its entry to its first slice's (the frame's
+ * DecDCTin between): 378 on DuckStation in every frame of the attract's
+ * movie (DSF_MARKS ovl668_step_stream_playback, ovl668_mdec_out). */
+#define STEP_TO_DCTOUT_CYCLES 378
 
 void ovl668_resolve_stream_file(s32 arg0, StrCdFileInfo *arg1, u32 *arg2) {
     /* Existing PAL compiler frame reserves this area; it carries no data. */
@@ -125,6 +137,7 @@ void ovl668_step_stream_playback(void)
     pixels = ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].h;
     context = initialContext;
     location = &context->streamCurrentC0;
+    RR_CPU_CYCLES(STEP_TO_DCTOUT_CYCLES);
     ovl668_mdec_out(((StrPlaybackState *)initialContext->streamStateB8)->buffers18[((StrPlaybackState *)initialContext->streamStateB8)->display24.word08], pixels / 2);
     Psyz_KernelUnlockInterrupts();
 retry:
@@ -214,6 +227,7 @@ void ovl668_on_mdec_slice_ready(void) {
     ((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08 = (((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08 == 0);
     ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].x += ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].w;
     if (((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].x < ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[((StrPlaybackState *)RaceContext.streamStateB8)->display24.alternate04].x + ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[((StrPlaybackState *)RaceContext.streamStateB8)->display24.alternate04].w) {
+        RR_CPU_CYCLES(SLICE_CALLBACK_TO_DCTOUT_CYCLES);
         ovl668_mdec_out(
             ((StrPlaybackState *)RaceContext.streamStateB8)->buffers18[((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08],
             (((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].h) / 2

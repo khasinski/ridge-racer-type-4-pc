@@ -115,6 +115,23 @@ enum {
      * The port starts its fields there and spends both in MainLoop. */
     RR_CYCLES_BOOT_TO_MAIN_LOOP = 219610,
     RR_CYCLES_FIRST_RESET_CALLBACK = 62308,
+    /* CdFileStep, the frame loop's CD file state machine, around its
+     * CdSync(1) poll and state handler: to the poll 23, an idle step (no
+     * file) 39, after a poll that finds the drive busy 77, the handler's
+     * dispatch 45 (CdFileStateStartRead's CdRead call 15 more) and the
+     * return after it 51 [mark] (DSF_MARKS CdFileStep, CdSync:ret,
+     * CdControlF, CdRead, CdReadSync, SoundUpdate: Save and Load, 1391
+     * frames) */
+    RR_CYCLES_CD_FILE_STEP = 23,
+    RR_CYCLES_CD_FILE_STEP_IDLE = 39,
+    RR_CYCLES_CD_FILE_STEP_BUSY = 77,
+    RR_CYCLES_CD_FILE_STEP_DISPATCH = 45,
+    RR_CYCLES_CD_FILE_START_READ = 15,
+    RR_CYCLES_CD_FILE_STEP_RETURN = 51,
+    /* LoadR4Directory's CdReadSync(1) loop around the call: its turns 709
+     * clocks apart on DuckStation with the call's two marks' stubs (about
+     * 17), the call 680 [mark] */
+    RR_CYCLES_CD_READ_SYNC_LOOP = 12,
     /* LoadR4Directory after its read: the directory's entries to sector
      * positions (CdIntToPos, 76 clocks, and the loop), 80.0k for 950 */
     RR_CYCLES_R4_DIRECTORY_ENTRY = 84,
