@@ -1,4 +1,5 @@
 #include "game/ui/badgespr.h"
+#include "rr/cpu_work.h"
 #include "rr/badge_rows.h"
 #include "psyq/libgpu/primattr.h"
 #include "psyq/libgpu/settrans.h"
@@ -12,7 +13,10 @@ void *AddSpriteWithDrawMode(GpuDmaTag *ordering, void *cursor,
 {
     u16 semi = (u16)transparency;
     u16 intensity = (u16)brightness;
-    SpritePacket *packet = AddDrawModePrim(ordering, cursor, 5);
+    SpritePacket *packet;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_SPRITE_WITH_DRAW_MODE);
+    packet = AddDrawModePrim(ordering, cursor, 5);
     SetSprt(packet);
     packet->x = x;
     packet->y = y;

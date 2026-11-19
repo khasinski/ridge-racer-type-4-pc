@@ -256,6 +256,16 @@ enum {
     RR_CYCLES_ADD_SPRITE_PRIM_SHADE_TEX = 14, // its SetShadeTex call instead
     RR_CYCLES_ADD_DRAW_AREA_PRIM = 320,       // AddDrawAreaPrim
     RR_CYCLES_ADD_DRAW_MODE_PRIM = 140,       // AddDrawModePrim
+    /* AddSpriteWithDrawMode besides its two AddDrawModePrim; DrawImageRow's
+     * own a cell of its 18 x 4 (a car select's image row 56.3k a frame on
+     * DuckStation: 72 of them, 41.4k, and 18 GetClut); UpdateCarWorldTransform
+     * outside the race frame's routines (Time Attack's car select, DSF_MARKS,
+     * DuckStation's exact timing, the list DMA's stalls taken out; less the
+     * marks' own stubs, about 17 clocks a call: the row's 50.5k without its
+     * callees marked) [mark] */
+    RR_CYCLES_ADD_SPRITE_WITH_DRAW_MODE = 245,
+    RR_CYCLES_DRAW_IMAGE_ROW_CELL = 150,
+    RR_CYCLES_UPDATE_CAR_WORLD_TRANSFORM = 1895,
     RR_CYCLES_DRAW_UI_ROW = 628,              // DrawUiRow (535-900 by its state)
     RR_CYCLES_DRAW_UI_BOX = 2677,             // DrawUiBox, besides its AddTilePrim
     RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT = 663,  // DrawUiWindowRowText

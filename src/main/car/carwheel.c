@@ -470,7 +470,15 @@ static u32 InterpCarId(const RaceVehicle *car) {
 
 void DrawPreviewCar(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {
     u32 interp = InterpBegin(INTERP_CAR, InterpCarId(arg0));
-    DrawPreviewCarParts(arg0, color, arg2, flags);
+    /* The menus' car (the car selects, the garage): its PS1 time by its
+     * work as the race's player car (rr/cpu_work.h); a race frame's
+     * routines include it. On DuckStation a Time Attack car select's car
+     * takes 73.7k a frame, its five DrawRroModel calls 67k, which the port
+     * did not charge (only its SubmitModel calls, 1.5k). [mark] */
+    if (!RrWorkFrame && RrWorkDepth == 0)
+        RR_WORK_DRAW(DrawPreviewCarParts(arg0, color, arg2, flags), &RrCostDrawPlayerCar);
+    else
+        DrawPreviewCarParts(arg0, color, arg2, flags);
     InterpEnd(interp);
 }
 

@@ -147,6 +147,8 @@ void UpdateCarWorldTransform(RaceVehicle *a0) {
     } L;
     int t1, t2;
     unsigned short u1, u2, u3;
+    if (!RrWorkFrame && RrWorkDepth == 0)
+        RR_CPU_CYCLES(RR_CYCLES_UPDATE_CAR_WORLD_TRANSFORM);
     a0->worldPosition10.words[0] = a0->position20.words[0] * 4;
     a0->worldPosition10.words[1] = a0->position20.words[1] * 4;
     a0->worldPosition10.words[2] = a0->position20.words[2] * 4;
