@@ -175,10 +175,10 @@ enum {
      * positions (CdIntToPos, 76 clocks, and the loop), 80.0k for 950 */
     RR_CYCLES_R4_DIRECTORY_ENTRY = 84,
     /* LoadR4Directory from its CdReadSync loop's end to the parse: on
-     * DuckStation the read's Pause completion comes 2 fields and 34871
-     * clocks before CdReset's first acknowledge (the boot's Getstat), the
-     * work between them as charged [exc] */
-    RR_CYCLES_R4_DIRECTORY_READ_END = 251,
+     * DuckStation's exact timing SsInit starts 82719 clocks after the
+     * read's Pause completion (DSF_MARKS SsInit, DUCKSTATION_DMA_TRACE),
+     * the work between them as charged [mark] */
+    RR_CYCLES_R4_DIRECTORY_READ_END = 171,
     /* The attract demo's race frame, AttractDemoRaceUpdate less the
      * routines that spend their time by their work (rr/cpu_work.h:
      * StepRaceFrame, UpdateTrackObjects, DrawCars, SetupPlayerView,
