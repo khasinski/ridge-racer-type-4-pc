@@ -167,7 +167,10 @@ tests, so a marked run's outcomes differ from the reference's: with
 904, which the reference misses, and the scenario's fields differ from 2603
 on. Take positions and durations from marked runs and outcomes (fields, the
 pad flag, the card driver's port) from unmarked ones (`ds_script.py`,
-`ds_compare.py`).
+`ds_compare.py`). A `VSync` mark stops the game (it stays at FrameCounter
+21), and a run with several marks can follow a different course (eight
+marks in the Versus movie put it 78 frames behind by field 1381): check a
+marked run's trace against the reference before using its times.
 
 DuckStation's recompiler raises an interrupt and runs its timing events
 (the vblank among them) at the end of the block being executed, so an
