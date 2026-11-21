@@ -1,4 +1,5 @@
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "game/system/pad.h"
 #include "game/car/carstat.h"
 #include "types.h"
@@ -155,11 +156,13 @@ void DrawFontString(s32 x, s32 y, const u8 *text, s32 color, s32 bank) {
     SpritePacket *packet = (SpritePacket *)RR_GPU_SCRATCH->cursor;
     u32 current_x = x;
     GpuDmaTag *ordering = &CurrentDrawBuf->buffer.ordering70.tags[bank];
+    u32 glyphs = 0, skipped = 0;
 
     while (*text != 0) {
         s32 glyph = FontGlyphForChar(*text);
         text++;
         if (glyph != 255) {
+            glyphs++;
             s32 width = FontGlyphWidth(glyph);
             if (color == 255) {
                 packet->code = 0x65;
@@ -181,9 +184,22 @@ void DrawFontString(s32 x, s32 y, const u8 *text, s32 color, s32 bank) {
             current_x += width;
         } else {
             current_x += 4U;
+            skipped++;
         }
     }
     RR_GPU_SCRATCH->cursor = (u8 *)packet;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_FONT_STRING + glyphs * RR_CYCLES_FONT_STRING_GLYPH +
+                      skipped * RR_CYCLES_FONT_STRING_SKIP);
+}
+
+/* The centring routines' own measuring loop, a character each. */
+static void SpendFontStringMeasure(const unsigned char *s) {
+    u32 chars = 0;
+    while (s[chars] != 0)
+        chars++;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_FONT_STRING_MEASURE + chars * RR_CYCLES_FONT_STRING_MEASURE_CHAR);
 }
 
 int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4) {
@@ -200,6 +216,7 @@ int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4) {
             }
         } while (*s != 0);
     }
+    SpendFontStringMeasure(s0);
     DrawFontString(0xA0 - sum / 2, a1, s0, a3, a4);
     return sum;
 }
@@ -218,6 +235,7 @@ int DrawFontStringCenteredOffset(int a0, int a1, unsigned char *s, int a3, int a
             }
         } while (*s != 0);
     }
+    SpendFontStringMeasure(s0);
     DrawFontString(a0 + (0xA0 - sum / 2), a1, s0, a3, a4);
     return sum;
 }
@@ -236,6 +254,7 @@ void DrawFontStringRight(int a0, int a1, unsigned char *s, int a3, int a4) {
             }
         } while (*s != 0);
     }
+    SpendFontStringMeasure(s0);
     DrawFontString(a0 - sum, a1, s0, a3, a4);
 }
 
@@ -245,6 +264,8 @@ void AddSetTexpagePrim(int a0) {
     RR_GPU_ADD_PRIM(&CurrentDrawBuf->buffer.ordering70.tags[a0], p, 1);
     p++;
     RR_GPU_SCRATCH->cursor = (u8 *)p;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_SET_TEXPAGE);
 }
 
 void *EmitTexturedQuadPrim(TexturedQuadDesc2C *a0)

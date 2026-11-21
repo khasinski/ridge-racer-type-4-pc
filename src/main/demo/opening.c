@@ -1,4 +1,6 @@
 #include "rr/video_timing.h"
+#include "rr/cpu_work.h"
+#include "rr/cpu_work.h"
 #include "game/system/pad.h"
 #include "types.h"
 #include "scratchpad.h"
@@ -30,6 +32,16 @@ extern s16 *HudBigDigitSprites[];
 
 s32 UpdateRaceOpeningOverlay(s32 arg0);
 void EmitProjectedMarkerSprt(int a0, int a1, int a2);
+
+/* The PS1 time of the overlay outside a race frame (a race load's waiting
+ * frames; in the Grand Prix's fly-by the race frame's own costs hold it,
+ * rr/cpu_work.h): its routines spend theirs by their glyphs (DrawGlyphList,
+ * DrawFontString, rr/cpu_time.h), the BIOS sprintf of the track number and
+ * the overlay's own code here. */
+static void SpendOpeningTrackNumber(void) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_OPENING_TRACK_NUMBER);
+}
 
 /* NTSC timing: the frames each banner element starts fading in at (the
  * NTSC release's HudRecordCrownSprites; its HudSplitSignSprites is the same
@@ -74,6 +86,7 @@ static void OpeningMusicLineJp(s32 brightness, char *text) {
     AddBrightnessSprite(HudSpeedUnitSprites + 4, 0xFC, 0xC8, brightness);
     AddBrightnessSprite(HudViewModeIconUvs, 0x4C, 0xC8, brightness);
     PsyqSprintf((s8 *)text, (const s8 *)StrFmtTwoDigitsOpening, SoundState.track28A4);
+    SpendOpeningTrackNumber();
     DrawFontString(0x5A, 0xC8, (const u8 *)text, brightness, 0);
     AddBrightnessSprite(HudLapSlashSprite, 0x6C, 0xC8, brightness);
     if (SoundState.track28A4 > 0) {
@@ -200,6 +213,7 @@ static s32 UpdateRaceOpeningOverlayJp(s32 arg0) {
         half = 0x88 - DrawFontStringCenteredOffset(0x14, 0xC8, CD_TRACK_TITLE(BgmNumberToCdTrack[SoundState.track28A4 - 1]), fade[5], 0) / 2;
         AddBrightnessSprite(HudViewModeIconUvs, half, 0xC8, fade[5]);
         PsyqSprintf((s8 *)text, (const s8 *)StrFmtTwoDigitsOpening, SoundState.track28A4);
+        SpendOpeningTrackNumber();
         DrawFontString(half + 0xE, 0xC8, (const u8 *)(text), fade[5], 0);
         AddBrightnessSprite(HudLapSlashSprite, half + 0x20, 0xC8, fade[5]);
         if (fade[5] >= 0x80 && MenuReturnSubmodeIndex != 0) {
@@ -242,6 +256,8 @@ s32 UpdateRaceOpeningOverlay(s32 arg0) {
         arg0 = RR_PAL_NTSC(0x1C2, 0x21C);
     }
 
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(s2 < 8 ? RR_CYCLES_OPENING_OVERLAY_BANNER : RR_CYCLES_OPENING_OVERLAY_MODE);
     if (s2 < 8) {
         starts = VideoTimingNtsc ? OpeningElementStartsNtsc : HudSplitSignSprites;
         for (i = 0; i < 6; i++) {
@@ -333,6 +349,7 @@ s32 UpdateRaceOpeningOverlay(s32 arg0) {
         AddBrightnessSprite(HudSpeedUnitSprites + 4, 0xFC, 0xC8, sp18[5]);
         AddBrightnessSprite(HudViewModeIconUvs, 0x4C, 0xC8, sp18[5]);
         PsyqSprintf((s8 *)sp30, (const s8 *)StrFmtTwoDigitsOpening, SoundState.track28A4);
+        SpendOpeningTrackNumber();
         DrawFontString(0x5A, 0xC8, (const u8 *)(sp30), sp18[5], 0);
         AddBrightnessSprite(HudLapSlashSprite, 0x6C, 0xC8, sp18[5]);
         if (SoundState.track28A4 <= 0) {
@@ -436,6 +453,7 @@ s32 UpdateRaceOpeningOverlay(s32 arg0) {
             AddBrightnessSprite(HudSpeedUnitSprites + 4, 0xFC, 0xC8, sp18[5]);
             AddBrightnessSprite(HudViewModeIconUvs, 0x4C, 0xC8, sp18[5]);
             PsyqSprintf((s8 *)sp30, (const s8 *)StrFmtTwoDigitsOpening, SoundState.track28A4);
+            SpendOpeningTrackNumber();
             DrawFontString(0x5A, 0xC8, (const u8 *)(sp30), sp18[5], 0);
             AddBrightnessSprite(HudLapSlashSprite, 0x6C, 0xC8, sp18[5]);
             if (SoundState.track28A4 > 0) {
@@ -447,6 +465,7 @@ s32 UpdateRaceOpeningOverlay(s32 arg0) {
             s0_3 = 0x88 - DrawFontStringCenteredOffset(0x14, 0xC8, CD_TRACK_TITLE(BgmNumberToCdTrack[SoundState.track28A4 - 1]), sp18[5], 0) / 2;
             AddBrightnessSprite(HudViewModeIconUvs, s0_3, 0xC8, sp18[5]);
             PsyqSprintf((s8 *)sp30, (const s8 *)StrFmtTwoDigitsOpening, SoundState.track28A4);
+            SpendOpeningTrackNumber();
             DrawFontString(s0_3 + 0xE, 0xC8, (const u8 *)(sp30), sp18[5], 0);
             AddBrightnessSprite(HudLapSlashSprite, s0_3 + 0x20, 0xC8, sp18[5]);
             if (sp18[5] >= 0x80 && MenuReturnSubmodeIndex != 0) {

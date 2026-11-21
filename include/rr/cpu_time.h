@@ -235,6 +235,35 @@ enum {
     RR_CYCLES_SPOTLIGHT_CONE = 4908,
 };
 
+/* The race opening overlay's routines outside a race frame (a race load's
+ * waiting frames, UpdateRaceOpeningOverlay from UpdateMenuScript), each by
+ * its work: DrawFontString 51 and 115 a glyph, 21 a character with none;
+ * the centring routines' measuring loop 177 and 21 a character;
+ * DrawGlyphList 84 (DrawGlyphListSloped 97) and 189 a glyph; the icon row,
+ * AddBrightnessSprite and AddSetTexpagePrim; the overlay's BIOS sprintf of
+ * the track number and its own code (the race banner, the mode banner).
+ * DuckStation's exact timing, DSF_MARKS name:ret on each and DSF_EXC, the
+ * Extra Trial's load and the Grand Prix's first (the marks' stubs, 25
+ * clocks a call, taken out: the overlay 7180 and 11267 clocks a frame
+ * against 7205 and 11292 with its own mark only). Not charged before, so
+ * those frames ended 7-11k early. [mark] */
+enum {
+    RR_CYCLES_FONT_STRING = 51,
+    RR_CYCLES_FONT_STRING_GLYPH = 115,
+    RR_CYCLES_FONT_STRING_SKIP = 21,
+    RR_CYCLES_FONT_STRING_MEASURE = 177,
+    RR_CYCLES_FONT_STRING_MEASURE_CHAR = 21,
+    RR_CYCLES_GLYPH_LIST = 84,
+    RR_CYCLES_GLYPH_LIST_SLOPED = 97,
+    RR_CYCLES_GLYPH_LIST_GLYPH = 189,
+    RR_CYCLES_ICON_SPRITE_ROW = 105,
+    RR_CYCLES_ADD_BRIGHTNESS_SPRITE = 122,
+    RR_CYCLES_ADD_SET_TEXPAGE = 36,
+    RR_CYCLES_OPENING_TRACK_NUMBER = 463,
+    RR_CYCLES_OPENING_OVERLAY_BANNER = 914,
+    RR_CYCLES_OPENING_OVERLAY_MODE = 831,
+};
+
 enum {
     RR_CYCLES_DRAW_LAP_TIME_LIST = 1089,
     RR_CYCLES_DRAW_LAP_TIME_ROW = 1052,

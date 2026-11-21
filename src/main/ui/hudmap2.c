@@ -1,4 +1,5 @@
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "rr/release.h"
 #include "rr/save_slots.h"
 #include "rr/save_progress.h"
@@ -50,7 +51,9 @@
     mode->tag.length = 1; \
     mode->command = 0xE1000000U | 0x23EU; \
     RR_GPU_LINK(ordering, mode); \
-    RR_GPU_SCRATCH->cursor = (u8 *)(mode + 1);
+    RR_GPU_SCRATCH->cursor = (u8 *)(mode + 1); \
+    if (!RrWorkFrame) \
+        RR_CPU_CYCLES(RR_CYCLES_ICON_SPRITE_ROW);
 
 typedef struct {
     u8 u, v, w, h;
@@ -424,6 +427,14 @@ void InitRaceOpeningOverlay(s32 arg0, s32 arg1) {
     }
 }
 
+/* A glyph list's glyphs: x, y, then glyph and gap pairs to a negative. */
+static u32 GlyphListLength(const s16 *stream) {
+    u32 glyphs = 0;
+    for (stream += 2; *stream >= 0; stream += 2)
+        glyphs++;
+    return glyphs;
+}
+
 void DrawGlyphList(s16 *stream,s32 color,s32 bank)
 {
     u32 x;
@@ -435,6 +446,8 @@ void DrawGlyphList(s16 *stream,s32 color,s32 bank)
     SpritePacketSignedClut *sprite;
     GlyphCommand8 *mode;
     UiUvRect *uv;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_GLYPH_LIST + GlyphListLength(stream) * RR_CYCLES_GLYPH_LIST_GLYPH);
     x = *stream++;
     y = *stream++;
     if (bank == 0) { clut = 0x7F78; defaultPage = 0x3E; } else { clut = 0x7E38; defaultPage = 0x25; }
@@ -522,6 +535,8 @@ void DrawGlyphListSloped(s16 *t1, s32 a1, s32 a2) {
     SpritePacketSignedClut *p;
     GpuCommandPacket *mode;
     u8 *t0;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_GLYPH_LIST_SLOPED + GlyphListLength(t1) * RR_CYCLES_GLYPH_LIST_GLYPH);
     t5 = *t1++;
     s4 = *t1++;
     if (a2 == 0) { t8 = 0x7F78; t7 = 0x3E; } else { t8 = 0x7E38; t7 = 0x25; }
@@ -602,6 +617,8 @@ void AddBrightnessSprite(unsigned char *a0x, int a1, int a2, int a3) {
     RR_GPU_LINK(&CurrentDrawBuf->buffer.ordering70.tags[0], m);
     m++;
     RR_GPU_SCRATCH->cursor = (u8 *)m;
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ADD_BRIGHTNESS_SPRITE);
 }
 
 void EmitIconSpriteRow120(s32 index,s32 color) {
