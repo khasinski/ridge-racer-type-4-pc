@@ -386,6 +386,7 @@ RroModelBank *RegisterModelBank(const void *image, s32 slot) {
     if (slot < 0 || slot >= RRO_MODEL_BANK_SLOTS) {
         abort();
     }
+    RR_CPU_CYCLES(RR_CYCLES_REGISTER_MODEL_BANK);
     bank = ModelBankStorage[slot];
     if (bank == NULL || ModelBankStorageStreams[slot] < wire->streamCount) {
         bank = realloc(bank, sizeof(*bank) + (wire->streamCount ? wire->streamCount : 1) * sizeof(bank->streams[0]));

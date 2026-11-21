@@ -308,6 +308,10 @@ enum {
     RR_CYCLES_SET_TRACK_NODE = 20,
     RR_CYCLES_RELOCATE_MODEL_TABLE = 27 - 7,
     RR_CYCLES_RELOCATE_MODEL_ENTRY = 23,
+    /* RegisterModelBank (a model bank's vertex, normal and stream offsets
+     * made addresses): 86 clocks on DuckStation with two streams, both
+     * courses' loads above, 7 of them the mark's stub [mark] */
+    RR_CYCLES_REGISTER_MODEL_BANK = 86 - 7,
 };
 
 void Psyz_SpendCycles(unsigned cycles);
