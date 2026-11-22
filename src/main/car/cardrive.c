@@ -37,7 +37,6 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
     RaceVehicleControl *temp_s1;
 
     CarFieldState *fs = CarFieldStateOf(arg0);
-    const int tick = RaceSlowTick();
 
     temp_s1 = &arg0->control;
     /* At field rate prevHeading1D6 stays the heading of one original tick
@@ -138,8 +137,12 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
 
     }
     if (temp_s1->holdFlag48 > 0) {
-        /* the shift's hold counts original ticks */
-        if (tick)
+        /* The shift's hold counts original ticks: a tick is a slow-lane
+         * field and the next (RaceTickEnd), and a shift starts on the
+         * slow-lane field after its decision, so the hold counts down on
+         * the second, keeping the original's 2 x hold fields without
+         * drive. */
+        if (RaceTickEnd())
             temp_s1->holdFlag48 = (s16) ((u16) temp_s1->holdFlag48 - 1);
         temp_s1->accel50 = 0;
     } else if (temp_a1_2 < var_s0) {

@@ -261,11 +261,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      difference and the heading's integration has the matched lead that
      the tick's end-of-step filter value gives. The corner turn's rate
      curves are built in fields (twice the duration, half the initial
-     rate). Timers (shift holds, the start boost, lane cooldowns, the
-     impact attenuation) count on `RaceSlowTick()`; the shift points are
-     taken on `RaceTickEnd()`, the field that completes a tick's half
-     steps, so the speed crosses a threshold by a tick's step as on the
-     console. `prevHeading1D6` / `prevInput1DA` hold the values of one
+     rate). A tick is a slow-lane field and the `RaceTickEnd()` field
+     after it. Timers (the start boost, lane cooldowns) count on
+     `RaceSlowTick()`; the shift points are taken on `RaceTickEnd()`, so
+     the speed crosses a threshold by a tick's step as on the console, and
+     the shift's hold (which starts on the next slow-lane field) counts
+     down on it, so it lasts the original's 2 x hold fields. An impact's
+     attenuation (a reversed drive after a bounce back) holds for both
+     fields of the tick after it (`RaceFieldCount` at the impact), not
+     until the next field's `UpdateComCarTrackProjections`. `prevHeading1D6` / `prevInput1DA` hold the values of one
      tick (two fields) ago, so the shared stages' one-tick differences
      (body roll, contact sounds) keep their meaning. With
      `RaceFieldCarStep` `UpdateComCarTrackProjections` reacts to an

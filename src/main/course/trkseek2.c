@@ -30,10 +30,17 @@ void UpdateComCarTrackProjections(void)
                 s0->laneTarget3C = u;
                 v = s1->input; if (v < 0) v = 0x20; else v = 0x10;
                 s0->attenuation4A = v;
+                CarFieldStateOf(s1)->rem[CAR_FIELD_REM_AI_IMPACT_FIELD] = (s32)RaceFieldCount;
                 v = s1->input;
                 if (v < 0) v = -v;
                 s0->speed4C = v << 8;
-            } else {
+            } else if (!RaceFieldRateLive ||
+                       RaceFieldCount - (u32)CarFieldStateOf(s1)->rem[CAR_FIELD_REM_AI_IMPACT_FIELD] >=
+                           (u32)RaceFieldsPerTick()) {
+                /* The impact's attenuation (and its reversed accel after a
+                 * bounce back) holds for the one tick of driving after it:
+                 * both fields of it at field rate, where this runs every
+                 * field. */
                 s0->attenuation4A = 0;
             }
         }
