@@ -24,7 +24,7 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
               800-byte records)
   DSF_CARDPORT=1  append "cport <n>": the BIOS card driver's port byte
               (PS1 0x7264) as the line is read, the port it served at the
-              blank before; the port's PSYZ_CARD_TRACE prints its own
+              blank before
   RR4_DS_CARD slot:none|blank|path@vsync,...: the card taken out or
               inserted at that field's blank, as ds_script.py does
   DSF_MASKS   pad 1 masks per port vsync ("vsync mask [mask2]", pad 2's
@@ -36,7 +36,7 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
   DSF_MARKS   name[:ret][@mG/I],...: stubs at these functions' entries (and
               returns with :ret) write a marker to EXP2 0x1F802090, which
               the patched regtest logs as XMARK with its tick (no effect on
-              emulation but the stub's ~15 clocks; unlike ds_mark.py's root
+              emulation but the stub's ~15 clocks; unlike root
               counter 2 writes it does not move the sequencer). Unanchored
               marks are installed at DuckStation field DSF_MARK_AT (default
               600), @mG/I ones at each entry into that mode (overlay code).

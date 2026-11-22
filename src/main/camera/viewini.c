@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/widescreen.h"
 #include "rr/draw_distance.h"
 #include "rr/rro_model.h"
@@ -53,7 +52,6 @@ void InitCourseViewState(void) {
     int i;
     char *p;
     ViewInitScratch *g = (ViewInitScratch *)SCRATCHPAD;
-    RR_CPU_CYCLES(RR_CYCLES_INIT_COURSE_VIEW);
     InitViewLighting();
     ViewUsesCarTrackNode = 1;
     DefaultSegmentVisibilityMask = 0x1400;

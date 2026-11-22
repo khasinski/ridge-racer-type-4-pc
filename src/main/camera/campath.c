@@ -1,6 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
-#include "rr/ps1_sizes.h"
 #include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "rr/audio_state_types.h"
@@ -33,8 +30,6 @@ typedef struct {
 extern u16 HudFinalLapBannerParts[];
 
 void DrawPresentationTrackModel(void) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_PRESENTATION_TRACK_MODEL);
     MotionMarkerWork work;
     PresentationController *controller;
     u16 *row;
@@ -84,7 +79,7 @@ void DrawPresentationTrackModel(void) {
 
 void InitMotionTrack(int selection) {
     MotionTrack44 *track = &MotionControllerView()->track;
-    PsyqBzeroPs1(track, sizeof(*track), RR_PS1_MOTION_TRACK_BYTES);
+    PsyqBzero(track, sizeof(*track));
     track->disabled = 0;
     track->key = &MotionTrackTable[selection];
     track->scale = 0x1000;
@@ -174,7 +169,7 @@ void UpdateMotionTrack(MotionClock20 *clock) {
 
 void InitMotionController(void) {
     RaceContext.controllerSlot3D8 = 1; /* MotionController = &presentation250 */
-    PsyqBzeroPs1(&RaceContext.presentation250, sizeof(PresentationController), RR_PS1_PRESENTATION_CONTROLLER_BYTES);
+    PsyqBzero(&RaceContext.presentation250, sizeof(PresentationController));
     RaceContext.presentation250.position.z = -0x1388;
     RaceContext.presentation250.viewDistance48 = 0x1B8;
     RaceContext.presentation250.lighting20.matrix.fields.vectors[0].x = 0x1C1;

@@ -13,9 +13,6 @@ option(BUILD_TESTING "Build native game tests" OFF)
 option(RR4_BUILD_GAME "Compile the game modules (src/main, src/overlays) into rr4_game" ON)
 option(RR4_MACOS_BUNDLE "Package the macOS application bundle (Ridge Racer Type 4.app)" OFF)
 option(RR4_DIAGNOSTICS "Build the RR4_* test and diagnostic hooks (src/port/diagnostics.c); off for releases" ON)
-# RR4_MARK timing marks (src/port/func_marks.c): the game and PsyZ built with
-# -finstrument-functions (Clang or GCC); a measuring build, not for play.
-option(RR4_FUNC_MARKS "Instrument the game and PsyZ for RR4_MARK timing marks (diagnostics)" OFF)
 # RR4_WATCH / RR4_POKE find globals by name among the executable's exports.
 # macOS executables export them anyway; elsewhere this option does, by
 # default whenever the hooks are built.
@@ -111,15 +108,6 @@ target_link_libraries(ridge-racer-type-4-pc PRIVATE rr4_host psyz)
 if(RR4_DIAGNOSTICS)
     target_sources(ridge-racer-type-4-pc PRIVATE src/port/diagnostics.c src/port/diagnostics_parse.c)
     target_compile_definitions(ridge-racer-type-4-pc PRIVATE RR4_DIAGNOSTICS=1)
-    if(RR4_FUNC_MARKS AND RR4_BUILD_GAME)
-        if(MSVC)
-            message(FATAL_ERROR "RR4_FUNC_MARKS needs -finstrument-functions (Clang or GCC)")
-        endif()
-        target_sources(ridge-racer-type-4-pc PRIVATE src/port/func_marks.c)
-        target_compile_definitions(ridge-racer-type-4-pc PRIVATE RR4_FUNC_MARKS=1)
-        target_compile_options(rr4_game PRIVATE -finstrument-functions)
-        target_compile_options(psyz PRIVATE -finstrument-functions)
-    endif()
 else()
     target_compile_definitions(ridge-racer-type-4-pc PRIVATE RR4_DIAGNOSTICS=0)
 endif()

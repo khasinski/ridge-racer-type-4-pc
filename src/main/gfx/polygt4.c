@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "psyq/libgte/gtemat5.h"
 #include "psyq/libgte/gtemat4.h"
 #include "psyq/libgte/gtemat3.h"
@@ -38,8 +36,6 @@ typedef struct {
 } MenuGridPolyGT4;
 
 void DrawMenuGridMesh(s32 arg0, GpuDmaTag *arg1, s32 arg2) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_MENU_GRID_MESH);
     MatrixWords32 sp10;
     MatrixWords32 sp30;
     SVECTOR sp50;

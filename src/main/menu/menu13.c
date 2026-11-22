@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/ps1_low_ram.h"
 /* RODATA 0x800105b0 0x18 */
@@ -18,7 +17,6 @@
 void UpdateDialogue(int a0, int a1, MenuTextState *s);
 
 void UpdateDialogue(int a0, int a1, MenuTextState *s) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_DIALOGUE);
     unsigned short *p;
     int i;
     int v;
@@ -175,7 +173,6 @@ void SkipDialoguePage(MenuTextState *arg0) {
 }
 
 s32 DecodeCourseIndex(s32 a0) {
-    RR_CPU_CYCLES(RR_CYCLES_DECODE_COURSE_INDEX);
     ReverseCourse = a0 >= 8;
     return CoursePreviewSceneIds[a0 & 7];
 }

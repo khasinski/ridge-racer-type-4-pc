@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/data/savedat.h"
 #include "rr/overlay662_init.h"
 #include "game/menu/menu8.h"
@@ -14,7 +13,6 @@ extern TimeRecord16 RaceRecords[2][8][5];
 extern TimeRecord16 LapRecords[2][8][5];
 
 void BuildSaveData(int mode) {
-    RR_CPU_CYCLES(RR_CYCLES_BUILD_SAVE_DATA);
     GameSaveData1AA8 *gameSave;
     EmblemSaveData1380 *emblemSave;
     int i;

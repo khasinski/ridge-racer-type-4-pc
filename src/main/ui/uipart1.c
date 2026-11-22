@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/ui/badge1.h"
 #include "rr/release.h"
 #include "rr/widescreen.h"
@@ -75,7 +74,6 @@ static s32 Vec2sWord(const Vec2s *v) {
 }
 
 void UpdateScreenFade(int a0) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SCREEN_FADE);
     B4 sp;
     int a, t, a1;
     ScreenFadeState0C *st = &ScreenFadeState;
@@ -134,7 +132,6 @@ void ClearScreenOverlayState(void) {
 
 
 void DrawMenuFrame(int arg0) {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_MENU_FRAME);
     R4 sp30;
     int s7;
     int y;
@@ -320,7 +317,7 @@ void DrawMenuFrame(int arg0) {
     }
 }
 
-void SetMenuFrameOptions(s32 a, s32 b, s32 c) { RR_CPU_CYCLES(RR_CYCLES_SET_MENU_FRAME_OPTIONS); MenuFrameState.sE = a; MenuFrameState.bC = b; MenuFrameState.bD = c; }
+void SetMenuFrameOptions(s32 a, s32 b, s32 c) { MenuFrameState.sE = a; MenuFrameState.bC = b; MenuFrameState.bD = c; }
 
 void DrawArrowTrianglePair(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5) {
     s32 i, j, k, sel, sg, off;
@@ -379,7 +376,6 @@ void DrawMenuStepArrows(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4, s32 a5, s32 a6) 
         s32 pad;
         B8 u;
     } w;
-    RR_CPU_CYCLES(RR_CYCLES_MENU_STEP_ARROWS);
     a0 = p0;
     a1 = p1;
     a2 = p2;
@@ -429,7 +425,6 @@ void StepMenuValue(int a0, int a1, char *a2, int a3, int a4) {
     int s0 = 0;
     int a;
     unsigned short b;
-    RR_CPU_CYCLES(RR_CYCLES_STEP_MENU_VALUE + (a1 == 4 ? RR_CYCLES_STEP_MENU_VALUE_INT : 0));
     switch (a1) {
     case 2:
         s0 = *(short *)a2;
@@ -577,7 +572,6 @@ void CopyStringPadSpaces(char *d, unsigned char *s, int n) {
 }
 
 void FormatDecimalDigits(char *a, int b, int c) {
-    RR_CPU_CYCLES(RR_CYCLES_FORMAT_DECIMAL_DIGITS);
     int t;
     a[c] = b % 10 + 0x30;
     t = b / 10;
@@ -639,8 +633,6 @@ void DrawLapTimeList(int a0) {
     int y;
     SpritePacket *p;
 
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_LAP_TIME_LIST +
-                  RR_CYCLES_DRAW_LAP_TIME_ROW * (NumLaps > 0 ? (unsigned)NumLaps : 1u));
     s7 = PlayerCars[a0].control.dynamics94.steering.finish20;
     p0 = &PlayerCars[a0];
     v = NumLaps;
@@ -700,7 +692,6 @@ void DrawTimeRemaining(int a)
     /* HUD sprite 5 carries the time-remaining row's Y. */
     SpritePacket *p = &CurrentDrawBuf->buffer.hudSprites[5];
     char *r;
-    RR_CPU_CYCLES(RR_CYCLES_TIME_REMAINING);
     r = FormatFrameTimeMMSS(a);
     int i = a < RR_PAL_NTSC(0x5DC, 0x708); /* the last minute */
     int t = StepProgressBarWidths[i];
@@ -721,7 +712,6 @@ void DrawTimeRemainingForPlayer(int a, int b)
     } else {
         q = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
     }
-    RR_CPU_CYCLES(RR_CYCLES_TIME_REMAINING);
     r = FormatFrameTimeMMSS(a);
     i = a < RR_PAL_NTSC(0x5DC, 0x708);
     t = StepProgressBarWidths[i];
@@ -733,7 +723,6 @@ char *FormatMillisecondsTime(int t)
     int a, b, c;
     char *p;
 
-    RR_CPU_CYCLES(RR_CYCLES_FORMAT_MS_TIME);
     a = t / 1000;
     b = a / 60;
     c = a % 60;

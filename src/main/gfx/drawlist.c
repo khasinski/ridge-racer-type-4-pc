@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
@@ -72,8 +70,6 @@ extern const VectorWords16 TitleModelPosLayer1;
 
 
 void StepIntroScene(void) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_INTRO_SCENE);
     int idx;
     int temp_s5;
     IntroSceneState *g, *g_a0, *g_v1;

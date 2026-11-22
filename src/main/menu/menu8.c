@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/ui/uipart1.h"
 #include "game/menu/menutra21.h"
 #include "game/data/menuvars.h"
@@ -236,7 +235,6 @@ void UpdateDialoguePanel(void) {
 }
 
 void UpdateDialogueBox(void) {
-    RR_CPU_CYCLES(RR_CYCLES_DIALOGUE_BOX);
     BadgeRow1C *temp_v0;
 
     if (BadgeRows[Dialogue->s16].state10 == 3) {

@@ -1,5 +1,4 @@
 #include "rr/bios_devices.h"
-#include "rr/ps1_sizes.h"
 #include "rr/release.h"
 #include <stdio.h>
 #include "rr/overlay_module.h"
@@ -12,29 +11,12 @@
 #include "rr/overlay668_playback_step.h"
 #include "rr/overlay668_decode.h"
 #include "rr/cd.h"
-#include "rr/cpu_time.h"
+#include "psyq/libcd/s_1.h"
 
 #include "rr/interrupts.h"
 #include "rr/overlay668_display.h"
 #include "rr/overlay668_frame_submit.h"
 #include "rr/overlay668_frame_acquire.h"
-
-/* PS1 time of the MDEC output callback from its entry to its DecDCTout
- * (the flag test, the slice rectangle, ovl668_mdec_out's call): on
- * DuckStation the callback starts 1883 clocks into the DMA interrupt's
- * exception and DecDCTout 2086 into it (the attract movie, DSF_EXC and
- * DSF_MARKS). Its later work is LoadImage's (PsyZ). */
-#define SLICE_CALLBACK_TO_DCTOUT_CYCLES 203
-/* ... and of a frame's step from its entry to its first slice's (the frame's
- * DecDCTin between): 378 on DuckStation in every frame of the attract's
- * movie (DSF_MARKS ovl668_step_stream_playback, ovl668_mdec_out), 46 of
- * them before its DecDCTin's call (DSF_MARKS ovl668_mdec_in too, its
- * stub's 7 out: the opening movie with the unformatted card, fields
- * 760-790; the call came at the step's entry, so the decode ran 46 early
- * and a slice's end that comes in a root counter's exception went to
- * libetc's first look instead of DuckStation's second, vsync 790). */
-#define STEP_TO_DCTIN_CYCLES 46
-#define STEP_TO_DCTOUT_CYCLES (378 - STEP_TO_DCTIN_CYCLES)
 
 void ovl668_resolve_stream_file(s32 arg0, StrCdFileInfo *arg1, u32 *arg2) {
     /* Existing PAL compiler frame reserves this area; it carries no data. */
@@ -75,7 +57,7 @@ void ovl668_init_stream_playback(void)
     LoadCursor = state;
     RaceContext.streamStateB8 = state;
     LoadCursor = (u8 *)state + sizeof(*state);
-    PsyqBzeroPs1(state, sizeof(*state), RR_PS1_STR_PLAYBACK_STATE_BYTES);
+    PsyqBzero(state, sizeof(*state));
     ResetGraph(3);
     CdSync(0, 0);
     CdControl(9, 0, 0);
@@ -140,13 +122,11 @@ void ovl668_step_stream_playback(void)
     ModeFrame = timer;
     if (timer == 4) SetDispMask(1);
     initialContext = &RaceContext;
-    RR_CPU_CYCLES(STEP_TO_DCTIN_CYCLES);
     Psyz_KernelLockInterrupts();
     ovl668_mdec_in(((StrPlaybackState *)initialContext->streamStateB8)->commands10[((StrPlaybackState *)initialContext->streamStateB8)->display24.word00], 3);
     pixels = ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].h;
     context = initialContext;
     location = &context->streamCurrentC0;
-    RR_CPU_CYCLES(STEP_TO_DCTOUT_CYCLES);
     ovl668_mdec_out(((StrPlaybackState *)initialContext->streamStateB8)->buffers18[((StrPlaybackState *)initialContext->streamStateB8)->display24.word08], pixels / 2);
     Psyz_KernelUnlockInterrupts();
 retry:
@@ -236,7 +216,6 @@ void ovl668_on_mdec_slice_ready(void) {
     ((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08 = (((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08 == 0);
     ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].x += ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].w;
     if (((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].x < ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[((StrPlaybackState *)RaceContext.streamStateB8)->display24.alternate04].x + ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[((StrPlaybackState *)RaceContext.streamStateB8)->display24.alternate04].w) {
-        RR_CPU_CYCLES(SLICE_CALLBACK_TO_DCTOUT_CYCLES);
         ovl668_mdec_out(
             ((StrPlaybackState *)RaceContext.streamStateB8)->buffers18[((StrPlaybackState *)RaceContext.streamStateB8)->display24.word08],
             (((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)RaceContext.streamStateB8)->display24.rectangles[2].h) / 2
@@ -250,17 +229,6 @@ void ovl668_on_mdec_slice_ready(void) {
     LoadImage(&sp10, ((StrPlaybackState *)RaceContext.streamStateB8)->buffers18[prev2C]);
 }
 
-/* The PS1 decodes a frame's VLC in software while the MDEC works on the
- * previous one: about 1.32 ms plus 2.55 us per MDEC word it writes
- * (DuckStation, 320x176 frames of 1,400..9,100 words). The frame's ring
- * slots are freed after it, and the MDEC callbacks run meanwhile. */
-#define VLC_FRAME_NS 1320000u
-#define VLC_WORD_NS 2550u
-
-static void ovl668_spend_vlc_time(const StrCommandHeader *commands) {
-    Psyz_SpendTime(VLC_FRAME_NS + VLC_WORD_NS * ovl668_mdec_buf_size(commands));
-}
-
 s32 ovl668_decode_next_frame(StrDisplayConfig *config) {
     u8 *data;
     s32 remaining = 2000;
@@ -272,7 +240,10 @@ s32 ovl668_decode_next_frame(StrDisplayConfig *config) {
         if (data != 0) {
             break;
         }
-        if (--remaining == 0) {
+        /* The first call comes before the stream's read has started (the
+         * caller seeks after this -1): with nothing reading, the PS1's
+         * 4,000,000 polls only took their time. */
+        if (--remaining == 0 || !(CdStatus() & 0x20 /* CdlStatRead */)) {
             return -1;
         }
     }
@@ -284,7 +255,6 @@ s32 ovl668_decode_next_frame(StrDisplayConfig *config) {
         return -2;
     }
     config->word00 = index;
-    ovl668_spend_vlc_time(commands);
     return (s32)StFreeRing(data);
 }
 
@@ -329,11 +299,8 @@ u8 *ovl668_acquire_stream_frame(StrDisplayConfig *config, size_t *bytes) {
  return data;
 }
 
-/* PS1 time of one iteration of the wait below (two uncached loads and a
- * store): the MDEC callbacks, timed on the emulated clock, set ready0C
- * while it spins. */
-#define WAIT_FRAME_ITERATION_NS 470
-
+/* The MDEC callbacks set ready0C (on the host the frame's slices are all
+ * decoded and loaded by the time the step's DecDCTout returns). */
 void ovl668_wait_frame_ready(StrDisplayConfig *config,s32 mode)
 {
     volatile u32 counter=0x800000;
@@ -341,7 +308,6 @@ void ovl668_wait_frame_ready(StrDisplayConfig *config,s32 mode)
     u32 ready=config->ready0C;
     if(ready==0) do {
         Psyz_KernelUnlockInterrupts();
-        Psyz_SpendTime(WAIT_FRAME_ITERATION_NS);
         Psyz_KernelLockInterrupts();
         if (--counter==0) {
             config->ready0C=1;

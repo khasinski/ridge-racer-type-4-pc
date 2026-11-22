@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
@@ -52,7 +50,6 @@ void AddScreenBackdropTile(void);
 
 void *DrawCarStatBars(void *x, int a1)
 {
-    RR_CPU_CYCLES(RR_CYCLES_CAR_STAT_BARS);
   int s3 = 0x78;
   int i = 0;
   int s0;
@@ -106,8 +103,6 @@ void *DrawCarStatBars(void *x, int a1)
 }
 
 void *DrawStepProgressBar(GpuDmaTag *a0, void *a1) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_STEP_PROGRESS_BAR);
     int s0 = 0x28;
     int sel = SelectionState.fields.phase17;
     int i = 0;
@@ -174,7 +169,6 @@ void DialogueSceneSetup(void) {
 }
 
 void DialogueModeUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_DIALOGUE_MODE);
     int s0;
     BadgeRow1C *tab;
     int a1;

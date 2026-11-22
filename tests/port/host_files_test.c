@@ -201,7 +201,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "cannot enter %s\n", dir);
         return 1;
     }
-    Psyz_CardSetInstantTiming(1);
 
     TestCardSave();
     TestCardFormat();

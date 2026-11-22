@@ -1,5 +1,4 @@
 #include "psyq/libc/exit.h"
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/audio_state_types.h"
 #include "rr/audio_pan.h"
@@ -36,7 +35,6 @@ void LoadVab(const VabData *data, s32 mode, s32 bankIndex) {
 }
 
 void ReverbReset(void) {
-    RR_CPU_CYCLES(RR_CYCLES_REVERB_RESET);
     SoundState.revType2894 = 0;
     SoundState.revDepthL2898 = 0;
     SoundState.revDepthR289C = 0;
@@ -164,7 +162,6 @@ void PlaySfxBank2(s32 arg0) {
 }
 
 void SoundQueueClear(void) {
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_QUEUE_CLEAR);
     s16 m = -1;
     int i = RR_SOUND_SEQUENCE_CAPACITY - 1;
     SoundState.sequence19D0.active = 0;

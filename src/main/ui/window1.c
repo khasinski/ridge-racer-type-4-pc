@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include <string.h>
 #include "rr/release.h"
 /* RODATA 0x800103c0 0x1c */
@@ -214,7 +213,6 @@ void DrawDigitString16(GpuDmaTag *a0, s32 a1, s32 a2, const char *text) {
     SpritePacket *p = (SpritePacket *)RR_GPU_SCRATCH->cursor;
     const u8 *a3 = (const u8 *)text;
     int c, u, kh;
-    RR_CPU_CYCLES(RR_CYCLES_DIGIT_STRING16 + (unsigned)strlen(text) * RR_CYCLES_DIGIT_STRING16_CHAR);
     if (*a3 != 0) {
         kh = 0x10;
         do {

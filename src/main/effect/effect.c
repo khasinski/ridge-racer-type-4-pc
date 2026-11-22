@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/frame_storage_types.h"
 #include "scratchpad.h"
@@ -11,7 +10,6 @@
 #include "psyq/libgpu/gpudisp.h"
 
 void UpdateParticles(void) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_PARTICLES);
 
     GpuDrawModePacket *p;
     s32 i;

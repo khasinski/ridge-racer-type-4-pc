@@ -1,4 +1,3 @@
-#include "rr/ps1_sizes.h"
 #include "rr/overlay_module.h"
 #include "game/race/racegrid.h"
 #include "game/data/menuvars.h"
@@ -111,8 +110,8 @@ void SystemInit(void)
         RankTable[i] = &RankEntries[i];
         i--;
     } while (i >= 0);
-    PsyqBzeroPs1(&PlayerCars[0], sizeof(PlayerCars[0]), RR_PS1_RACE_VEHICLE_BYTES);
-    PsyqBzeroPs1(&PlayerCars[1], sizeof(PlayerCars[1]), RR_PS1_RACE_VEHICLE_BYTES);
+    PsyqBzero(&PlayerCars[0], sizeof(PlayerCars[0]));
+    PsyqBzero(&PlayerCars[1], sizeof(PlayerCars[1]));
     UnlockNoticeMask = 0;
     for (i = 0; i < 4; i++) {
         SaveProgress.history6C[i].selection = 5;

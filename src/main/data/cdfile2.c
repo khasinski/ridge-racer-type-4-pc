@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/track_lighting.h"
 #include "rr/menu_selection.h"
@@ -187,7 +186,6 @@ s32 CdFileStateWaitSetloc(void) {
 }
 
 s32 CdFileStateStartRead(void) {
-    RR_CPU_CYCLES(RR_CYCLES_CD_FILE_START_READ);
     if (CdRead(CdFileSectors, CdActiveReadBuffer, 0x80)) {
         CdFileState = 9;
     } else {
@@ -227,18 +225,13 @@ s32 CdFileStateRetry(void)
 s32 CdFileStep(void) {
     if (CdFileState > 0) {
         s32 r;
-        RR_CPU_CYCLES(RR_CYCLES_CD_FILE_STEP);
         CdFileSyncResult = CdSync(1, 0);
         if (CdFileSyncResult != 0) {
-            RR_CPU_CYCLES(RR_CYCLES_CD_FILE_STEP_DISPATCH);
             r = CdFileStateHandlers[CdFileState]();
-            RR_CPU_CYCLES(RR_CYCLES_CD_FILE_STEP_RETURN);
             return r;
         }
-        RR_CPU_CYCLES(RR_CYCLES_CD_FILE_STEP_BUSY);
         return 0;
     }
-    RR_CPU_CYCLES(RR_CYCLES_CD_FILE_STEP_IDLE);
     return 0;
 }
 

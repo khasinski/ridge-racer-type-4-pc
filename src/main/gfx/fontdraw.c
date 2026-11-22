@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_time.h"
 #include "rr/gpu_scratch_types.h"
 #include "rr/frame_storage_types.h"
 #include "rr/gpu.h"
@@ -57,14 +56,12 @@ void *AddTextSprites(GpuDmaTag *ordering, void *cursor, s32 screenX, s32 screenY
     SpritePacket *packet;
     SpritePacket *emitted;
     brightness = color >> 1;
-    RR_CPU_CYCLES(RR_CYCLES_FONT_DRAW);
     if ((*text) != 0) {
         packet = cursor;
         do {
             glyph = (u8)*text - 0x20;
             text++;
             if (glyph != 0) {
-                RR_CPU_CYCLES(RR_CYCLES_FONT_GLYPH);
                 tileU = FontAtlasTileCoords[glyph * 2] << 3;
                 tileV = FontAtlasTileCoords[(glyph * 2) + 1] << 4;
                 SetSprt(cursor);
@@ -103,7 +100,6 @@ void *AddTextSprites(GpuDmaTag *ordering, void *cursor, s32 screenX, s32 screenY
 }
 
 void DrawAnimatedGlyph(s32 x, s32 y, s32 glyph, s32 clut, s16 *animation) {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_ANIMATED_GLYPH);
     s16 nextTimer;
     s32 tileU,shadowBrightness;
     s32 drawV;
@@ -193,7 +189,6 @@ void DrawAnimatedGlyph(s32 x, s32 y, s32 glyph, s32 clut, s16 *animation) {
 }
 
 void DrawAnimatedText(int arg0, int arg1, MenuTextState *p, int arg3, int arg4) {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_ANIMATED_TEXT);
     int s7 = 0, s4 = 0, s2 = 0, s3;
     unsigned s6;
     unsigned s0;
@@ -209,7 +204,6 @@ void DrawAnimatedText(int arg0, int arg1, MenuTextState *p, int arg3, int arg4) 
     s0 = 0;
     if (s6 != 0) {
         do {
-            RR_CPU_CYCLES(RR_CYCLES_DRAW_ANIMATED_TEXT_ENTRY);
             a2 = *s1++;
             s3 = 0;
             if (a2 & 0x1000) {
@@ -252,7 +246,6 @@ void DrawAnimatedText(int arg0, int arg1, MenuTextState *p, int arg3, int arg4) 
                             s2 += RR_PAL_JP(7, 11);
                         } else {
                         L_call:
-                            RR_CPU_CYCLES(RR_CYCLES_DRAW_ANIMATED_TEXT_GLYPH - RR_CYCLES_DRAW_ANIMATED_TEXT_ENTRY);
                             DrawAnimatedGlyph(arg0 + (short)s2, arg1 + (short)s4, a2 - 1, arg4, p->animation28[s7].halves);
                             s2 += RR_PAL_JP(7, 11);
                             if (s3 != 0) {

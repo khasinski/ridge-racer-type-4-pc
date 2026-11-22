@@ -1,5 +1,3 @@
-#include "rr/cpu_time.h"
-#include "rr/cpu_work.h"
 #include "game/system/pad.h"
 #include "game/car/carstat.h"
 #include "types.h"
@@ -188,9 +186,6 @@ void DrawFontString(s32 x, s32 y, const u8 *text, s32 color, s32 bank) {
         }
     }
     RR_GPU_SCRATCH->cursor = (u8 *)packet;
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_FONT_STRING + glyphs * RR_CYCLES_FONT_STRING_GLYPH +
-                      skipped * RR_CYCLES_FONT_STRING_SKIP);
 }
 
 /* The centring routines' own measuring loop, a character each. */
@@ -198,8 +193,6 @@ static void SpendFontStringMeasure(const unsigned char *s) {
     u32 chars = 0;
     while (s[chars] != 0)
         chars++;
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_FONT_STRING_MEASURE + chars * RR_CYCLES_FONT_STRING_MEASURE_CHAR);
 }
 
 int DrawFontStringCentered(int a0, int a1, unsigned char *s, int a3, int a4) {
@@ -264,8 +257,6 @@ void AddSetTexpagePrim(int a0) {
     RR_GPU_ADD_PRIM(&CurrentDrawBuf->buffer.ordering70.tags[a0], p, 1);
     p++;
     RR_GPU_SCRATCH->cursor = (u8 *)p;
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_ADD_SET_TEXPAGE);
 }
 
 void *EmitTexturedQuadPrim(TexturedQuadDesc2C *a0)
@@ -356,7 +347,6 @@ void AddHGradientRectPrim(RectU16 *arg0, ColorRGB8 *arg1, ColorRGB8 *arg2, s32 a
 }
 
 void AddSlantedGradientRect(unsigned short *a0, int a1, unsigned char *a2, unsigned char *a3, int a4) {
-    RR_CPU_CYCLES(RR_CYCLES_ADD_SLANTED_GRADIENT);
     PolyG4Packet *p = (PolyG4Packet *)RR_GPU_SCRATCH->cursor;
     p->code = 0x3A;
     if (a1 == 0) {

@@ -1,6 +1,4 @@
 /* RODATA 0x80010884 0x54 */
-#include "rr/ps1_sizes.h"
-#include "rr/cpu_time.h"
 #include "game/ui/hudmap.h"
 #include "rr/frame_storage_types.h"
 #include "game/gfx/gfxmtx.h"
@@ -19,7 +17,6 @@
 
 
 void UpdateBadgeRowAnim(int index) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_BADGE_ROW_ANIM);
     int tick;
     s32 scale;
     if (index < BadgeRowCount) {
@@ -148,7 +145,6 @@ void InitRect16Row(s32 index, s16 x, s16 y, s16 width, s16 height, s16 phase, s1
 }
 
 int UpdateRect16Row(int index) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_RECT16_ROW);
     MenuRectCorners corners;
     int intensity[4];
     int complete;
@@ -237,7 +233,7 @@ int UpdateRect16Row(int index) {
 int AllocGlyphRows(void *buffer) {
     int bytes = GlyphRowCount * (s32)sizeof(*GlyphRows);
     GlyphRows = buffer;
-    PsyqBzeroPs1(buffer, (u32)bytes, GlyphRowCount * RR_PS1_MENU_GLYPH_ROW_BYTES);
+    PsyqBzero(buffer, (u32)bytes);
     DebugPrintStub(SizeLdFmt, bytes);
     return bytes;
 }

@@ -10,7 +10,6 @@
 #include "rr/menu_overlay_runtime.h"
 #include "game/math/rotmat.h"
 #include "game/data/globals.h"
-#include "rr/cpu_work.h"
 
 extern short AtanTable[];
 
@@ -106,9 +105,8 @@ static void BuildCameraMatricesWork(void) {
     SetRotMatrix((int *)SCRATCH_ROT_MATRIX);
 }
 
-/* With its PS1 time (rr/cpu_work.h). */
 void BuildCameraMatrices(void) {
-    RR_WORK_CALL(BuildCameraMatricesWork(), &RrCostCameraMatrices);
+    BuildCameraMatricesWork();
 }
 
 void BuildRotMatrixAngles(int *a0) {

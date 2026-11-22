@@ -1,6 +1,5 @@
 #include "rr/field_rate.h"
 #include "rr/geometry.h"
-#include "rr/cpu_work.h"
 #include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "game/race/racegrid.h"
@@ -76,8 +75,7 @@ extern int RotTransPers(const short *vector, int *screen, int *interpolation, in
 void UpdateRaceCamera(int arg0, void *arg1);
 void InitTrackStartPos(void);
 
-/* The kind of camera the last call ran (its node's, for arg0 >= 2), for
- * the replay's charge of its time (rr/cpu_work.h RrSpendReplayFrame). */
+/* The kind of camera the last call ran (its node's, for arg0 >= 2). */
 int RaceCameraKind;
 
 void UpdateRaceCamera(int arg0, void *arg1) {
@@ -240,8 +238,6 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         break;
     }
     RaceContext.cameraNodeChanged1C = changed;
-    if (ModeGroup == 1 && ModeIndex == 22) /* ReplayModeUpdate's (rr/cpu_work.h) */
-        RrSpendReplayCamera();
     BuildCameraMatrices();
 }
 

@@ -1,4 +1,3 @@
-#include "rr/cpu_work.h"
 #include "types.h"
 #include "rr/track_sample_types.h"
 #include "rr/race_types.h"
@@ -109,7 +108,5 @@ void ComputeStartDistance(RaceVehicle *vehicle, int direction)
             }
         }
     }
-    if (!RrWorkFrame && RrWorkDepth == 0)
-        RR_CPU_CYCLES(RR_CYCLES_START_DISTANCE + steps * RR_CYCLES_START_DISTANCE_STEP);
     vehicle->first = distance;
 }

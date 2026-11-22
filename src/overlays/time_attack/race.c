@@ -4,7 +4,6 @@
 #include "rr/overlay660.h"
 #include "rr/frame_storage_types.h"
 #include "rr/video_timing.h"
-#include "rr/cpu_work.h"
 
 void ovl660_check_reverse_run(RaceVehicle *player){
  RaceVehicleControl *control=&player->control;
@@ -154,8 +153,6 @@ update_pause_timer:
         DrawSteeringIndicator(CurrentDrawBuf->ordering.ordering70.tags, 0);
         SubmitRaceHudPackets(GameModeType);
     }
-    /* the frame's own work before its step (rr/cpu_work.h) */
-    RrSpendRaceModeOwn(0);
     StepRaceFrame(GameModeType);
     /* every field (objsim.c, rr/field_rate.h) */
     UpdateTrackObjects();

@@ -1,7 +1,5 @@
 #include "rr/field_rate.h"
-#include "rr/cpu_work.h"
 #include <string.h>
-#include "rr/cpu_time.h"
 #include "rr/gpu_address.h"
 #include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
@@ -261,12 +259,7 @@ void MainLoop(void) {
      * MODE_NTSC in SystemInit. */
     if (!RR_RELEASE_JP)
         SetVideoMode(RR_PAL_NTSC(1, 0));
-    /* The console gets here 6.484 ms after a vblank (the BIOS's hand-over
-     * and crt0) and libetc's first ResetCallback takes 62.3k clocks; that
-     * phase sets where the boot's CD commands and the sequencer's root
-     * counter (SsStart) fall in their fields (rr/cpu_time.h). The port's
-     * fields start here. */
-    RR_CPU_CYCLES(RR_CYCLES_BOOT_TO_MAIN_LOOP + RR_CYCLES_FIRST_RESET_CALLBACK);
+    /* The port's fields start here. */
     ResetCallback();
     SystemInit();
     VSyncThreshold=128;
@@ -283,8 +276,6 @@ void MainLoop(void) {
         /* The previous frame's ordering table went to the GPU (DrawOTag
          * below, which copies its precise vertices along). */
         Psyz_PgxpNextFrame();
-        Psyz_GpuTimingClearHostPackets();
-        RrWorkFrame = 0;
         {
             s32 length=0x2C0;
             FrameStorage *frames;
@@ -302,9 +293,7 @@ void MainLoop(void) {
             scratch->cursor=frame->buffer.packets1670;
             ClearOTagR(ordering,length);
         }
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_CLEARS);
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_STEP);
         CdFileStep();
         /* the sound's timers and fades by the original tick, its listener,
          * Doppler, pitches and volumes every field (rr/field_rate.h) */
@@ -341,9 +330,7 @@ void MainLoop(void) {
         do {} while (VSync(1)<threshold);
         VSync(0);
         PutDispEnv(&CurrentDrawBuf->buffer.environment00.display5C);
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
         PutDrawEnv(&CurrentDrawBuf->buffer.environment00.draw00);
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
         WideCommitFrame(CurrentDrawBuf->buffer.environment00.draw00.clip.y,
                         CurrentDrawBuf->buffer.environment00.draw00.clip.w,
                         CurrentDrawBuf->buffer.environment00.draw00.clip.h,
@@ -351,16 +338,11 @@ void MainLoop(void) {
                         DrawSubOtFlag ? &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703] : NULL);
         DrawOTag(&CurrentDrawBuf->buffer.ordering70.tags[703]);
         if(DrawSubOtFlag) {
-            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_SUB_OT);
             DrawOTag(&CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703]);
-            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_SUB_OT_PAD);
-        } else {
-            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_PAD);
         }
         PadUpdate();
         RaceFieldRateNextField();
         FrameCounter++;
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_TOP);
     }
 }
 

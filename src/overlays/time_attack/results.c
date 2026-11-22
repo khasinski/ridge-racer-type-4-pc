@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "rr/player_cars.h"
 #include "game/system/pad.h"
@@ -57,7 +56,6 @@ s32 ovl660_update_retry_choice(s32 reserved){
 }
 
 void ovl660_update_results(void) {
-    RR_CPU_CYCLES(RR_CYCLES_TA_RESULTS);
     s32 group;
     s32 base;
     s32 row;
@@ -239,7 +237,6 @@ void ovl660_update_results(void) {
 }
 
 s32 ovl660_insert_record(s32 mode, s32 time) {
-    RR_CPU_CYCLES(RR_CYCLES_TA_INSERT_RECORD);
     s32 times[6];
     s16 order[6];
     s32 i;
@@ -295,7 +292,6 @@ s32 ovl660_insert_record(s32 mode, s32 time) {
 
 void ovl660_rank_standings(void)
 {
-    RR_CPU_CYCLES(RR_CYCLES_TA_RANK_STANDINGS);
     s32 values[6];
     u16 indices[6];
     s32 n;

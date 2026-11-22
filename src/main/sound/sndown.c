@@ -1,5 +1,4 @@
 #include "types.h"
-#include "rr/cpu_time.h"
 #include "psyq/libsnd/libsnd.h"
 #include "rr/audio_bank_setup.h"
 #include "game/sound/sndown.h"
@@ -93,7 +92,6 @@ void SlotSetupBank(AudioBankSetup *input)
 }
 
 void ResetPlayerVoices(void) {
-    RR_CPU_CYCLES(RR_CYCLES_RESET_PLAYER_VOICES);
     int i;
     for (i = 0; i < 2; i++) {
         SoundState.playerVoices195C[i].mode08 = 0;

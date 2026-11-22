@@ -1,10 +1,8 @@
-#include "rr/ps1_sizes.h"
 #include "game/ui/badge1.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
 /* RODATA 0x80011270 0x2c */
 #include "rr/video_timing.h"
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/frame_storage_types.h"
 #include "rr/frame_loop.h"
@@ -40,7 +38,6 @@ int IntroScriptStep(void);
 void IntroInit(void);
 
 int IntroScriptStep(void) {
-    RR_CPU_CYCLES(RR_CYCLES_INTRO_SCRIPT_STEP);
 
     short sp28[4];
     unsigned char sp30[4];
@@ -313,7 +310,7 @@ int IntroScriptStep(void) {
 
 void IntroInit(void) {
     SetDispMask(0);
-    PsyqBzeroPs1(&RaceContext.work444.intro, sizeof(RaceContext.work444.intro), RR_PS1_INTRO_SCENE_STATE_BYTES);
+    PsyqBzero(&RaceContext.work444.intro, sizeof(RaceContext.work444.intro));
     InitDemoFadeContext(0);
     SelectDemoFadePreset(0);
     LoadCursor = CdDirectoryBuffer;

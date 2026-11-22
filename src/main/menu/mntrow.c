@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/data/menuvars.h"
 #include "game/system/pad.h"
@@ -62,14 +60,9 @@ void DrawMenuTextRow(s32 a0) {
     sp1C = MenuTextRows[a0].rendering.text;
     sp10 = MenuTextRows[a0].rendering.y;
     s5 = MenuTextRows[a0].rendering.clut;
-    unsigned cost = RR_CYCLES_MENU_TEXT_ROW_DRAW;
     for (s2 = 0; *sp1C != 0; fp += 0xD, s2++) {
         s0 = *sp1C - 0x20;
         sp1C++;
-        if (s0 == 0) cost += RR_CYCLES_MENU_TEXT_ROW_SPACE;
-        else if (MenuTextRows[a0].state.d34 & 1) cost += RR_CYCLES_MENU_TEXT_ROW_GLYPH2;
-        else if (MenuTextRows[a0].rendering.visible >= s2) cost += RR_CYCLES_MENU_TEXT_ROW_GLYPH;
-        else cost += RR_CYCLES_MENU_TEXT_ROW_HIDDEN;
         if (s0 != 0) {
             s0 = FontAtlasTileCoords[s0 * 2] + (FontAtlasTileCoords[s0 * 2 + 1] << 5);
             a3 = 0;
@@ -153,14 +146,11 @@ void DrawMenuTextRow(s32 a0) {
             }
         }
     }
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(cost);
     RR_GPU_SCRATCH->cursor = AddDrawModePrim(&CurrentDrawBuf->buffer.ordering70.tags[0], (GpuDrawModePacket *)s4, 0x2E);
 }
 
 void DrawResultsRankIcons(void)
 {
-    RR_CPU_CYCLES(RR_CYCLES_RESULTS_RANK_ICONS);
     SpritePacket *sprite;
     int a3;
     FrameStorage *d;

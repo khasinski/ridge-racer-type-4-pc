@@ -1,5 +1,3 @@
-#include "rr/cpu_time.h"
-#include "rr/cpu_work.h"
 #include "rr/release.h"
 #include "game/gfx/sprefct.h"
 #include "rr/save_progress.h"
@@ -43,7 +41,6 @@ extern ImagePreset10 PreviewImageRowPresets[];
 
 
 s32 DrawUiRow(s32 arg0) {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_ROW);
     RectS16 sp28;
     s32 sp30;
     s32 sp34;
@@ -303,7 +300,6 @@ s32 DrawUiRow(s32 arg0) {
 
 void DrawUiBox(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6)
 {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_BOX);
     int *px;
     int *py;
     GpuDmaTag *t;
@@ -370,7 +366,6 @@ void InitImageRow(int i, int a, int b, int j) {
 }
 
 int UpdateImageRow(int a0) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_IMAGE_ROW);
     int s1;
     int s2;
     int state;
@@ -445,8 +440,6 @@ void DrawImageRow(int a0, int a1, int a2, int a3) {
     void *cursor;
 
     cursor = RR_GPU_SCRATCH->cursor;
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES((a1 == 1 ? RR_CYCLES_DRAW_IMAGE_ROW_CELL_FT3 : RR_CYCLES_DRAW_IMAGE_ROW_CELL) * 72u);
     for (i = 0; i < 18; i++) {
         tx = ImageRows[a0].geom.coords.u + (i % 9) * 24;
         ty = ImageRows[a0].geom.coords.v + (i / 9) * 96;

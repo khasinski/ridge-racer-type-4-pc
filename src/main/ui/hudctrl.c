@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_time.h"
 #include "rr/widescreen.h"
 #include "game/system/pad.h"
 #include "scratchpad.h"
@@ -19,7 +18,6 @@ void DrawRaceMinimap(s32 arg0) {
     s32 var_v0;
     RaceVehicle *temp_a0;
 
-    RR_CPU_CYCLES(RR_CYCLES_RACE_MINIMAP + RR_CYCLES_RACE_MINIMAP_CAR * (unsigned)(NumCars > 0 ? NumCars : 0));
     var_s4 = 0;
     if (arg0 == 0) {
         var_s3 = CurrentDrawBuf->buffer.ordering70.tags;
@@ -98,7 +96,6 @@ void DrawSteeringIndicator(GpuDmaTag *ordering, s32 layout) {
     ControllerState5C *inputBase;
     u8 *shapeBase;
 
-    RR_CPU_CYCLES(RR_CYCLES_STEERING_INDICATOR);
     player = 0;
     baselineY = RR_PAL_JP(0x70, 0x68);
     if (layout != 1) {

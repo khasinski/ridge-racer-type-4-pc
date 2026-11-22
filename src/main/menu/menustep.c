@@ -1,5 +1,4 @@
 /* RODATA 0x800115ec 0x20 */
-#include "rr/cpu_time.h"
 #include "game/data/cardchk.h"
 #include "game/menu/savemenu.h"
 #include "game/menu/menu8.h"
@@ -24,7 +23,6 @@ static inline int IsNonZero(int arg0)
 }
 
 void StepCardMenuStateMachine(void) {
-    RR_CPU_CYCLES(RR_CYCLES_STEP_CARD_MENU);
   int a;
   int t0;
   unsigned short v;
@@ -44,7 +42,6 @@ void StepCardMenuStateMachine(void) {
   fp = CardPortPollStatus[CardActivePort];
   if (IsNonZero(s7))
   {
-    RR_CPU_CYCLES(RR_CYCLES_STEP_CARD_MENU_POLL);
     PollCardStatus(CardActivePort, 0, 0);
   }
   if (s0 & 2)

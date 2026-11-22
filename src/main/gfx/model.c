@@ -4,7 +4,6 @@
 #include "psyq/libgte/gtemat3.h"
 #include "psyq/libgte/gtemat.h"
 #include "rr/matrix_workspace.h"
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "scratchpad.h"
 #include "psyq/libgte/libgte.h"
@@ -100,7 +99,6 @@ void SetFogNearFar(s32 a0, s32 a1, s32 a2) {
     GTE_CTC2_28(r1);
 }
 void InitTimTemplate(EmblemTimImage840 *image) {
-    RR_CPU_CYCLES(RR_CYCLES_INIT_TIM_TEMPLATE);
 
     u32 *words = image->words;
     int n;
@@ -363,8 +361,6 @@ void RelocateModelTable(RroModelTableWire *table) {
     mesh = DecodedModelTable->entries;
     RroScene.modelEntries = mesh;
     ActiveModelVertexCount = count;
-    RR_CPU_CYCLES(RR_CYCLES_RELOCATE_MODEL_TABLE +
-                  (count > 0 ? (unsigned)count : 0u) * RR_CYCLES_RELOCATE_MODEL_ENTRY);
     while (i < count) {
         i++;
         mesh->vertices = (const Vec3s8 *)((const u8 *)table + entry[RRO_MODEL_VERTEX_WORD]);
@@ -386,7 +382,6 @@ RroModelBank *RegisterModelBank(const void *image, s32 slot) {
     if (slot < 0 || slot >= RRO_MODEL_BANK_SLOTS) {
         abort();
     }
-    RR_CPU_CYCLES(RR_CYCLES_REGISTER_MODEL_BANK);
     bank = ModelBankStorage[slot];
     if (bank == NULL || ModelBankStorageStreams[slot] < wire->streamCount) {
         bank = realloc(bank, sizeof(*bank) + (wire->streamCount ? wire->streamCount : 1) * sizeof(bank->streams[0]));

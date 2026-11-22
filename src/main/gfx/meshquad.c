@@ -1,4 +1,3 @@
-#include "rr/cpu_work.h"
 #include "rr/gpu_scratch_types.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
@@ -203,11 +202,6 @@ void DrawMeshPrimList(const RroModelTable *table, int index, int bias) {
     MeshQuadWork work;
     const u32 *a = table->entries[index].commands;
     u32 v;
-    /* by its work as SubmitModel outside a race frame (the menus'
-     * presentation meshes: 356-6986 clocks on DuckStation, not charged) */
-    int charge = !RrWorkFrame && RrWorkDepth == 0;
-    RrWork cost;
-    if (charge) RrWorkBegin(&cost, RR_GPU_SCRATCH->cursor);
     work.bias = bias;
     work.ordering = RR_GPU_SCRATCH->order;
     work.vertices = (const u8 *)table->entries[index].vertices;
@@ -225,5 +219,4 @@ void DrawMeshPrimList(const RroModelTable *table, int index, int bias) {
             break;
         }
     }
-    if (charge) RrWorkSpend(&cost, RR_GPU_SCRATCH->cursor, &RrCostMeshPrimList);
 }

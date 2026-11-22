@@ -1,5 +1,4 @@
 #include "rr/relative_file.h"
-#include "rr/cpu_time.h"
 
 /* The original relocated the three record offsets, the sixteen section
  * offsets and count*8 segment-view slots in place. The host keeps the image
@@ -10,8 +9,6 @@ void RelocateRelativeFile(RelativeHeader *input) {
 
     TrackRelFileHeaderPtr = base;
     RelFileSegmentCount = base->count;
-    RR_CPU_CYCLES(RR_CYCLES_RELOCATE_RELATIVE_FILE +
-                  (base->count > 0 ? (unsigned)base->count : 0u) * RR_CYCLES_RELOCATE_RELATIVE_SEGMENT);
     TrackRelSecondTablePtr = RrWireAddress(base, base->first[1]);
     RelFileViewRecords = (CourseViewRecord *)RrWireAddress(base, base->first[2]);
     RelFileSection00 = RrWireAddress(base, base->offsets[0]);

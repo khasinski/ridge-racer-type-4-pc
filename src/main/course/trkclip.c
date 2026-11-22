@@ -1,5 +1,4 @@
 #include "types.h"
-#include "rr/cpu_work.h"
 #include "rr_asm.h"
 #include "rr/track_sample_types.h"
 #include "game/course/trkclip.h"
@@ -76,8 +75,6 @@ s32 FindTrackNode(s32 *pos, s32 startIdx, s32 maxIter) {
             break;
         }
     }
-    if (!RrWorkFrame && RrWorkDepth == 0)
-        RR_CPU_CYCLES(RR_CYCLES_FIND_TRACK_NODE + cnt * RR_CYCLES_FIND_TRACK_NODE_STEP);
     return idx;
 }
 

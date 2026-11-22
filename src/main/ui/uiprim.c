@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "scratchpad.h"
 #include "rr/frame_storage_types.h"
 #include "rr/gpu_line.h"
@@ -45,7 +43,6 @@ static void EndUiGouraudQuad(UiGouraudQuadPacket *primitive, s32 depth)
 
 void AddVerticalGradientRect(GpuRectangleFields *rect, GpuColorCommand *top, GpuColorCommand *bottom, s32 depth)
 {
-    RR_CPU_CYCLES(RR_CYCLES_ADD_VERTICAL_GRADIENT);
     UiGouraudQuadPacket *primitive = BeginUiGouraudQuad(rect);
     primitive->r0 = top->r;
     primitive->g0 = top->g;
@@ -65,7 +62,6 @@ void AddVerticalGradientRect(GpuRectangleFields *rect, GpuColorCommand *top, Gpu
 void AddGouraudRect(GpuRectangleFields *rect, GpuColorCommand *color0, GpuColorCommand *color1,
     GpuColorCommand *color2, GpuColorCommand *color3, s32 depth)
 {
-    RR_CPU_CYCLES(RR_CYCLES_ADD_GOURAUD_RECT);
     UiGouraudQuadPacket *primitive = BeginUiGouraudQuad(rect);
     primitive->r0 = color0->r;
     primitive->g0 = color0->g;
@@ -84,7 +80,6 @@ void AddGouraudRect(GpuRectangleFields *rect, GpuColorCommand *color0, GpuColorC
 
 void AddLineF2Prim(const s16 coordinates[4], const u8 rgb[3], s32 blend, s32 depth)
 {
-    RR_CPU_CYCLES(RrWorkFrame ? RR_CYCLES_ADD_LINE_F2 : RR_CYCLES_ADD_LINE_F2_MENU);
     GpuLineF2Packet *primitive = (GpuLineF2Packet *)RR_GPU_SCRATCH->cursor;
     primitive->tag.length = 3;
     primitive->code = blend ? 0x42 : 0x40;

@@ -1,9 +1,7 @@
 /* BIOS file services (A(00h)..A(04h): open, lseek, read, write, close) under
- * the game's names. Memory card files ("buXY:") are PsyZ host files whose
- * transfers take their PS1 time on the emulated clock (Psyz_CardFile*): the
- * host I/O completes inside the call, but an FASYNC card transfer raises its
- * SwCARD end-of-I/O event only when the BIOS would have finished the last
- * sector, and a synchronous one or a file creation returns after that time.
+ * the game's names. Memory card files ("buXY:") are PsyZ host files: the
+ * host I/O completes inside the call, and an FASYNC card transfer raises its
+ * SwCARD end-of-I/O event at its end (Psyz_CardFileIoDone).
  * The "sio:" link cable device is PsyZ libcomb's driver (Psyz_CombRead /
  * Psyz_CombWrite): its serial port reaches the other console over the
  * network when the link is set up (psyz/link.h), otherwise nothing is ever
@@ -20,7 +18,7 @@ enum { FILE_HANDLE_COUNT = 16 };
 /* BIOS open mode bit for asynchronous transfers (romio.h FASYNC). The host
  * <fcntl.h>, reached through the PsyZ headers, redefines FASYNC as O_ASYNC
  * (0x40 on macOS, 0x2000 on Linux), so the BIOS value is spelled out. */
-enum { FILE_MODE_ASYNC = 0x8000, FILE_MODE_CREATE = 0x200 };
+enum { FILE_MODE_ASYNC = 0x8000 };
 
 typedef enum {
     FILE_KIND_FREE,
@@ -32,9 +30,7 @@ typedef struct {
     FileKind kind;
     int host;
     int card;
-    long channel; /* card port << 4 | slot */
     int async;
-    int mode; /* the open's FREAD / FWRITE / FCREAT bits */
 } FileHandle;
 
 static FileHandle FileHandles[FILE_HANDLE_COUNT];
@@ -56,12 +52,12 @@ static int FileIsDevice(const char *name, const char *device) {
     return 1;
 }
 
-static s32 FileTransferDone(FileHandle *file, long count, int write) {
+static s32 FileTransferDone(FileHandle *file, long count) {
     if (count <= 0) {
         return -1; /* end of file or host error: no data was transferred */
     }
-    if (file->card) {
-        Psyz_CardFileTransfer(file->channel, count, file->async, write);
+    if (file->card && file->async) {
+        Psyz_CardFileIoDone();
     }
     return (s32)count;
 }
@@ -78,28 +74,22 @@ s32 FileOpen(const char *name, s32 mode) {
     }
     if (FileIsDevice(name, "sio:")) {
         FileHandles[descriptor] =
-            (FileHandle){FILE_KIND_LINK, -1, 0, 0, (mode & FILE_MODE_ASYNC) != 0, mode};
+            (FileHandle){FILE_KIND_LINK, -1, 0, (mode & FILE_MODE_ASYNC) != 0};
         return descriptor;
     }
     int card = FileIsDevice(name, "bu") && name[2] >= '0' && name[2] <= '1' &&
                name[3] >= '0' && name[3] <= '3';
     /* A card taken out: the host directory is still there, the BIOS finds
      * no card and the open fails. */
-    if (card && !Psyz_CardFileOpen((name[2] - '0') << 4 | (name[3] - '0'),
-                                   mode & (PSYZ_CARD_FILE_READ | PSYZ_CARD_FILE_WRITE |
-                                           PSYZ_CARD_FILE_CREATE))) {
+    if (card && !Psyz_CardFileOpen((name[2] - '0') << 4 | (name[3] - '0'))) {
         return -1;
     }
     int host = psyz_open(name, mode);
     if (host < 0) {
         return -1;
     }
-    FileHandles[descriptor] = (FileHandle){FILE_KIND_HOST, host, card,
-                                           card ? (name[2] - '0') << 4 | (name[3] - '0') : 0,
-                                           (mode & FILE_MODE_ASYNC) != 0, mode};
-    if (FileHandles[descriptor].card && (mode & FILE_MODE_CREATE)) {
-        Psyz_CardFileCreate(FileHandles[descriptor].channel);
-    }
+    FileHandles[descriptor] =
+        (FileHandle){FILE_KIND_HOST, host, card, (mode & FILE_MODE_ASYNC) != 0};
     return descriptor;
 }
 
@@ -119,7 +109,7 @@ s32 FileRead(s32 descriptor, void *buffer, s32 count) {
     if (file->kind == FILE_KIND_LINK) {
         return (s32)Psyz_CombRead(buffer, count, file->async);
     }
-    return FileTransferDone(file, psyz_read(file->host, buffer, count), 0);
+    return FileTransferDone(file, psyz_read(file->host, buffer, count));
 }
 
 s32 FileWrite(s32 descriptor, const void *buffer, s32 count) {
@@ -130,8 +120,7 @@ s32 FileWrite(s32 descriptor, const void *buffer, s32 count) {
     if (file->kind == FILE_KIND_LINK) {
         return (s32)Psyz_CombWrite(buffer, count, file->async);
     }
-    return FileTransferDone(
-        file, psyz_write(file->host, (char *)buffer, count), 1);
+    return FileTransferDone(file, psyz_write(file->host, (char *)buffer, count));
 }
 
 s32 FileClose(s32 descriptor) {
@@ -142,9 +131,6 @@ s32 FileClose(s32 descriptor) {
     }
     if (file->kind == FILE_KIND_HOST && psyz_close(file->host) != 0) {
         result = -1;
-    }
-    if (file->kind == FILE_KIND_HOST && file->card) {
-        Psyz_CardFileClose(file->channel, file->mode);
     }
     file->kind = FILE_KIND_FREE;
     return result;

@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "game/menu/menu8.h"
 #include "game/gfx/sprefct.h"
@@ -52,7 +51,6 @@ void *ovl662_draw_stage_history_label(GpuDmaTag *arg0, void *arg1, s32 arg2) {
 
 void *ovl662_draw_team_car_counts_label(GpuDmaTag *order, void *cursor, s32 row)
 {
-    RR_CPU_CYCLES(RR_CYCLES_TEAM_CAR_COUNTS_LABEL);
     s32 i, x, y;
     s32 flag = 0;
 
@@ -166,7 +164,6 @@ void *ovl662_draw_emblem_index_label(GpuDmaTag *arg0, void *arg1, s32 arg2) {
 
 void *ovl662_draw_character_grid(GpuDmaTag *order, void *cursor, s32 row)
 {
-    RR_CPU_CYCLES(RR_CYCLES_NAME_ENTRY_GRID);
     char text[4];
     s32 i, x, y, dx, dy, clut, color;
     CharacterGridAddress clearAddress;
@@ -227,7 +224,6 @@ void *ovl662_draw_character_grid(GpuDmaTag *order, void *cursor, s32 row)
 }
 
 void *ovl662_draw_name_entry_chars(GpuDmaTag *arg0, void *arg1, s32 arg2) {
-    RR_CPU_CYCLES(RR_CYCLES_NAME_ENTRY_CHARS);
     char buf[4];
     s32 i;
     s32 offset;

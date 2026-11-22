@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/menu/menutra21.h"
 #include "game/menu/menu8.h"
@@ -34,7 +33,6 @@ extern char CardTargetFileName[];
 extern int GarageExtraDefaultTimes[];
 
 int CardSaveStep(short initialize, int port) {
-    RR_CPU_CYCLES(RR_CYCLES_CARD_SAVE_STEP);
     int index;
     int status;
     EmblemSaveData1380 *emblemSave;

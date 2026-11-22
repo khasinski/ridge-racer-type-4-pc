@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- **No more PlayStation timing emulation: fast loads and a responsive
+  game.** The CD drive, movies, memory cards, sound transfers and the GPU
+  no longer imitate the console's hardware delays, and the game's code no
+  longer waits out the console's CPU time. The game reaches the title
+  menu (opening movie skipped) in 6.9 s instead of 16.4 s; the 6-second
+  black screen between the Namco logo and the opening movie is gone (the
+  movie now starts 4.3 s after the first frame instead of 12 s); menu
+  loads such as Time Attack's course select take about a second instead of
+  four and a half. Saving and loading in Save and Load finish at once.
+  Waits the game itself counts (logos, the race's opening banner) keep
+  their length. Movies play at their own rate (25 frames a second, 30 on
+  the Japanese disc) on the host's clock, in step with their sound, each
+  picture for an even two fields (a one-field picture about every 4 s where
+  the movie's 25 fps and the display's 49.9 Hz drift apart), and their
+  pictures are decoded on the PC as they are needed.
+- Headless test runs (`PSYZ_HEADLESS`) use a deterministic field clock:
+  time passes only in the game's waits, so a run's fields are the same every
+  time. `PSYZ_CD_TRACE=1` logs the drive's commands and deliveries; audio
+  underruns are logged as warnings.
+- Removed: `PSYZ_CD_TIMING`, `PSYZ_CARD_TIMING`, `PSYZ_SPU_TIMING` (the
+  instant behaviour is the only one now), the `RR4_FUNC_MARKS` build and
+  `RR4_MARK` diagnostics, and the DuckStation timing-fit tools
+  (`ds_compare.py`, `ds_mark.py`, `ds_stall.py`).
 - **Races at 50 / 60 frames a second (work in progress).** Graphics >
   Race frame rate (default 60 FPS; `race_field_rate` in the settings file,
   `RR4_RACE_FIELD_RATE`) runs a race's frame every video field instead of
@@ -13,8 +36,7 @@
   fps for the same inputs; the contacts, suspension and
   effects still step once per original frame and follow. Replays record
   every field; replays saved before keep the original rate. The link race
-  and the attract demo stay at the original rate. With Race frame rate on,
-  the PlayStation CPU time model spends nothing in a race.
+  and the attract demo stay at the original rate.
 - Race frame rate: the start's orbit, the replay and Grand Prix fly-by
   cameras, the course's moving objects (blimps, planes, the helicopter,
   the train), fireworks, light and brake trails, flashing lights,

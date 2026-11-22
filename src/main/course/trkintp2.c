@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/scene_camera_state.h"
 #include "game/gfx/dispenv.h"
@@ -147,7 +146,6 @@ void LoadTimImage(const void *tim) {
     GpuRectangle r;
     const u32 *p = (const u32 *)tim;
     const u16 *h;
-    RR_CPU_CYCLES(RR_CYCLES_LOAD_TIM_IMAGE);
     p++;
     if (*p++ & 8) {
         h = (const u16 *)p;

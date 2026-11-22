@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_time.h"
 #include "rr/runtime_settings.h"
 #include "rr/scene_camera_state.h"
 #include "game/ui/badgeprim.h"
@@ -78,7 +77,6 @@ void InitDemoFadeContext(int a0) {
 }
 
 void UpdateFadeTint(int a0) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_FADE_TINT);
 
     int v1, a, v2;
     RaceContext.fade3E0.r3F0 = (HudPauseMenuTitleY[0] * a0) / 255;
@@ -96,7 +94,6 @@ void UpdateFadeTint(int a0) {
 }
 
 void EmitFadeSprite(s32 index, s32 x, s32 y, s32 intensity) {
-    RR_CPU_CYCLES(RR_CYCLES_EMIT_FADE_SPRITE);
 
     s32 phase;
     s32 selector;

@@ -1,5 +1,4 @@
 #include "types.h"
-#include "rr/cpu_time.h"
 #include "rr/audio_loop.h"
 #include "game/sound/sndrst2.h"
 #include "rr/channels.h"
@@ -65,7 +64,6 @@ void UpdateMasterSoundVolumes(void)
 }
 
 void SoundLoopReset(void) {
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_LOOP_RESET);
     SoundState.left19F8 = 0;
     SoundState.right19FA = 0;
     SoundState.pitch19FC = 0;

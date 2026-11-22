@@ -1,5 +1,4 @@
 #include "rr/bios_devices.h"
-#include "rr/ps1_sizes.h"
 #include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "scratchpad.h"
@@ -107,7 +106,7 @@ void DrawRing(s32 *position, s32 radius)
 
 void InitScrollTrack(int selection) {
     ScrollTrack40 *scroll = &MotionControllerView()->scroll;
-    PsyqBzeroPs1(scroll, sizeof(*scroll), RR_PS1_SCROLL_TRACK_BYTES);
+    PsyqBzero(scroll, sizeof(*scroll));
     scroll->disabled = 0;
     scroll->keys = HudLinearGaugeVerts[selection];
 }

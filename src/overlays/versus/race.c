@@ -6,7 +6,6 @@
 #include "rr/overlay661_race_controller.h"
 #include "rr/frame_storage_types.h"
 #include "rr/video_timing.h"
-#include "rr/cpu_work.h"
 
 extern s32 RaceVoiceFlags;
 
@@ -264,9 +263,6 @@ block_7:
         DrawViewportBorderFrames(2);
         SubmitRaceHudPackets(2);
     }
-    /* the frame's own work besides its routines, after its HUD
-     * (rr/cpu_work.h) */
-    RrSpendRaceModeOwn(1);
     var_s2 = 0;
     do {
         RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];

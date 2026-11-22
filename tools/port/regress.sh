@@ -25,7 +25,7 @@
 # Each run is headless (PSYZ_HEADLESS=1: the CPU rasterizer at 1x),
 # silent (SDL_AUDIODRIVER=dummy) and goes through tools/port/run_capped.sh,
 # so it waits for a machine-wide run slot and is killed past the memory
-# limit. The disc's CD timing is the PS1's (PSYZ_CD_TIMING is not set).
+# limit.
 #
 # Environment:
 #   RR4_DISC               the CUE file (default: the first *.cue under

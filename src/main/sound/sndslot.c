@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/scene_camera_state.h"
 #include "types.h"
 #include "rr/audio_loop.h"
@@ -39,7 +38,6 @@ void SoundMasterFadeStep(void) {
 }
 
 void SoundUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_HEAD);
 
     int slotIndex;
     AudioSlot620 *slot;
@@ -57,7 +55,6 @@ void SoundUpdate(void) {
     slotIndex = 0;
     SoundState.seqPrevBeat2878 = SoundState.seqBeat2874;
     CdAudioUpdate();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_FADES);
     SeqFadeStep();
     SoundMasterFadeStep();
     SoundListenerUpdate();
@@ -67,17 +64,10 @@ void SoundUpdate(void) {
         }
     }
     UpdatePlayerVoices();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_PLAYER_VOICES);
     UpdateLoopVoices();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_LOOP_VOICES);
     UpdateMasterSoundVolumes();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_MASTER);
     SoundQueueUpdate();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE_QUEUE);
     SoundLoopUpdate();
-    RR_CPU_CYCLES(RR_CYCLES_SOUND_UPDATE - RR_CYCLES_SOUND_UPDATE_HEAD - RR_CYCLES_SOUND_UPDATE_FADES -
-                  RR_CYCLES_SOUND_UPDATE_PLAYER_VOICES - RR_CYCLES_SOUND_UPDATE_LOOP_VOICES -
-                  RR_CYCLES_SOUND_UPDATE_MASTER - RR_CYCLES_SOUND_UPDATE_QUEUE);
 }
 
 /* At field rate (rr/field_rate.h) SoundUpdate runs on the original tick

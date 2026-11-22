@@ -1,7 +1,12 @@
 # DuckStation reference build
 
-Every "matches the console" result in `docs/` is measured against a
-patched `duckstation-regtest` driven by `tools/port/duckstation.py`. The
+A patched `duckstation-regtest` driven by `tools/port/duckstation.py` is
+the reference emulator: it plays a scenario's input and shows what the
+console does. The port has no PS1 timing (`docs/ARCHITECTURE.md`, Time):
+its loads, card I/O and CD reads take the host's time, so its fields no
+longer line up with DuckStation's from the boot on, and the per-field
+timing comparisons (and the tools that fitted the old PS1 time model to
+them) are gone. The
 patch is `duckstation-regtest.patch`; it applies to upstream DuckStation
 commit `2c527f4f2c689f3db06246a2c9c566fbc2323dd8`
 (<https://github.com/stenzek/duckstation>, "Qt: Add reset buttons for
@@ -132,7 +137,8 @@ about as long as recompiler ones for these scripts.
 `tools/port/duckstation.py` runs exact timing unless `RR4_DS_TIMING=recompiler`,
 and refuses a build whose `timing` answer does not match (an older build
 without the verb). Every reference trace was regenerated in exact mode on
-2026-11-19 (`ds_compare.py`'s 19 scenarios, `ds_frames.py`'s four). What
+2026-11-19 (`ds_frames.py`'s four scenarios, and the 19 of the since removed
+`ds_compare.py`). What
 changed against the recompiler's references, with the same scripts:
 
 - The boot: SystemInit starts 717 clocks sooner after DuckStation's vblank
@@ -175,57 +181,6 @@ the port's `RR4_POKE`. Stick steps (`lx=0.6@...`, a DUAL SHOCK with
 `REGTEST_PAD1_TYPE=AnalogController`) bind the half axes so that
 DuckStation sends the byte the port sends for that value.
 
-## Comparing scenarios
-
-`ds_compare.py run <scenario> <out-dir> [--lowram]` plays one of its
-scenarios on DuckStation (`ds_script.py`) and on the port (headless,
-`PSYZ_CARD_UNPLUG=2`), both through `run_capped.sh`, and reports per
-column (mode, FrameCounter, rand and the scenario's watched memory) whether
-every field matches, else the first field that differs and whether the
-values still come in the same order. `ds_compare.py list` names them: the
-Options screens, Records, the emblem editor and Options each followed by a
-Grand Prix race, the Garage's save, Save and Load, a boot with a saved card
-and overwriting that save (the card made by the Save and Load scenario on
-DuckStation, exported with `mcd.py`), the card paths (an
-unformatted card formatted and saved to, a full card, the card pulled out
-during a save, two cards, a card in slot 2 only, Versus with each player
-loading garage data from their own card, with two cards and with slot 2's
-only; `ds_compare.py`'s `cards` and `card_steps` set `REGTEST_CARD1/2`,
-`RR4_DS_CARD` against `PSYZ_CARD_UNPLUG`, `PSYZ_CARD_UNFORMATTED`,
-`RR4_CARD_SLOT` and the card directories), the Grand Prix rules to their end (the null-`Dialogue` store,
-with PS1 0x4..0x7 watched) through four retired attempts to a Time Attack
-race, Extra Trial (its row and a car poked into the save) and the DUAL
-SHOCK in analog mode through Time Attack with both sticks, `ta-full`, a
-Time Attack race over its three laps driven by RR4_AUTODRIVE (the port runs
-first and DuckStation replays the input it chose, `ds_script.py`'s
-`RR4_DS_MASKS`), its whole replay, the results and the retry's race, and
-`vs-full`, a Versus race over its three laps with both cars driven
-(`RR4_AUTODRIVE=2`, pad 2's mask the masks file's third column), the
-two-player replay to its end and the results. `--lowram` adds
-the `DS_LOWRAM_LOG` run and `lowram.txt`. `--refs <dir>` takes DuckStation's
-side from a stored reference (`<dir>/<scenario>/ds.txt`, and the Save and
-Load card for the scenarios that start from it) instead of running it, as
-DuckStation is deterministic; an autodrive scenario's reference keeps the
-input it replayed (`masks.txt`) and is used only while the port chooses the
-same. `--save-ref` stores the run's. The exact-timing references of all 27
-scenarios are kept in `~/.cache/rr4-work/dsref-exact`.
-
-Both sides also record, per blank, whether libpad made its exchange and
-whether the BIOS card driver took its turn (DuckStation: `RR4_DS_PADLOG`
-and the driver's port byte between fields, which do not change its course;
-the port: `PSYZ_PAD_TRACE`, `PSYZ_CARD_TRACE`), and the report lists where
-they differ before the first field that differs, each with the port's
-position in the dispatch window that decided it and its `margin`, the
-clocks to the nearest boundary of that window (the chain test or the
-dispatcher's exit, `BIOS_CHAIN_*_TEST_CLOCKS`, `LIBETC_DISPATCH_EXIT_CLOCKS`).
-A difference within 50 clocks of a boundary is reported as within
-DuckStation's variance (below). `--force-blanks` then reruns the port with
-those blanks forced to DuckStation's outcome (`PSYZ_BLANK_FORCE=<vsync>:pad=<0|1>:card=<0|1>,...`),
-adding the ones each rerun shows, and reports where the scenario first
-differs then. The scripts are
-`RR4_PAD_SCRIPT`s; the port alone runs one with
-`RR4_PAD_SCRIPT=... RR4_FRAME_LIMIT=...`.
-
 ## Determinism and resolution
 
 The reference runs are deterministic: three runs of the Save and Load and
@@ -238,8 +193,7 @@ tests, so a marked run's outcomes differ from the reference's: with
 `DSF_EXC` libpad makes its exchange at Save and Load's blanks 642, 773 and
 904, which the reference misses, and the scenario's fields differ from 2603
 on. Take positions and durations from marked runs and outcomes (fields, the
-pad flag, the card driver's port) from unmarked ones (`ds_script.py`,
-`ds_compare.py`). A `VSync` mark stops the game (it stays at FrameCounter
+pad flag, the card driver's port) from unmarked ones (`ds_script.py`). A `VSync` mark stops the game (it stays at FrameCounter
 21), and a run with several marks can follow a different course (eight
 marks in the Versus movie put it 78 frames behind by field 1381): check a
 marked run's trace against the reference before using its times.
@@ -251,68 +205,5 @@ exceptions entered 0 to 50 clocks after their period, and the same blank's
 offset into the same root counter exception differed by up to 18 clocks
 between two scenarios, so a decision near a window's boundary could go
 either way for the same port position (blank 1166 in Save and Load against
-Versus with two cards). Exact timing has no such spread. `ds_compare.py`
-still marks a difference within 50 clocks of a window boundary, now the
-port's own resolution, and `--force-blanks` reruns the port with those
-forced.
+Versus with two cards). Exact timing has no such spread.
 
-## Timing a call
-
-On the recompiler a GDB breakpoint, and single-stepping, switch DuckStation
-to its interpreter, whose clocks (with its instruction cache and
-multiply/divide stalls) differ per routine by -45% to +20%. Exact timing
-is the interpreter already, on the recompiler's costs, so a breakpoint
-does not change its timing. `ds_calltime.py` measures calls without
-breakpoints: it writes a timing stub into kernel RAM
-the game leaves unused and points each function at it, then prints the
-clocks of each call (`ds_calltime.py 2000 2200 PadUpdate PsyqBzero:tail:arg=a1`,
-through `run_capped.sh`; its docstring has the options). `DUMMYBP=1` sets a
-never-hit breakpoint, which on the recompiler runs DuckStation's own
-interpreter.
-`ds_mark.py` logs when functions are entered instead (a stub writes a
-marker to root counter 2, which `DUCKSTATION_CD_TRACE` logs with the tick):
-for calls too long for root counter 0 and for timelines across fields, such
-as the boot (`ds_mark.py 293 440 MainLoop SystemInit CdInit SsInit`).
-`RR4_DS_SCRIPT='pad script'` plays a script on the way (ds_script.py's
-syntax and field numbers), to mark functions in a menu; with
-`DUCKSTATION_CARD_TRACE=1` the log (`RR4_MARK_LOG`) also has the card
-selections.
-
-## Following a scenario with marks
-
-`ds_frames.py run <fields> <trace> <log>` plays a regression scenario
-(`DSF_PADS`, `DSF_POKES` as in `regress.sh`, `DSF_MASKS` for
-`RR4_AUTODRIVE`'s input from `ds_frames.py masks`, `RR4_DS_CARD` as for
-`ds_script.py`) and writes the port's
-trace lines, with `regress.sh`'s watched globals, for every field from the
-game's first VSync, each line read at the same moment as the port's
-vsync of that number (DuckStation's vblank n + 296); run the port headless with
-`PSYZ_CARD_UNPLUG=2` to compare. A run without `DSF_PADS` (the attract)
-compares with `REGTEST_PAD1_TYPE=None`: the port's unscripted run has no
-controller in port 1, and libpad's exchange with an empty port is 3.8k
-clocks shorter. `DSF_PEEK=addr:len,...` appends RAM bytes as
-`ds_script.py`'s `RR4_DS_PEEK` does. `DSF_MARKS` marks function entries (and
-returns, `name:ret`) through writes to EXP2 0x1F802090, which the patched
-regtest logs as `XMARK` with its tick under `DUCKSTATION_CD_TRACE`; unlike
-`ds_mark.py`'s root counter 2 writes they leave the sequencer alone, so
-the game follows its course after them. `DSF_EXC=1` also marks the
-exception vector (I_STAT, DICR, the cause) and both exception returns, for
-interrupt dispatch times. `ds_frames.py timeline <log> [from to]` lists the
-marks and CD commands per field with their clocks after the vblank.
-
-The port's side: a build with `-DRR4_FUNC_MARKS=ON` (Clang or GCC) compiles
-the game and PsyZ with `-finstrument-functions`; `RR4_MARK=name,...`
-prints `XMARK <name> <clocks>` at each entry with the emulated clock
-(`Psyz_EmulatedClocks`, headless only), and `PSYZ_PAD_TRACE=1` each
-blank's exact time (`at <ns>`). `RR4_MARK_WORK=1` adds an `XWORK` line
-after each mark: the packet cursor and the GTE commands executed so far by
-opcode, the counts the race frame's CPU time model takes
-(`include/rr/cpu_work.h`), and an `XHZ <pass> <clocks> <cursor> <counts>` line
-before and after each of the course renderer's passes (the pass's number,
-256 more after it: its tests, facing tiles, grids, cells and GTE commands so
-far), to set against `DSF_MARKS` at the pass programs' entries. PsyZ's `PSYZ_SPU_KEY_TIME=1` logs each key-on
-register write with the clock it lands at (in a handler, where its code
-has got to); compare it with `DSF_MARKS=SsSeqCalledTbyT,SpuSetKey`, not
-with `DUCKSTATION_SPU_KEY_TRACE`, whose tick is the SPU's batch time (the
-next sync after the write, often the next vblank: its key-ons look up to a
-field late).

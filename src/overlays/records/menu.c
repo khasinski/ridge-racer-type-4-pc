@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "rr/overlay663.h"
 #include "rr/frame_storage_types.h"
@@ -56,7 +55,6 @@ void ovl663_init_scene(void) {
 }
 
 void ovl663_update_menu(void) {
-    RR_CPU_CYCLES(RR_CYCLES_RECORDS_MENU);
     s32 cancelSound;
     s16 selected;
     s32 loaded;

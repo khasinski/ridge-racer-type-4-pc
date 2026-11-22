@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay660.h"
@@ -92,13 +91,11 @@ void ovl660_update_menu(void) {
     UiRow24 *cancel;
     UiRow24 *back;
 
-    RR_CPU_CYCLES(RR_CYCLES_TA_COURSE_MENU);
     ModeFrame = (ModeFrame + 1U);
     ScreenFrame = (ScreenFrame + 1U);
     if (LoadTrackNodesStep() == 1) {
         switch (SubmodeState) {
         case 0:
-            RR_CPU_CYCLES(RR_CYCLES_TA_COURSE_MENU_SELECT);
             SetMenuFrameOptions(1, 1, 1);
             previousCourse = SelectedCourseChoice;
             StepMenuValue(3, 2, (char *)&SelectedCourseChoice, ovl660_available_course_count, 0);

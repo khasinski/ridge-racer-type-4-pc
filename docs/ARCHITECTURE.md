@@ -272,64 +272,36 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      passwords (`docs/REGIONS.md`). With the PAL disc every value is the
      original one.
 
-   - **PS1 time model:** the game and PsyZ spend the PS1 time of the work
-     that decides on which field something happens (CPU routines, BIOS and
-     SDK calls, CD, card, SPU, GPU and interrupt handlers), measured on
-     DuckStation; mode entries, `FrameCounter` and `rand` then match it
-     field for field (splash, opening movie, title, attract, menus, Grand
-     Prix, Time Attack, Extra Trial). The costs are in three tables, PsyZ's
-     `src/timing_profile.h` (BIOS, SDK, devices, interrupts), the game's
-     `include/rr/cpu_time.h` (`RR_CPU_CYCLES`) and, for the race frame's
-     routines (physics, AI, camera, the course's and the cars' GTE
-     geometry), `src/main/system/cpuwork.c` and the course renderer's
-     passes in `src/main/gfx/submodel.c`: those spend by the work each
-     call does (`include/rr/cpu_work.h`: GTE commands by kind, packet
-     bytes, tiles and grid cells), each value with how it was fitted and
-     the commit of its run. Measure costs on the reference's
-     exact timing (`tools/port/DUCKSTATION.md`: DuckStation's interpreter,
-     an event at its clock, on the recompiler's instruction costs), the
-     default of `tools/port/duckstation.py`. On the recompiler a GDB
-     breakpoint or single-stepping switches to DuckStation's own
-     interpreter, whose clocks (its instruction cache, multiply/divide
-     stalls) differ by -45% to +20% per routine (SoundUpdate 1648 against
-     1105, PadStartCom 1606 against 1317).
-     `tools/port/ds_calltime.py` times calls without breakpoints: it
-     patches a stub that reads root counter 0 at the call and its return
-     into RAM. The
-     memory card driver serves the ports on alternate vblanks, a sector
-     transfer ends 266k clocks after its vblank, and file I/O takes a turn
-     per frame; the interlace field flips at line 0 and the displayed field
-     is latched at the vblank, as in DuckStation's CRTC, so every other
-     VSync(0) in 480-line interlace returns late on the console's fields.
-     Busy waits that DuckStation measures with interrupts in them are fitted
-     as CPU time with the interrupts on top (StGetNext), so a second pad's
-     libpad exchange (4.8k clocks a vblank) lengthens them. The GPU's
-     drawing time and its list DMA follow DuckStation's model (PsyZ
-     `gpu_timing.c`: each command's GPU ticks by kind and area, a run-ahead
-     of 128 ticks, the DMA's CPU stalls while it moves data, 8 clocks a
-     node, at the times it moves them), and DrawSync(0) waits for the GPU. Interrupts are exceptions with a
-     window (the root counters', the CD drive's sector, acknowledge and
-     completion interrupts): a vblank arriving inside one after the BIOS
-     chains tested for it reaches only libetc, so libpad and the card
-     driver miss it; their costs are DuckStation's exception-to-return
-     times, before and after the card driver's chain is installed.
-     Each CD seek takes DuckStation's extra 0.5-1 ms from the same seeded
-     generator, draw for draw (the BIOS boot's 12 draws included), and the
-     drive's geometry counts absolute sectors as the mechanism does.
-     StGetNext's poll spends its time on the real-time clock as well, so
-     the movie player's 4,000,000-poll retry count outlasts the first seek.
-     A LIBCD polling wait (CdSync(0), CdReady(0), and CD_cw's CD_sync(0)
-     for the previous command) takes the interrupt handlers that come
-     meanwhile within the wait, so a CdControlB(CdlPause) returns as the
-     drive finishes and SsStart follows CdReset's 0.8 s Init by 0.2 ms; a
-     read ends with its Pause's completion (CdReadSync), and LIBCD's own
-     code around each command, the boot's directory search and the
-     hand-over to MainLoop (6.484 ms after a vblank) take their PS1 time,
-     as do the boot's graphics, GTE and card setups: the port's first field
-     starts at DuckStation's vblank 296, and the boot's CD commands and the
-     sequencer's timer fall within about 1k clocks of DuckStation's (the
-     timer's phase against the vblanks within 40), field for field with
-     `tools/port/ds_frames.py`. libpad (PadInitDirect, PadStartCom) is PSY-Q's channel
+   - **Time:** the port runs on the host's clock; nothing emulates the
+     PS1's timing. Native code takes no emulated time, and PsyZ's devices
+     complete as fast as the host does their work: CD commands complete at
+     once (no seek, rotation or acknowledge times), a plain read (CdRead)
+     hands its sectors to LIBCD's callback at the drive's next service (the
+     interrupt thread, a VSync, a poll), the MDEC decodes a frame's slices
+     as the game asks for them, SPU DMA, the GPU (DrawSync) and the memory
+     card's requests and file I/O end inside their calls or as an interrupt
+     right after. A CD read in CdlModeRT plays its XA audio as it goes, so
+     its data sectors keep the disc's rate (150 a second at double speed)
+     on the kernel's clock: the movies' frames come at their stream's rate
+     (25 fps PAL, 30 the Japanese release) and StGetNext waits for the next
+     sector instead of spinning, while the audio device pulls the XA sound
+     from the same sectors. A frame's last sector is held to an even grid
+     of the stream's period (the interleaved audio sectors would otherwise
+     shift frames by a sector and alternate their pictures between one and
+     three fields), and one due in the last 4 ms before a blank is taken
+     early so it is decoded in time for it: each picture shows for two
+     fields at 25 fps on 50 Hz, with a one-field picture where the stream's
+     clock and the display's drift a field apart (about every 4 s). The vblank callbacks run once per field of the
+     host's frame clock (VSync counts the fields of the wall clock; the
+     game's VSync(0) presents and waits for the next), the root counters
+     (the sequencer's tick) fire on the kernel's interrupt thread at their
+     host times. Headless test runs use the offline clock
+     (`PSYZ_AUDIO_CLOCK=video`, the default of `PSYZ_HEADLESS`): a
+     deterministic field clock that stands still while the game works and
+     moves only in its waits (VSync's for the next blank, one line per
+     poll of the line counter `VSync(1)`, a stream's next sector), running
+     the root counters and mixing the audio on the way, so a run's fields
+     are the same every time. libpad (PadInitDirect, PadStartCom) is PSY-Q's channel
      state machine ported from the decompilation (PsyZ `libpad.c`), run a
      byte at a time against models of the controllers (`pad.c`, as
      DuckStation's digital pad, DUAL SHOCK, neGcon and JogCon answer):
@@ -342,13 +314,9 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      configuration mode and failed exchanges leave the buffer as it was
      (an unplugged pad's bytes stay for eleven vblanks); test input
      (`RR4_PAD_SCRIPT`) drives the controllers before the exchange
-     (`Psyz_SetPadsInputCb`). A vblank that arrives while another interrupt
-     is dispatched, after the BIOS chains tested for it, reaches only
-     libetc's dispatcher: libpad has no exchange and the BIOS card driver
-     no turn at it (the windows in `timing_profile.h`); which vblanks those
-     are follows the sequencer timer's phase (`docs/TECH_DEBT.md` F6) and
-     the tick and CD handlers' time (F14). Still open: the sequencer's
-     phase against the menus (F6) and race frames' CPU time (F13).
+     (`Psyz_SetPadsInputCb`). `src/main/race` and `src/main/car` still name
+     the removed time model's calls, as no-ops (`include/rr/cpu_work.h`,
+     `docs/TECH_DEBT.md` D21).
    - **Link cable over the network:** the link battle's serial port (SIO1)
      is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
      driver ported from the decompilation (`_sio_control`, the `sio:`
@@ -358,14 +326,15 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `src/port/link.c` sets it up from the Escape menu or `RR4_LINK`). Bytes
      take their character time at the programmed rate (20.8 us at the
      game's 529 kbit/s), the transmitter waits for CTS, the FIFO holds 8
-     bytes; each pass of the driver's busy waits takes its PS1 time on the
-     real-time clock too, so the game's wait callbacks time out as on the
-     console (about 24 ms in the race, 94 ms in the menus). The receiver
+     bytes; each pass of the driver's busy waits lasts what it did on the
+     console (about a microsecond of host time), so the game's wait
+     callbacks, which count passes, time out as on the console (about 24 ms
+     in the race, 94 ms in the menus). The receiver
      announces each read (where it starts and ends, its packet size), so
      the DTR toggles that acknowledge the sender's packets and the RTS
      drop at the read's end follow at once from the sender's own bytes, as
      on the cable; everything else crosses the network's latency. Received
-     bytes enter the FIFO at their emulated arrival times and the RX
+     bytes enter the FIFO at their arrival times on the kernel's clock and the RX
      interrupt drains each completed packet then, so a host thread that
      runs late cannot overrun it (an overrun loses a packet, and the race
      protocol then desyncs). The race protocol (`serial_link/sio.c`) steps

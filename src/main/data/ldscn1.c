@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/emblem_images.h"
 #include "rr/menu_arena_state.h"
@@ -648,8 +647,6 @@ int LoadMenuCarModelsStep(void) {
 
 int LoadTrackNodesStep(void) {
     int r = 0;
-    if (LoadState == 3)
-        RR_CPU_CYCLES(RR_CYCLES_LOAD_TRACK_NODES_IDLE);
     switch (LoadState) {
     case 0:
         LoadIndex = 0;

@@ -1,4 +1,3 @@
-#include "rr/cpu_work.h"
 #include "scratchpad.h"
 #include "rr/menu_selection.h"
 #include "game/race/objrec.h"
@@ -93,7 +92,6 @@ void EmitSemiTransG3List(SemiTransTri38 *a0, int a1, int a2) {
         }
     }
     RR_GPU_SCRATCH->cursor = (u8 *)pkt;
-    RrWorkEnd(RR_GPU_SCRATCH->cursor); /* a caller's count (rr/cpu_work.h) */
 }
 
 void EmitSemiTransG4List(SemiTransQuad48 *a0, int a1, int a2) {
@@ -142,7 +140,6 @@ void EmitSemiTransG4List(SemiTransQuad48 *a0, int a1, int a2) {
         }
     }
     RR_GPU_SCRATCH->cursor = (u8 *)pkt;
-    RrWorkEnd(RR_GPU_SCRATCH->cursor); /* a caller's count (rr/cpu_work.h) */
 }
 
 void UpdateTrackObjectActivation(void) {

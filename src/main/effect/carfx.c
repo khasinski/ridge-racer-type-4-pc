@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "rr/video_timing.h"
 #include "psyq/libgte/rotmat.h"
@@ -220,8 +218,6 @@ void DrawHudSprite(int a0, int a1, int a2, int a3, int a4)
 }
 
 void DrawHudDigit(s32 a0, s32 a1, s32 a2, s32 a3) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_HUD_DIGIT_MENU);
     SpritePacketSignedClut *p;
     GpuCommandPacket *mode;
     s32 k;

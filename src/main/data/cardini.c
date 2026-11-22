@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/work_arena.h"
 #include "game/menu/menutra21.h"
 #include "types.h"
@@ -92,7 +91,6 @@ void CardSystemShutdown(void) {
 }
 
 int PollHwCardEvents(int arg) {
-    RR_CPU_CYCLES(RR_CYCLES_POLL_HW_CARD_EVENTS);
     int r;
     int t;
     r = TestEvent(HwCardEvIoe) == 1;
@@ -105,7 +103,6 @@ int PollHwCardEvents(int arg) {
 }
 
 s32 GetHwCardEvent(void) {
-    RR_CPU_CYCLES(RR_CYCLES_GET_HW_CARD_EVENT);
     if (TestEvent(HwCardEvIoe) == 1) {
         return 1;
     }
@@ -119,7 +116,6 @@ s32 GetHwCardEvent(void) {
 }
 
 void ClearHwCardEvents(void) {
-    RR_CPU_CYCLES(RR_CYCLES_CLEAR_HW_CARD_EVENTS);
     TestEvent(HwCardEvIoe);
     TestEvent(HwCardEvError);
     TestEvent(HwCardEvTimeout);
@@ -127,11 +123,8 @@ void ClearHwCardEvents(void) {
 }
 
 /* The game spins here until the BIOS card driver raises the request's
- * software event (after _card_clear). A turn of the loop is four B0
- * TestEvent calls, 56 clocks each on DuckStation (ds_calltime.py
- * TestEvent:tail); the port spends that time per turn, so the emulated
- * clock reaches the driver's vblanks. */
-enum { WAIT_SW_CARD_EVENT_TURN_CYCLES = 4 * 56 };
+ * software event (after _card_clear); the host's card requests have raised
+ * it by the time they return. */
 
 int WaitSwCardEvent(void) {
     for (;;) {
@@ -139,7 +132,6 @@ int WaitSwCardEvent(void) {
         if (TestEvent(SwCardEvError) == 1) return 2;
         if (TestEvent(SwCardEvTimeout) == 1) return 3;
         if (TestEvent(SwCardEvNew) == 1) return 4;
-        RR_CPU_CYCLES(WAIT_SW_CARD_EVENT_TURN_CYCLES);
     }
 }
 
@@ -306,7 +298,6 @@ int CardWriteFileAt(int port, int slot, const char *name, const void *buffer, in
 }
 
 int CardUpdate(int port, int slot) {
-    RR_CPU_CYCLES(RR_CYCLES_CARD_UPDATE);
     int channel;
     int status;
     int sync[2];

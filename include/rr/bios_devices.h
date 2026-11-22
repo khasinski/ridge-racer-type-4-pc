@@ -13,9 +13,6 @@ void _new_card(void);
 long _card_read(long port, long sector, u8 *buffer);
 long _card_status(long slot);
 void PsyqBzero(void *buffer, s32 size);
-/* bzero of a host structure whose PS1 size (rr/ps1_sizes.h) is smaller: the
- * host bytes are cleared, the PS1 call's time is spent. */
-void PsyqBzeroPs1(void *buffer, u32 hostBytes, s32 ps1Bytes);
 /* Adds XOR of bytes 0..126 at byte127, then makes up to eight write/read attempts.
  * Verification compares the readback XOR to the current caller checksum byte. */
 s32 _card_sector_write(s32 port, s32 sector, u8 *buffer);

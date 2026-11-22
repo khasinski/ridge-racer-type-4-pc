@@ -1,5 +1,3 @@
-#include "rr/ps1_sizes.h"
-#include "rr/cpu_time.h"
 #include "rr/scene_camera_state.h"
 #include "rr/geometry.h"
 #include "game/car/carbound.h"
@@ -24,7 +22,6 @@
 
 
 void StepCameraScript(void) {
-    RR_CPU_CYCLES(RR_CYCLES_STEP_CAMERA_SCRIPT);
     RroSceneScratchPrefix *scratch = (RroSceneScratchPrefix *)SCRATCHPAD;
     s32 scriptChanged = 0;
     MotionClock20 *clock;
@@ -146,7 +143,7 @@ void StepCameraScript(void) {
 }
 
 void InitCameraMotion(int selection) {
-    PsyqBzeroPs1(&MotionControllerView()->motion74, sizeof(CameraMotion70), RR_PS1_CAMERA_MOTION_BYTES);
+    PsyqBzero(&MotionControllerView()->motion74, sizeof(CameraMotion70));
     if (selection < 4) {
         MotionControllerView()->motion74.mode04 = 0;
         MotionControllerView()->motion74.keys0C = HudTachMeterSegments[selection];

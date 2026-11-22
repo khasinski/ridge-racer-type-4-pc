@@ -12,7 +12,7 @@ extern CourseViewIndices *TrackCourseViewIndices;
 extern AdditionalCourseViews ExtraCourseViewTable;
 /* PrimaryVisibleViews.stream[CourseHostViewsFirst + 1 .. CourseHostViewsEnd]:
  * the views the host added to the PS1's list (widescreen neighbours, the
- * extended draw distance), whose drawing is not PS1 work (rr/cpu_work.h). */
+ * extended draw distance). */
 extern u32 CourseHostViewsFirst, CourseHostViewsEnd;
 
 /* Shared course-light defaults, live RGB matrix, directions and strengths. */

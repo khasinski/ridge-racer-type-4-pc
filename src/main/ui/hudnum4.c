@@ -1,6 +1,5 @@
 #include "rr/field_rate.h"
 #include "rr/widescreen.h"
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/player_cars.h"
 #include "rr/save_slots.h"
@@ -30,7 +29,6 @@ void DrawHudDigitMod10(s32 arg0, s32 arg1) {
     NumberTarget *target = &HudNumberTargets[arg1];
     GpuDmaTag *ordering = target->heads[DrawBufIndex];
     void *cursor;
-    RR_CPU_CYCLES(RR_CYCLES_HUD_DIGIT_MOD10);
     cursor = EmitHudGlyph12Alt(ordering, RR_GPU_SCRATCH->cursor, (s16)WIDE_HUD_RIGHT(target->digit.x), target->digit.y, arg0 % 10, 0x7EFB);
     RR_GPU_SCRATCH->cursor = AddDrawModePrim(ordering, cursor, 5);
 }
@@ -40,7 +38,6 @@ void DrawHudDigitMod10(s32 arg0, s32 arg1) {
 void UpdateHudRankDisplay(int a0, int a1) {
     int a, s0, s1, v;
     SpritePacket *sprites, *s2;
-    RR_CPU_CYCLES(RR_CYCLES_HUD_RANK_DISPLAY);
     sprites = CurrentDrawBuf->buffer.hudSprites;
     s2 = &sprites[2];
     sprites[a1 * 6 + 2].u = (a0 + 1) * 0x18;
@@ -59,7 +56,6 @@ void UpdateHudRankDisplay(int a0, int a1) {
         s1 = 0;
         if (PlayerCars[0].half1EE <= /* HudDisplayedLapIndex 0x800AC0E6 */ HudLapTargetThresholds[SelectionState.fields.phase17 / 2]) {
             s1 = 1;
-            RR_CPU_CYCLES(RR_CYCLES_HUD_RANK_DISPLAY_FLASH);
             /* a 64-tick pulse, by the field (rr/field_rate.h) */
             v = rsin((((s32)RaceFieldTimeAfter(ScreenFrame & 0x3F) << 6) / RaceFieldsPerTick()) & 0xFFF);
             if (v < 0) v += 0x3F;

@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "rr/release.h"
 #include "rr/draw_distance.h"
@@ -30,7 +29,6 @@
 #include "rr/animated_glyph.h"
 #include "rr/widescreen.h"
 #include <psyz/video.h>
-#include "rr/cpu_work.h"
 static GpuRectangleFields CourseSelectPreviewUvsJp[2][7];
 static const s16 CourseSelectLabelPosYJp[8];
 static const s16 CourseSelectMapCoordsYJp[8];
@@ -122,9 +120,8 @@ void SetupViewLighting(void) {
 
 
 void SetupPlayerView(int player) {
-    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
-    RR_WORK_CALL(ApplySegmentVisibilityMask(), &RrCostSegmentVisibility);
-    RrWorkSpend(NULL, NULL, &RrCostCourseView);
+    BuildViewSegmentObjectList(player);
+    ApplySegmentVisibilityMask();
     SetupViewLighting();
     /* Lead car's angles (rot50..58) and position words. */
     SetupHorizonViewTransform(&PlayerCars[0].rot50, PlayerCars[0].position20.words);
@@ -134,10 +131,9 @@ void SetupPlayerView(int player) {
 }
 
 void RenderPlayerCourseView(int player) {
-    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
+    BuildViewSegmentObjectList(player);
     UpdateVisibleViewRecords();
-    RR_WORK_CALL(ApplySegmentVisibilityMask(), &RrCostSegmentVisibility);
-    RrWorkSpend(NULL, NULL, &RrCostCourseView);
+    ApplySegmentVisibilityMask();
     SetupViewLighting();
     SetupViewMatrix();
     WideCourseView();
@@ -150,14 +146,13 @@ void RenderMirrorCourseView(int player) {
     unsigned int v; int unused[12];
     CameraTargetTrackNode = (unsigned short)g[0x2E];
     g[0x2E] = -1;
-    RR_WORK_CALL(BuildViewSegmentObjectList(player), &RrCostViewSegmentList);
-    RrWorkSpend(NULL, NULL, &RrCostCourseView);
+    BuildViewSegmentObjectList(player);
     v = LookupOctantVisibility();
     if (!ExtendedDrawDistance && v < PrimaryVisibleViews.objects.count) {
         PrimaryVisibleViews.objects.count = v;
     } else if (v < PrimaryVisibleViews.objects.count && v < CourseHostViewsFirst) {
         /* the PS1 draws the mirror's first v views only: the rest are the
-         * host's, outside the PS1 time model as the added views are */
+         * host's, as the added views are */
         CourseHostViewsFirst = v;
     }
     SetupViewLighting();
@@ -200,8 +195,6 @@ void BuildLightMatrix(void) {
 
 
 void SetupViewport(s32 viewport) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_SETUP_VIEWPORT_MENU);
     RroSceneScratchPrefix *scene = (RroSceneScratchPrefix *)SCRATCHPAD;
     u8 *packet;
     s32 isMirror;

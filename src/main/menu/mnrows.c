@@ -1,7 +1,6 @@
 #include "game/ui/badge1.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
-#include "rr/cpu_time.h"
 #include "game/ui/uipart1.h"
 #include "rr/save_slots.h"
 /* RODATA 0x80010774 0x4c */
@@ -206,7 +205,6 @@ l428:
 }
 
 void UpdateMenuScript(void) {
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_MENU_SCRIPT);
 
     s32 next_frame;
     s32 mode;

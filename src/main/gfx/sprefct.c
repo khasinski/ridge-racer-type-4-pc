@@ -1,5 +1,3 @@
-#include "rr/cpu_work.h"
-#include "rr/cpu_time.h"
 #include "game/gfx/sprefct.h"
 #include "rr/gpu_line.h"
 #include "types.h"
@@ -24,8 +22,6 @@ u8 *AddJitterSprites(GpuDmaTag *ordering, u8 *cursor, SpriteEffectSource *descri
     u32 page;
 
     for (i = 0; i < count; i++) {
-        if (!RrWorkFrame)
-            RR_CPU_CYCLES(RR_CYCLES_JITTER_SPRITE);
         SetSprt(cursor);
         v = 0;
         if (count != 1) {
@@ -76,8 +72,6 @@ GpuPolyFT3Packet *EmitPolyFT3(GpuDmaTag *ordering, GpuPolyFT3Packet *packet,
     const s32 *x, const s32 *y, const s32 *u, const s32 *v,
     u32 pageWord, u32 clutWord, u32 modeWord, u32 shadeWord)
 {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_EMIT_POLY_FT3);
     u16 tpage = pageWord, clut = clutWord, mode = modeWord, shade = shadeWord;
     SetPolyFT3(packet);
     packet->x0 = x[0];
@@ -110,8 +104,6 @@ GpuPolyFT3Packet *EmitPolyFT3(GpuDmaTag *ordering, GpuPolyFT3Packet *packet,
 
 void *AddTileSemiTransPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y,
                            s32 width, s32 height, s32 red, s32 green, s32 blue) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_TILE_SEMI_TRANS);
     GpuTilePacket *tile = cursor;
     tile->x = x;
     tile->w = width;
@@ -157,8 +149,6 @@ GpuLineF2Packet *AddLineF2SemiTrans(GpuDmaTag *ordering, GpuLineF2Packet *line, 
 
 
 PolyF3Packet *EmitPolyF3(GpuDmaTag *ordering,PolyF3Packet *packet,s32 xy0,s32 xy1,s32 xy2,const u8 *rgb,s32 flags){
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_EMIT_POLY_F3);
  SetPolyF3(packet);
  SetSemiTrans(packet,flags);
  packet->xy0=xy0;

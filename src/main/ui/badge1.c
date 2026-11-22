@@ -1,6 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_time.h"
-#include "rr/cpu_work.h"
 #include "game/ui/badge1.h"
 #include "types.h"
 #include "rr/badge_rows.h"
@@ -16,8 +14,6 @@
 
 
 void *AddDrawAreaPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width, s32 height) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_ADD_DRAW_AREA_PRIM);
     GpuDrawModePacket *packet = cursor;
     GpuRectangleFields rectangle;
     int bank;
@@ -37,8 +33,6 @@ void *AddDrawAreaPrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width
 }
 
 void *AddDrawModePrim(GpuDmaTag *ordering, GpuDrawModePacket *packet, u16 page) {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_ADD_DRAW_MODE_PRIM);
     SetDrawMode(packet, 0, 1, page, 0);
     RR_GPU_LINK(ordering, packet);
     packet++;
@@ -47,7 +41,6 @@ void *AddDrawModePrim(GpuDmaTag *ordering, GpuDrawModePacket *packet, u16 page) 
 
 void *AddTilePrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width,
                   s32 height, s32 red, s32 green, s32 blue) {
-    RR_CPU_CYCLES(RrWorkFrame ? RR_CYCLES_ADD_TILE_PRIM : RR_CYCLES_ADD_TILE_PRIM_MENU);
     GpuTilePacket *tile = cursor;
     SetTile(tile);
     tile->x = x;
@@ -63,7 +56,6 @@ void *AddTilePrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width,
 
 void *AddTileGrid2x2(GpuDmaTag *ordering, void *cursor, int x, int y, int width,
                      int height, int red, int green, int blue) {
-    RR_CPU_CYCLES(RR_CYCLES_ADD_TILE_GRID_2X2);
     int i = 0;
     int halfWidth = width / 2;
     int halfHeight = height / 2;

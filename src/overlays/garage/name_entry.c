@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay662_name_init.h"
 #include "game/system/pad.h"
@@ -25,7 +24,6 @@ void ovl662_init_name_entry(void) {
 }
 
 void ovl662_update_name_entry(void) {
-    RR_CPU_CYCLES(RR_CYCLES_NAME_ENTRY);
     s16 fadeStep;
     s32 cancel;
     s32 phase;

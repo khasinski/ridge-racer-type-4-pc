@@ -4,8 +4,6 @@
 #include "rr/player_cars.h"
 #include "game/math/rotmat.h"
 #include "rr/timing.h"
-#include "rr/cpu_time.h"
-#include "rr/cpu_work.h"
 #include "game/camera/viewini.h"
 #include "rr_asm.h"
 #include "rr/projection_state.h"
@@ -197,10 +195,8 @@ void InitAnimatedTrackObjects(void *memory)
     const AnimatedTrackColorKey **firstKeys,**secondKeys;
     const u8 *colorBase;
     AnimatedTrackObject *state;
-    /* A fresh load of the file gives zeroed pools (rr/animated_track_types.h):
-     * the PS1 calls no memset here, so this host clear takes no PS1 time
-     * (the BIOS memset's 132 clocks a byte charged 17M clocks, half a
-     * second, for the host pools). */
+    /* A fresh load of the file gives zeroed pools (rr/animated_track_types.h);
+     * the PS1 calls no memset here. */
     memset(&AnimatedTrackPools, 0, sizeof(AnimatedTrackPools));
     TrackParticlePoolPtr = AnimatedTrackPools.particles;
     packet = AnimatedTrackPools.packets;
@@ -239,7 +235,6 @@ void InitAnimatedTrackObjects(void *memory)
         firstKeys++;
         secondKeys++;
     } while (buffer < 9);
-    RR_CPU_CYCLES(RR_CYCLES_INIT_ANIMATED_TRACK_OBJECTS);
 }
 
 void SetAnimatedTrackObjectState(int index, int flags, const s32 *position, int style) {
@@ -287,8 +282,6 @@ void SetAnimatedTrackObjectState(int index, int flags, const s32 *position, int 
         PolyStripTempCoords[0] = 0x420;
         PolyStripTempCoords[1] = 0x5D0;
         PolyStripTempCoords[2] = 0x610;
-        if (!RrWorkFrame && RrWorkDepth == 0)
-            RR_CPU_CYCLES(RR_CYCLES_ANIMATED_OBJECT_STATE);
         PsyqSrand(VSync(1));
     }
 }

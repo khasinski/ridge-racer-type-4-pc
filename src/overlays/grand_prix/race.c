@@ -6,7 +6,6 @@
 #include "rr/frame_storage_types.h"
 #include "rr/scene_camera_state.h"
 #include "rr/video_timing.h"
-#include "rr/cpu_work.h"
 #include "rr/field_rate.h"
 
 void ovl659_exit_race(void) {
@@ -148,8 +147,6 @@ void ovl659_update_race(void) {
         UpdateFinalLapHudSprite(0);
         SubmitRaceHudPackets(GameModeType);
     }
-    /* the frame's own work before its step (rr/cpu_work.h) */
-    RrSpendRaceModeOwn(2);
     StepRaceFrame(GameModeType);
     if (RaceState == 0) {
         DrawLensFlareAndSun(PlayerCars);
@@ -182,7 +179,6 @@ void ovl659_update_race(void) {
                           RaceStartWipeY, 320, (256U - RaceStartWipeY * 2U));
         /* this block's own (its primitives held after the step: 765 on
          * DuckStation from UpdateAndDrawRearViewMirror to SlotSetLevelProgram) */
-        RR_CPU_CYCLES(RR_CYCLES_GP_START_WIPE);
         if (tick && (RaceStartWipeY = (RaceStartWipeY - 16U)) < 0) {
             RaceStartWipeY = 0;
             DrawBuffers[1].environment.draw00.background = 0;

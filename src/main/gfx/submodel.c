@@ -25,7 +25,6 @@
 #include "rr/relative_file.h"
 #include "rr/course_view_types.h"
 #include "rr/camera_matrices.h"
-#include "rr/cpu_work.h"
 #include "game/camera/viewini.h"
 #include "rr/animated_track_types.h"
 #include "rr/overlay665_render_types.h"
@@ -529,18 +528,11 @@ static void SubmitModelStream(RroSceneScratchPrefix *scene, s32 modelIndex, u32 
 /* 8005F0D0 */
 void SubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex, s32 flags, s32 depthBias)
 {
-    /* its PS1 time by its work outside a race frame and the routines whose
-     * fits include it (the menus' car models: rr/cpu_work.h) */
-    int charge = !RrWorkFrame && RrWorkDepth == 0;
-    RrWork work;
-    if (charge) RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
     RroFogColorFT4 = *(const u32 *)&DefaultScreenClearColor;
     RroFogColorGT4 = *(const u32 *)&LoadingScreenClearColor;
     RroLightingMode = flags;
     RroDepthBias = depthBias;
     SubmitModelStream(scene, modelIndex, 4, 0);
-    if (charge) RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
-    RrWorkEnd(RR_GPU_SCRATCH->cursor); /* a caller's count (rr/cpu_work.h) */
 }
 
 /* 8005F14C: depth-cued faces, mirrored when renderFlags64 is set. The depth
@@ -555,18 +547,11 @@ void SubmitModel2(RroSceneScratchPrefix *scene, s32 modelIndex, s32 lightingMode
 /* 80058768 */
 void SubmitModelTwoTri(PreviewRenderScratch *scratch, s32 object, s32 blend, s32 depth)
 {
-    /* by its work as SubmitModel (the menus' presentation models, the
-     * options' controller: not charged before, 31-35k a frame on
-     * DuckStation for the records' motion model) */
-    int charge = !RrWorkFrame && RrWorkDepth == 0;
-    RrWork work;
-    if (charge) RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
     RroFogColorFT4 = *(const u32 *)&DefaultScreenClearColor;
     RroFogColorGT4 = *(const u32 *)&LoadingScreenClearColor;
     RroLightingMode = blend;
     RroDepthBias = depth;
     SubmitModelStream(&scratch->scene, object, 4, 1);
-    if (charge) RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModelTwoTri);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1097,37 +1082,22 @@ typedef struct {
 } HorizonWork;
 static HorizonWork Horizon;
 
-/* The loop over a pass's views: nonzero while view is one of them. The
- * views the host added (CourseHostViewsFirst..End) are drawn as host-only
- * work, outside the PS1 time model (rr/cpu_work.h). */
+/* The loop over a pass's views: nonzero while view is one of them. */
 static int HorizonView(u32 view, const VisibleCourseViews *views)
 {
-    static int holding;
-    int more = view <= views->stream[0].count;
-    int host = more && views == &PrimaryVisibleViews && view > CourseHostViewsFirst &&
-               view <= CourseHostViewsEnd;
-    if (host != holding) {
-        if (host) RrWorkHoldBegin(Horizon.cursor);
-        else RrWorkHoldEnd(Horizon.cursor);
-        holding = host;
-    }
-    if (more && !host) RrWorkCount[RR_WORK_VIEWS]++; /* the PS1's loop turn */
-    return more;
+    return view <= views->stream[0].count;
 }
 
 /* The facing test of a tile just projected (front: it faces the view).
  * Nonzero keeps the tile. */
 static int HorizonFacing(int front)
 {
-    RrWorkCount[RR_WORK_TESTED]++; /* the PS1's test */
-    RrWorkCount[RR_WORK_FACED] += front != 0;
     return front;
 }
 
 /* Draw a tile's grid. */
 #define HORIZON_GRID(grid, levelU, levelV, ...)                                       \
     do {                                                                              \
-        RrWorkCount[RR_WORK_GRIDS]++;                                                 \
         grid((levelU), (levelV), __VA_ARGS__);                                        \
     } while (0)
 
@@ -1317,7 +1287,6 @@ static void HorizonEmitLitGridLevels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
-            RrWorkCount[RR_WORK_CELLS]++;
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
             RR_GTE_LOAD_SXY(GTE_SXY0, &p0->w.xy);
@@ -1779,7 +1748,6 @@ static void HorizonEmitFlatGridLevels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
-            RrWorkCount[RR_WORK_CELLS]++;
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
             RR_GTE_LOAD_SXY(GTE_SXY0, &p0->w.xy);
@@ -3024,7 +2992,6 @@ static void HorizonC8GridLevels(s32 levelU, s32 levelV, const u32 uv[4])
         cur[last].w.uv = (u16)HorizonDpcs((s16)c[3].w.uv, c[2].f.u << 4, c[2].f.v << 4, c[2].f.z);
         HorizonC8InterpRow(cur, last, stepCols);
         for (j = 0; j < last; j++) {
-            RrWorkCount[RR_WORK_CELLS]++;
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             if (QuadOutsideViewport(scene, ScreenX(p0->w.xy), ScreenX(p1->w.xy), ScreenX(p2->w.xy), ScreenX(p3->w.xy),
                                     ScreenY(p0->w.xy), ScreenY(p1->w.xy), ScreenY(p2->w.xy), ScreenY(p3->w.xy)))
@@ -3634,7 +3601,6 @@ static void HorizonEmitFlatGridC7Levels(s32 levelU, s32 levelV, const u32 uv[4])
             if (t == 0) HorizonLineStrip(cur, last);
         }
         for (j = 0; j < last; j++) {
-            RrWorkCount[RR_WORK_CELLS]++;
             const HorizonVertex *p0 = &prev[j], *p1 = &cur[j], *p2 = &prev[j + 1], *p3 = &cur[j + 1];
             s32 a, b, mirror;
             RR_GTE_LOAD_SXY(GTE_SXY0, &p0->w.xy);
@@ -3732,73 +3698,6 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
     HorizonProgramStdMirror, HorizonProgramStdMirror, HorizonProgramStdMirror,
     HorizonProgramStdMirror, HorizonProgramCourse7Mirror, HorizonProgramCourse8};
 
-/* Each pass's PS1 time by its work (rr/cpu_work.h, 1/64 clocks): fitted to
- * DuckStation's clocks from a pass's entry to the next's, its interrupts'
- * time and the CPU's stalls for the list DMA in it taken out (DSF_MARKS at
- * the program's entries, DSF_EXC, DUCKSTATION_DMA_TRACE), against the
- * port's counts in the same calls (RR4_MARK_WORK's XHZ). Every pass loops
- * over the visible views (RR_WORK_VIEWS): a pass with nothing in its
- * section takes 25 clocks and 37 a view, exactly (Time Attack on courses
- * 1-6, 3584 calls a pass), which the constant cost before had as 363-376
- * for any view count, 90 short on course 7's twelve views and up to 130
- * long on course 1's four. Over Time Attack's race on courses 1, 2, 3, 4
- * and 6, a Grand Prix race on course 0 (gp-rules) and the final on course
- * 7 (gp-ending): 4762 calls of the standard passes, 677 of course 7's own
- * (residual medians 0-7, 90th percentiles within 350 but pass 6's 580;
- * course 7's SetupPlayerView was 806 short before). The fit kept
- * each cost non-negative. Course 8's own two passes (the epilogue's) were
- * not measured and take pass 6's costs. [mark] */
-static const RrWorkCost HorizonPassCosts[] = {
-    /* LitTiles */
-    {{[RR_WORK_CALL] = 1620, [RR_WORK_BYTES] = 62, [RR_WORK_RTPT] = 1425, [RR_WORK_RTPS] = 1425, [RR_WORK_NCLIP] = 2850, [RR_WORK_TESTED] = 1425, [RR_WORK_FACED] = 3659, [RR_WORK_VIEWS] = 2366}},
-    /* 1 */
-    {{[RR_WORK_CALL] = 1598, [RR_WORK_VIEWS] = 2368}},
-    /* 2 */
-    {{[RR_WORK_CALL] = 1763, [RR_WORK_BYTES] = 43, [RR_WORK_RTPT] = 5069, [RR_WORK_RTPS] = 1410, [RR_WORK_NCLIP] = 871, [RR_WORK_DPCS] = 1095, [RR_WORK_INTPL] = 1095, [RR_WORK_TESTED] = 1410, [RR_WORK_FACED] = 4115, [RR_WORK_GRIDS] = 3112, [RR_WORK_CELLS] = 547, [RR_WORK_VIEWS] = 2350}},
-    /* 3 */
-    {{[RR_WORK_CALL] = 1596, [RR_WORK_BYTES] = 51, [RR_WORK_RTPT] = 1435, [RR_WORK_RTPS] = 1435, [RR_WORK_NCLIP] = 2870, [RR_WORK_TESTED] = 1435, [RR_WORK_VIEWS] = 2369}},
-    /* 4 */
-    {{[RR_WORK_CALL] = 15193, [RR_WORK_BYTES] = 61, [RR_WORK_RTPT] = 3672, [RR_WORK_RTPS] = 3156, [RR_WORK_DPCS] = 776, [RR_WORK_INTPL] = 1679, [RR_WORK_TESTED] = 3156, [RR_WORK_FACED] = 3340, [RR_WORK_GRIDS] = 7287, [RR_WORK_CELLS] = 1989, [RR_WORK_VIEWS] = 294}},
-    /* 5 */
-    {{[RR_WORK_CALL] = 18846, [RR_WORK_BYTES] = 47, [RR_WORK_RTPT] = 5411, [RR_WORK_RTPS] = 1717, [RR_WORK_NCLIP] = 560, [RR_WORK_INTPL] = 3825, [RR_WORK_TESTED] = 1717, [RR_WORK_FACED] = 3272, [RR_WORK_GRIDS] = 8662, [RR_WORK_VIEWS] = 771}},
-    /* 6 */
-    {{[RR_WORK_CALL] = 28356, [RR_WORK_BYTES] = 49, [RR_WORK_RTPT] = 982, [RR_WORK_RTPS] = 3612, [RR_WORK_NCLIP] = 839, [RR_WORK_INTPL] = 4252, [RR_WORK_TESTED] = 3612, [RR_WORK_FACED] = 3234, [RR_WORK_GRIDS] = 11587}},
-    /* 7 */
-    {{[RR_WORK_CALL] = 9660, [RR_WORK_BYTES] = 34, [RR_WORK_RTPT] = 1210, [RR_WORK_RTPS] = 2683, [RR_WORK_NCLIP] = 1675, [RR_WORK_INTPL] = 3343, [RR_WORK_TESTED] = 2683, [RR_WORK_FACED] = 3415, [RR_WORK_GRIDS] = 17906, [RR_WORK_VIEWS] = 1882}},
-    /* 8 */
-    {{[RR_WORK_CALL] = 2071, [RR_WORK_BYTES] = 103, [RR_WORK_RTPT] = 3871, [RR_WORK_RTPS] = 2088, [RR_WORK_DPCS] = 2, [RR_WORK_MVMVA] = 3871, [RR_WORK_VIEWS] = 5482}},
-    /* 9 */
-    {{[RR_WORK_CALL] = 1875, [RR_WORK_BYTES] = 73, [RR_WORK_RTPT] = 2117, [RR_WORK_NCLIP] = 2712, [RR_WORK_DPCS] = 1288, [RR_WORK_INTPL] = 595, [RR_WORK_TESTED] = 1919, [RR_WORK_FACED] = 4180, [RR_WORK_VIEWS] = 2379}},
-    /* 10 */
-    {{[RR_WORK_CALL] = 1991, [RR_WORK_BYTES] = 47, [RR_WORK_RTPT] = 1640, [RR_WORK_NCLIP] = 4336, [RR_WORK_DPCS] = 327, [RR_WORK_INTPL] = 2695, [RR_WORK_TESTED] = 742, [RR_WORK_FACED] = 4307, [RR_WORK_VIEWS] = 2367}},
-    /* C7a */
-    {{[RR_WORK_CALL] = 633, [RR_WORK_BYTES] = 82, [RR_WORK_RTPT] = 4631, [RR_WORK_RTPS] = 2554, [RR_WORK_DPCS] = 1116, [RR_WORK_INTPL] = 558, [RR_WORK_TESTED] = 2554, [RR_WORK_FACED] = 4179, [RR_WORK_GRIDS] = 21098, [RR_WORK_CELLS] = 588, [RR_WORK_VIEWS] = 2556}},
-    /* C7b */
-    {{[RR_WORK_CALL] = 4550, [RR_WORK_BYTES] = 51, [RR_WORK_RTPT] = 5063, [RR_WORK_RTPS] = 1842, [RR_WORK_NCLIP] = 628, [RR_WORK_DPCS] = 1465, [RR_WORK_INTPL] = 733, [RR_WORK_TESTED] = 1842, [RR_WORK_FACED] = 2978, [RR_WORK_GRIDS] = 16079, [RR_WORK_CELLS] = 145, [RR_WORK_VIEWS] = 2097}},
-    /* C7c */
-    {{[RR_WORK_CALL] = 6506, [RR_WORK_BYTES] = 57, [RR_WORK_RTPT] = 4732, [RR_WORK_RTPS] = 2581, [RR_WORK_DPCS] = 1174, [RR_WORK_INTPL] = 1174, [RR_WORK_TESTED] = 2581, [RR_WORK_FACED] = 3691, [RR_WORK_GRIDS] = 6166, [RR_WORK_CELLS] = 1622, [RR_WORK_VIEWS] = 1904}},
-    /* C7d */
-    {{[RR_WORK_CALL] = 5355, [RR_WORK_BYTES] = 43, [RR_WORK_RTPT] = 2411, [RR_WORK_RTPS] = 2811, [RR_WORK_NCLIP] = 950, [RR_WORK_DPCS] = 1817, [RR_WORK_INTPL] = 1817, [RR_WORK_TESTED] = 2811, [RR_WORK_FACED] = 3118, [RR_WORK_GRIDS] = 11792, [RR_WORK_VIEWS] = 2006}},
-};
-
-/* The passes by number (the standard ones, then courses 7's and 8's). */
-static int HorizonPassNumber(HorizonPass pass)
-{
-    static const HorizonPass passes[] = {
-        HorizonPassLitTiles, HorizonPass1, HorizonPass2, HorizonPass3, HorizonPass4, HorizonPass5,
-        HorizonPass6, HorizonPass7, HorizonPass8, HorizonPass9, HorizonPass10,
-        HorizonPassC7a, HorizonPassC7b, HorizonPassC7c, HorizonPassC7d, HorizonPassC8a, HorizonPassC8b};
-    for (int i = 0; i < (int)(sizeof passes / sizeof passes[0]); i++)
-        if (passes[i] == pass) return i;
-    return -1;
-}
-
-static const RrWorkCost *HorizonPassCost(int number)
-{
-    return number >= 0 && number < (int)(sizeof HorizonPassCosts / sizeof HorizonPassCosts[0])
-               ? &HorizonPassCosts[number] : &HorizonPassCosts[6];
-}
-
 /* 80060C70: run the course's pass program (D_800A229C, or D_800A22C0 when
  * mirrored), keeping the packet cursor in Horizon and the far colour saved. */
 void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
@@ -3812,20 +3711,11 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     program = (Horizon.scene->renderFlags64 == 0 ? HorizonPrograms : HorizonMirrorPrograms)[course];
     Horizon.cursor = RR_GPU_SCRATCH->cursor;
     for (; *program != NULL; program++) {
-        RrWork work;
-        int number = HorizonPassNumber(*program);
-        if (RrWorkPassHook) RrWorkPassHook(number, Horizon.cursor);
-        RrWorkBegin(&work, Horizon.cursor);
         (*program)(views);
-        RrWorkSpend(&work, Horizon.cursor, HorizonPassCost(number));
-        if (RrWorkPassHook) RrWorkPassHook(number | 0x100, Horizon.cursor);
     }
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
-    /* the program's end (its terminator 80060D04) and the return: 31 on
-     * DuckStation to the caller's next routine [mark] */
-    RR_CPU_CYCLES(31);
     RR_GPU_SCRATCH->cursor = Horizon.cursor;
     Psyz_GteSetExtendedProjection(projection);
 }

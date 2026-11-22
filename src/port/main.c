@@ -21,8 +21,9 @@
  *   RR4_VIDEO=pal|ntsc video timing of the PAL release for the run, over
  *                      the preferences (the Japanese release is NTSC)
  *   RR4_CONFIG_HOME=d  the preferences directory (preferences.h)
- *   PSYZ_HEADLESS runs default to PSYZ_AUDIO_CLOCK=video: unpaced fields
- *                      would otherwise race the wall-clock sequencer tick
+ *   PSYZ_HEADLESS runs default to PSYZ_AUDIO_CLOCK=video, PsyZ's
+ *                      deterministic field clock: unpaced fields would
+ *                      otherwise race the wall-clock sequencer tick
  *                      (PSYZ_AUDIO_CLOCK=wall keeps the host clock).
  *   PSYZ_FRAME_STATS=1 log percentiles of the present interval, host work,
  *                      present call and render passes every 500 presents
@@ -31,10 +32,8 @@
  *                      PSYZ_AUDIO_CLOCK=wall measures the windowed timing
  *                      path (frame limiter, real-time clock) without a
  *                      window.
- *   PSYZ_CD_TIMING=instant  drop the CD drive's mechanical timing (seeks,
- *                      pauses, 150 sectors/s) for instant loading; the
- *                      default is the PS1's timing. PSYZ_CD_TRACE=1 prints
- *                      each drive command with its emulated time.
+ *   PSYZ_CD_TRACE=1    print each CD drive command and delivery with the
+ *                      kernel's time.
  *   RR4_SETTINGS_SCRIPT=s  drive the Escape menu in a headless run: s is a
  *                      comma list of key@present (see settings_overlay.h).
  * The test and diagnostic hooks (RR4_FRAME_LIMIT, RR4_CAPTURE*, RR4_TRACE,
@@ -70,9 +69,6 @@
 #include "replay_session.h"
 #if RR4_DIAGNOSTICS
 #include "diagnostics.h"
-#if RR4_FUNC_MARKS
-#include "func_marks.h"
-#endif
 #endif
 
 #include <SDL3/SDL.h>
@@ -126,9 +122,6 @@ static void host_vsync(void) {
     int quitting;
 
     frame_count++;
-#if RR4_FUNC_MARKS
-    Rr4FuncMarksVSync(frame_count);
-#endif
 #if RR4_DIAGNOSTICS
     quitting = Rr4DiagnosticsVSync(frame_count, Psyz_QuitRequested());
 #else

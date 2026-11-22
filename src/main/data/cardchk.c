@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/data/cardini.h"
 #include "game/menu/menutra21.h"
 #include "game/data/cardchk.h"
@@ -8,7 +7,6 @@ extern unsigned char CardCheckCounts[];
 extern unsigned char CardFileCounts[];
 
 void PollCardStatus(int a0, int a1, int a2) {
-    RR_CPU_CYCLES(RR_CYCLES_POLL_CARD_STATUS);
     int r, flag, k, s3, t, v;
     int i;
     unsigned char *p0, *p1, *pp, *b0;
