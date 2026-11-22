@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/cpu_time.h"
 #include "rr/video_timing.h"
 #include "game/data/menuvars.h"
@@ -165,6 +166,12 @@ void UpdateRaceIntroCamera(RaceVehicle *a0, int a1)
   short *s5;
   /* A 75-frame orbit (NTSC release: 90 frames). */
   const int frames = RR_PAL_NTSC(75, 90);
+  /* Called every field at field rate: the orbit by the field (its time in
+   * fields over 2 * frames), the rumble's save and restore by the tick
+   * (rr/field_rate.h). */
+  const int tick = RaceSlowTick();
+  const int ft = RaceFieldTimeAfter(a1);
+  const int fframes = frames * RaceFieldsPerTick();
   if (a1 >= frames)
   {
     return;
@@ -175,7 +182,7 @@ void UpdateRaceIntroCamera(RaceVehicle *a0, int a1)
     RaceLapSplitFlags[0] = 0;
     RaceLapSplitFlags[2] = -0x100;
     RaceLapSplitFlags[1] = -0x100;
-    if ((a1 == 1) && (a0 == PlayerCars))
+    if ((a1 == 1) && (a0 == PlayerCars) && tick)
     {
       /* Save each wheel's rumble setting and force mode 2 for the intro. */
       k = 2;
@@ -188,7 +195,7 @@ void UpdateRaceIntroCamera(RaceVehicle *a0, int a1)
   }
   else
   {
-    s0 = (a1 << 11) / frames;
+    s0 = (ft << 11) / fframes;
     v0 = rsin(s0);
     s5 = RaceLapSplitFlags;
     if (v0 < 0)
@@ -202,7 +209,7 @@ void UpdateRaceIntroCamera(RaceVehicle *a0, int a1)
       v0 += 0xFFF;
     }
     s5[2] = v0 >> 12;
-    s5[1] = ((a1 << 8) / frames) - 0x200;
+    s5[1] = ((ft << 8) / fframes) - 0x200;
   }
   BuildRotMatrixY(&m20, 0x800 - a0->rot54);
   BuildRotMatrixX(&m40, a0->rot50);
@@ -238,7 +245,7 @@ void UpdateRaceIntroCamera(RaceVehicle *a0, int a1)
     return;
   }
   a0->flags1E4 |= 0x100;
-  if ((a1 == frames - 2) && (a0 == PlayerCars))
+  if ((a1 == frames - 2) && (a0 == PlayerCars) && tick)
   {
     for (i = 0; i < 2; i++)
     {

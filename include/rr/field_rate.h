@@ -61,6 +61,41 @@ void RaceFieldRateNextField(void);
  * frame" is menu code; race code uses RaceFieldRateLive. */
 s32 RaceFieldRateThreshold(void);
 
+/* ---- field time (cameras, course objects, draw-time effects) ---- */
+
+/* 1 on the field between two ticks (half a tick after the last one). */
+static inline int RaceFieldPhase(void) { return RaceFieldRateLive && !RaceTickField; }
+/* The time in fields of a tick counter, for code that runs every field:
+ * After for a counter the tick advanced before the code reads it (ModeFrame
+ * at the top of a mode function), Before for one it advances after. */
+static inline s32 RaceFieldTimeAfter(s32 frame) { return frame * RaceFieldsPerTick() + RaceFieldPhase(); }
+static inline s32 RaceFieldTimeBefore(s32 frame) { return frame * RaceFieldsPerTick() - RaceFieldPhase(); }
+/* A per-tick add `d` of code that runs once per field: the tick's field
+ * takes d - d/2, the other d/2, so a tick's two fields add exactly d. */
+static inline s32 RaceFieldSplit(s32 d) {
+    if (!RaceFieldRateLive)
+        return d;
+    return RaceTickField ? d - d / 2 : d / 2;
+}
+/* A colour cycle table (GPU colour words: rgb in the low bytes, the
+ * command byte on top) read at a tick counter `index` (ScreenFrame plus a
+ * phase, the table `mask + 1` long): on the field between ticks the colour
+ * half way to the next entry. */
+static inline u32 RaceFieldCycleColor(const s32 *table, u32 index, u32 mask) {
+    u32 a = (u32)table[index & mask], b, out;
+    if (!RaceFieldPhase())
+        return a;
+    b = (u32)table[(index + 1) & mask];
+    out = a & 0xFF000000u;
+    for (int k = 0; k < 24; k += 8)
+        out |= ((((a >> k) & 0xFF) + ((b >> k) & 0xFF)) >> 1) << k;
+    return out;
+}
+/* rand() for draw-time flicker: PsyqRand at the original rate (as
+ * released); at field rate a generator of its own, so drawing every field
+ * leaves the game's rand sequence (AI, spin-outs) to the race logic. */
+s32 RaceDrawRand(void);
+
 /* ---- fast-lane helpers (identity at the original rate) ---- */
 
 /* An add of `delta` per original tick, per field: half of it, the odd

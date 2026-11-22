@@ -93,6 +93,19 @@ void RaceFieldRateNextField(void) {
     RaceTickField = next;
 }
 
+/* ---- draw-time rand ---- */
+
+extern s32 PsyqRand(void);
+static u32 DrawRandState = 0x24681357u;
+
+s32 RaceDrawRand(void) {
+    if (!RaceFieldRateLive)
+        return PsyqRand();
+    /* the BIOS rand()'s LCG and 15-bit result */
+    DrawRandState = DrawRandState * 1103515245u + 12345u;
+    return (s32)((DrawRandState >> 16) & 0x7FFF);
+}
+
 /* ---- fast-lane helpers ---- */
 
 static u32 IsqrtU64(unsigned long long v) {

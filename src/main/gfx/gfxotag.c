@@ -159,10 +159,15 @@ int FindCameraTrackTrigger(RaceVehicle *a0, int a1, int a2) {
     int t1;
     int t2;
 
+    /* a1 is the time in fields (RaceFieldTimeBefore, rr/field_rate.h):
+     * keys in units of 5 frames (NTSC release: 6) of fps fields each. */
+    const int fps = RaceFieldsPerTick();
+    if (a1 < 0)
+        a1 = 0;
     s0 = -1;
     s2 = ((Elem28 (*)[16])RaceContext.workspace554)[a2];
     for (i = 1; i < 0x10; i++) {
-        if (s2[i].f24 * RR_PAL_NTSC(5, 6) >= a1) {
+        if (s2[i].f24 * RR_PAL_NTSC(5, 6) * fps >= a1) {
             s0 = i;
             s3 = s0 - 1;
             break;
@@ -177,8 +182,8 @@ int FindCameraTrackTrigger(RaceVehicle *a0, int a1, int a2) {
         RaceContext.opening88.triggerA4 = s3;
     }
     /* Key times in units of 5 frames (NTSC release: 6). */
-    t1 = (s2[s0].f24 - s2[s3].f24) * RR_PAL_NTSC(5, 6);
-    t2 = a1 - s2[s3].f24 * RR_PAL_NTSC(5, 6);
+    t1 = (s2[s0].f24 - s2[s3].f24) * RR_PAL_NTSC(5, 6) * fps;
+    t2 = a1 - s2[s3].f24 * RR_PAL_NTSC(5, 6) * fps;
     if (s2[s3].f18 == 0) {
         sp20.x = a0->worldPosition10.words[0];
         sp20.y = a0->worldPosition10.words[1];
@@ -342,7 +347,8 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
     gD = &RaceContext;
     switch (gD->opening88.mode94) {
     case 1:
-        FindCameraTrackTrigger(arg0, gD->opening88.frame88, SelectedTeamIndex);
+        /* the camera by the field, frame88 counted after it (rr/field_rate.h) */
+        FindCameraTrackTrigger(arg0, gD->opening88.done9C ? gD->opening88.frame88 * RaceFieldsPerTick() : RaceFieldTimeBefore(gD->opening88.frame88), SelectedTeamIndex);
         if (Pad0Buttons & 0x800) {
             if (gD->opening88.frame88 >= RR_PAL_NTSC(0x1A, 0x1F)) {
                 if (gD->opening88.fadeActive90 == 0) {
@@ -382,10 +388,12 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
             RaceContext.view60.pose00.rotation10.z = 0;
             RaceContext.view60.projection20 = 0x1D6;
             /* A 73-frame swing (NTSC release: 88 frames). */
-            const int swing = RR_PAL_NTSC(73, 88);
-            RaceContext.view60.pose00.rotation10.x = ((RaceContext.opening88.frame88 * 0x190) / swing) - 0x280;
-            v = (RaceContext.view60.pose00.rotation10.y = (-(RaceContext.opening88.frame88 * 0xB00) / swing) + 0x600);
-            RaceContext.view60.distance1C = (-(RaceContext.opening88.frame88 << 9) / swing) + 0x400;
+            /* By the field: frame88 counted before it (rr/field_rate.h). */
+            const int swing = RR_PAL_NTSC(73, 88) * RaceFieldsPerTick();
+            const int ft = RaceFieldTimeAfter(RaceContext.opening88.frame88);
+            RaceContext.view60.pose00.rotation10.x = ((ft * 0x190) / swing) - 0x280;
+            v = (RaceContext.view60.pose00.rotation10.y = (-(ft * 0xB00) / swing) + 0x600);
+            RaceContext.view60.distance1C = (-(ft << 9) / swing) + 0x400;
             if (((short)v) < (-0x400)) {
                 RaceContext.view60.pose00.rotation10.y = -0x400;
             }

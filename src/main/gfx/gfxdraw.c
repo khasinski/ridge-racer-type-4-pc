@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/geometry.h"
 #include "rr/cpu_work.h"
 #include "game/data/menuvars.h"
@@ -89,6 +90,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
     int a1;
     int a2;
     int t1;
+    int changed, lerpTime;
     /* PS1 scratch words 2..4 = camera position, 6..8 = Euler angles. */
     s32 *position = ((ProjectionScratchPrefix *)SCRATCHPAD)->pose08.position00.words;
     s32 *angles = ((ProjectionScratchPrefix *)SCRATCHPAD)->pose08.angles10.words;
@@ -102,17 +104,29 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         arg0 = s2->f30 & 0xF;
     }
     RaceCameraKind = arg0;
-    RaceContext.cameraNodeChanged1C = 0;
-    a1 = RaceContext.cameraNodeFrames48 + 1;
-    RaceContext.cameraNodeFrames48 = a1;
-    if (a0 != RaceContext.cameraNodeIndex4C) {
-        if (GameModeType == 5 || a1 >= RR_PAL_NTSC(0x1A, 0x1F)) {
-            RaceContext.cameraNodeChanged1C = 1;
-            RaceContext.cameraNodeIndex4C = a0;
-            RaceContext.cameraNodeFrames48 = 0;
+    /* At field rate this runs every field: the node's frame count and its
+     * cuts by the tick, the pose from the car every field, the roll and
+     * lens lerp by the field (rr/field_rate.h). A cut's flag stays up over
+     * the field after it, for SoundUpdate on the next tick, but the pose
+     * code below sees it on the cut's field only. */
+    changed = RaceContext.cameraNodeChanged1C;
+    if (RaceSlowTick()) {
+        RaceContext.cameraNodeChanged1C = 0;
+        a1 = RaceContext.cameraNodeFrames48 + 1;
+        RaceContext.cameraNodeFrames48 = a1;
+        if (a0 != RaceContext.cameraNodeIndex4C) {
+            if (GameModeType == 5 || a1 >= RR_PAL_NTSC(0x1A, 0x1F)) {
+                RaceContext.cameraNodeChanged1C = 1;
+                RaceContext.cameraNodeIndex4C = a0;
+                RaceContext.cameraNodeFrames48 = 0;
+            }
+            ResetCarSlotBuffers();
         }
-        ResetCarSlotBuffers();
+        changed = RaceContext.cameraNodeChanged1C;
+    } else {
+        RaceContext.cameraNodeChanged1C = 0;
     }
+    lerpTime = RaceFieldTimeAfter(RaceContext.cameraNodeFrames48);
     switch (arg0) {
     case 0:
         UpdateRaceChaseCamera(arg1);
@@ -130,7 +144,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         sp10[1] = RaceContext.cameraFollowPosition20.vector.y - position[1];
         angles[1] = 0x400 - Atan2Table(sp10[0], sp10[2]);
         angles[0] = 0x400 - Atan2Table(sp10[1], CordicSqrt(sp10[0] * sp10[0] + sp10[2] * sp10[2]) >> 6);
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         SetGeomScreen(s2->f28);
         break;
     case 2:
@@ -161,7 +175,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         sp10[1] = RaceContext.cameraFollowPosition20.vector.y - position[1];
         angles[1] = 0x400 - Atan2Table(sp10[0], sp10[2]);
         angles[0] = 0x400 - Atan2Table(sp10[1], CordicSqrt(sp10[0] * sp10[0] + sp10[2] * sp10[2]) >> 6);
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         break;
     case 3:
         position[0] = s2->x * 4;
@@ -169,7 +183,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         position[2] = s2->z * 4;
         angles[0] = s2->f10;
         angles[1] = s2->f14;
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         SetGeomScreen(s2->f28);
         break;
     case 4:
@@ -195,7 +209,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         sp10[1] = RaceContext.cameraFollowPosition20.vector.y - position[1];
         angles[1] = 0x400 - Atan2Table(sp10[0], sp10[2]);
         angles[0] = 0x400 - Atan2Table(sp10[1], CordicSqrt(sp10[0] * sp10[0] + sp10[2] * sp10[2]) >> 6);
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         SetGeomScreen(s2->f28);
         break;
     case 5:
@@ -204,7 +218,7 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         sp38[1] = s2->f14;
         sp38[2] = s2->f18;
         TransformCameraOffset(sp38, s2->f2C, &position[0]);
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         position[0] += RaceContext.cameraFollowPosition20.vector.x;
         position[1] += RaceContext.cameraFollowPosition20.vector.y;
         position[2] += RaceContext.cameraFollowPosition20.vector.z;
@@ -221,10 +235,11 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         sp10[1] = RaceContext.cameraFollowPosition20.vector.y - position[1];
         angles[1] = 0x400 - Atan2Table(sp10[0], sp10[2]);
         angles[0] = 0x400 - Atan2Table(sp10[1], CordicSqrt(sp10[0] * sp10[0] + sp10[2] * sp10[2]) >> 6);
-        angles[2] = LerpAngleWrap4096(s2, RaceContext.cameraNodeFrames48);
+        angles[2] = LerpAngleWrap4096(s2, lerpTime);
         SetGeomScreen(s2->f28);
         break;
     }
+    RaceContext.cameraNodeChanged1C = changed;
     if (ModeGroup == 1 && ModeIndex == 22) /* ReplayModeUpdate's (rr/cpu_work.h) */
         RrSpendReplayCamera();
     BuildCameraMatrices();
