@@ -13,8 +13,9 @@ int SplashLogoUpdate(int a0) {
     GpuScratchPointers *g = RR_GPU_SCRATCH;
     /* The PAL release clears the whole screen behind the logo and turns the
      * display on at the third frame; the Japanese release draws no clear and
-     * turns it on at the second. */
-    s32 displayOnFrame = RR_PAL_JP(3, 2);
+     * turns it on at the second, as the PAL disc does at NTSC timing (the
+     * clear stays: it draws black where the PAL picture shows nothing else). */
+    s32 displayOnFrame = RR_PAL_NTSC(3, 2);
     if (!RR_RELEASE_JP)
         g->cursor = AddTileGrid2x2(&CurrentDrawBuf->buffer.ordering70.tags[703], g->cursor, 0, 0, 0x140, 0x200, 0, 0, 0);
     SplashLogoFrame = SplashLogoFrame + 1;

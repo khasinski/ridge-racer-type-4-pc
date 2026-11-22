@@ -92,6 +92,8 @@ void Rr4PrefsCaptureDefaults(void) {
     s_defaults.volume = 100;
     s_defaults.force_feedback = 1;
     s_defaults.race_field_rate = 1;
+    /* 60 Hz: the PAL disc at the NTSC release's timing and car data. */
+    s_defaults.video_timing = RR4_VIDEO_NTSC;
     s_defaults.link_port = RR4_LINK_DEFAULT_PORT;
     for (int i = 0; i < RR4_AXES; i++) {
         s_defaults.axes[i].saturation = 1.0f;
@@ -239,7 +241,12 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
             return ParseFlag(value, &p->fullscreen);
         if (!strcmp(key, "fullscreen_field_rate"))
             return ParseFlag(value, &p->fullscreen_field_rate);
-        if (!strcmp(key, "video_timing")) {
+        /* video_timing (0.3 and before) was written as "pal" by every file,
+         * the default then, so it does not tell a choice: it is dropped and
+         * those files take the 60 Hz default. game_timing replaces it. */
+        if (!strcmp(key, "video_timing"))
+            return 1;
+        if (!strcmp(key, "game_timing")) {
             char mode[16];
             if (!ParseString(value, mode, sizeof(mode)))
                 return 0;
@@ -479,7 +486,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             "fullscreen = %s\n"
             "fullscreen_field_rate = %s\n"
             "vsync = \"%s\"\n"
-            "video_timing = \"%s\"\n"
+            "game_timing = \"%s\"\n"
             "aspect_ratio = \"%s\"\n"
             "disable_dithering = %s\n"
             "antialiasing = %s\n"

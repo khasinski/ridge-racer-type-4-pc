@@ -34,7 +34,8 @@ typedef enum Rr4AspectPref {
 
 typedef enum Rr4VideoTimingPref {
     RR4_VIDEO_PAL = 0,  /* the PAL release: 49.75 Hz fields, races at 25 fps */
-    RR4_VIDEO_NTSC = 1, /* the NTSC release's timing: 59.82 Hz, races at 30 fps */
+    RR4_VIDEO_NTSC = 1, /* the NTSC release's timing and car data: 59.82 Hz,
+                           races at 30 fps (the default) */
 } Rr4VideoTimingPref;
 
 /* What each controller port emulates (PsyZ PsyzControllerKind). The PAL

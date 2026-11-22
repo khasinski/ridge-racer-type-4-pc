@@ -663,6 +663,7 @@ s32 CarLoadStep(void) {
         file = LoadCursor;
         bank = RrWireTableAddress(file, CAR_FILE_MODEL_BANK);
         texture = RrWireTableAddress(file, CAR_FILE_TEXTURE);
+        CarRecordUseNtscValues((CarRecord *)RrWireTableAddress(file, CAR_FILE_RECORD), PendingCarModelFileId);
         SetCarRecordPtr((CarRecord *)RrWireTableAddress(file, CAR_FILE_RECORD), PendingCarModelDestBuf);
         CarBoundsTable[PendingCarModelDestBuf] = (CarBounds *)RrWireTableAddress(file, CAR_FILE_BOUNDS);
         PatchModelBankTexPages(bank, PendingCarModelDestBuf);

@@ -35,6 +35,9 @@
 #   RR4_REGRESS_STRIDE     capture every n-th VSync (default 30)
 #   RR4_REGRESS_OUT        where check writes its results
 #                          (default $RR4_REGRESS_DIR/check/<ref>-vs-<label>)
+#   RR4_VIDEO              game timing of the runs (default pal: the PAL
+#                          release as sold, as the references before NTSC
+#                          became the game's default and DuckStation's)
 #
 # Builds use -DCMAKE_BUILD_TYPE=Release -DRR4_DIAGNOSTICS=ON
 # -DRR4_EXPORT_SYMBOLS=ON (the test hooks and RR4_WATCH need both).
@@ -188,6 +191,7 @@ run_scenario() {
         cd "$sout/run"
         # shellcheck disable=SC2086 # extra is a list of assignments
         env PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy RR4_CONFIG_HOME="$sout/run/cfg" \
+            RR4_VIDEO="${RR4_VIDEO:-pal}" \
             RR4_FRAME_LIMIT="$frames" RR4_PAD_SCRIPT="$pads" RR4_POKE="$pokes" \
             RR4_TRACE=1 RR4_TRACE_RAND=1 RR4_WATCH="$watch" \
             RR4_CAPTURE=cap RR4_CAPTURE_AT="$stride-$frames/$stride" $extra \

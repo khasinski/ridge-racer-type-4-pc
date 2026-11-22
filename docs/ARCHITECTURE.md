@@ -159,29 +159,37 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      counts to 5/6 (countdown, fades, timers, attract and intro scripts,
      camera keys, credits, music cue frames), frames-to-time conversions
      `/25` instead of `/30`, per-frame rates (engine RPM smoothing). Physics
-     and AI are mostly the NTSC per-frame code, and so are the car records,
-     except 34 that the PAL release retuned, which NTSC timing keeps
-     (`docs/REGIONS.md` lists the exceptions). `include/rr/video_timing.h`
-     (`VideoTimingNtsc`, `RR_PAL_NTSC(pal, ntsc)`) keeps the PAL value and
-     adds, at each such place, the value of the NTSC release (SLPS-01800,
-     compared function by function with the PAL executable and overlays).
-     NTSC timing runs `SetVideoMode(MODE_NTSC)`: 263-line fields at 59.82
-     Hz, races at 30 frames a second, and the PAL picture (256 lines,
-     layout, text) is kept whole with `Psyz_GpuSetNtscPalPicture`. The
-     choice is made at startup (preference or `RR4_VIDEO`); with PAL every
-     value is the original one.
+     and AI are the NTSC per-frame code. The car records are the NTSC ones
+     except 34 that the PAL release retuned (`docs/REGIONS.md`).
+     `include/rr/video_timing.h` (`VideoTimingNtsc`, `RR_PAL_NTSC(pal,
+     ntsc)`) keeps the PAL value and adds, at each such place, the value of
+     the NTSC release (SLPS-01800, compared function by function with the
+     PAL executable and overlays; every constant-only and timing difference
+     `tools/port/region_diff.py` lists is behind `RR_PAL_NTSC` or
+     `RR_PAL_JP`). NTSC timing is the default (Graphics > Game timing,
+     preference `game_timing`, `RR4_VIDEO=pal|ntsc` for a run); the choice
+     is made at startup. It runs `SetVideoMode(MODE_NTSC)`: 263-line
+     fields at 59.82 Hz, races at 30 frames a second (60 with Race frame
+     rate), the PAL picture (256 lines, layout, text) kept whole with
+     `Psyz_GpuSetNtscPalPicture`, and the 34 retuned car records take the
+     NTSC release's values as the car is loaded (`CarRecordUseNtscValues`,
+     `src/main/data/bankrec.c`, by R4.BIN entry; both discs' values are in
+     its table). With PAL every value is the original one.
      Checked against the Japanese disc on DuckStation, NTSC timing races
      match it field for field in their timing (race load 636 fields,
-     countdown, two fields a frame, the frames-to-milliseconds lap time);
-     with the same random state and input the car still differs by one
-     position unit from the eleventh race frame, which is the release's
-     code or data, not timing. Release differences that are not frame-rate
-     conversions keep the PAL behaviour: the splash turns the display on at
-     its third frame (the NTSC release at its second) after a full-screen
-     clear the NTSC release does not draw, and its loads read the PAL disc
-     (larger menu sound banks, other file positions and seeks), so the
-     NTSC-timing splash lasts 314 fields against the Japanese release's
-     291.
+     countdown, two fields a frame, the frames-to-milliseconds lap time).
+     With the NTSC car records a Time Attack race on the PAL disc and on
+     the Japanese disc (both in the port, the same rand and autodrive
+     inputs, field rate on) keep the player car's position and velocity
+     identical for all 3298 race fields compared; with the PAL records they
+     part at the 468th. The splash turns the display on at its second frame as the NTSC
+     release does. Release differences that are not frame-rate conversions
+     keep the PAL behaviour (TECH_DEBT F9): the splash's full-screen clear
+     (black behind the logo), the menus' dialogue waits and demo fade
+     values, the ranking tie rule and the race frame's mode flag. Movies
+     keep their own rate (25 fps on the PAL disc) at either timing: each
+     picture is shown at the first field at or after its time, 2-3-2-3-2
+     fields at 59.82 Hz.
 
    - **Race frame rate (field rate):** with Graphics > Race frame rate on
      (default) a race runs its mode function every field, 50 Hz PAL /

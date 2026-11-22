@@ -41,7 +41,7 @@ triggers press I and II) or a JogCon (the left stick turns the dial). The
 game's own Options then show and calibrate that controller.
 
 **Escape** opens the settings: resolution up to 8x, fullscreen, Classic 4:3
-or Widescreen 16:9, PAL or NTSC game timing, geometry
+or Widescreen 16:9, NTSC (60 Hz, default) or PAL (50 Hz) game timing, geometry
 correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
 original. **Graphics > Draw distance > Extended (2x)** doubles the course
@@ -53,7 +53,7 @@ size to reduce shimmering on distant detail.
 **Escape > Replays** saves the replay of the last race (Time Attack, Grand
 Prix, VS Battle, Extra Trial) to a `replays` folder beside the settings
 file, and plays a saved one from the title screen (or while one plays).
-Replay files require a compatible build and the same PAL/NTSC video timing.
+Replay files require a compatible build and the same PAL/NTSC game timing.
 Serial link races are not saved.
 
 ### Link battle over the network
@@ -61,7 +61,7 @@ Serial link races are not saved.
 The game's two-console link cable mode works over a network: the serial
 port's bytes and handshake lines travel over TCP, and the game's own link
 protocol runs on top. Both players need the same version of the port and
-the same video timing (PAL or NTSC).
+the same game timing (PAL or NTSC).
 
 1. One player opens **Escape > Link cable**, sets it to **Host** and lets
    the other player know their address. The default port is 47400 (TCP);

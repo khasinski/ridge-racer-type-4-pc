@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **60 Hz by default: the game runs at the NTSC original's speed.** Game
+  timing (Escape > Graphics) now defaults to NTSC: the European disc runs
+  at 60 fields a second with the Japanese/US release's timing, so with Race
+  frame rate on a race is 60 game frames a second, and the cars, timers,
+  countdown, fades and attract scripts run as in the NTSC original (the
+  PAL release ran 5/6 as fast at 50 Hz). At NTSC timing the 34 car records
+  the PAL release retuned (gear record 4's speed, top speed, target
+  frames; the first car of each maker, docs/REGIONS.md) now take the NTSC
+  release's values, so those cars handle as in the NTSC original (earlier
+  NTSC timing raced them with the PAL data); the splash turns the display
+  on at its second frame as the NTSC release does. PAL stays available
+  (Game timing: PAL, or `RR4_VIDEO=pal`). The settings file's
+  `video_timing` key, which every earlier file wrote as "pal" (then the
+  default), is dropped and replaced by `game_timing`: settings files from
+  0.3 and before start at NTSC, and a player who wants PAL chooses it again.
+  Replays saved with the earlier NTSC timing (PAL car data) are refused.
+  Movies (25 frames a second on the PAL disc) keep their own clock on the
+  60 Hz display: each picture is shown at the first field at or after its
+  time, two or three fields (2-3-2-3-2, 24.99 fps over the opening movie),
+  in step with their sound; the opening movie lasts 130.5 s at either
+  timing.
 - **No more PlayStation timing emulation: fast loads and a responsive
   game.** The CD drive, movies, memory cards, sound transfers and the GPU
   no longer imitate the console's hardware delays, and the game's code no

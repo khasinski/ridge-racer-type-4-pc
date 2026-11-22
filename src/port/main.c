@@ -18,8 +18,9 @@
  *
  * Every build reads:
  *   RR4_DISC=file      the CUE image when argv has none
- *   RR4_VIDEO=pal|ntsc video timing of the PAL release for the run, over
- *                      the preferences (the Japanese release is NTSC)
+ *   RR4_VIDEO=pal|ntsc game timing of the PAL release for the run, over
+ *                      the preferences (default NTSC; the Japanese
+ *                      release is NTSC)
  *   RR4_CONFIG_HOME=d  the preferences directory (preferences.h)
  *   PSYZ_HEADLESS runs default to PSYZ_AUDIO_CLOCK=video, PsyZ's
  *                      deterministic field clock: unpaced fields would

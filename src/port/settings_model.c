@@ -46,7 +46,7 @@ ACCESSORS(Fullscreen, p->fullscreen ? 1 + (p->fullscreen_field_rate != 0) : 0,
 static const char *const kVsyncNames[] = {"Auto", "On", "Off (limiter)"};
 ACCESSORS(Vsync, p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0, p->vsync = i)
 
-static const char *const kVideoTimingNames[] = {"PAL 50 Hz (original)", "NTSC 60 Hz"};
+static const char *const kVideoTimingNames[] = {"PAL 50 Hz", "NTSC 60 Hz"};
 ACCESSORS(VideoTiming, p->video_timing == RR4_VIDEO_NTSC,
           p->video_timing = i ? RR4_VIDEO_NTSC : RR4_VIDEO_PAL)
 
@@ -79,7 +79,7 @@ static const ChoiceSetting kGraphics[] = {
             kWindowNames, Fullscreen),
     SETTING("VSync", "Auto/On synchronizes output when the renderer supports it. Off allows tearing. Game timing (PAL/NTSC) sets the game's frame rate.",
             kVsyncNames, Vsync),
-    {"Game timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Separate from display frame rate. Used from the next start.",
+    {"Game timing", "NTSC (default): 60 Hz and the NTSC original's timing and car data, the game's speed as in Japan and the USA. PAL: this European release as sold, 50 Hz, the game 5/6 as fast. Separate from display frame rate. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
     SETTING("Race frame rate", "60 FPS: the race runs every video field, 50 Hz PAL / 60 Hz NTSC, with the original game speed and no interpolation. Original: 25/30 fps as on the PlayStation. The link race and old replays keep the original rate. Used from the next race.",
             kRaceRateNames, RaceRate),

@@ -657,7 +657,7 @@ static int Capture(ReplayData *d) {
     SaveSetup(d);
     SaveVram(d);
     d->info.layout = ReplaySessionLayout();
-    d->info.ntsc = VideoTimingNtsc != 0;
+    d->info.ntsc = VideoTimingNtsc ? REPLAY_TIMING_NTSC : REPLAY_TIMING_PAL;
     d->info.mode = GameModeType;
     d->info.course = CourseIndex;
     d->info.reverse = ReverseCourse;
@@ -806,8 +806,12 @@ static int FromImage(const ReplayFileImage *image, ReplayData *d, char *err, siz
         snprintf(err, size, "The replay contains invalid race setup or car snapshots.");
         return 0;
     }
-    if (d->info.ntsc != (VideoTimingNtsc != 0)) {
-        snprintf(err, size, "The replay was recorded with %s video timing; switch Video timing to play it.",
+    if (d->info.ntsc == REPLAY_TIMING_NTSC_PAL_CARS) {
+        snprintf(err, size, "The replay was recorded with an earlier NTSC timing (PAL car data) and cannot be played.");
+        return 0;
+    }
+    if (d->info.ntsc != (VideoTimingNtsc ? REPLAY_TIMING_NTSC : REPLAY_TIMING_PAL)) {
+        snprintf(err, size, "The replay was recorded with %s game timing; switch Game timing (Graphics) to play it.",
                  d->info.ntsc ? "NTSC" : "PAL");
         return 0;
     }

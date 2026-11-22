@@ -173,8 +173,10 @@ bases:
   `gears04[4].speed02` by 15 (for example, 254 → 269), raises
   `topSpeed1F0` (166 → 175) and lowers `targetFrames1E8` (4635/6060 →
   4475/5750). Some other car entries (`a2 = 19`) differ in texture pixels.
-  So for those cars the car data is not the same in both releases, and NTSC
-  timing races them with the PAL values.
+  NTSC timing on the PAL disc gives these 34 records the NTSC values as
+  each car loads (`CarRecordUseNtscValues`, `src/main/data/bankrec.c`):
+  R4.BIN entries 18, 38, ..., 638 (every 20th from 18) and 357, 437, with
+  only those four fields differing.
 
 ### Movies (R4.STR) and audio
 
@@ -274,11 +276,11 @@ toolchain (spimdisasm + m2c on `SLPS_018.00` and the JP overlay images).
 
 ## What exists today
 
-`RR4_VIDEO=ntsc` (Escape menu > Graphics > Video timing) runs the **PAL
-disc** with the JP release's frame-rate values at 59.82 Hz
-(`docs/ARCHITECTURE.md`, TECH_DEBT F9). This mode does not support the
-Japanese disc. It keeps the PAL picture height, text, languages, R4.BIN
-layout, DualShock steering, PAL car records and saves.
+NTSC timing (the default; Escape menu > Graphics > Game timing,
+`RR4_VIDEO=ntsc`) runs the **PAL disc** with the JP release's frame-rate
+values and car records at 59.82 Hz (`docs/ARCHITECTURE.md`, TECH_DEBT F9).
+It keeps the PAL picture height, text, languages, R4.BIN layout, DualShock
+steering and saves.
 
 ## Effort and recommended approach
 

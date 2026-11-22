@@ -72,7 +72,7 @@ static void fixture(void) {
     for (unsigned i = 0; i < 8; ++i)
         e->history84[i].vertices = vertices[8 + i];
     SaveTrails(&source);
-    source.info.ntsc = VideoTimingNtsc != 0;
+    source.info.ntsc = VideoTimingNtsc ? REPLAY_TIMING_NTSC : REPLAY_TIMING_PAL;
     storage_fixture(0, 1);
     s32 laps = 3;
     setup_value("NumLaps", &laps);

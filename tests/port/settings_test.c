@@ -45,7 +45,7 @@ static void TestDefaults(void) {
     CHECK(!d->mute && !d->fullscreen &&
           d->aspect_ratio == RR4_ASPECT_CLASSIC);
     CHECK(d->vsync == RR4_VSYNC_AUTO);
-    CHECK(d->video_timing == RR4_VIDEO_PAL);
+    CHECK(d->video_timing == RR4_VIDEO_NTSC);
     CHECK(!d->extended_draw_distance);
     CHECK(d->pad_type[0] == RR4_PAD_DIGITAL && d->pad_type[1] == RR4_PAD_DIGITAL);
     CHECK(d->force_feedback == 1);
@@ -76,10 +76,11 @@ static void TestGraphicsPage(void) {
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 2);
     CHECK(m.prefs.vsync == RR4_VSYNC_OFF);
-    /* Video timing: used from the next start, the status says so. */
+    /* Game timing: NTSC by default, used from the next start, the status
+     * says so. */
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 1);
-    CHECK(m.prefs.video_timing == RR4_VIDEO_NTSC);
+    CHECK(m.prefs.video_timing == RR4_VIDEO_PAL);
     CHECK(strstr(SettingsModelHelp(&m), "next start") != NULL);
     Do(&m, SETTINGS_UP, 1);
     /* Up from the first row wraps to Quit game. */
@@ -107,7 +108,7 @@ static void TestGraphicsPage(void) {
     SettingsModelSelect(&m, SettingsContentRows(&m));
     Do(&m, SETTINGS_ACTIVATE, 1);
     CHECK(m.prefs.scale == 1 && !m.prefs.fullscreen && m.prefs.vsync == RR4_VSYNC_AUTO &&
-          m.prefs.video_timing == RR4_VIDEO_PAL && !m.prefs.extended_draw_distance &&
+          m.prefs.video_timing == RR4_VIDEO_NTSC && !m.prefs.extended_draw_distance &&
           m.prefs.race_field_rate == 1);
     CHECK(m.open);
     /* Back closes. */
@@ -420,7 +421,7 @@ static void TestPrefsFile(const char *dir) {
     p.vsync = RR4_VSYNC_ON;
     p.antialiasing = 1;
     p.aspect_ratio = RR4_ASPECT_WIDESCREEN;
-    p.video_timing = RR4_VIDEO_NTSC;
+    p.video_timing = RR4_VIDEO_PAL;
     p.extended_draw_distance = 1;
     p.volume = 35;
     p.mute = 1;
@@ -447,6 +448,14 @@ static void TestPrefsFile(const char *dir) {
         fputs("[graphics]\nframe_interpolation = true\nvideo_timing = \"pal\"\n", f);
         fclose(f);
     }
+    q = *Rr4PrefsDefaults();
+    CHECK(Rr4PrefsLoadFile(&q, path));
+    /* video_timing (0.3 and before, always written, "pal" by default) is
+     * dropped: those files take the NTSC default. game_timing is kept. */
+    CHECK(q.video_timing == RR4_VIDEO_NTSC);
+    f = fopen(path, "w");
+    CHECK(f != NULL);
+    if (f) { fputs("[graphics]\ngame_timing = \"pal\"\nvideo_timing = \"ntsc\"\n", f); fclose(f); }
     q = *Rr4PrefsDefaults();
     CHECK(Rr4PrefsLoadFile(&q, path));
     CHECK(q.video_timing == RR4_VIDEO_PAL);

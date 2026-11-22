@@ -34,11 +34,20 @@ enum {
 
 #define REPLAY_FILE_EXTENSION ".rr4replay"
 
+/* ReplayFileInfo.ntsc: the game timing of the race. NTSC timing before the
+ * NTSC car records (0.3 and before) raced 34 cars with the PAL data, so its
+ * replays cannot be played back with the NTSC data. */
+enum {
+    REPLAY_TIMING_PAL = 0,
+    REPLAY_TIMING_NTSC_PAL_CARS = 1,
+    REPLAY_TIMING_NTSC = 2,
+};
+
 /* The summary in the header, enough to list a file without reading it all. */
 typedef struct ReplayFileInfo {
     uint32_t version;   /* filled in by the reader */
     uint32_t layout;    /* host layout signature of the writer */
-    uint32_t ntsc;      /* video timing the race ran at: 0 PAL, 1 NTSC */
+    uint32_t ntsc;      /* the game timing the race ran at (REPLAY_TIMING_*) */
     int32_t mode;       /* GameModeType */
     int32_t course;     /* CourseIndex */
     int32_t reverse;    /* ReverseCourse */
