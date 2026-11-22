@@ -212,6 +212,16 @@ enum {
      * ReadS 16 long, 4 of 4: 100 and 45 before) [trace] */
     RR_CYCLES_SOUND_UPDATE_HEAD = 38,
     RR_CYCLES_SOUND_UPDATE_FADES = 68,
+    /* ... and after UpdatePlayerVoices, UpdateLoopVoices,
+     * UpdateMasterSoundVolumes and SoundQueueUpdate each, where their own
+     * time falls (the races' SoundUpdate on DuckStation: 160, 164, 171-329
+     * and 88-219, the Grand Prix's, Time Attack's and Extra Trial's; all
+     * of it came at its end before, 600-800 clocks after the GPU's and
+     * the CD's events of those routines) [mark] */
+    RR_CYCLES_SOUND_UPDATE_PLAYER_VOICES = 160,
+    RR_CYCLES_SOUND_UPDATE_LOOP_VOICES = 164,
+    RR_CYCLES_SOUND_UPDATE_MASTER = 208,
+    RR_CYCLES_SOUND_UPDATE_QUEUE = 88,
     RR_CYCLES_CD_AUDIO_UPDATE = 39,
     RR_CYCLES_CD_AUDIO_TICK = 206,
     RR_CYCLES_CD_AUDIO_POSITION = 142,
@@ -233,6 +243,12 @@ enum {
      * against the port's slot and voice counts); the flat 3873 of a race's
      * call was 1.6k short there and 1.1k long in the menus. [mark] */
     RR_CYCLES_UPDATE_SOUND_SLOT_VOICE = 410,
+    /* ... and a playing slot's own, an opponent's more (the races on
+     * DuckStation: the Grand Prix's player 295 and opponents 442 longer than
+     * the voices', Time Attack 230-270, Versus 160, Extra Trial 150-350; a
+     * paused slot's, the fly-by's, within 60 of them) [mark] */
+    RR_CYCLES_UPDATE_SOUND_SLOT = 270,
+    RR_CYCLES_UPDATE_SOUND_SLOT_COM = 170,
     RR_CYCLES_SLOT_INTERP_CURVE = 72,
     RR_CYCLES_SLOT_INTERP_KEY = 9,
     /* SoundListenerUpdate, listener on, with SoundUpdateComSlots: 2695 in
@@ -241,6 +257,14 @@ enum {
      * exact timing; a flat 2695 before) [mark] */
     RR_CYCLES_SOUND_LISTENER = 2605,
     RR_CYCLES_SOUND_LISTENER_CAR = 90,
+    /* ... of which SoundUpdateComSlots's two slots (SoundCalcCarParams
+     * and the slot's levels) 1150 each, charged at each slot, and its
+     * end 109 (DuckStation, the Grand Prix's races: 1144-1165 to the
+     * first SlotSetLevelProgram, 1144-1157 to the second, 108 from it to
+     * the first UpdateSoundSlot; the listener's 2.4k all came before the
+     * first slot) [mark] */
+    RR_CYCLES_SOUND_COM_SLOT = 1150,
+    RR_CYCLES_SOUND_COM_SLOTS_END = 109,
     RR_CYCLES_SOUND_LISTENER_CAMERA = 3696,
     /* The boot, measured [mark]: entry-to-entry clocks on DuckStation's
      * recompiler, from a stub at each function entry that writes root
@@ -276,6 +300,9 @@ enum {
      * charged, so with the SDK calls' charges fitted with the stubs in the
      * frames started about right in most menus and 120-350 early where
      * the GPU's list was still going */
+    /* StepRaceFrame's set-up before its first call and its end [mark]
+     * (rr/cpu_work.h RrSpendStepRaceFrameOwn) */
+    RR_CYCLES_STEP_RACE_FRAME_OWN = 44,
     RR_CYCLES_FRAME_LOOP_ENV = 14,
     RR_CYCLES_FRAME_LOOP_PAD = 18,
     /* With the secondary ordering table (the race, the split screen):
@@ -525,7 +552,12 @@ enum {
     RR_CYCLES_RACE_OPENING_OVERLAY = 11300,
     RR_CYCLES_CAMERA_TRACK_TRIGGER = 1016,
     RR_CYCLES_SHOWCASE_OBJECT = 2550,
-    RR_CYCLES_SHOWCASE_DRAW = 1500,
+    /* ... after its sub-ordering table's clear: DuckStation's from
+     * BuildCameraMatrices to that ClearOTagR 4.4k-4.5k on courses 0 and 7,
+     * the port's 1.5k-1.6k longer with this before the clear; after it the
+     * port 0.8k-1.0k long (gp-ending's fly-bys, exceptions and stalls out
+     * on both sides) */
+    RR_CYCLES_SHOWCASE_DRAW = 600,
     RR_CYCLES_SPOTLIGHT_CONE = 4908,
 };
 
@@ -559,8 +591,51 @@ enum {
 };
 
 enum {
+    /* BuildObjectMatrix (the course objects'): 889 on DuckStation, every
+     * call [mark] */
+    RR_CYCLES_BUILD_OBJECT_MATRIX = 889,
+    /* DrawTrackObjects' start, to its first object's routine */
+    RR_CYCLES_DRAW_TRACK_OBJECTS_START = 304,
     RR_CYCLES_DRAW_LAP_TIME_LIST = 1089,
     RR_CYCLES_DRAW_LAP_TIME_ROW = 1052,
+};
+
+/* The race HUD's routines, each at its own entry: its own code besides the
+ * primitive setters (charged themselves before the race step, RrWorkFrame
+ * clear), from its entry to the next routine's on DuckStation (DSF_MARKS,
+ * exact timing, the stubs taken out; the Grand Prix's races on courses 0
+ * and 7, gp-ending, by RaceState; the same on both courses). Before these
+ * the race modes' own lumps (RrSpendRaceModeOwn) carried their time just
+ * before the race step. [mark] */
+enum {
+    RR_CYCLES_UPDATE_LAP_TIMING = 227,
+    RR_CYCLES_START_COUNTDOWN = 145,      /* DrawStartCountdown, nothing drawn */
+    RR_CYCLES_START_COUNTDOWN_DRAW = 645, /* ... drawing (RaceState 1) */
+    /* UpdateRaceRanking from RaceState 4; before it 42, 84 a car and 38 a
+     * pair its sort compares (125 with Time Attack's one car, 247 with
+     * Versus's two, 1788 with the Grand Prix's eight) */
+    RR_CYCLES_RACE_RANKING = 16,
+    RR_CYCLES_RACE_RANKING_RACING = 42,
+    RR_CYCLES_RACE_RANKING_CAR = 84,
+    RR_CYCLES_RACE_RANKING_PAIR = 38,
+    RR_CYCLES_CHECK_FINAL_LAP = 100,
+    RR_CYCLES_TIME_REMAINING = 658,
+    RR_CYCLES_HUD_ROTATING_QUAD = 498,
+    RR_CYCLES_VIEWPORT_BORDER_FRAMES = 564,
+    RR_CYCLES_HUD_NUMBER3 = 371,
+    RR_CYCLES_HUD_DIGIT_MOD10 = 177,
+    RR_CYCLES_HUD_RANK_DISPLAY = 151,
+    RR_CYCLES_HUD_RANK_DISPLAY_FLASH = 54, /* the Grand Prix's rank in range */
+    /* DrawRaceMinimap, 52 a car it looks at (819 in Time Attack, 1182 in
+     * the Grand Prix with the same sprites) */
+    RR_CYCLES_RACE_MINIMAP = 346,
+    RR_CYCLES_RACE_MINIMAP_CAR = 52,
+    /* Time Attack's split times (DrawRaceOverlaySprites): a DrawRaceTime
+     * as the lap list's row and 190 (2294 on DuckStation with two) */
+    RR_CYCLES_RACE_OVERLAY_SPRITES = 190,
+    /* The Grand Prix's start wipe after the mirror (RaceState 0) */
+    RR_CYCLES_GP_START_WIPE = 765,
+    RR_CYCLES_STEERING_INDICATOR = 161,
 };
 
 /* The menus' row, box and dialogue drawing and the card menu's frame, each

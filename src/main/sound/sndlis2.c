@@ -1,4 +1,5 @@
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/player_cars.h"
 #include "rr/audio_state_types.h"
 #include "rr/race_types.h"
@@ -13,6 +14,8 @@ void SoundUpdateComSlots(void) {
     for (i = 0; i < 2; i++) {
         AudioListenerRecord1C *c = &SoundState.rec18EC[i];
         const RaceVehicle *r = SoundComCar(c->carIndex04);
+        /* its time where it runs (rr/cpu_time.h) */
+        RR_CPU_CYCLES(RR_CYCLES_SOUND_COM_SLOT);
         SoundCalcCarParams(i);
         if (c->carIndex04 != -1) {
             SoundState.slots38[i + 2].filter30 = c->deltaDist10;

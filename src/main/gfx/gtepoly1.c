@@ -1,3 +1,4 @@
+#include "rr/cpu_work.h"
 #include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "rr/release.h"
@@ -845,6 +846,9 @@ static void RroProjectEffectVertices(RroEffectWork *work, const Vec3s8 *vertices
 #define RRO_COMMAND_COUNT(p) ((s32)(p)[0] >> 16)
 
 void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 arg4, s32 arg5, s32 arg6) {
+    RrWorkCount[arg1 ? RR_WORK_CAR_TRAILS : RR_WORK_CAR_TRAILS_OFF]++;
+    if (arg1 && (arg5 & 1)) RrWorkCount[RR_WORK_CAR_LIGHTS]++;
+    if (arg1 && (arg5 & 2)) RrWorkCount[RR_WORK_CAR_BRAKE_LIGHTS]++;
     RroEffectWork *work = &RroEffectWorkArea;
     const ProjectionScratchPrefix *view = (const ProjectionScratchPrefix *)SCRATCHPAD;
     CarSlotBufferC8 *slot = &CarSlotBuffers[arg4 * 2];

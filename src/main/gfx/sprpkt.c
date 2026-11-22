@@ -11,6 +11,7 @@
 #include "rr/audio_loop.h"
 #include "rr/race_setup.h"
 #include "game/gfx/sprpkt.h"
+#include "rr/cpu_time.h"
 extern s32 RaceState;
 extern s32 SplitTimes[];
 void DrawRaceOverlaySprites(s32 a0)
@@ -19,6 +20,7 @@ void DrawRaceOverlaySprites(s32 a0)
     s32 c;
     SpritePacket *p;
     if (GameModeType == 0 && RaceState != 0 && RaceState < 4) {
+        RR_CPU_CYCLES(RR_CYCLES_RACE_OVERLAY_SPRITES + 2 * RR_CYCLES_DRAW_LAP_TIME_ROW);
         t = SplitTimes[SplitIndex];
         if (t < 0) {
             s3 = -1;
@@ -41,6 +43,7 @@ void DrawRaceOverlaySprites(s32 a0)
                     c = 0x16;
                 }
                 if (SplitDeltaTimer == 0x3B && s2 < 2 && a0 == 0) SoundQueueEnqueue(c, 0);
+                RR_CPU_CYCLES(RR_CYCLES_DRAW_LAP_TIME_ROW);
                 RR_GPU_SCRATCH->cursor = (u8 *)GameQueueSprite(&CurrentDrawBuf->buffer.ordering70.tags[0], (SpritePacket *)RR_GPU_SCRATCH->cursor, 0x70, RR_PAL_JP(0x60, 0x58), 0xC, 0xC, s5, 0xA8, 0x7EF8);
                 DrawRaceTime(0x80, RR_PAL_JP(0x60, 0x58), s1, 0x7EF8, 1);
             } else {

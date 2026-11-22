@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "rr/cpu_time.h"
 #include "game/data/menuvars.h"
 #include <string.h>
 #include "rr/save_slots.h"
@@ -69,6 +70,7 @@ static s32 BestSplitTimeWord(s32 index) {
 void UpdateLapTiming(RaceVehicle *arg0);
 
 void UpdateLapTiming(RaceVehicle *arg0) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_LAP_TIMING);
     RaceVehicleControl *s0;
     s16 v1;
     s32 msg;
@@ -213,6 +215,9 @@ void UpdateRaceRanking(void)
 {
   int i;
   int j;
+  RR_CPU_CYCLES(RaceState < 4 ? RR_CYCLES_RACE_RANKING_RACING + RR_CYCLES_RACE_RANKING_CAR * (unsigned)(NumCars > 0 ? NumCars : 0) +
+                                    RR_CYCLES_RACE_RANKING_PAIR * (unsigned)(NumCars > 1 ? NumCars * (NumCars - 1) / 2 : 0)
+                              : RR_CYCLES_RACE_RANKING);
   if (RaceState < 4)
   {
     for (i = 0; i < NumCars; i++)

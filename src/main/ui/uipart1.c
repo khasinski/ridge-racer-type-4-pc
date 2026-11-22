@@ -698,7 +698,9 @@ void DrawTimeRemaining(int a)
 {
     /* HUD sprite 5 carries the time-remaining row's Y. */
     SpritePacket *p = &CurrentDrawBuf->buffer.hudSprites[5];
-    char *r = FormatFrameTimeMMSS(a);
+    char *r;
+    RR_CPU_CYCLES(RR_CYCLES_TIME_REMAINING);
+    r = FormatFrameTimeMMSS(a);
     int i = a < RR_PAL_NTSC(0x5DC, 0x708); /* the last minute */
     int t = StepProgressBarWidths[i];
     int s = (NumLaps - 3) * 10 + 0x50;
@@ -718,6 +720,7 @@ void DrawTimeRemainingForPlayer(int a, int b)
     } else {
         q = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
     }
+    RR_CPU_CYCLES(RR_CYCLES_TIME_REMAINING);
     r = FormatFrameTimeMMSS(a);
     i = a < RR_PAL_NTSC(0x5DC, 0x708);
     t = StepProgressBarWidths[i];

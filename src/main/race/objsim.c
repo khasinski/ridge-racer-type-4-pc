@@ -104,7 +104,9 @@ static void UpdateTrackObjectsWork(void) {
 
     UpdateTrackObjectActivation();
     for (i = 0; i < TrackObjectCount; i++) {
+            RrWorkCount[RR_WORK_OBJECTS]++;
             if (TrackObjectStates[i].f24 == 1) {
+                RrWorkCount[RR_WORK_OBJECTS_ACTIVE]++;
                 if (TrackObjectDefs[i].f8 == 0xA) {
                     if (TrackObjectStates[i].f8 == 0) {
                         if (GameModeType != 1) {
@@ -212,6 +214,7 @@ static void UpdateTrackObjectsWork(void) {
                         if (t0 == 0) {
                             TrackObjectStates[i].f24 = 0;
                         } else {
+                            RrWorkCount[RR_WORK_OBJECT_KEYS]++;
                             switch (TrackObjectKeyframes[s0].f08 % 10) {
                             case 1:
                             case 4:

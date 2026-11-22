@@ -42,6 +42,12 @@
 #include "rr/trig.h"
 #include "rr/vehicle_drive.h"
 #include "rr/cpu_work.h"
+#ifdef RR4_OBJDBG_PRINT
+#include <stdio.h>
+#include <stdlib.h>
+#include <psyz/system.h>
+void RrFuncMarkWork(void);
+#endif
 
 typedef SemiTransSVec SVec;
 typedef SemiTransCVec CVec;
@@ -77,12 +83,187 @@ static void TrackObjectSubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex)
         RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
         RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
     }
+    if (TrackObjectsWork)
+        RrWorkArmEnd(&work, &RrCostSubmitModel);
     SubmitModel(scene, modelIndex, 0, 0);
-    if (TrackObjectsWork) {
-        RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
+    if (TrackObjectsWork)
         RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &none);
-    }
 }
+
+/* The work so far charged before a course object's rand call, its sound
+ * writes and its models, so they come after its own time (rr/cpu_work.h) */
+static void TrackObjectsSpend(void) {
+    if (TrackObjectsWork)
+        RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
+}
+
+static s32 TrackObjectRand(void) {
+    TrackObjectsSpend();
+    return PsyqRand();
+}
+
+/* The course objects' own code by where it runs: each point below charges
+ * the code from it to the next of the object's routines (rr/cpu_work.h),
+ * fitted to DuckStation's clocks between those routines' marks. */
+enum {
+    DTO_SEG_TOP,
+    DTO_SEG_Q,
+    DTO_SEG_C_0,
+    DTO_SEG_BOM_1,
+    DTO_SEG_C_1,
+    DTO_SEG_BOM_2,
+    DTO_SEG_SM_1,
+    DTO_SEG_C_2,
+    DTO_SEG_C_3,
+    DTO_SEG_C_4,
+    DTO_SEG_C_5,
+    DTO_SEG_C_6,
+    DTO_SEG_F8A_1_6_8_9,
+    DTO_SEG_F8_1_14,
+    DTO_SEG_BOM_3,
+    DTO_SEG_SM_2,
+    DTO_SEG_F8_2,
+    DTO_SEG_BOM_4,
+    DTO_SEG_F8_3,
+    DTO_SEG_BOM_5,
+    DTO_SEG_F8_4_7,
+    DTO_SEG_BOM_6,
+    DTO_SEG_F8_5_6,
+    DTO_SEG_F8_8,
+    DTO_SEG_F8_9,
+    DTO_SEG_F8_11,
+    DTO_SEG_F8_12,
+    DTO_SEG_F8_15,
+    DTO_SEG_F8_10_13,
+    DTO_SEG_FC_1,
+    DTO_SEG_RAND_1,
+    DTO_SEG_BOM_7,
+    DTO_SEG_G3_1,
+    DTO_SEG_G4_1,
+    DTO_SEG_FC_2_5,
+    DTO_SEG_BOM_8,
+    DTO_SEG_G4_2,
+    DTO_SEG_G4_3,
+    DTO_SEG_FC_3,
+    DTO_SEG_BOM_9,
+    DTO_SEG_G4_4,
+    DTO_SEG_FC_4,
+    DTO_SEG_RAND_2,
+    DTO_SEG_BOM_10,
+    DTO_SEG_G3_2,
+    DTO_SEG_RAND_3,
+    DTO_SEG_BOM_11,
+    DTO_SEG_G3_3,
+    DTO_SEG_RAND_4,
+    DTO_SEG_BOM_12,
+    DTO_SEG_G3_4,
+    DTO_SEG_COUNT
+};
+static const short DtoSegCycles[DTO_SEG_COUNT] = {
+    [DTO_SEG_BOM_1] = 286,
+    [DTO_SEG_BOM_10] = 52,
+    [DTO_SEG_BOM_11] = 54,
+    [DTO_SEG_BOM_12] = 160,
+    [DTO_SEG_BOM_2] = 392,
+    [DTO_SEG_BOM_4] = 312,
+    [DTO_SEG_BOM_5] = -10,
+    [DTO_SEG_BOM_7] = 63,
+    [DTO_SEG_C_0] = -254,
+    [DTO_SEG_C_1] = 31,
+    [DTO_SEG_C_2] = 144,
+    [DTO_SEG_C_3] = 9,
+    [DTO_SEG_C_4] = 6,
+    [DTO_SEG_C_6] = 206,
+    [DTO_SEG_F8A_1_6_8_9] = 402,
+    [DTO_SEG_F8_11] = 250,
+    [DTO_SEG_F8_12] = 14,
+    [DTO_SEG_F8_1_14] = 68,
+    [DTO_SEG_F8_2] = -10,
+    [DTO_SEG_F8_3] = 606,
+    [DTO_SEG_FC_1] = 1033,
+    [DTO_SEG_FC_4] = 290,
+    [DTO_SEG_G3_1] = 1161,
+    [DTO_SEG_G3_2] = 371,
+    [DTO_SEG_G3_3] = 322,
+    [DTO_SEG_G3_4] = 43,
+    [DTO_SEG_Q] = 230,
+    [DTO_SEG_RAND_1] = 2419,
+    [DTO_SEG_RAND_2] = 962,
+    [DTO_SEG_RAND_3] = 346,
+    [DTO_SEG_RAND_4] = 644,
+    [DTO_SEG_SM_1] = 68,
+    [DTO_SEG_SM_2] = 1033,
+    [DTO_SEG_TOP] = -21,
+};
+
+#ifdef RR4_OBJDBG_PRINT
+static int TrackObjectsDebug(void) {
+    static int dbg = -1;
+    if (dbg < 0) dbg = getenv("RR4_OBJDBG") != NULL;
+    return dbg;
+}
+#endif
+
+/* A point's charge; a negative one (the port's own charges there larger
+ * than DuckStation's code) comes off the next */
+static int TrackObjectsOwed;
+static void TrackObjectsCharge(int cycles) {
+    cycles += TrackObjectsOwed;
+    TrackObjectsOwed = cycles < 0 ? cycles : 0;
+    if (cycles > 0)
+        RR_CPU_CYCLES((unsigned)cycles);
+}
+
+static void DtoSeg(int seg) {
+    if (!TrackObjectsWork)
+        return;
+#ifdef RR4_OBJDBG_PRINT
+    if (TrackObjectsDebug()) {
+        fprintf(stderr, "XMARK SEG %llu %d\n", Psyz_EmulatedClocks(), seg);
+        RrFuncMarkWork();
+    }
+#endif
+    TrackObjectsCharge(DtoSegCycles[seg]);
+}
+
+/* The work since the last charge left out (a routine that charged its own) */
+static void TrackObjectsDrop(void) {
+    static const RrWorkCost none;
+    if (TrackObjectsWork)
+        RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &none);
+}
+
+/* The objects' models by their own costs, their work out of the objects' */
+#define TRACK_OBJECT_SUB(call, cost)                                           \
+    do {                                                                       \
+        RrWork subWork_;                                                       \
+        TrackObjectsSpend();                                                   \
+        if (TrackObjectsWork)                                                  \
+            RrWorkBegin(&subWork_, RR_GPU_SCRATCH->cursor);                    \
+        call;                                                                  \
+        if (TrackObjectsWork) {                                                \
+            RrWorkSpend(&subWork_, RR_GPU_SCRATCH->cursor, (cost));            \
+            TrackObjectsDrop();                                                \
+        }                                                                      \
+    } while (0)
+
+/* EmitSemiTransG3List and EmitSemiTransG4List by their own costs */
+static void TrackObjectEmit(int quads, void *list, s32 count, s32 mode) {
+    RrWork work;
+    TrackObjectsSpend();
+    if (TrackObjectsWork) {
+        RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
+        RrWorkArmEnd(&work, quads ? &RrCostEmitSemiTransG4 : &RrCostEmitSemiTransG3);
+    }
+    if (quads)
+        EmitSemiTransG4List(list, count, mode);
+    else
+        EmitSemiTransG3List(list, count, mode);
+    if (TrackObjectsWork)
+        TrackObjectsDrop();
+}
+#define TrackObjectEmitG3(list, count, mode) TrackObjectEmit(0, (list), (count), (mode))
+#define TrackObjectEmitG4(list, count, mode) TrackObjectEmit(1, (list), (count), (mode))
 
 static void DrawTrackObjectsWork(s32 arg0) {
     MatrixWords32 sp18;
@@ -121,30 +302,42 @@ static void DrawTrackObjectsWork(s32 arg0) {
             continue;
         }
         InterpSet(INTERP_OBJECT, (u32)i);
+#ifdef RR4_OBJDBG_PRINT
+        if (TrackObjectsWork && TrackObjectsDebug()) {
+            fprintf(stderr, "XMARK OBJ %llu %d %d %d %d\n", Psyz_EmulatedClocks(), (int)i,
+                    (int)(TrackObjectDefs[i].f4 % 10), (int)TrackObjectDefs[i].f8, (int)(TrackObjectDefs[i].fC % 10));
+            RrFuncMarkWork();
+        }
+#endif
+        DtoSeg(DTO_SEG_TOP);
         if (TrackObjectsWork) {
             RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
         }
 
         switch (TrackObjectDefs[i].f4 % 10) {
         case 0:
+            DtoSeg(DTO_SEG_C_0);
             BuildObjectMatrix(i, (const s16 *)&TrackObjectStates[i].f1C, &sp18, arg0);
+            DtoSeg(DTO_SEG_BOM_1);
             SetTrackObjectTransform(i, &sp18, arg0);
             if ((TrackObjectStates[i].f8 / 10) == 1) {
                 s3[0x00 / 4] = TrackObjectStates[i].f8 + (CourseIndex % 4) * 3 - 11;
                 s3[0x04 / 4] = (TrackObjectStates[i].f0 / 6) % OpeningSunbeamPolys[s3[0x00 / 4]];
                 s3[0x08 / 4] = OpeningCreditTextTable[s3[0x00 / 4] * 12 + s3[0x04 / 4]];
-                SubmitCourseModel2((scene), TrackObjectDefs[i].f0 + s3[0x08 / 4]);
+                TRACK_OBJECT_SUB(SubmitCourseModel2((scene), TrackObjectDefs[i].f0 + s3[0x08 / 4]), &RrCostTrackObjectCourseModel);
                 continue;
             }
             if (((TrackObjectStates[i].f4 / 100) - 1U) < 2U) {
-                SubmitCourseModel2((scene), TrackObjectDefs[i].f0 + (TrackObjectStates[i].f4 % 100));
+                TRACK_OBJECT_SUB(SubmitCourseModel2((scene), TrackObjectDefs[i].f0 + (TrackObjectStates[i].f4 % 100)), &RrCostTrackObjectCourseModel);
             } else {
-                SubmitCourseModel2((scene), TrackObjectDefs[i].f0);
+                TRACK_OBJECT_SUB(SubmitCourseModel2((scene), TrackObjectDefs[i].f0), &RrCostTrackObjectCourseModel);
             }
             break;
 
         case 1:
+            DtoSeg(DTO_SEG_C_1);
             BuildObjectMatrix(i, (const s16 *)&TrackObjectStates[i].f1C, &sp18, 0);
+            DtoSeg(DTO_SEG_BOM_2);
             sp38 = LightMatrix.matrix;
             if (CourseIndex == 7 || CourseIndex == 3 || CourseIndex == 2) {
                 for (j = 0; j < 3; j++) {
@@ -175,31 +368,37 @@ static void DrawTrackObjectsWork(s32 arg0) {
             SetTrackObjectTransform(i, &sp18, 0);
             SelectModelBank(4);
             TrackObjectSubmitModel(scene, TrackObjectDefs[i].f0);
+            DtoSeg(DTO_SEG_SM_1);
             break;
 
         case 2:
-            DrawTrackObjectLitModel(TrackObjectDefs[i].f8, TrackObjectDefs[i].f0);
+            DtoSeg(DTO_SEG_C_2);
+            TRACK_OBJECT_SUB(DrawTrackObjectLitModel(TrackObjectDefs[i].f8, TrackObjectDefs[i].f0), &RrCostTrackObjectLit);
             continue;
 
         case 3:
-            DrawTrackObjectBillboard(TrackObjectDefs[i].f0);
+            DtoSeg(DTO_SEG_C_3);
+            TRACK_OBJECT_SUB(DrawTrackObjectBillboard(TrackObjectDefs[i].f0), &RrCostTrackObjectBillboard);
             continue;
 
         case 4:
-            DrawTrackObjectFlashQuads(TrackObjectDefs[i].f0);
+            DtoSeg(DTO_SEG_C_4);
+            TRACK_OBJECT_SUB(DrawTrackObjectFlashQuads(TrackObjectDefs[i].f0), &RrCostTrackObjectFlashQuads);
             continue;
 
         case 5:
+            DtoSeg(DTO_SEG_C_5);
             if (ReplayState == 2 && GameModeType == 1 && PlayerCars[0].control.dynamics94.steering.count22 < 6 /* RaceFinishBannerTimer */) {
                 continue;
             }
             if (TrackObjectStates[i].f8 != 0) {
                 if (TrackObjectStates[i].f4 + 100 == TrackObjectStates[i].f0) {
                     if (RacePaused == 0 && GameModeType != 5) {
+                        TrackObjectsSpend();
                         PlaySfxVolPan(0x27, 0x7F, 0x40, -1);
                     }
                 }
-                DrawAnimatedTrackObject((AnimatedTrackScratch *)(scene), TrackObjectDefs[i].f0, RacePaused == 0);
+                TRACK_OBJECT_SUB(DrawAnimatedTrackObject((AnimatedTrackScratch *)(scene), TrackObjectDefs[i].f0, RacePaused == 0), &RrCostTrackObjectAnimated);
                 SetDrawMode(RR_GPU_SCRATCH->cursor, 0, 1, 0x2A, 0);
                 AddPrim(&RR_GPU_SCRATCH->order[0x900 / 4], RR_GPU_SCRATCH->cursor);
                 RR_GPU_SCRATCH->cursor += sizeof(GpuDrawModePacket);
@@ -207,6 +406,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             continue;
 
         case 6:
+            DtoSeg(DTO_SEG_C_6);
             break;
         }
 
@@ -215,6 +415,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
         case 6:
         case 8:
         case 9:
+            DtoSeg(DTO_SEG_F8A_1_6_8_9);
             s3[0x00 / 4] = (TrackObjectStates[i].fC - (scene->view.projection.pose08.position00.xyz.x)) >> 4;
             s3[0x04 / 4] = (TrackObjectStates[i].f10 - (scene->view.projection.pose08.position00.xyz.y)) >> 4;
             s3[0x08 / 4] = (TrackObjectStates[i].f14 - (scene->view.projection.pose08.position00.xyz.z)) >> 4;
@@ -228,15 +429,18 @@ static void DrawTrackObjectsWork(s32 arg0) {
         switch (TrackObjectDefs[i].f8) {
         case 1:
         case 14:
+            DtoSeg(DTO_SEG_F8_1_14);
             sp118.x = TrackObjectStates[i].f1C;
             sp118.y = (TrackObjectStates[i].f0 * 0x188) % 0x1000;
             sp118.z = TrackObjectStates[i].f20;
             BuildObjectMatrix(i, (const s16 *)&sp118, &sp18, 0);
+            DtoSeg(DTO_SEG_BOM_3);
             MulMatrix0(&sp38, &sp18, &sp58);
             SetLightMatrix(&sp58);
             SetTrackObjectTransform(i, &sp18, 0);
             SelectModelBank(4);
             TrackObjectSubmitModel(scene, 1);
+            DtoSeg(DTO_SEG_SM_2);
             if (TrackObjectDefs[i].f8 != 14) {
                 v = (0x898 - dist) / 20;
                 if (dist >= 0x899) {
@@ -261,46 +465,53 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
 
         case 2:
+            DtoSeg(DTO_SEG_F8_2);
             sp118.x = 0;
             sp118.y = 0x400;
             sp118.z = 0;
             BuildObjectMatrix(i, (const s16 *)&sp118, &sp18, arg0);
+            DtoSeg(DTO_SEG_BOM_4);
             SetTrackObjectTransform(i, &sp18, arg0);
-            SubmitCourseModel2((scene), 2);
+            TRACK_OBJECT_SUB(SubmitCourseModel2((scene), 2), &RrCostTrackObjectCourseModel);
             break;
 
         case 3:
+            DtoSeg(DTO_SEG_F8_3);
             sp118.x = sp118.y = sp118.z = 0;
             BuildObjectMatrix(i, (const s16 *)&sp118, &sp18, arg0);
+            DtoSeg(DTO_SEG_BOM_5);
             SetTrackObjectTransform(i, &sp18, arg0);
-            SubmitCourseModel2((scene), 2);
+            TRACK_OBJECT_SUB(SubmitCourseModel2((scene), 2), &RrCostTrackObjectCourseModel);
             break;
 
         case 4:
         case 7:
+            DtoSeg(DTO_SEG_F8_4_7);
             sp118.x = sp118.y = sp118.z = 0;
             BuildObjectMatrix(i, (const s16 *)&sp118, &sp18, 0);
+            DtoSeg(DTO_SEG_BOM_6);
             SetTrackObjectTransform(i, &sp18, 0);
             if (TrackObjectDefs[i].f8 == 4) {
                 for (j = 2; j < 6; j++) {
-                    SubmitCourseModel2((scene), j);
+                    TRACK_OBJECT_SUB(SubmitCourseModel2((scene), j), &RrCostTrackObjectCourseModel);
                 }
             } else {
                 for (j = 0x2F; j < 0x33; j++) {
-                    SubmitCourseModel2((scene), j);
+                    TRACK_OBJECT_SUB(SubmitCourseModel2((scene), j), &RrCostTrackObjectCourseModel);
                 }
             }
             break;
 
         case 5:
         case 6:
+            DtoSeg(DTO_SEG_F8_5_6);
             RR_GTE_COPY_ROT_TR_TO_LLM_BK();
             {
                 s32 one = 0x1000;
                 RR_GTE_SET_IDENTITY_ROT_ZERO_TR(one);
             }
-            DrawTrackObjectModel(TrackObjectDefs[i].f0 + 1, 1);
-            DrawTrackObjectModel(TrackObjectDefs[i].f0 + 2, 0);
+            TRACK_OBJECT_SUB(DrawTrackObjectModel(TrackObjectDefs[i].f0 + 1, 1), &RrCostTrackObjectModel);
+            TRACK_OBJECT_SUB(DrawTrackObjectModel(TrackObjectDefs[i].f0 + 2, 0), &RrCostTrackObjectModel);
             if (TrackObjectDefs[i].f8 != 5) {
                 v = (0xDB6 - dist) / 13;
                 if (dist >= 0xDB7 || RacePaused != 0) {
@@ -318,14 +529,17 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
 
         case 8:
+            DtoSeg(DTO_SEG_F8_8);
             v = (0xC80 - dist) / 25;
             if (v >= 0x3D && TrackObjectStates[i].f8 == 0) {
                 TrackObjectStates[i].f8 = 1;
+                TrackObjectsSpend();
                 PlaySfxVolPan(0x26, 0x7F, 0x40, -1);
             }
             break;
 
         case 9:
+            DtoSeg(DTO_SEG_F8_9);
             v = (0x119E - dist) / 13;
             if (dist >= 0x119F || RacePaused != 0) {
                 SoundLoopSet(6, 0x1E00, 0, 0x40);
@@ -341,6 +555,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
 
         case 11:
+            DtoSeg(DTO_SEG_F8_11);
             if (RaceState == 0) {
                 continue;
             }
@@ -395,6 +610,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
 
         case 12:
+            DtoSeg(DTO_SEG_F8_12);
             if (RaceState == 0) {
                 continue;
             }
@@ -425,16 +641,19 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
 
         case 15:
+            DtoSeg(DTO_SEG_F8_15);
             SetSoundChannelVolLR(0, 0, 0);
             SetSoundChannelVolLR(1, 0, 0);
             break;
 
         case 10:
         case 13:
+            DtoSeg(DTO_SEG_F8_10_13);
             break;
         }
 
         q = TrackObjectStates[i].f4 / 100;
+        DtoSeg(DTO_SEG_Q);
         if (q == 3) {
             TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 - 300 < 50) ? TrackObjectStates[i].f4 + 10 : TrackObjectStates[i].f4;
         } else if (q == 0) {
@@ -447,6 +666,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
 
         switch (TrackObjectDefs[i].fC % 10) {
         case 1:
+            DtoSeg(DTO_SEG_FC_1);
             if (arg0 == 2) {
                 s3[0x20 / 4] = -1;
             } else {
@@ -462,7 +682,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 sp128[j].r = 0;
             }
             {
-                k = (PsyqRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                k = (TrackObjectRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                DtoSeg(DTO_SEG_RAND_1);
                 if (RacePaused != 0) {
                     k = TrackObjectStates[i].f4 % 100;
                 }
@@ -499,8 +720,10 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp1D8[j + 4].c2.b = (k * 3) >> 3;
                 }
                 BuildObjectMatrix(i, (const s16 *)&TrackObjectStates[i].f1C, &sp18, arg0);
+                DtoSeg(DTO_SEG_BOM_7);
                 SetRotMatrix(sp18.w);
-                EmitSemiTransG3List(sp1D8, 12, 1);
+                TrackObjectEmitG3(sp1D8, 12, 1);
+                DtoSeg(DTO_SEG_G3_1);
                 for (j = 0; j < 8; j++) {
                     sp638[j].v0.vx = (spA0[j].vx >> 1);
                     sp638[j].v0.vy = spA0[j].vy;
@@ -521,12 +744,14 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp638[j].c2.r = sp638[j].c2.g = sp638[j].c2.b = 0;
                     sp638[j].c3.r = sp638[j].c3.g = sp638[j].c3.b = 0;
                 }
-                EmitSemiTransG4List(sp638, 8, 1);
+                TrackObjectEmitG4(sp638, 8, 1);
+                DtoSeg(DTO_SEG_G4_1);
             }
             break;
 
         case 2:
         case 5:
+            DtoSeg(DTO_SEG_FC_2_5);
             s3[0x28 / 4] = TrackObjectDefs[i].fC / 10;
             for (k = 0; k < 18; k++) {
                 if (s3[0x28 / 4] == 0) {
@@ -569,6 +794,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 }
             }
             BuildObjectMatrix(i, (const s16 *)&sp98, &sp18, arg0);
+            DtoSeg(DTO_SEG_BOM_8);
             sp120.vx = -(scene->view.projection.pose08.position00.xyz.x) >> 3;
             sp120.vy = -(scene->view.projection.pose08.position00.xyz.y) >> 3;
             sp120.vz = -(scene->view.projection.pose08.position00.xyz.z) >> 3;
@@ -579,13 +805,16 @@ static void DrawTrackObjectsWork(s32 arg0) {
             RR_GTE_SETROT(&sp18);
             RR_GTE_SETTR_AT20(&sp38);
             if ((TrackObjectDefs[i].fC % 10) == 5) {
-                EmitSemiTransG4List(sp638, 36, 2);
+                TrackObjectEmitG4(sp638, 36, 2);
+                DtoSeg(DTO_SEG_G4_2);
             } else {
-                EmitSemiTransG4List(sp638, 36, 0);
+                TrackObjectEmitG4(sp638, 36, 0);
+                DtoSeg(DTO_SEG_G4_3);
             }
             break;
 
         case 3:
+            DtoSeg(DTO_SEG_FC_3);
             for (k = 0; k < 38; k++) {
                 sp128[k].r = (k < 21) ? OpeningSkipHoldTimer[CourseIndex - 4].r : OpeningSkipHoldTimer[CourseIndex - 4].r - (OpeningSkipHoldTimer[CourseIndex - 4].r * (k - 20)) / 17;
                 sp128[k].g = (k < 21) ? OpeningSkipHoldTimer[CourseIndex - 4].g : OpeningSkipHoldTimer[CourseIndex - 4].g - (OpeningSkipHoldTimer[CourseIndex - 4].g * (k - 20)) / 17;
@@ -625,6 +854,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 sp638[j + 76].c1 = sp638[j + 76].c3 = sp128[37];
             }
             BuildObjectMatrix(i, (const s16 *)&sp98, &sp18, arg0);
+            DtoSeg(DTO_SEG_BOM_9);
             sp120.vx = -(scene->view.projection.pose08.position00.xyz.x) >> 3;
             sp120.vy = -(scene->view.projection.pose08.position00.xyz.y) >> 3;
             sp120.vz = -(scene->view.projection.pose08.position00.xyz.z) >> 3;
@@ -634,10 +864,12 @@ static void DrawTrackObjectsWork(s32 arg0) {
             sp38.fields.translation14[2] = sp1C8.vz;
             RR_GTE_SETROT(&sp18);
             RR_GTE_SETTR_AT20(&sp38);
-            EmitSemiTransG4List(sp638, 78, 0);
+            TrackObjectEmitG4(sp638, 78, 0);
+            DtoSeg(DTO_SEG_G4_4);
             break;
 
         case 4:
+            DtoSeg(DTO_SEG_FC_4);
             {
                 s32 dx = (TrackObjectStates[i].fC - (scene->view.projection.pose08.position00.xyz.x)) >> 4;
                 s32 dz = (TrackObjectStates[i].f14 - (scene->view.projection.pose08.position00.xyz.z)) >> 4;
@@ -661,7 +893,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp128[j].r = 0;
                 }
                 {
-                    k = (PsyqRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    k = (TrackObjectRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    DtoSeg(DTO_SEG_RAND_2);
                 if (RacePaused != 0) {
                     k = TrackObjectStates[i].f4 % 100;
                 }
@@ -693,8 +926,10 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     }
                 }
                 BuildObjectMatrix(i, (const s16 *)&TrackObjectStates[i].f1C, &sp18, arg0);
+                DtoSeg(DTO_SEG_BOM_10);
                 RR_GTE_SETROT(&sp18);
-                EmitSemiTransG3List(sp1D8, 3, 0);
+                TrackObjectEmitG3(sp1D8, 3, 0);
+                DtoSeg(DTO_SEG_G3_2);
             } else if (s3[0x00 / 4] < 3300) {
                 for (j = 0; j < 2; j++) {
                     spA0[j].vx = 0;
@@ -705,7 +940,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp128[j].r = 0;
                 }
                 {
-                    k = (PsyqRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    k = (TrackObjectRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    DtoSeg(DTO_SEG_RAND_3);
                 if (RacePaused != 0) {
                     k = TrackObjectStates[i].f4 % 100;
                 }
@@ -722,8 +958,10 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp1D8[0].v2 = spA0[1];
                 }
                 BuildObjectMatrix(i, (const s16 *)&TrackObjectStates[i].f1C, &sp18, arg0);
+                DtoSeg(DTO_SEG_BOM_11);
                 RR_GTE_SETROT(&sp18);
-                EmitSemiTransG3List(sp1D8, 1, 0);
+                TrackObjectEmitG3(sp1D8, 1, 0);
+                DtoSeg(DTO_SEG_G3_3);
             } else {
                 for (j = 0; j < 2; j++) {
                     spA0[j].vx = 0;
@@ -734,7 +972,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp128[j].r = 0;
                 }
                 {
-                    k = (PsyqRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    k = (TrackObjectRand() % 10) + (TrackObjectStates[i].f4 % 100);
+                    DtoSeg(DTO_SEG_RAND_4);
                 if (RacePaused != 0) {
                     k = TrackObjectStates[i].f4 % 100;
                 }
@@ -762,6 +1001,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                     sp1D8[0].c2 = sp128[1];
                 }
                 BuildObjectMatrix(i, (const s16 *)&sp98, &sp18, arg0);
+                DtoSeg(DTO_SEG_BOM_12);
                 sp120.vx = -(scene->view.projection.pose08.position00.xyz.x) >> 3;
                 sp120.vy = -(scene->view.projection.pose08.position00.xyz.y) >> 3;
                 sp120.vz = -(scene->view.projection.pose08.position00.xyz.z) >> 3;
@@ -771,7 +1011,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 sp38.fields.translation14[2] = sp1C8.vz;
                 RR_GTE_SETROT(&sp18);
                 RR_GTE_SETTR_AT20(&sp38);
-                EmitSemiTransG3List(sp1D8, 1, 2);
+                TrackObjectEmitG3(sp1D8, 1, 2);
+                DtoSeg(DTO_SEG_G3_4);
             }
             break;
         }
@@ -785,10 +1026,14 @@ static void DrawTrackObjectsWork(s32 arg0) {
  * call, the port's at 1.4k with the whole call's time at its end). */
 void DrawTrackObjects(s32 arg0) {
     RrWork work;
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_TRACK_OBJECTS_START);
     RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
+    RrWorkPush(&work, 1, &RrCostDrawTrackObjects);
     TrackObjectsWork = &work;
+    TrackObjectsOwed = 0;
     DrawTrackObjectsWork(arg0);
     TrackObjectsWork = NULL;
+    RrWorkPop();
     RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
 }
 
@@ -797,6 +1042,7 @@ void BuildObjectMatrix(int unused, const s16 *p, MatrixWords32 *out, int flag) {
     MatrixWords32 m90;
     MatrixWords32 *q = &m70;
     (void)unused;
+    TrackObjectsSpend();
     BuildRotMatrixZ(q, -p[2]);
     BuildRotMatrixX(&m30, -p[0]);
     if (flag == 2) {
@@ -813,6 +1059,10 @@ void BuildObjectMatrix(int unused, const s16 *p, MatrixWords32 *out, int flag) {
     MulMatrix0(&m30, &m50, &m10);
     MulMatrix2(&m70, &m10);
     *out = m10;
+    if (TrackObjectsWork) {
+        TrackObjectsDrop();
+        RR_CPU_CYCLES(RR_CYCLES_BUILD_OBJECT_MATRIX);
+    }
 }
 
 void SetTrackObjectTransform(int index, MatrixWords32 *matrix, int mode)

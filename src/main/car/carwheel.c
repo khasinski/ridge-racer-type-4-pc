@@ -325,6 +325,7 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
         MulMatrix0(&LightMatrix.matrix, &sp80, &sp60);
         RR_GTE_SETLLM(&sp60);
         if (i < CarModelLodDistances[arg1].d0) {
+            RrWorkCount[RR_WORK_CAR_NEAR]++;
             BuildRotMatrixY(&sp20, -arg0->rot54);
             MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
             BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
@@ -394,6 +395,7 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
             }
             return;
         } else if (i < CarModelLodDistances[arg1].d2) {
+            RrWorkCount[RR_WORK_CAR_MID]++;
             BuildRotMatrixY(&sp20, -arg0->rot54);
             MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
             BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
@@ -429,6 +431,7 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
             }
             return;
         } else if (i < CarModelLodDistances[arg1].d4) {
+            RrWorkCount[RR_WORK_CAR_FAR]++;
             MulMatrix0((const MatrixWords32 *)((void *)SCRATCH_ROT_MATRIX), &sp80, &spA8[0]);
             sp168[0].x = arg0->worldPosition10.words[0];
             sp168[0].y = arg0->worldPosition10.words[1];

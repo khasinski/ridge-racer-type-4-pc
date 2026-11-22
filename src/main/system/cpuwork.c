@@ -32,6 +32,8 @@ static void WorkRaw(unsigned long long raw[RR_WORK_UNITS]) {
         raw[k] = Psyz_GteOpCount(WorkOpcodes[k]);
     for (int k = RR_WORK_TESTED; k < RR_WORK_UNITS; k++)
         raw[k] = RrWorkCount[k];
+    raw[RR_WORK_SQR] = Psyz_GteOpCount(0x28);
+    raw[RR_WORK_CC] = Psyz_GteOpCount(0x1C);
     raw[RR_WORK_CALL] = raw[RR_WORK_BYTES] = 0;
 }
 
@@ -71,6 +73,52 @@ void RrWorkSpendPart(RrWork *work, const void *cursor, const RrWorkCost *cost) {
     RrWorkBegin(work, cursor);
 }
 
+enum { WORK_STACK = 16 };
+static struct {
+    RrWork *work;
+    const RrWorkCost *cost;
+    int packets;
+} WorkStack[WORK_STACK];
+static int WorkTop;
+
+void RrWorkPush(RrWork *work, int packets, const RrWorkCost *cost) {
+    if (WorkTop < WORK_STACK) {
+        WorkStack[WorkTop].work = work;
+        WorkStack[WorkTop].cost = cost;
+        WorkStack[WorkTop].packets = packets;
+    }
+    WorkTop++;
+}
+
+void RrWorkPop(void) {
+    if (WorkTop > 0)
+        WorkTop--;
+}
+
+void RrWorkFlush(void) {
+    if (WorkTop <= 0 || WorkTop > WORK_STACK)
+        return;
+    RrWorkSpendPart(WorkStack[WorkTop - 1].work,
+                    WorkStack[WorkTop - 1].packets ? RR_GPU_SCRATCH->cursor : 0,
+                    WorkStack[WorkTop - 1].cost);
+}
+
+static RrWork *EndWork;
+static const RrWorkCost *EndCost;
+
+void RrWorkArmEnd(RrWork *work, const RrWorkCost *cost) {
+    EndWork = work;
+    EndCost = cost;
+}
+
+void RrWorkEnd(const void *cursor) {
+    if (EndWork) {
+        RrWork *work = EndWork;
+        EndWork = NULL;
+        RrWorkSpend(work, cursor, EndCost);
+    }
+}
+
 void RrWorkHoldBegin(const void *cursor) {
     if (HoldDepth++ != 0)
         return;
@@ -106,7 +154,7 @@ void RrWorkHoldEnd(const void *cursor) {
  * the fit's mean, the median and 90th percentile of its residual in
  * clocks. [mark] */
 #define W(call, bytes, rtpt, rtps, nclip, dpcs, intpl, mvmva)                  \
-    {{(call), (bytes), (rtpt), (rtps), (nclip), (dpcs), (intpl), (mvmva), 0, 0, 0, 0}}
+    {{(call), (bytes), (rtpt), (rtps), (nclip), (dpcs), (intpl), (mvmva)}}
 const RrWorkCost RrCostReadCarInput = W(12622, 0, 0, 0, 0, 0, 0, 0);       /* 218; 42, 158 */
 /* UpdatePlayerCar and UpdateComCars by the race's state, their paths:
  * before the start (RaceState 0) the player's car 177 a call and the AI
@@ -118,37 +166,84 @@ const RrWorkCost RrCostReadCarInput = W(12622, 0, 0, 0, 0, 0, 0, 0);       /* 21
  * the first race's countdown), racing 3060 and 3530 + 7716 an AI car it
  * drives (its projection, the one MVMVA each; 57k-59k with seven).
  * One cost for every state had the AI 3k short racing, 3k long in the
- * countdown and the player's car 2.3k long before the start. */
+ * countdown and the player's car 2.3k long before the start. Racing, the
+ * AI's time goes with the track nodes ScanCurveAhead looks at (its curve
+ * scans for the overtake's score and the drive, the course's node
+ * lengths and the car's speed): 4569 an AI car and 232.5 a node besides
+ * the call's 3530 (DuckStation's exact timing, its list DMA stalls taken
+ * out, the Grand Prix's second, third and course 7's final race, 193
+ * frames: residual median 245, 90th percentile 778), where the MVMVA's
+ * 7716 had course 7's final race 10k long (47.7k on DuckStation with 38-64
+ * nodes a frame against the other races' 57k with 94). [mark] */
 static const RrWorkCost CostUpdatePlayerCar[3] = {
     W(11328, 0, 0, 0, 0, 0, 0, 0), W(156160, 0, 0, 0, 0, 0, 0, 0), W(195840, 0, 0, 0, 0, 0, 0, 0)};
 static const RrWorkCost CostUpdateComCars[3] = {
     W(161280, 0, 0, 0, 0, 0, 0, 493824), W(178176, 0, 0, 0, 0, 0, 0, 493824),
-    W(225920, 0, 0, 0, 0, 0, 0, 493824)};
+    {{[RR_WORK_CALL] = 225920, [RR_WORK_MVMVA] = 292416, [RR_WORK_CURVE_STEPS] = 14880}}};
 const RrWorkCost *RrCostUpdatePlayerCar(void) {
     return &CostUpdatePlayerCar[RaceState <= 0 ? 0 : RaceState == 1 ? 1 : 2];
 }
 const RrWorkCost *RrCostUpdateComCars(void) {
     return &CostUpdateComCars[RaceState <= 0 ? 0 : RaceState == 1 ? 1 : 2];
 }
-/* ClampAiCarLateralMotion, UpdateCarSteering, DecayCarOffset,
- * IntegrateCarMotion, UpdateCarTrackNode, ComputeWheelOffsets,
- * ConstrainCarToTrack: a car each */
-const RrWorkCost RrCostCarStages[7] = {
-    W(3299, 0, 0, 0, 0, 0, 0, 0),        /* 230; 9, 36 */
-    W(61719, 0, 0, 0, 0, 0, 0, 0),       /* 4259; 34, 91 */
-    W(1559, 0, 0, 0, 0, 0, 0, 0),        /* 111; 5, 20 */
-    W(0, 0, 0, 0, 0, 0, 0, 27488),       /* 5669; 5, 19 */
-    W(3296, 0, 0, 0, 8432, 0, 0, 0),     /* 1721; 0, 4 */
-    W(1870, 0, 0, 0, 0, 0, 0, 7480),     /* 2185; 3, 14 */
-    W(59759, 0, 0, 0, 0, 0, 0, 7422),    /* 4618; 12, 50 */
+/* The eleven stages a car each (CarUpdateStages), from a call's entry to
+ * the next call's: ClampAiCarLateralMotion, UpdateCarSteering,
+ * DecayCarOffset, IntegrateCarMotion (by its MVMVAs), UpdateCarTrackNode
+ * (its NCLIPs), ComputeWheelOffsets, ConstrainCarToTrack; then
+ * ResolveCarCollisions 141 and 166.8 an other car it looks at (none in
+ * Time Attack), UpdateCarShake, FindWheelTrackNodes by its axle search
+ * (FindAxleTrackNode's NCLIPs), the axles set up, the wheels on a curved
+ * node and past the road's edge, UpdateWheelBumps 1210 and 141 a wheel on
+ * another node. DuckStation's exact timing, the list DMA's stalls taken
+ * out: the Grand Prix's race on course 0 and its final on course 7 and
+ * Time Attack on course 4 (gp-rules, gp-ending, ta-course4; 4300 calls a
+ * stage, residual medians 4-18, FindWheelTrackNodes' 4: 2707 a call on
+ * course 0 and 3242 on course 7 as DuckStation's). The later four were
+ * charged with StepRaceFrame's own time by the cars, 2.7k long a frame on
+ * course 7 and at the frame's end. [mark] */
+#define S(call, ...) {{[RR_WORK_CALL] = (call) * 64, __VA_ARGS__}}
+const RrWorkCost RrCostCarStages[11] = {
+    S(84),
+    S(1000),
+    S(58),
+    S(133, [RR_WORK_MVMVA] = 25485),
+    S(93, [RR_WORK_NCLIP] = 8416),
+    S(32, [RR_WORK_MVMVA] = 8090),
+    S(1085),
+    S(141, [RR_WORK_COLLIDE_CARS] = 10675),
+    S(107),
+    S(1850, [RR_WORK_NCLIP] = 8250, [RR_WORK_WHEEL_AXLES] = 22131, [RR_WORK_WHEEL_CURVED] = 2074,
+      [RR_WORK_WHEEL_SHOULDER] = 7718, [RR_WORK_WHEEL_SHOULDER_PAST] = 4352),
+    S(1210, [RR_WORK_BUMP_NODES] = 9018),
 };
-const RrWorkCost RrCostUpdateTrackObjects = W(233755, 0, 0, 0, 7280, 0, 0, 0); /* 4973; 763, 1659 */
+#undef S
+/* UpdateTrackObjects by the course objects it looks at, the active ones and
+ * their keyframe interpolations, and its NCLIPs (the camera's node search):
+ * 608, 55, 244, 1027 and 125.5, DuckStation's exact timing over the Grand
+ * Prix's race on course 0, its final on course 7 and Time Attack on
+ * course 4 (1191 frames, residual median 48; 8100 clocks a frame on course
+ * 7, its fireworks, where the call and NCLIP costs had it 3.8k short and
+ * course 4's 2.2k long) [mark] */
+const RrWorkCost RrCostUpdateTrackObjects = {{[RR_WORK_CALL] = 608 * 64, [RR_WORK_NCLIP] = 8032,
+    [RR_WORK_OBJECTS] = 3539, [RR_WORK_OBJECTS_ACTIVE] = 15635, [RR_WORK_OBJECT_KEYS] = 65715}};
 const RrWorkCost RrCostChaseCamera = W(6130, 0, 0, 0, 0, 0, 0, 18389); /* UpdateRaceChaseCamera 1094; 1, 2 */
 const RrWorkCost RrCostCameraMatrices = W(0, 0, 0, 0, 0, 0, 0, 5225);  /* BuildCameraMatrices 2571; 2, 9 */
 /* DrawPlayerCar and DrawOpponentCar (the replays' cars too), and DrawCars'
  * own (339-987 for 1-8 cars: 340 a call) */
 const RrWorkCost RrCostDrawPlayerCar = W(0, 92, 7573, 113, 2102, 34377, 0, 1467);         /* 67622; 306, 736 */
-const RrWorkCost RrCostDrawOpponentCar = W(34328, 124, 12038, 482, 0, 27338, 0, 616);     /* 40003; 513, 1453 */
+/* DrawOpponentCar by its model's distance (near, middle: its parts, the
+ * body and wheels), its trails' points with the lights on (the night
+ * courses) and the GTE's SQR and CC for its lights: DuckStation's exact
+ * timing, the Grand Prix's races on courses 0 and 7 (gp-rules, gp-ending:
+ * 15078 calls without an exception inside on either side, the list DMA's
+ * stalls out, residual median 28, 90th percentile 226; a frame's cars
+ * within -387..464 on course 0 and -1.8k..1.2k on course 7, where the
+ * calls' cost before had them 2.2k long on course 0 and up to 4.1k short
+ * on course 7's race, its lights not counted) [mark] */
+const RrWorkCost RrCostDrawOpponentCar = {{[RR_WORK_CALL] = 36191, [RR_WORK_BYTES] = 51, [RR_WORK_RTPT] = 7510,
+    [RR_WORK_RTPS] = 2730, [RR_WORK_DPCS] = 26336, [RR_WORK_SQR] = 1665, [RR_WORK_CC] = 833,
+    [RR_WORK_CAR_NEAR] = 264066, [RR_WORK_CAR_MID] = 88685, [RR_WORK_CAR_TRAILS] = 55971,
+    [RR_WORK_CAR_LIGHTS] = 60931}};
 const RrWorkCost RrCostDrawCars = W(21760, 0, 0, 0, 0, 0, 0, 0);
 /* SetupPlayerView's (and the other course views') parts besides
  * SubmitCourseHorizon (submodel.c): BuildViewSegmentObjectList,
@@ -156,7 +251,15 @@ const RrWorkCost RrCostDrawCars = W(21760, 0, 0, 0, 0, 0, 0, 0);
 const RrWorkCost RrCostViewSegmentList = W(30149, 0, 0, 0, 8467, 0, 0, 0);    /* 682; 44, 96 */
 const RrWorkCost RrCostSegmentVisibility = W(11036, 0, 0, 0, 8440, 0, 0, 0);  /* 336; 3, 55 */
 const RrWorkCost RrCostCourseView = W(166400, 0, 0, 0, 0, 0, 0, 0);
-const RrWorkCost RrCostDrawTrackObjects = W(109263, 95, 1102, 0, 5813, 11679, 0, 15349); /* 10563; 597, 1061 */
+const RrWorkCost RrCostDrawTrackObjects = W(13741, 0, 0, 0, 6586, 0, 0, 11347);
+const RrWorkCost RrCostEmitSemiTransG3 = W(16454, 282, 0, 0, 0, 0, 0, 0);
+const RrWorkCost RrCostEmitSemiTransG4 = W(0, 352, 0, 0, 0, 0, 0, 0);
+const RrWorkCost RrCostTrackObjectLit = W(9210, 58, 7398, 0, 0, 0, 0, 1984);
+const RrWorkCost RrCostTrackObjectBillboard = W(550, 19, 5389, 5389, 0, 0, 0, 6054);
+const RrWorkCost RrCostTrackObjectFlashQuads = W(384, 32, 5638, 5638, 5638, 0, 0, 0);
+const RrWorkCost RrCostTrackObjectCourseModel = W(37600, 141, 6982, 832, 1459, 0, 0, 0);
+const RrWorkCost RrCostTrackObjectAnimated = W(0, 95, 1102, 0, 5813, 11679, 0, 15349);
+const RrWorkCost RrCostTrackObjectModel = W(0, 95, 1102, 0, 5813, 11679, 0, 15349);
 const RrWorkCost RrCostDrawTrackScenery = W(50928, 140, 6787, 915, 7702, 915, 11285, 0);  /* 34989; 125, 413 */
 /* SubmitModel where nothing above includes it (the menus' models: the car
  * selects' cars, 49k clocks a frame in the Grand Prix's), from its calls in
@@ -171,42 +274,38 @@ const RrWorkCost RrCostSubmitModelTwoTri = W(6033, 151, 2998, 3411, 2998, 0, 0, 
 const RrWorkCost RrCostMeshPrimList = W(5375, 134, 2671, 3039, 2671, 0, 0, 1536);
 #undef W
 
-/* StepRaceFrame less the calls above, without its stalls, by the cars it
- * ran and the AI cars it drove: before the start (RaceState 0-1) 5006 with
- * one car (Time Attack), 10365 with two (Versus), 47.1k with eight, seven
- * of them the AI's (the Grand Prix); racing (from RaceState 2) 250 a car
- * and 650 an AI car more (5.4k, 10.7k, 53.6k), a replay 160 a car more
- * again (5.6k-5.8k, 11.2k, 54.9k). Medians, DuckStation's exact timing. */
+/* A stage loop's end (18 clocks past a call within it) and the impact loop
+ * between the seventh stage and the eighth: 23, 68 a car, 4870 a car with
+ * an impact (SetCarImpactState, StartCollisionShake, the speed's scaling),
+ * 107 a car it tests for kerb contact and 51 a wheel in contact
+ * (DuckStation, as the stages above: residual median 5) [mark] */
+void RrSpendStepRaceFrameLoop(void) {
+    RR_CPU_CYCLES(18);
+}
+void RrSpendStepRaceFrameImpacts(int cars, int impacts, int contactCars, int contacts) {
+    RR_CPU_CYCLES((unsigned)(23 + 68 * cars + 4870 * impacts + 107 * contactCars + 51 * contacts));
+}
+/* The rest of StepRaceFrame: its set-up before the first call and its end,
+ * UpdateComCarTrackProjections' 446 where it ran (comCars). [mark] */
 void RrSpendStepRaceFrameOwn(int comCars) {
-    int cars = 0, ai = 0;
-    for (int i = 0; i < NumCars; i++)
-        cars += CarTable[i]->half1E8 != -1;
-    if (comCars)
-        for (int i = 0; i < 11; i++)
-            ai += (short)ComCars[i].flags1E4 > 0;
-    if (cars > 0) {
-        int own = 5359 * cars + 660 * ai - 353;
-        if (RaceState >= 2)
-            own += 250 * cars + 650 * ai;
-        if (ModeGroup == 1 && ModeIndex == 22) /* ReplayModeUpdate */
-            own += 160 * cars;
-        RR_CPU_CYCLES((unsigned)own);
-    }
+    RR_CPU_CYCLES(RR_CYCLES_STEP_RACE_FRAME_OWN + (comCars ? 446 : 0));
 }
 
 /* The race modes' frame functions less the routines above, their stalls
- * and the lap list (DrawLapTimeList, charged by its laps: rr/cpu_time.h),
- * by RaceState (0 the start, 1 the countdown, 2-3 racing, from 4 the
- * finish); the Grand Prix's start without its fly-by (rr/cpu_time.h
- * RR_CYCLES_LENS_FLARE ...). Medians of
- * 75-786 frames (the Grand Prix's four races 8.4k-8.5k racing, its third
- * 10.6k; Time Attack's on course 7 1.9k longer racing: its overlay
- * sprites and lap timing). */
+ * and the HUD's routines (rr/cpu_time.h RR_CYCLES_UPDATE_LAP_TIMING ...,
+ * DrawLapTimeList by its laps), by RaceState (0 the start, 1 the
+ * countdown, 2-3 racing, from 4 the finish). The Grand Prix and Time
+ * Attack draw their HUD before the race step and have no more there on
+ * DuckStation (106-275 clocks from the last HUD routine to the step,
+ * their own 213 from RaceState 4); their lumps of 1.0k-11.6k were the HUD
+ * routines' time, charged after them. Versus draws its HUD after the
+ * step: its lump, less those routines' charges, comes after the HUD
+ * (DuckStation: 247 from UpdateRaceRanking to the step). */
 void RrSpendRaceModeOwn(int mode) {
     static const unsigned own[3][4] = {
-        {3439, 10293, 8214, 1020},
-        {6061, 18649, 13965, 1944},
-        {1960, 11550, 8475, 1590},
+        {0, 0, 0, 90},
+        {5668, 13111, 9072, 1928},
+        {0, 0, 0, 90},
     };
     int state = RaceState < 0 ? 0 : RaceState >= 4 ? 3 : RaceState == 3 ? 2 : RaceState;
     if (mode >= 0 && mode < 3)
@@ -223,10 +322,13 @@ void RrSpendRaceModeOwn(int mode) {
  * over the Grand Prix's four replays (325 frames, DSF_MARKS, DSF_EXC, the
  * list DMA's stalls taken out), which the port did not charge. [mark] */
 extern int RaceCameraKind;
-void RrSpendReplayFrame(void) {
+void RrSpendReplayCamera(void) {
     static const unsigned kind[7] = {1300, 3163, 3478, 2023, 3163, 3163, 3163};
-    unsigned c = 1400 + kind[RaceCameraKind >= 0 && RaceCameraKind < 7 ? RaceCameraKind : 3];
+    unsigned c = kind[RaceCameraKind >= 0 && RaceCameraKind < 7 ? RaceCameraKind : 3];
     if (RaceContext.cameraNodeChanged1C)
         c += 142;
     RR_CPU_CYCLES(c);
+}
+void RrSpendReplayFrame(void) {
+    RR_CPU_CYCLES(1400);
 }

@@ -56,8 +56,14 @@ NO_INSTRUMENT static void work(void) {
     fprintf(stderr, "XWORK %lu", (unsigned long)(uintptr_t)RR_GPU_SCRATCH->cursor);
     for (unsigned i = 0; i < sizeof ops / sizeof ops[0]; i++)
         fprintf(stderr, " %llu", Psyz_GteOpCount(ops[i]));
+    for (int k = RR_WORK_TESTED; k < RR_WORK_UNITS; k++)
+        fprintf(stderr, " %llu", RrWorkCount[k]);
     fprintf(stderr, "\n");
 }
+
+#ifdef RR4_OBJDBG_PRINT
+NO_INSTRUMENT void RrFuncMarkWork(void) { work(); }
+#endif
 
 enum { MARK_MAX = 256, MARK_HASH = 1024 };
 static struct {

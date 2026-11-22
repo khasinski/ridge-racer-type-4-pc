@@ -1,4 +1,6 @@
 #include "rr/geometry.h"
+#include "rr/cpu_work.h"
+#include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "game/race/racegrid.h"
 #include "rr/frame_loop.h"
@@ -223,6 +225,8 @@ void UpdateRaceCamera(int arg0, void *arg1) {
         SetGeomScreen(s2->f28);
         break;
     }
+    if (ModeGroup == 1 && ModeIndex == 22) /* ReplayModeUpdate's (rr/cpu_work.h) */
+        RrSpendReplayCamera();
     BuildCameraMatrices();
 }
 

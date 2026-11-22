@@ -190,7 +190,9 @@ void DrawStartCountdown(GpuDmaTag *ordering, s32 frame) {
     const s32 rate = RR_PAL_NTSC(25, 30);
     const s32 start = RR_PAL_NTSC(0x4B, 0x5A);
 
+    RR_CPU_CYCLES(RR_CYCLES_START_COUNTDOWN);
     if (RaceState != 0 && (s32)(frame - (u32)start) < rate * 7) {
+        RR_CPU_CYCLES(RR_CYCLES_START_COUNTDOWN_DRAW);
         tick = frame % rate;
         phase = (frame - start) / rate;
         if ((&CurrentDrawBuf->buffer.ordering70.tags[0]) == ordering) {

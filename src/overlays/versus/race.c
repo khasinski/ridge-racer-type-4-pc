@@ -212,8 +212,6 @@ block_7:
         PlayerCars[0].half1EE = 1U;
         PlayerCars[1].half1EE = 0U;
     }
-    /* the frame's own work before its step (rr/cpu_work.h) */
-    RrSpendRaceModeOwn(1);
     StepRaceFrame(GameModeType);
     if (RaceState < 4) {
         DrawStartCountdown(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, ModeFrame);
@@ -239,6 +237,9 @@ block_7:
         DrawViewportBorderFrames(2);
         SubmitRaceHudPackets(2);
     }
+    /* the frame's own work besides its routines, after its HUD
+     * (rr/cpu_work.h) */
+    RrSpendRaceModeOwn(1);
     var_s2 = 0;
     do {
         RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];

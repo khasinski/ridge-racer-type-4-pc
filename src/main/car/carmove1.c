@@ -1,5 +1,6 @@
 #include "types.h"
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "scratchpad.h"
 #include "game/car/car.h"
 #include "game/car/carsp.h"
@@ -106,6 +107,7 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
         s32 a0 = g->wheelIndex08;
         g->wC = a0;
         if (g->wheelState150.trackNodes[0] != g->wheelState150.trackNodes[2] || g->wheelIndex08 < 2) {
+            RrWorkCount[RR_WORK_WHEEL_AXLES]++;
             g->s174 = g->road180[a0].rightAngle;
             g->s176 = g->road180[g->wC].leftAngle;
             g->s24 = rsin(g->s174);
@@ -143,6 +145,7 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
             g->w3C = g->s174;
             g->w40 = g->s176;
             RR_GTE_STORE_IR(&g->w14);;            if (g->w38 == 1) {
+                RrWorkCount[RR_WORK_WHEEL_CURVED]++;
                 g->w40 = (g->w18 * g->s24) / g->s26;
                 g->w14 -= g->w40;
                 g->w3C -= g->w40;
@@ -165,6 +168,7 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
                 g->w18 = -g->s15C;
             }
             if (g->w34 > 0) {
+                RrWorkCount[RR_WORK_WHEEL_SHOULDER]++;
                 g->w34--;
                 g->s164 = g->road180[g->wC + 1].unknown34[g->w34] - g->road180[g->wC].unknown34[g->w34];
                 g->s164 = ((g->s164 * g->w10) >> 10) + g->road180[g->wC].unknown34[g->w34];
@@ -174,6 +178,7 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
                     g->s172 = g->s16A;
                     g->s16A = 0;
                 } else {
+                    RrWorkCount[RR_WORK_WHEEL_SHOULDER_PAST]++;
                     g->s16A -= (g->s172 = g->s164);
                     g->s16E = g->road180[g->wC + 1].unknown30[g->w34] - g->road180[g->wC].unknown30[g->w34];
                     g->s16E = ((g->s16E * g->w10) >> 10) + g->road180[g->wC].unknown30[g->w34];
@@ -204,6 +209,7 @@ void UpdateWheelBumps(RaceVehicle *vehicle)
         t = work->wheelIndex08;
         work->positions110[t].y = work->wheelHeights250[*q7c][t];
         if (vehicle->prevWheelNodes100[work->wheelIndex08] != vehicle->wheelNodesF8[work->wheelIndex08]) {
+            RrWorkCount[RR_WORK_BUMP_NODES]++;
             if (vehicle->wheelBumpState1BC[work->wheelIndex08] == 0) {
                 if (TriggerWheelBump(vehicle, work->wheelIndex08) != 0)
                     vehicle->wheelBumpBase1CC[work->wheelIndex08] = work->positions110[work->wheelIndex08].y;

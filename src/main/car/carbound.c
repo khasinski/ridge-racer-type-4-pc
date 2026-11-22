@@ -94,7 +94,10 @@ static void DrawCarsWork(s32 a0) {
 
 /* With its PS1 time (rr/cpu_work.h). */
 void DrawCars(s32 a0) {
-    RR_WORK_CALL(DrawCarsWork(a0), &RrCostDrawCars);
+    /* its own before the cars (DuckStation: 310-345 to the first car's
+     * call; it came after them) */
+    RR_CPU_CYCLES((unsigned)(RrCostDrawCars.per[RR_WORK_CALL] / 64));
+    DrawCarsWork(a0);
 }
 
 void SetCarBounds(RaceVehicle *vehicle)

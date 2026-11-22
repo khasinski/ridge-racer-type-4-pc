@@ -12,7 +12,8 @@ extern u16 MenuCarTextureFileOffsets[];
 
 void UpdateSoundSlot(int slotIndex) {
     AudioSlot620 *slot = &SoundState.slots38[slotIndex];
-    RR_CPU_CYCLES(RR_CYCLES_UPDATE_SOUND_SLOT_VOICE * (unsigned)(slot->count0C > 0 ? slot->count0C : 0));
+    RR_CPU_CYCLES(((slot->flags00 & 4) ? 0 : RR_CYCLES_UPDATE_SOUND_SLOT + (slotIndex >= 2 ? RR_CYCLES_UPDATE_SOUND_SLOT_COM : 0)) +
+                  RR_CYCLES_UPDATE_SOUND_SLOT_VOICE * (unsigned)(slot->count0C > 0 ? slot->count0C : 0));
     u16 spread = 0;
     int voice, programIndex;
     u16 pitchOffset;

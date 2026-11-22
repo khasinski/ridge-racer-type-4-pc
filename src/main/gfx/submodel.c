@@ -543,6 +543,7 @@ void SubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex, s32 flags, s32 de
     RroDepthBias = depthBias;
     SubmitModelStream(scene, modelIndex, 4, 0);
     if (charge) RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
+    RrWorkEnd(RR_GPU_SCRATCH->cursor); /* a caller's count (rr/cpu_work.h) */
 }
 
 /* 8005F14C: depth-cued faces, mirrored when renderFlags64 is set. The depth

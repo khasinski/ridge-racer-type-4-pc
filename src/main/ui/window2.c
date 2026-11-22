@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "rr/cpu_time.h"
 /* RODATA 0x800103e0 0x1c */
 #include "rr/widescreen.h"
 #include "types.h"
@@ -68,6 +69,7 @@ void DrawViewportBorderFrames(int a0) {
     const HudSpriteDef14 *preset;
     int s3, s5;
 
+    RR_CPU_CYCLES(RR_CYCLES_VIEWPORT_BORDER_FRAMES);
     s0 = (SpritePacket *)RR_GPU_SCRATCH->cursor;
     if (a0 >= 2) {
         s2 = &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0];
@@ -107,6 +109,7 @@ void DrawHudRotatingQuad(s32 phase,s32 index) {
     HudQuadEmission *packet;
     u32 x;
     u32 y;
+    RR_CPU_CYCLES(RR_CYCLES_HUD_ROTATING_QUAD);
     colors[0].rgb.r=0xD0;
     colors[0].rgb.g=24;
     colors[0].rgb.b=0x30;
@@ -180,6 +183,7 @@ void DrawHudNumber3(int a0, int a1)
     GpuDmaTag *s1 = target->heads[DrawBufIndex];
     int h, tn, on;
     void *cursor;
+    RR_CPU_CYCLES(RR_CYCLES_HUD_NUMBER3);
     h = a0 / 100;
     tn = (a0 / 10) - h * 10;
     on = a0 % 10;

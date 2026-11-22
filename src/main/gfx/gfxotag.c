@@ -73,8 +73,8 @@ static void RenderSubOtModel(u8 *object, GpuDmaTag *subOrdering, s32 bank, s32 d
     s1 = RotTransPersOrigin();
     if (s1 > 0) {
         RrWork work;
-        RR_CPU_CYCLES(RR_CYCLES_SHOWCASE_DRAW);
         ClearOTagR(subOrdering, 0x15F);
+        RR_CPU_CYCLES(RR_CYCLES_SHOWCASE_DRAW);
         RR_GPU_SCRATCH->order = subOrdering;
         scene->depthShift60 = s1 >> 7;
         if (s1 >> 7 >= 6) {

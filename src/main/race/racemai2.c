@@ -110,11 +110,15 @@ void StepRaceFrame(unsigned int gameMode)
         RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
       }
     }
+    RrSpendStepRaceFrameLoop();
   }
+  {
+  int impactCars = 0, impacts = 0, contactCars = 0, contacts = 0;
   for (i = 0; i < NumCars; i++)
   {
     if (CarTable[i]->half1E8 != (-1))
     {
+      impactCars++;
       if (CarTable[i]->impactFlags1A0 & 7)
       {
         SetCarImpactState(2, CarTable[i]);
@@ -122,6 +126,7 @@ void StepRaceFrame(unsigned int gameMode)
       }
       if (((short) CarTable[i]->impactFlags1A0) != 0)
       {
+        impacts++;
         impactAngle = ((AngleDiffAbs(0x800 - (s16)CarTable[i]->trackAngle1EC, CarTable[i]->heading1D4) - 0x400) * 3) / 5;
         car = CarTable[i];
         if (car->input >= 0xA1)
@@ -152,10 +157,12 @@ void StepRaceFrame(unsigned int gameMode)
       {
         if (CarTable[i]->steeringLock1B8 == 0)
         {
+          contactCars++;
           for (j = 0; j < 4; j++)
           {
             if (CarTable[i]->contactFlags1F0.bytes[j] != 0)
             {
+              contacts++;
               CarTable[i]->input -= CourseStartSteeringBias[courseGroup];
               if (CarTable[i]->contactFlags1F0.bytes[j] == 2)
               {
@@ -171,25 +178,30 @@ void StepRaceFrame(unsigned int gameMode)
       }
     }
   }
+  RrSpendStepRaceFrameImpacts(impactCars, impacts, contactCars, contacts);
+  }
   for (i = 7; i < 0xB; i++)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
       if (CarTable[*carIndex]->half1E8 != (-1))
       {
-        CarUpdateStages[i](CarTable[*carIndex]);
+        RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
       }
     }
+    RrSpendStepRaceFrameLoop();
   }
   /* The Japanese release projects the opponents in every mode but the
    * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
-  if (RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1)
+  {
+  int projected = RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1;
+  if (projected)
   {
     UpdateComCarTrackProjections();
   }
-  /* Its own work and the later stages' (collisions, shake, wheel nodes and
-   * bumps) by the cars it ran and the AI cars it drove (rr/cpu_work.h) */
-  RrSpendStepRaceFrameOwn(updateComProjections);
+  /* its own work besides the calls (rr/cpu_work.h) */
+  RrSpendStepRaceFrameOwn(projected);
+  }
 }
 
 unsigned PointInQuad(int corner0, int corner1, int corner2, int corner3, int point) {
@@ -295,6 +307,8 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
             s32 diffF4;
             s32 diff18C;
             s32 other_24;
+
+            RrWorkCount[RR_WORK_COLLIDE_CARS]++;
 
             diff18C = ((other->word18C + TrackLength) - arg0_18C) % TrackLength;
             other_F4 = other->lateralVelF4;
@@ -589,6 +603,7 @@ void CheckFinalLapEvent(RaceVehicle *vehicle)
     int distanceLimit;
     int courseLength;
     int flags, node;
+    RR_CPU_CYCLES(RR_CYCLES_CHECK_FINAL_LAP);
     if (!(RaceVoiceFlags & 0x100)) {
         if (ReverseCourse != 1) {
             courseLength = TrackLength;

@@ -22,7 +22,8 @@ void SoundListenerUpdate(void)
     if (b->active18B8 != 0) {
         /* its cars' search and the opponents' slots by the cars; the replay
          * camera's listener (mode 1) its spatial audio more */
-        RR_CPU_CYCLES(RR_CYCLES_SOUND_LISTENER + RR_CYCLES_SOUND_LISTENER_CAR * (unsigned)(NumCars > 0 ? NumCars : 0) +
+        RR_CPU_CYCLES(RR_CYCLES_SOUND_LISTENER - 2 * RR_CYCLES_SOUND_COM_SLOT - RR_CYCLES_SOUND_COM_SLOTS_END +
+                      RR_CYCLES_SOUND_LISTENER_CAR * (unsigned)(NumCars > 0 ? NumCars : 0) +
                       (b->mode18C0 == 1 && b->submode18C2 == 0 ? RR_CYCLES_SOUND_LISTENER_CAMERA : 0));
         switch (b->mode18C0) {
         case 0:
@@ -57,6 +58,7 @@ neg:
             break;
         }
         SoundUpdateComSlots();
+        RR_CPU_CYCLES(RR_CYCLES_SOUND_COM_SLOTS_END);
         if (SoundState.unk18E8 > 0) SoundState.unk18E8--;
     }
 }

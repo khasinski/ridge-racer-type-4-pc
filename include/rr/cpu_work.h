@@ -36,6 +36,25 @@ enum {
     RR_WORK_FACED,  /* ... and facing the view */
     RR_WORK_GRIDS,  /* tiles drawn as a subdivided grid */
     RR_WORK_CELLS,  /* the grids' cells */
+    RR_WORK_CURVE_STEPS, /* the AI's track nodes looked at ahead (ScanCurveAhead) */
+    RR_WORK_COLLIDE_CARS, /* the other cars ResolveCarCollisions looked at */
+    RR_WORK_WHEEL_AXLES,  /* FindWheelTrackNodes: an axle's node set up */
+    RR_WORK_WHEEL_CURVED, /* ... a wheel on a curved node */
+    RR_WORK_WHEEL_SHOULDER, /* ... a wheel past the road's edge */
+    RR_WORK_WHEEL_SHOULDER_PAST, /* ... and past the shoulder */
+    RR_WORK_BUMP_NODES,   /* UpdateWheelBumps: a wheel on another node */
+    RR_WORK_OBJECTS,      /* UpdateTrackObjects: the course objects it looked at */
+    RR_WORK_OBJECTS_ACTIVE, /* ... the active ones */
+    RR_WORK_OBJECT_KEYS,  /* ... their keyframe interpolations */
+    RR_WORK_CAR_NEAR,     /* an opponent car drawn by its near model's parts */
+    RR_WORK_CAR_MID,      /* ... its middle model */
+    RR_WORK_CAR_FAR,      /* ... its far model */
+    RR_WORK_CAR_TRAILS,   /* DrawWheelTrailEffects with the car's points */
+    RR_WORK_CAR_TRAILS_OFF, /* ... without (the car not drawn) */
+    RR_WORK_CAR_LIGHTS,   /* ... its lights on (the night courses) */
+    RR_WORK_CAR_BRAKE_LIGHTS, /* ... its brake lights */
+    RR_WORK_SQR,          /* the GTE's SQR and CC (the cars' trails and lights) */
+    RR_WORK_CC,
     RR_WORK_UNITS
 };
 
@@ -50,7 +69,8 @@ typedef struct {
     unsigned long long heldBytes;
 } RrWork;
 
-/* The course renderer's own counts (RR_WORK_TESTED .. RR_WORK_CELLS). */
+/* The course renderer's own counts (RR_WORK_TESTED .. RR_WORK_CELLS) and
+ * the AI's (RR_WORK_CURVE_STEPS). */
 extern unsigned long long RrWorkCount[RR_WORK_UNITS];
 
 void RrWorkBegin(RrWork *work, const void *cursor);
@@ -68,12 +88,27 @@ void RrWorkSpendPart(RrWork *work, const void *cursor, const RrWorkCost *cost);
 void RrWorkHoldBegin(const void *cursor);
 void RrWorkHoldEnd(const void *cursor);
 
+/* The routines being counted (RR_WORK_CALL, RR_WORK_DRAW): a rand call
+ * (PsyqRand) charges the innermost one's work so far first, so the call
+ * comes after the time of the work before it as on the PS1, not at the
+ * routine's start with all of its time at its end. */
+void RrWorkPush(RrWork *work, int packets, const RrWorkCost *cost);
+void RrWorkPop(void);
+void RrWorkFlush(void);
+/* A count begun by a caller and charged at the callee's end (before its
+ * return), for routines whose return comes right before other events:
+ * RrWorkArmEnd, then the callee's RrWorkEnd. */
+void RrWorkArmEnd(RrWork *work, const RrWorkCost *cost);
+void RrWorkEnd(const void *cursor);
+
 /* A call and its PS1 time by the work it did (no packets counted). */
 #define RR_WORK_CALL(call, cost)                                               \
     do {                                                                       \
         RrWork rrWork_;                                                        \
         RrWorkBegin(&rrWork_, 0);                                              \
+        RrWorkPush(&rrWork_, 0, (cost));                                       \
         call;                                                                  \
+        RrWorkPop();                                                           \
         RrWorkSpend(&rrWork_, 0, (cost));                                      \
     } while (0)
 
@@ -82,7 +117,9 @@ void RrWorkHoldEnd(const void *cursor);
     do {                                                                       \
         RrWork rrWork_;                                                        \
         RrWorkBegin(&rrWork_, RR_GPU_SCRATCH->cursor);                         \
+        RrWorkPush(&rrWork_, 1, (cost));                                       \
         call;                                                                  \
+        RrWorkPop();                                                           \
         RrWorkSpend(&rrWork_, RR_GPU_SCRATCH->cursor, (cost));                 \
     } while (0)
 
@@ -109,21 +146,33 @@ extern const RrWorkCost RrCostReadCarInput;
 /* by the race's state (cpuwork.c) */
 const RrWorkCost *RrCostUpdatePlayerCar(void);
 const RrWorkCost *RrCostUpdateComCars(void);
-extern const RrWorkCost RrCostCarStages[7];
+extern const RrWorkCost RrCostCarStages[11];
 extern const RrWorkCost RrCostUpdateTrackObjects, RrCostChaseCamera, RrCostCameraMatrices;
 extern const RrWorkCost RrCostDrawPlayerCar, RrCostDrawOpponentCar, RrCostDrawCars;
 extern const RrWorkCost RrCostViewSegmentList, RrCostSegmentVisibility, RrCostCourseView;
 extern const RrWorkCost RrCostDrawTrackObjects, RrCostDrawTrackScenery, RrCostSubmitModel;
 extern const RrWorkCost RrCostSubmitModelTwoTri, RrCostMeshPrimList;
-/* StepRaceFrame's own work and its later stages', by the cars it ran and,
- * comCars set (the frame ran UpdateComCars), the AI cars. */
+/* the course objects' EmitSemiTransG3List and EmitSemiTransG4List */
+extern const RrWorkCost RrCostEmitSemiTransG3, RrCostEmitSemiTransG4;
+/* ... and their models: DrawTrackObjectLitModel, DrawTrackObjectBillboard,
+ * DrawTrackObjectFlashQuads, SubmitCourseModel2, DrawAnimatedTrackObject,
+ * DrawTrackObjectModel */
+extern const RrWorkCost RrCostTrackObjectLit, RrCostTrackObjectBillboard, RrCostTrackObjectFlashQuads;
+extern const RrWorkCost RrCostTrackObjectCourseModel, RrCostTrackObjectAnimated, RrCostTrackObjectModel;
+/* StepRaceFrame's own work besides its calls: a stage loop's end, the
+ * impact loop by what it did, the rest at its end. */
+void RrSpendStepRaceFrameLoop(void);
+void RrSpendStepRaceFrameImpacts(int cars, int impacts, int contactCars, int contacts);
 void RrSpendStepRaceFrameOwn(int comCars);
-/* A race mode's own work (the HUD, timing, ranking) at the end of its
- * frame: mode 0 Time Attack, 1 Versus, 2 the Grand Prix. */
+/* A race mode's own work besides its routines (cpuwork.c): mode 0 Time
+ * Attack, 1 Versus, 2 the Grand Prix. */
 void RrSpendRaceModeOwn(int mode);
 /* A replay frame's own (ReplayModeUpdate) and its node camera's
  * (UpdateRaceCamera besides the calls charged themselves), after the
  * camera's call. */
 void RrSpendReplayFrame(void);
+/* ... the node camera's, in UpdateRaceCamera before its BuildCameraMatrices
+ * (DuckStation's: the camera's 3.2k there, not after the call) */
+void RrSpendReplayCamera(void);
 
 #endif

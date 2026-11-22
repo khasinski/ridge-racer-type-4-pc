@@ -160,6 +160,9 @@ void ovl659_update_race(void) {
         RR_GPU_SCRATCH->cursor =
             AddDrawAreaPrim(CurrentDrawBuf->ordering.ordering70.tags + 702, RR_GPU_SCRATCH->cursor, 0,
                           RaceStartWipeY, 320, (256U - RaceStartWipeY * 2U));
+        /* this block's own (its primitives held after the step: 765 on
+         * DuckStation from UpdateAndDrawRearViewMirror to SlotSetLevelProgram) */
+        RR_CPU_CYCLES(RR_CYCLES_GP_START_WIPE);
         if ((RaceStartWipeY = (RaceStartWipeY - 16U)) < 0) {
             RaceStartWipeY = 0;
             DrawBuffers[1].environment.draw00.background = 0;
