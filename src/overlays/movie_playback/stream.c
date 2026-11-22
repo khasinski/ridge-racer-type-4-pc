@@ -27,8 +27,14 @@
 #define SLICE_CALLBACK_TO_DCTOUT_CYCLES 203
 /* ... and of a frame's step from its entry to its first slice's (the frame's
  * DecDCTin between): 378 on DuckStation in every frame of the attract's
- * movie (DSF_MARKS ovl668_step_stream_playback, ovl668_mdec_out). */
-#define STEP_TO_DCTOUT_CYCLES 378
+ * movie (DSF_MARKS ovl668_step_stream_playback, ovl668_mdec_out), 46 of
+ * them before its DecDCTin's call (DSF_MARKS ovl668_mdec_in too, its
+ * stub's 7 out: the opening movie with the unformatted card, fields
+ * 760-790; the call came at the step's entry, so the decode ran 46 early
+ * and a slice's end that comes in a root counter's exception went to
+ * libetc's first look instead of DuckStation's second, vsync 790). */
+#define STEP_TO_DCTIN_CYCLES 46
+#define STEP_TO_DCTOUT_CYCLES (378 - STEP_TO_DCTIN_CYCLES)
 
 void ovl668_resolve_stream_file(s32 arg0, StrCdFileInfo *arg1, u32 *arg2) {
     /* Existing PAL compiler frame reserves this area; it carries no data. */
@@ -134,6 +140,7 @@ void ovl668_step_stream_playback(void)
     ModeFrame = timer;
     if (timer == 4) SetDispMask(1);
     initialContext = &RaceContext;
+    RR_CPU_CYCLES(STEP_TO_DCTIN_CYCLES);
     Psyz_KernelLockInterrupts();
     ovl668_mdec_in(((StrPlaybackState *)initialContext->streamStateB8)->commands10[((StrPlaybackState *)initialContext->streamStateB8)->display24.word00], 3);
     pixels = ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].w * ((StrPlaybackState *)initialContext->streamStateB8)->display24.rectangles[2].h;

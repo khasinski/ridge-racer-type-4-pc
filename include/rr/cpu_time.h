@@ -278,6 +278,13 @@ enum {
      * the GPU's list was still going */
     RR_CYCLES_FRAME_LOOP_ENV = 14,
     RR_CYCLES_FRAME_LOOP_PAD = 18,
+    /* With the secondary ordering table (the race, the split screen):
+     * from the first DrawOTag's return to the second's entry 25, from the
+     * second's return to PadUpdate 7 (its return mark to PadUpdate's 11
+     * shorter than the single table's) [mark] (DSF_MARKS DrawOTag:ret,
+     * PadUpdate, gp-rules race field 12700 against menu field 1505) */
+    RR_CYCLES_FRAME_LOOP_SUB_OT = 25,
+    RR_CYCLES_FRAME_LOOP_SUB_OT_PAD = 7,
     RR_CYCLES_FRAME_LOOP_TOP = 45 - 9, // (the movies' frames after their DrawOTag's wait kept where they were)
     RR_CYCLES_FRAME_LOOP_CLEARS = 15,
     RR_CYCLES_FRAME_LOOP_STEP = 7,

@@ -15,7 +15,8 @@ line n is read at the pause just before that vblank (DuckStation frame
 n + 295 ends there): line n and port vsync n are the same moment. Compare
 with the port run headless with PSYZ_CARD_UNPLUG=2.
 
-  DSF_PADS    the scenario's RR4_PAD_SCRIPT (mode anchors included); the
+  DSF_PADS    the scenario's RR4_PAD_SCRIPT (mode anchors and DUAL SHOCK
+              stick steps, lx=-0.5, included); the
               controller sends a step's buttons DSF_LEAD (default 1) fields
               early, as tools/port/ds_script.py does
   DSF_POKES   its RR4_POKE (PlayerCars/ComCars/TrackLength names; host
@@ -109,6 +110,12 @@ def parse_pads(script):
         if item.startswith('2:'):
             port, item = 2, item[2:]
         name, at = item.split('@')
+        if '=' in name:  # a DUAL SHOCK stick step (lx=-0.5), bound as ds_script.py binds it
+            from ds_script import stick_bind
+            axis, value = name.split('=')
+            button = stick_bind(axis, float(value))
+        else:
+            button = BUTTONS[name.lower()]
         period = count = 0
         if '%' in at:
             at, p = at.split('%')
@@ -118,7 +125,7 @@ def parse_pads(script):
             at, c = at.split('+')
             count = int(c)
         mode, first = anchor(at)
-        steps.append((port, BUTTONS[name.lower()], mode, first, count, period))
+        steps.append((port, button, mode, first, count, period))
     return steps
 
 
@@ -319,8 +326,12 @@ def run(fields, trace_path, log_path):
             for port in (1, 2):
                 if want[port] != held[port]:
                     d.release(port)
-                    if want[port]:
-                        d.buttons(port=port, **{b: 1 for b in want[port]})
+                    pressed = [b for b in want[port] if isinstance(b, str)]
+                    axes = dict(b for b in want[port] if not isinstance(b, str))
+                    if pressed:
+                        d.buttons(port=port, **{b: 1 for b in pressed})
+                    if axes:
+                        d.bind(axes, port=port)
                     held[port] = want[port]
             d.advance(1)
 

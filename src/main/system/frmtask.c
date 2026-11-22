@@ -350,8 +350,13 @@ void MainLoop(void) {
                         &CurrentDrawBuf->buffer.ordering70.tags[703],
                         DrawSubOtFlag ? &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703] : NULL);
         DrawOTag(&CurrentDrawBuf->buffer.ordering70.tags[703]);
-        if(DrawSubOtFlag) DrawOTag(&CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703]);
-        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_PAD);
+        if(DrawSubOtFlag) {
+            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_SUB_OT);
+            DrawOTag(&CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703]);
+            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_SUB_OT_PAD);
+        } else {
+            RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_PAD);
+        }
         PadUpdate();
         FrameCounter++;
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_TOP);
