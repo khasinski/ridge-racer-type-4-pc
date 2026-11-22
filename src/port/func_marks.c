@@ -44,6 +44,17 @@ NO_INSTRUMENT static void pass_hook(int pass, const void *cursor) {
     for (unsigned i = 0; i < sizeof ops / sizeof ops[0]; i++)
         fprintf(stderr, " %llu", Psyz_GteOpCount(ops[i]));
     fprintf(stderr, "\n");
+    /* "XHZN <pass> <bytes> <units>": the same less the host's held work
+     * (RrWorkNet: bytes the cursor less those held, then RR_WORK_* from
+     * RR_WORK_RTPT on) */
+    {
+        unsigned long long net[RR_WORK_UNITS], held;
+        RrWorkNet(net, &held);
+        fprintf(stderr, "XHZN %d %llu", pass, (unsigned long long)(uintptr_t)cursor - held);
+        for (int k = RR_WORK_RTPT; k < RR_WORK_UNITS; k++)
+            fprintf(stderr, " %llu", net[k]);
+        fprintf(stderr, "\n");
+    }
 }
 
 NO_INSTRUMENT static void work(void) {

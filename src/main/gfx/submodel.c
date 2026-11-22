@@ -1223,6 +1223,7 @@ static int HorizonView(u32 view, const VisibleCourseViews *views)
         else RrWorkHoldEnd(Horizon.cursor);
         holding = host;
     }
+    if (more && !host) RrWorkCount[RR_WORK_VIEWS]++; /* the PS1's loop turn */
     return more;
 }
 
@@ -3994,50 +3995,53 @@ static const HorizonPass *const HorizonMirrorPrograms[9] = {
     HorizonProgramStdMirror, HorizonProgramStdMirror, HorizonProgramStdMirror,
     HorizonProgramStdMirror, HorizonProgramCourse7Mirror, HorizonProgramCourse8};
 
-/* Each pass's PS1 time by its work (rr/cpu_work.h; per[] in the order of
- * RR_WORK_CALL .. RR_WORK_CELLS, 1/64 clocks): fitted to DuckStation's
- * clocks from a pass's entry to the next's, its interrupts' time taken out
- * (DSF_MARKS at the program's entries, DSF_EXC) and the CPU's stalls for
- * the list DMA in that pass (DuckStation's: DUCKSTATION_DMA_TRACE; the
- * port models them apart, PsyZ gpu_timing.c; pass 4 has 3.5k a call), over
- * Time Attack's race on courses 0 and 7, Versus's and the Grand Prix's
- * four races (5735 calls of the standard passes, 1403 of course 7's own;
- * the small passes 0-3, 9 and 10 from 7396 calls with the port's stalls,
- * which are as good there). The comments give DuckStation's mean less the
- * stalls, the residual's median and 90th percentile in clocks. Course 8's own two
- * passes (the epilogue's) were not measured and take pass 6's costs. [mark] */
+/* Each pass's PS1 time by its work (rr/cpu_work.h, 1/64 clocks): fitted to
+ * DuckStation's clocks from a pass's entry to the next's, its interrupts'
+ * time and the CPU's stalls for the list DMA in it taken out (DSF_MARKS at
+ * the program's entries, DSF_EXC, DUCKSTATION_DMA_TRACE), against the
+ * port's counts in the same calls (RR4_MARK_WORK's XHZ). Every pass loops
+ * over the visible views (RR_WORK_VIEWS): a pass with nothing in its
+ * section takes 25 clocks and 37 a view, exactly (Time Attack on courses
+ * 1-6, 3584 calls a pass), which the constant cost before had as 363-376
+ * for any view count, 90 short on course 7's twelve views and up to 130
+ * long on course 1's four. Over Time Attack's race on courses 1, 2, 3, 4
+ * and 6, a Grand Prix race on course 0 (gp-rules) and the final on course
+ * 7 (gp-ending): 4762 calls of the standard passes, 677 of course 7's own
+ * (residual medians 0-7, 90th percentiles within 350 but pass 6's 580;
+ * course 7's SetupPlayerView was 806 short before). The fit kept
+ * each cost non-negative. Course 8's own two passes (the epilogue's) were
+ * not measured and take pass 6's costs. [mark] */
 static const RrWorkCost HorizonPassCosts[] = {
-    /* LitTiles: 387; 45, 156 */
-    {{24139, 68, 0, 0, 5896, 0, 0, 0, 0, 467, 0, 0}},
-    /* 1: 363; 44, 156 */
-    {{24060, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 2: 436; 44, 155 */
-    {{24040, 38, 0, 0, 5576, 0, 0, 0, 0, 95, 0, 0}},
-    /* 3: 366; 50, 156 */
-    {{24117, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 4: 57742; 157, 477 (with the port's stalls in the fit: 238, 820;
-     * with the stalls in the work: 3220, by course 2.6k-4.1k long) */
-    {{24425, 62, 0, 4920, 0, 558, 3450, 0, 4920, 3634, 14544, 1714}},
-    /* 5: 29271; 77, 277 */
-    {{20207, 48, 6878, 1897, 586, 0, 3292, 0, 0, 3288, 5822, 0}},
-    /* 6: 76184; 235, 791 */
-    {{37832, 51, 548, 9314, 0, 0, 3397, 0, 0, 3219, 15937, 2155}},
-    /* 7: 41368; 115, 327 */
-    {{28023, 34, 4378, 3047, 1306, 0, 2629, 0, 0, 3086, 13311, 79}},
-    /* 8: 4011; 105, 251 */
-    {{44211, 100, 8035, 2872, 0, 0, 0, 0, 0, 0, 0, 0}},
-    /* 9: 728; 49, 123 */
-    {{24787, 86, 6761, 0, 0, 984, 0, 0, 0, 3701, 0, 0}},
-    /* 10: 488; 43, 124 */
-    {{25963, 38, 0, 0, 2262, 3699, 0, 0, 4362, 3467, 0, 0}},
-    /* course 7's: C7a 28654; 294, 503 */
-    {{19607, 87, 7129, 2671, 0, 1218, 0, 0, 0, 3880, 13551, 0}},
-    /* C7b 52641; 82, 283 */
-    {{18588, 51, 2633, 6820, 441, 2372, 0, 0, 0, 2811, 14986, 147}},
-    /* C7c 18021; 39, 155 */
-    {{23401, 54, 2750, 7336, 0, 4556, 0, 0, 0, 3494, 6655, 0}},
-    /* C7d 10449; 47, 121 */
-    {{26546, 42, 3616, 2164, 1045, 1562, 1562, 0, 2164, 3118, 9897, 0}},
+    /* LitTiles */
+    {{[RR_WORK_CALL] = 1620, [RR_WORK_BYTES] = 62, [RR_WORK_RTPT] = 1425, [RR_WORK_RTPS] = 1425, [RR_WORK_NCLIP] = 2850, [RR_WORK_TESTED] = 1425, [RR_WORK_FACED] = 3659, [RR_WORK_VIEWS] = 2366}},
+    /* 1 */
+    {{[RR_WORK_CALL] = 1598, [RR_WORK_VIEWS] = 2368}},
+    /* 2 */
+    {{[RR_WORK_CALL] = 1763, [RR_WORK_BYTES] = 43, [RR_WORK_RTPT] = 5069, [RR_WORK_RTPS] = 1410, [RR_WORK_NCLIP] = 871, [RR_WORK_DPCS] = 1095, [RR_WORK_INTPL] = 1095, [RR_WORK_TESTED] = 1410, [RR_WORK_FACED] = 4115, [RR_WORK_GRIDS] = 3112, [RR_WORK_CELLS] = 547, [RR_WORK_VIEWS] = 2350}},
+    /* 3 */
+    {{[RR_WORK_CALL] = 1596, [RR_WORK_BYTES] = 51, [RR_WORK_RTPT] = 1435, [RR_WORK_RTPS] = 1435, [RR_WORK_NCLIP] = 2870, [RR_WORK_TESTED] = 1435, [RR_WORK_VIEWS] = 2369}},
+    /* 4 */
+    {{[RR_WORK_CALL] = 15193, [RR_WORK_BYTES] = 61, [RR_WORK_RTPT] = 3672, [RR_WORK_RTPS] = 3156, [RR_WORK_DPCS] = 776, [RR_WORK_INTPL] = 1679, [RR_WORK_TESTED] = 3156, [RR_WORK_FACED] = 3340, [RR_WORK_GRIDS] = 7287, [RR_WORK_CELLS] = 1989, [RR_WORK_VIEWS] = 294}},
+    /* 5 */
+    {{[RR_WORK_CALL] = 18846, [RR_WORK_BYTES] = 47, [RR_WORK_RTPT] = 5411, [RR_WORK_RTPS] = 1717, [RR_WORK_NCLIP] = 560, [RR_WORK_INTPL] = 3825, [RR_WORK_TESTED] = 1717, [RR_WORK_FACED] = 3272, [RR_WORK_GRIDS] = 8662, [RR_WORK_VIEWS] = 771}},
+    /* 6 */
+    {{[RR_WORK_CALL] = 28356, [RR_WORK_BYTES] = 49, [RR_WORK_RTPT] = 982, [RR_WORK_RTPS] = 3612, [RR_WORK_NCLIP] = 839, [RR_WORK_INTPL] = 4252, [RR_WORK_TESTED] = 3612, [RR_WORK_FACED] = 3234, [RR_WORK_GRIDS] = 11587}},
+    /* 7 */
+    {{[RR_WORK_CALL] = 9660, [RR_WORK_BYTES] = 34, [RR_WORK_RTPT] = 1210, [RR_WORK_RTPS] = 2683, [RR_WORK_NCLIP] = 1675, [RR_WORK_INTPL] = 3343, [RR_WORK_TESTED] = 2683, [RR_WORK_FACED] = 3415, [RR_WORK_GRIDS] = 17906, [RR_WORK_VIEWS] = 1882}},
+    /* 8 */
+    {{[RR_WORK_CALL] = 2071, [RR_WORK_BYTES] = 103, [RR_WORK_RTPT] = 3871, [RR_WORK_RTPS] = 2088, [RR_WORK_DPCS] = 2, [RR_WORK_MVMVA] = 3871, [RR_WORK_VIEWS] = 5482}},
+    /* 9 */
+    {{[RR_WORK_CALL] = 1875, [RR_WORK_BYTES] = 73, [RR_WORK_RTPT] = 2117, [RR_WORK_NCLIP] = 2712, [RR_WORK_DPCS] = 1288, [RR_WORK_INTPL] = 595, [RR_WORK_TESTED] = 1919, [RR_WORK_FACED] = 4180, [RR_WORK_VIEWS] = 2379}},
+    /* 10 */
+    {{[RR_WORK_CALL] = 1991, [RR_WORK_BYTES] = 47, [RR_WORK_RTPT] = 1640, [RR_WORK_NCLIP] = 4336, [RR_WORK_DPCS] = 327, [RR_WORK_INTPL] = 2695, [RR_WORK_TESTED] = 742, [RR_WORK_FACED] = 4307, [RR_WORK_VIEWS] = 2367}},
+    /* C7a */
+    {{[RR_WORK_CALL] = 633, [RR_WORK_BYTES] = 82, [RR_WORK_RTPT] = 4631, [RR_WORK_RTPS] = 2554, [RR_WORK_DPCS] = 1116, [RR_WORK_INTPL] = 558, [RR_WORK_TESTED] = 2554, [RR_WORK_FACED] = 4179, [RR_WORK_GRIDS] = 21098, [RR_WORK_CELLS] = 588, [RR_WORK_VIEWS] = 2556}},
+    /* C7b */
+    {{[RR_WORK_CALL] = 4550, [RR_WORK_BYTES] = 51, [RR_WORK_RTPT] = 5063, [RR_WORK_RTPS] = 1842, [RR_WORK_NCLIP] = 628, [RR_WORK_DPCS] = 1465, [RR_WORK_INTPL] = 733, [RR_WORK_TESTED] = 1842, [RR_WORK_FACED] = 2978, [RR_WORK_GRIDS] = 16079, [RR_WORK_CELLS] = 145, [RR_WORK_VIEWS] = 2097}},
+    /* C7c */
+    {{[RR_WORK_CALL] = 6506, [RR_WORK_BYTES] = 57, [RR_WORK_RTPT] = 4732, [RR_WORK_RTPS] = 2581, [RR_WORK_DPCS] = 1174, [RR_WORK_INTPL] = 1174, [RR_WORK_TESTED] = 2581, [RR_WORK_FACED] = 3691, [RR_WORK_GRIDS] = 6166, [RR_WORK_CELLS] = 1622, [RR_WORK_VIEWS] = 1904}},
+    /* C7d */
+    {{[RR_WORK_CALL] = 5355, [RR_WORK_BYTES] = 43, [RR_WORK_RTPT] = 2411, [RR_WORK_RTPS] = 2811, [RR_WORK_NCLIP] = 950, [RR_WORK_DPCS] = 1817, [RR_WORK_INTPL] = 1817, [RR_WORK_TESTED] = 2811, [RR_WORK_FACED] = 3118, [RR_WORK_GRIDS] = 11792, [RR_WORK_VIEWS] = 2006}},
 };
 
 /* The passes by number (the standard ones, then courses 7's and 8's). */
@@ -4083,6 +4087,9 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
+    /* the program's end (its terminator 80060D04) and the return: 31 on
+     * DuckStation to the caller's next routine [mark] */
+    RR_CPU_CYCLES(31);
     RR_GPU_SCRATCH->cursor = Horizon.cursor;
     InterpEnd(interp);
     Psyz_GteSetExtendedProjection(projection);

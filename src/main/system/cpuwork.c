@@ -34,7 +34,17 @@ static void WorkRaw(unsigned long long raw[RR_WORK_UNITS]) {
         raw[k] = RrWorkCount[k];
     raw[RR_WORK_SQR] = Psyz_GteOpCount(0x28);
     raw[RR_WORK_CC] = Psyz_GteOpCount(0x1C);
+    raw[RR_WORK_NCC] = Psyz_GteOpCount(0x1B) + Psyz_GteOpCount(0x3F);
     raw[RR_WORK_CALL] = raw[RR_WORK_BYTES] = 0;
+}
+
+/* The counts so far less the host-only work held out (the fitting tools'
+ * view of the PS1's work, RR4_MARK_WORK's XHZN) */
+void RrWorkNet(unsigned long long out[RR_WORK_UNITS], unsigned long long *heldBytes) {
+    WorkRaw(out);
+    for (int k = 0; k < RR_WORK_UNITS; k++)
+        out[k] -= Held[k];
+    *heldBytes = HeldBytes;
 }
 
 void RrWorkBegin(RrWork *work, const void *cursor) {
@@ -228,9 +238,16 @@ const RrWorkCost RrCostUpdateTrackObjects = {{[RR_WORK_CALL] = 608 * 64, [RR_WOR
     [RR_WORK_OBJECTS] = 3539, [RR_WORK_OBJECTS_ACTIVE] = 15635, [RR_WORK_OBJECT_KEYS] = 65715}};
 const RrWorkCost RrCostChaseCamera = W(6130, 0, 0, 0, 0, 0, 0, 18389); /* UpdateRaceChaseCamera 1094; 1, 2 */
 const RrWorkCost RrCostCameraMatrices = W(0, 0, 0, 0, 0, 0, 0, 5225);  /* BuildCameraMatrices 2571; 2, 9 */
-/* DrawPlayerCar and DrawOpponentCar (the replays' cars too), and DrawCars'
- * own (339-987 for 1-8 cars: 340 a call) */
-const RrWorkCost RrCostDrawPlayerCar = W(0, 92, 7573, 113, 2102, 34377, 0, 1467);         /* 67622; 306, 736 */
+/* DrawPlayerCar and the menus' car (DrawPreviewCar: the car selects, the
+ * garage) by one cost, fitted jointly on DuckStation's calls (exceptions
+ * out, the list DMA's stalls and the inner marks taken off): Time Attack's
+ * car select and race on course 1 and a Grand Prix race on course 0, 385
+ * calls, residual median 70, 90th percentile 219, the menus' car 33 and the
+ * race's -13 and 42 in the median; its lit polygons' NCCS and NCCT (the
+ * GTE's, RR_WORK_NCC) and DPCS, INTPL, its RTPTs and NCLIPs. The race's
+ * cost alone had the menus' car 1.1k short. [mark] */
+const RrWorkCost RrCostDrawPlayerCar = {{[RR_WORK_BYTES] = 75, [RR_WORK_RTPT] = 8303, [RR_WORK_NCLIP] = 1997,
+    [RR_WORK_DPCS] = 8110, [RR_WORK_INTPL] = 10137, [RR_WORK_NCC] = 38728, [RR_WORK_CC] = 620, [RR_WORK_SQR] = 1222}};
 /* DrawOpponentCar by its model's distance (near, middle: its parts, the
  * body and wheels), its trails' points with the lights on (the night
  * courses) and the GTE's SQR and CC for its lights: DuckStation's exact
@@ -244,6 +261,7 @@ const RrWorkCost RrCostDrawOpponentCar = {{[RR_WORK_CALL] = 36191, [RR_WORK_BYTE
     [RR_WORK_RTPS] = 2730, [RR_WORK_DPCS] = 26336, [RR_WORK_SQR] = 1665, [RR_WORK_CC] = 833,
     [RR_WORK_CAR_NEAR] = 264066, [RR_WORK_CAR_MID] = 88685, [RR_WORK_CAR_TRAILS] = 55971,
     [RR_WORK_CAR_LIGHTS] = 60931}};
+/* DrawCars' own (339-987 for 1-8 cars: 340 a call) */
 const RrWorkCost RrCostDrawCars = W(21760, 0, 0, 0, 0, 0, 0, 0);
 /* SetupPlayerView's (and the other course views') parts besides
  * SubmitCourseHorizon (submodel.c): BuildViewSegmentObjectList,
@@ -251,9 +269,16 @@ const RrWorkCost RrCostDrawCars = W(21760, 0, 0, 0, 0, 0, 0, 0);
 const RrWorkCost RrCostViewSegmentList = W(30149, 0, 0, 0, 8467, 0, 0, 0);    /* 682; 44, 96 */
 const RrWorkCost RrCostSegmentVisibility = W(11036, 0, 0, 0, 8440, 0, 0, 0);  /* 336; 3, 55 */
 const RrWorkCost RrCostCourseView = W(166400, 0, 0, 0, 0, 0, 0, 0);
-const RrWorkCost RrCostDrawTrackObjects = W(13741, 0, 0, 0, 6586, 0, 0, 11347);
-const RrWorkCost RrCostEmitSemiTransG3 = W(16454, 282, 0, 0, 0, 0, 0, 0);
-const RrWorkCost RrCostEmitSemiTransG4 = W(0, 352, 0, 0, 0, 0, 0, 0);
+const RrWorkCost RrCostDrawTrackObjects = W(11053, 0, 0, 0, 6586, 0, 0, 11347);
+/* EmitSemiTransG3List and EmitSemiTransG4List by the list's entries and the
+ * primitives they emit (32 and 72 bytes): 97 + 161 an entry + 71 a
+ * triangle, 28 + 224.6 an entry + 168 a quad, to the clock on DuckStation
+ * (the course objects' lists in gp-ending, gp-rules, extra-trial-race and
+ * Time Attack on courses 1, 4 and 7, every list length the courses have),
+ * where the bytes alone had a list with one of its triangles drawn 139
+ * clocks long and the quads' list with none 1.8k short [mark] */
+const RrWorkCost RrCostEmitSemiTransG3 = {{[RR_WORK_CALL] = 6208, [RR_WORK_BYTES] = 142, [RR_WORK_EMIT_ITEMS] = 10304}};
+const RrWorkCost RrCostEmitSemiTransG4 = {{[RR_WORK_CALL] = 1798, [RR_WORK_BYTES] = 149, [RR_WORK_EMIT_ITEMS] = 14376}};
 const RrWorkCost RrCostTrackObjectLit = W(9210, 58, 7398, 0, 0, 0, 0, 1984);
 const RrWorkCost RrCostTrackObjectBillboard = W(550, 19, 5389, 5389, 0, 0, 0, 6054);
 const RrWorkCost RrCostTrackObjectFlashQuads = W(384, 32, 5638, 5638, 5638, 0, 0, 0);

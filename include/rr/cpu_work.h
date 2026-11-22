@@ -55,6 +55,9 @@ enum {
     RR_WORK_CAR_BRAKE_LIGHTS, /* ... its brake lights */
     RR_WORK_SQR,          /* the GTE's SQR and CC (the cars' trails and lights) */
     RR_WORK_CC,
+    RR_WORK_VIEWS,        /* a course pass's turns over the visible views */
+    RR_WORK_EMIT_ITEMS,   /* EmitSemiTransG3List/G4List: the list's entries */
+    RR_WORK_NCC,          /* the GTE's NCCS and NCCT (the player's and the menus' car) */
     RR_WORK_UNITS
 };
 
@@ -72,6 +75,7 @@ typedef struct {
 /* The course renderer's own counts (RR_WORK_TESTED .. RR_WORK_CELLS) and
  * the AI's (RR_WORK_CURVE_STEPS). */
 extern unsigned long long RrWorkCount[RR_WORK_UNITS];
+void RrWorkNet(unsigned long long out[RR_WORK_UNITS], unsigned long long *heldBytes);
 
 void RrWorkBegin(RrWork *work, const void *cursor);
 /* The PS1 time of the work since RrWorkBegin; cursor: the packet cursor

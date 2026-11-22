@@ -160,15 +160,15 @@ enum {
     DTO_SEG_COUNT
 };
 static const short DtoSegCycles[DTO_SEG_COUNT] = {
-    [DTO_SEG_BOM_1] = 286,
+    [DTO_SEG_BOM_1] = 373,
     [DTO_SEG_BOM_10] = 52,
     [DTO_SEG_BOM_11] = 54,
     [DTO_SEG_BOM_12] = 160,
     [DTO_SEG_BOM_2] = 392,
-    [DTO_SEG_BOM_4] = 312,
-    [DTO_SEG_BOM_5] = -10,
+    [DTO_SEG_BOM_4] = 252,
+    [DTO_SEG_BOM_5] = 38,
     [DTO_SEG_BOM_7] = 63,
-    [DTO_SEG_C_0] = -254,
+    [DTO_SEG_C_0] = -339,
     [DTO_SEG_C_1] = 31,
     [DTO_SEG_C_2] = 144,
     [DTO_SEG_C_3] = 9,
@@ -176,24 +176,25 @@ static const short DtoSegCycles[DTO_SEG_COUNT] = {
     [DTO_SEG_C_6] = 206,
     [DTO_SEG_F8A_1_6_8_9] = 402,
     [DTO_SEG_F8_11] = 250,
-    [DTO_SEG_F8_12] = 14,
+    [DTO_SEG_F8_12] = 60,
     [DTO_SEG_F8_1_14] = 68,
     [DTO_SEG_F8_2] = -10,
-    [DTO_SEG_F8_3] = 606,
-    [DTO_SEG_FC_1] = 1033,
-    [DTO_SEG_FC_4] = 290,
+    [DTO_SEG_F8_3] = 691,
+    [DTO_SEG_FC_1] = 1383,
+    [DTO_SEG_FC_4] = 226,
     [DTO_SEG_G3_1] = 1161,
-    [DTO_SEG_G3_2] = 371,
-    [DTO_SEG_G3_3] = 322,
-    [DTO_SEG_G3_4] = 43,
+    [DTO_SEG_G3_2] = 427,
+    [DTO_SEG_G3_3] = 362,
+    [DTO_SEG_G3_4] = 277,
+    [DTO_SEG_G4_1] = 210,
     [DTO_SEG_Q] = 230,
-    [DTO_SEG_RAND_1] = 2419,
+    [DTO_SEG_RAND_1] = 1986,
     [DTO_SEG_RAND_2] = 962,
     [DTO_SEG_RAND_3] = 346,
-    [DTO_SEG_RAND_4] = 644,
+    [DTO_SEG_RAND_4] = 211,
     [DTO_SEG_SM_1] = 68,
-    [DTO_SEG_SM_2] = 1033,
-    [DTO_SEG_TOP] = -21,
+    [DTO_SEG_SM_2] = 590,
+    [DTO_SEG_TOP] = -83,
 };
 
 #ifdef RR4_OBJDBG_PRINT
@@ -254,6 +255,7 @@ static void TrackObjectEmit(int quads, void *list, s32 count, s32 mode) {
     if (TrackObjectsWork) {
         RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
         RrWorkArmEnd(&work, quads ? &RrCostEmitSemiTransG4 : &RrCostEmitSemiTransG3);
+        if (count > 0) RrWorkCount[RR_WORK_EMIT_ITEMS] += (unsigned)count;
     }
     if (quads)
         EmitSemiTransG4List(list, count, mode);

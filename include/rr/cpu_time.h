@@ -604,7 +604,7 @@ enum {
      * call [mark] */
     RR_CYCLES_BUILD_OBJECT_MATRIX = 889,
     /* DrawTrackObjects' start, to its first object's routine */
-    RR_CYCLES_DRAW_TRACK_OBJECTS_START = 304,
+    RR_CYCLES_DRAW_TRACK_OBJECTS_START = 374,
     RR_CYCLES_DRAW_LAP_TIME_LIST = 1089,
     RR_CYCLES_DRAW_LAP_TIME_ROW = 1052,
 };
