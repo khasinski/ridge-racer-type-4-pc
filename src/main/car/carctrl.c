@@ -1,5 +1,11 @@
 #include "game/car/carctrl.h"
 #include "rr/steering.h"
+#include "rr/field_rate.h"
+
+/* At field rate (rr/field_rate.h) the corner turn's curves run in fields
+ * (PlanComCarCornerTurn builds them so), lateralMotion178 stays in its
+ * per-tick units and the mode 3 blends keep the square root of their
+ * per-tick share per field. */
 
 void UpdateComCarLaneChange(RaceVehicle *vehicle) {
     s32 stepOutput;
@@ -31,6 +37,8 @@ void UpdateComCarLaneChange(RaceVehicle *vehicle) {
     u32 wrappedOffset;
     RaceVehicleControl *control;
 
+    CarFieldState *fs = CarFieldStateOf(vehicle);
+
     control = &vehicle->control;
     if (control->steeringEnabled124 == 0) {
         vehicle->rot54 = vehicle->heading1D4;
@@ -50,7 +58,8 @@ void UpdateComCarLaneChange(RaceVehicle *vehicle) {
         vehicle->rot54 = control->dynamics94.steering.angle0C / 4096;
         if (control->dynamics94.steering.phase28 == 0) {
             delta = control->dynamics94.steering.delta10;
-            lateralStep = delta / 8;
+            /* the field's step, as a tick's */
+            lateralStep = (delta * RaceFieldsPerTick()) / 8;
              vehicle->lateralMotion178 = lateralStep;
             duration = control->dynamics94.steering.duration04; timer=control->dynamics94.steering.timer02;
             quarterDuration = duration / 4;
@@ -97,8 +106,10 @@ void UpdateComCarLaneChange(RaceVehicle *vehicle) {
             vehicle->lateralMotion178 = control->dynamics94.steering.lateral24;
         } else {
             correction = (s32)(((u32)control->dynamics94.steering.lateral24 - vehicle->lateralMotion178) * 3U) / 4;
-            control->dynamics94.steering.lateral24 = correction;
             smoothedMotion = (correction + vehicle->lateralMotion178);
+            /* keeps 3/4 of lateral24 per tick */
+            smoothedMotion = RaceFieldStep(control->dynamics94.steering.lateral24, smoothedMotion,
+                                           0x10000u * 3 / 4, &fs->rem[CAR_FIELD_REM_AI_LATERAL_Q16]);
             control->dynamics94.steering.lateral24 = smoothedMotion;
             vehicle->lateralMotion178 = smoothedMotion;
         }
@@ -118,6 +129,13 @@ void UpdateComCarLaneChange(RaceVehicle *vehicle) {
                 break;
             }
             turnStep = stepOutput / 4;
+            if (RaceFieldRateLive) {
+                /* rot54 keeps 3/4 of its signed gap to the heading per
+                 * tick */
+                s32 gap = (s16)(headingDelta << 4) >> 4;
+                turnStep = gap - RaceFieldStep(gap, gap - (gap >= 0 ? gap / 4 : (gap - 3) / 4),
+                                               0x10000u * 3 / 4, &fs->rem[CAR_FIELD_REM_AI_ROT_Q16]);
+            }
             stepOutput = turnStep;
             if (turnStep == 0) {
                 control->dynamics94.steering.mode00 = 0;

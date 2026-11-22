@@ -66,8 +66,8 @@ void StepRaceFrame(unsigned int gameMode)
   RaceVehicle *car;
   int *carIndex;
   /* Field rate (rr/field_rate.h): the player cars' input, drive and
-   * motion (the fast lane) every field; the opponents' updates once per
-   * original tick; the car stages and the contact every field with
+   * motion and the opponents' driving (the fast lane, UpdateComCars:
+   * carai.c) every field; the car stages and the contact every field with
    * RaceFieldCarStep, else the player cars' motion stages every field
    * (CarStageFast) and the rest by the tick. */
   const int tick = RaceSlowTick();
@@ -88,8 +88,7 @@ void StepRaceFrame(unsigned int gameMode)
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      if (tick)
-        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 2:
@@ -105,8 +104,7 @@ void StepRaceFrame(unsigned int gameMode)
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      if (tick)
-        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 4:
@@ -125,8 +123,7 @@ void StepRaceFrame(unsigned int gameMode)
 
     case 5:
       updateComProjections = 1;
-      if (tick)
-        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
   }
 
@@ -252,8 +249,9 @@ void StepRaceFrame(unsigned int gameMode)
    * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
   {
   int projected = RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1;
-  /* its countdowns are the opponents' decisions: by the tick */
-  if (!tick)
+  /* its countdown counts ticks (trkseek2.c); an impact is reacted to on
+   * the field the car stages see it (every field with RaceFieldCarStep) */
+  if (!tick && !RaceFieldCarStep)
     projected = 0;
   if (projected)
   {

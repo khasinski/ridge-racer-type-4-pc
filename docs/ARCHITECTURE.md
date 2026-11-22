@@ -241,6 +241,27 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      pitch / roll averages take 20 field samples in the sidecar's ring
      (`RaceVehicle`'s holds 16). Sounds the original fires on every tick a
      contact lasts fire once per tick (`RaceFieldOncePerTick`).
+     The opponents' driving (`UpdateComCars` and everything under it:
+     `carai.c`, `cardrive.c`, `carctrl.c`, `carcurv.c`, `carrpm.c`,
+     `trkproj.c`, `trkres2.c`, `trkseek2.c`) is in the fast lane:
+     `StepRaceFrame` calls it every field. Its state
+     stays in per-tick units (`steering8C`, `accel50`, `vel30/38`,
+     `lateralMotion178`, `limit6E`); adds are halved, the filters (the
+     steering filter, drag, rpm, the corner turn's blends) take
+     `RaceFieldStep`, which makes two fields of any per-tick update that is
+     affine in its state one tick's; the PD's D term is a two-field
+     difference and the heading's integration has the matched lead that
+     the tick's end-of-step filter value gives. The corner turn's rate
+     curves are built in fields (twice the duration, half the initial
+     rate). Timers (shift holds, the start boost, lane cooldowns, the
+     impact attenuation) count on `RaceSlowTick()`; the shift points are
+     taken on `RaceTickEnd()`, the field that completes a tick's half
+     steps, so the speed crosses a threshold by a tick's step as on the
+     console. `prevHeading1D6` / `prevInput1DA` hold the values of one
+     tick (two fields) ago, so the shared stages' one-tick differences
+     (body roll, contact sounds) keep their meaning. With
+     `RaceFieldCarStep` `UpdateComCarTrackProjections` reacts to an
+     opponent's impact on the field the stages see it.
 
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
      a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and

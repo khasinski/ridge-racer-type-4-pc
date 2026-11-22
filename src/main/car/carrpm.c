@@ -2,6 +2,11 @@
 #include "rr/cpu_md_leaf.h"
 #include "rr_asm.h"
 #include "rr/video_timing.h"
+#include "rr/field_rate.h"
+
+/* At field rate every branch below is a per-tick update of the rpm that is
+ * affine in it: `slope` (Q16) follows its dependence on the rpm, so that
+ * RaceFieldStep makes two fields of it one tick's (rr/field_rate.h). */
 void UpdateEngineRpm(RaceVehicle *vehicle) {
     RaceVehicle *body=(RaceVehicle *)vehicle;
     RaceVehicleControl *control=&body->control;
@@ -9,6 +14,9 @@ void UpdateEngineRpm(RaceVehicle *vehicle) {
     s32 t0,t2;
     u16 t1;
     s32 v0,v1;
+    u32 slope=0; /* a snap to the target */
+    s32 topScale;
+    s32 *rem=&CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_AI_RPM_Q16];
     a0=control->gear68;
     t2=0;
     if(a0==0) {
@@ -47,6 +55,8 @@ void UpdateEngineRpm(RaceVehicle *vehicle) {
                     if(VideoTimingNtsc)v1=(a1*29)/30;
                 }
                 a1 = v1 + a0;
+                /* keeps 1/25 (NTSC 1/30) of the gap */
+                slope = VideoTimingNtsc ? 0x10000u / 30 : 0x10000u / 25;
                 v0 = __builtin_abs(control->steering8C);
                 a1 -= v0 << 6;
             }
@@ -58,29 +68,32 @@ void UpdateEngineRpm(RaceVehicle *vehicle) {
             if(!v0) {
                 v1=1;v0=control->engine54.halves.rpm;a1=v0+300;
                 v0=a1<10241;control->engine54.halves.accelerating=v1;
-                if(v0)goto floor;
+                if(v0){slope=0x10000u;goto floor;}
                 a1=10240;
             } else {
                 v0=control->engine54.halves.rpm;a1=v0-500;
                 v0=a1<6000;
+                slope=0x10000u;
                 if(v0) {
 minimum:
-                    a1=6000;
+                    a1=6000;slope=0;
                 }
             }
         } else {
             a0=control->engine54.halves.rpm;v1=control->shiftDelay66;v0=1;
             control->engine54.halves.accelerating=v0;a1=a0+v1;
+            slope=0x10000u;
         }
     }
     v0=a1<10241;
-    if(!v0)a1=10240;
+    if(!v0){a1=10240;slope=0;}
 floor:
-    if(a1<0)a1=0;
+    if(a1<0){a1=0;slope=0;}
     a0=control->maxSpeedF8;v0=a0;
     if(a0<0)v0=a0+255;
     v1=v0>>8;
     if(v1>=2191)v1=2190;
+    topScale=v1;
     if(a1>=4001) {
         a1-=4000;RR_MD_MULT_S(a1,v1);RR_MD_LO(v1);
         v0=(s32)0xEF66A241U;RR_MD_MULT_S(v1,v0);RR_MD_HI(v0);
@@ -89,6 +102,8 @@ floor:
         v1>>=31;
         a1=v0-v1;
         a1+=4000;
+        /* the top speed's scale above 4000: (maxSpeed >> 8) / 2190 */
+        slope=(u32)(((unsigned long long)slope*(u32)topScale)/2190);
     }
     if(GameModeType==6 && SelectedMakerIndex==3) {
         v1=a0;if(v1<0)v1+=255;
@@ -97,12 +112,13 @@ floor:
         RR_MD_MULT_S(v0,a3);
         RR_MD_LO(a3);
         a1=(u32)v1>>8;v0=a1&65535;RR_MD_DIV_S(a1,a3,v0);
+        slope=0;
     }
     if(control->latch60==0) {
         v1=control->engine54.halves.rpm;
         v0=v1<a1;
         if(v0){v0=1;control->latch60=v0;return;}
-        v0=v1-20;control->engine54.halves.rpm=(u16)v0;return;
+        v0=v1-20;control->engine54.halves.rpm=(u16)RaceFieldStep(v1,v0,0x10000u,rem);return;
     }
-    control->engine54.halves.rpm=(u16)a1;
+    control->engine54.halves.rpm=(u16)RaceFieldStep(control->engine54.halves.rpm,a1,slope,rem);
 }

@@ -10,7 +10,7 @@
   original frame, and button presses between them are kept). The player's
   car (engine, gears, steering, grip, slides and spins) and the chase
   camera now move every field, tuned to drive the same line as at 25/30
-  fps for the same inputs; the opponents, contacts, suspension and
+  fps for the same inputs; the contacts, suspension and
   effects still step once per original frame and follow. Replays record
   every field; replays saved before keep the original rate. The link race
   and the attract demo stay at the original rate. With Race frame rate on,
@@ -28,6 +28,13 @@
   and jumps and the wheels' spin are ready to run every field with the same real-time
   behaviour (`RR4_CAR_FIELD_STEP=1` while the camera and the player car's
   handling follow).
+- **Race frame rate: the opponents drive at 50 / 60 Hz.** With Race frame
+  rate on, the computer cars' driving (steering, lane changes and
+  overtakes, corner turns, speed, gear shifts and engine revs) updates every
+  video field with half the original frame's step, keeping the original's
+  timing: the same shift points and over a two-lap Grand Prix race the
+  same finishing order, with each car's finishing time within 0.45 s
+  (about 0.2 %) of the original rate's.
 - **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
   guessed in-between pictures from the PlayStation's draw lists, which drew
   visible artifacts and made movies stutter. Every game frame is now

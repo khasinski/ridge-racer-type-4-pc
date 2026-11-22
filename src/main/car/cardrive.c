@@ -3,6 +3,7 @@
 #include "rr_asm.h"
 #include "rr/menu_overlay_runtime.h"
 #include "rr/track_projection.h"
+#include "rr/field_rate.h"
 
 
 typedef struct {
@@ -35,8 +36,18 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
     u16 temp_v1;
     RaceVehicleControl *temp_s1;
 
+    CarFieldState *fs = CarFieldStateOf(arg0);
+    const int tick = RaceSlowTick();
+
     temp_s1 = &arg0->control;
-    arg0->prevHeading1D6 = (u16) arg0->heading1D4;
+    /* At field rate prevHeading1D6 stays the heading of one original tick
+     * ago (two fields), as the body roll reads it (UpdateCarSteering). */
+    if (RaceFieldRateLive) {
+        arg0->prevHeading1D6 = (u16) fs->hist[CAR_FIELD_HIST_AI_HEADING];
+        fs->hist[CAR_FIELD_HIST_AI_HEADING] = arg0->heading1D4;
+    } else {
+        arg0->prevHeading1D6 = (u16) arg0->heading1D4;
+    }
     temp_a1 = ratan2(arg0->control.pathDeltaX30, arg0->control.pathDeltaZ34);
     temp_v1 = *(u16 *)&arg0->heading1D4;
     temp_a0 = temp_v1 & 0xFFF;
@@ -63,6 +74,11 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
         var_s0 = value >> 4;
         temp_s1->error92 = steering;
         value = steering - channel;
+        /* The D term is the error's change over one original tick: over
+         * the last two fields at field rate. */
+        if (RaceFieldRateLive)
+            value = RaceFieldDelta(steering, &fs->hist[CAR_FIELD_HIST_AI_ERROR1],
+                                   &fs->hist[CAR_FIELD_HIST_AI_ERROR2]);
         if (steering < 0) steering += 7;
         channel = value;
         value = steering >> 3;
@@ -81,6 +97,9 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
     }
     var_a0_2 = -0xF000;
     temp_v0_4 = (temp_s1->filtered90 + var_v1_2) / 2;
+    /* the filter keeps half per tick */
+    temp_v0_4 = RaceFieldStep(temp_s1->filtered90, temp_v0_4, 0x8000,
+                              &fs->rem[CAR_FIELD_REM_AI_STEER_Q16]);
     temp_s1->filtered90 = (s16) temp_v0_4;
     temp_s1->steering8C = (u16) temp_v0_4;
     temp_v1_3 = -(s16) temp_v0_4 * 0x90;
@@ -90,7 +109,21 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
     }
     if (arg0->input > 0) {
         if (arg0->steeringLock1B8 == 0) {
-            arg0->heading1D4 = (u16) (arg0->heading1D4 + temp_s1->steering8C);
+            /* The tick turns by the filter's value at its end. Two fields
+             * of half the field's value lag that; a lead of
+             * (3 - 2 sqrt 2) of the filter's remaining gap to the output
+             * makes them turn as the tick does. */
+            s32 turn = temp_s1->steering8C;
+            if (RaceFieldRateLive) {
+                /* half of it a field, in Q16 with the remainder carried */
+                s32 *rem = &fs->rem[CAR_FIELD_REM_AI_HEADING];
+                long long q = ((long long)(s16)temp_s1->steering8C << 16) +
+                              (long long)(var_v1_2 - (s16)temp_s1->steering8C) * 11244;
+                q = (q >> 1) + *rem;
+                *rem = (s32)(q & 0xFFFF);
+                turn = (s32)(q >> 16);
+            }
+            arg0->heading1D4 = (u16) (arg0->heading1D4 + turn);
         }
     }
     temp_a1_2 = ScanCurveAhead(arg0, temp_s1->laneTimer38, &sp18, &sp1C, &sp20);
@@ -105,7 +138,9 @@ void UpdateComCarDrive(RaceVehicle *arg0) {
 
     }
     if (temp_s1->holdFlag48 > 0) {
-        temp_s1->holdFlag48 = (s16) ((u16) temp_s1->holdFlag48 - 1);
+        /* the shift's hold counts original ticks */
+        if (tick)
+            temp_s1->holdFlag48 = (s16) ((u16) temp_s1->holdFlag48 - 1);
         temp_s1->accel50 = 0;
     } else if (temp_a1_2 < var_s0) {
         temp_s1->accel50 = (u16) temp_s1->gearRatios100[temp_s1->gear68];
@@ -153,7 +188,11 @@ void UpdateComCarSpeed(RaceVehicle *a0) {
     RaceVehicle *s1 = a0;
     RaceVehicleControl *s0 = &s1->control;
     s32 v0, v1, a1;
-    s32 a;    a1 = s0->accel50;
+    s32 a;
+    CarFieldState *fs = CarFieldStateOf(a0);
+    const int tick = RaceSlowTick();
+    s32 *speedRem = &fs->rem[CAR_FIELD_REM_AI_SPEED];
+    a1 = s0->accel50;
     if (a1 != 0) {
         v1 = s0->boostTimer44;
         if (v1 > 0) {
@@ -166,14 +205,16 @@ void UpdateComCarSpeed(RaceVehicle *a0) {
                 v0 = s0->factor11E;
                 v0 = (v1 * v0) / 1024;
                 v1 = s0->speed4C;
-                v1 += a1 + v0;
+                v1 += RaceFieldHalf(a1 + v0, speedRem);
                 s0->speed4C = v1;
             } else {
-                s0->speed4C = s0->speed4C + v1;
+                s0->speed4C = s0->speed4C + RaceFieldHalf(v1, speedRem);
             }
-            s0->boostTimer44 = (u16)s0->boostTimer44 - 1;
+            /* the start boost lasts its original ticks */
+            if (tick)
+                s0->boostTimer44 = (u16)s0->boostTimer44 - 1;
         } else {
-            s0->speed4C = s0->speed4C + a1;
+            s0->speed4C = s0->speed4C + RaceFieldHalf(a1, speedRem);
         }
         s1->control.dragFlag46 = 0;
         v0 = s0->speed4C;
@@ -181,14 +222,24 @@ void UpdateComCarSpeed(RaceVehicle *a0) {
         if (v1 < v0) s0->speed4C = v1;
     } else {
         if (s0->holdFlag48 == 0) {
+            /* per-tick shares: their square roots per field */
             if (s0->dragFlag46 != 0) {
-                s0->speed4C = (s0->speed4C * 94) / 100;
+                s0->speed4C = RaceFieldStep(s0->speed4C, (s0->speed4C * 94) / 100,
+                                            0x10000u * 94 / 100, &fs->rem[CAR_FIELD_REM_AI_DRAG_Q16]);
             } else {
-                s0->speed4C = (s0->speed4C * 99) / 100;
+                s0->speed4C = RaceFieldStep(s0->speed4C, (s0->speed4C * 99) / 100,
+                                            0x10000u * 99 / 100, &fs->rem[CAR_FIELD_REM_AI_DRAG_Q16]);
             }
         }
     }
-    s1->prevInput1DA = (u16)s1->input;
+    /* prevInput1DA: the speed one original tick ago (two fields), as the
+     * body pitch and the contact sounds read it */
+    if (RaceFieldRateLive) {
+        s1->prevInput1DA = (u16)fs->hist[CAR_FIELD_HIST_AI_INPUT];
+        fs->hist[CAR_FIELD_HIST_AI_INPUT] = s1->input;
+    } else {
+        s1->prevInput1DA = (u16)s1->input;
+    }
     s1->input = s0->speed4C / 256;
     f.rot.x = 0;
     f.rot.y = (u16)s1->heading1D4;
@@ -203,14 +254,17 @@ void UpdateComCarSpeed(RaceVehicle *a0) {
     v0 = s0->gearCountFC;
     v1 = s0->gear68;
     s0->shiftDir62 = 0;
-    if (v1 < v0 - 1) {
+    /* The shift points are the original tick's: the speed crosses a
+     * threshold by up to a tick's step there (the next field shifts). */
+    if (!RaceTickEnd()) {
+    } else if (v1 < v0 - 1) {
         if (s1->input > s0->shiftThresholds10C[v1]) {
             s0->shiftDir62 = 1;
             s0->shiftState64 = 1;
         }
     }
     v0 = s0->gear68;
-    if (v0 > 0) {
+    if (v0 > 0 && RaceTickEnd()) {
         v0 = v0 - 1;
         v1 = s0->shiftThresholds10C[v0] - 0x24;
         if (v1 < 0) v1 = 0;

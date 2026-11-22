@@ -1,6 +1,7 @@
 #include "game/course/trkseek2.h"
 #include "rr/player_cars.h"
 #include "rr/track_projection.h"
+#include "rr/field_rate.h"
 
 
 void UpdateComCarTrackProjections(void)
@@ -14,7 +15,9 @@ void UpdateComCarTrackProjections(void)
         s1 = &ComCars[s2];
         if ((short)s1->flags1E4 > 0) {
             s0 = &s1->control;
-            s0->attenuation4A = (unsigned short)s0->attenuation4A - 1;
+            /* counts original ticks (rr/field_rate.h) */
+            if (RaceSlowTick())
+                s0->attenuation4A = (unsigned short)s0->attenuation4A - 1;
             if (s0->attenuation4A < 0) {
                 s0->attenuation4A = 0;
             }
