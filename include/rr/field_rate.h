@@ -219,9 +219,6 @@ enum {
     CAR_FIELD_REM_CONTACT_HALF,   /* contactTimer1A7 */
     CAR_FIELD_WALL_WINDOW,        /* StepRaceFrame's contact loss: its window's first field + 1 */
     CAR_FIELD_REM_KERB_INPUT,     /* the kerb / off-road loss */
-    CAR_FIELD_REM_HIT_INPUT,      /* ResolveCarCollisions */
-    CAR_FIELD_REM_HIT_DRIVE,
-    CAR_FIELD_REM_HIT_LATERAL,
     CAR_FIELD_REM_WHEEL_SPIN,     /* ClampAiCarLateralMotion */
     CAR_FIELD_SFX_WALL,           /* RaceFieldOncePerTick: StartCollisionShake */
     CAR_FIELD_SFX_HIT,            /* ResolveCarCollisions */
@@ -265,8 +262,6 @@ enum {
     CAR_FIELD_REM_AI_LATERAL_Q16,/* corner turn mode 3, lateral24 3/4 */
     CAR_FIELD_REM_AI_ROT_Q16,    /* corner turn mode 3, rot54 to heading */
     CAR_FIELD_REM_AI_IMPACT_FIELD,/* RaceFieldCount at the last impact */
-    CAR_FIELD_HIT_LAST,           /* ResolveCarCollisions: the hitter's last */
-    CAR_FIELD_HIT_RUN,            /* contact field + 1, its fields in a row */
     CAR_FIELD_REM_COUNT,
     CAR_FIELD_REM_SLOTS = 96
 };

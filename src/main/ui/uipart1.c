@@ -801,13 +801,9 @@ void StartCollisionShake(RaceVehicle *vehicle, s32 impactKind) {
 }
 
 void SetVehicleShake(RaceVehicle *vehicle, s32 x, s32 y) {
-    if (RaceFieldCarStep) {
-        /* The push is the cars' overlap of this step, half a tick's in a
-         * field: as a speed (DecayCarOffset), twice it. */
-        x = x * 2 > 0x7FFF ? 0x7FFF : x * 2 < -0x8000 ? -0x8000 : x * 2;
-        y = y * 2 > 0x7FFF ? 0x7FFF : y * 2 < -0x8000 ? -0x8000 : y * 2;
-        CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
-    }
+    /* the car stages every field: the timer's ticks from here
+     * (DecayCarOffset spreads the push over the tick's fields) */
+    CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
     vehicle->shakeActive19C = 2;
     vehicle->shakeX198 = x;
     vehicle->shakeY19A = y;

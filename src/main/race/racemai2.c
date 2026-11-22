@@ -313,88 +313,6 @@ void ComputeQuadMidpoints(s32 carIndex) {
          work->pts40[carIndex][COLLISION_CORNER3].pt.y) >> 2;
 }
 
-/* ResolveCarCollisions' exchange of speed with the car stages every field
- * (RaceFieldCarStep), for an overlap of hitter `a` (cars[side]) and `b`.
- * On the first tick of an overlap the original takes b halfway to a's
- * speed along b's heading and sets a to 95% of b's: an impulse, which the
- * first field of the contact applies whole (the second none). Each further
- * tick repeats it on the pair now moving together, a decay: per field, b
- * moves to the geometric mean of its speed and the tick's result, a to 95%
- * of b. Without the 95% (a slower hitter) b approaches a's speed, keeping
- * sqrt(1/2) of the distance a field. The hitter's drive keeps sqrt(92%), its
- * lateral speed loses half the tick's. The knock back of an opponent (to
- * -99% of b's speed, after which it no longer pushes) is one event. */
-static s32 IsqrtS32(s32 v) {
-    u32 r = 0, bit = 1u << 30, x = (u32)v;
-    while (bit > x)
-        bit >>= 2;
-    while (bit) {
-        if (x >= r + bit) {
-            x -= r + bit;
-            r = (r >> 1) + bit;
-        } else {
-            r >>= 1;
-        }
-        bit >>= 2;
-    }
-    return (s32)r;
-}
-
-static void CollideCarsField(RaceVehicle *arg0, RaceVehicle *a, RaceVehicle *b, s32 ang) {
-    CarFieldState *fa = CarFieldStateOf(a);
-    CarFieldState *fb = CarFieldStateOf(b);
-    s32 *last = &fa->rem[CAR_FIELD_HIT_LAST];
-    s32 *run = &fa->rem[CAR_FIELD_HIT_RUN];
-    s32 t, b1;
-    /* the hitter's contact fields in a row (both cars' calls in a field
-     * are one) */
-    if (*last != (s32)(RaceFieldCount + 1)) {
-        *run = *last == (s32)RaceFieldCount ? *run + 1 : 1;
-        *last = (s32)(RaceFieldCount + 1);
-    }
-    if (a->flags1E4 & 0x10) {
-        if (a->input >= 0xF1) {
-            arg0->control.pathDeltaX30 = 0x40;
-        }
-        a->control.lateralSpeed58 += RaceFieldHalf(-0x1388, &fa->rem[CAR_FIELD_REM_HIT_LATERAL]);
-        a->control.dynamics94.player.driveProduct0C =
-            RaceFieldKeep(a->control.dynamics94.player.driveProduct0C, 92, 100, &fa->rem[CAR_FIELD_REM_HIT_DRIVE]);
-        t = (a->input * ang) / 4096;
-        if (a->input >= 0xF1) {
-            if (*run == 1) {
-                b->input = (b->input + t) / 2;
-            } else if (*run > 2) {
-                b1 = (b->input + t) / 2;
-                b->input = b->input > 0 && b1 > 0 ? IsqrtS32(b->input * b1) : b1;
-            }
-            if (b->input < 0) {
-                b->input = 0;
-            }
-            a->input = (b->input * 95) / 100;
-        } else {
-            b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
-            if (b->input < 0) {
-                b->input = 0;
-            }
-        }
-    } else if (a->input > 0) {
-        if (a->input >= 0xF1 || (s16)b->flags1E4 >= 0x10) {
-            /* the knock back: once, as the original's */
-            b->input = (b->input + (a->input * ang) / 4096) / 2;
-            if (b->input < 0) {
-                b->input = 0;
-            }
-            a->input = (-b->input * 99) / 100;
-        } else {
-            t = (a->input * ang) / 4096;
-            b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
-            if (b->input < 0) {
-                b->input = 0;
-            }
-        }
-    }
-}
-
 void ResolveCarCollisions(RaceVehicle *arg0) {
     ScratchpadCollision *sp = (ScratchpadCollision *)SCRATCH_CAR_WORK;
     RaceVehicle *cars[2];
@@ -421,6 +339,17 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
     s32 offZ;
 
     if (GameModeType == 0) {
+        return;
+    }
+    /* Field rate (the car stages every field, rr/field_rate.h): the
+     * contact runs as the original's, once a tick, on the tick's field. Its
+     * outcome (the knock back, the push, the shakes and their sideways
+     * balance, the next contact's timing) hangs on the overlap a tick's
+     * motion makes: met each field, a half-depth overlap pushed the cars
+     * apart and sideways unbalanced, and an opponent pushing the player
+     * slid past it. Between ticks two cars may overlap by half a tick's
+     * closing for one field. */
+    if (RaceFieldCarStep && !RaceSlowTick()) {
         return;
     }
 
@@ -584,6 +513,7 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                                 sp->dy34 >>= 6;
                             }
 
+
                             ang = rcos(AngleDiffAbs(cars[0]->heading1D4, cars[1]->heading1D4));
                             cars[1]->posScaled00[0] -= sp->dx30;
                             cars[1]->posScaled00[2] -= sp->dy34;
@@ -594,9 +524,7 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                             if (side < 2) {
                                 SetVehicleShake(cars[0], -sp->dx30, -sp->dy34);
                                 SetVehicleShake(cars[1], sp->dx30, sp->dy34);
-                                if (RaceFieldCarStep) {
-                                    CollideCarsField(arg0, cars[side], cars[side ^ 1], ang);
-                                } else if (cars[side]->flags1E4 & 0x10) {
+                                if (cars[side]->flags1E4 & 0x10) {
                                     if (cars[side]->input >= 0xF1) {
                                         arg0->control.pathDeltaX30 = 0x40;
                                     }
