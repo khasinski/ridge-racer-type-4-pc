@@ -44,6 +44,16 @@ static s32 WallKeep(s32 x, s32 keep, s32 *rem)
 void UpdateRumbleStrip(RaceVehicle *p, int b);
 void CheckFinalLapEvent(RaceVehicle *vehicle);
 
+/* The car stages (CarUpdateStages) a fast-lane car runs every field: its
+ * motion and the geometry that follows from its position (track node,
+ * wheel offsets, the course's walls, the wheels' nodes). Its steering
+ * pose, offset decay, collisions, shake and bumps still step once per
+ * original tick. */
+static int CarStageFast(int stage, const RaceVehicle *car) {
+  static const unsigned char fast[11] = {0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0};
+  return fast[stage] && CarFieldFast(car);
+}
+
 void StepRaceFrame(unsigned int gameMode)
 {
   int i;
@@ -55,23 +65,18 @@ void StepRaceFrame(unsigned int gameMode)
   int impactCosine;
   RaceVehicle *car;
   int *carIndex;
-  /* The parts not yet in the fast lane run once per original tick
-   * (rr/field_rate.h): the whole step, or with RaceFieldCarStep the
-   * input and the cars' updates, the car stages and the contact every
-   * field. */
+  /* Field rate (rr/field_rate.h): the player cars' input, drive and
+   * motion (the fast lane) every field; the opponents' updates once per
+   * original tick; the car stages and the contact every field with
+   * RaceFieldCarStep, else the player cars' motion stages every field
+   * (CarStageFast) and the rest by the tick. */
   const int tick = RaceSlowTick();
-  if (!tick && !RaceFieldCarStep)
-    return;
   RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
-  switch (tick ? (int)gameMode : -1)
+  switch (gameMode)
   {
-    case -1:
-      /* the field between two ticks */
-      break;
-
     case 0:
     default:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
@@ -83,7 +88,8 @@ void StepRaceFrame(unsigned int gameMode)
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      if (tick)
+        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 2:
@@ -99,7 +105,8 @@ void StepRaceFrame(unsigned int gameMode)
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
       RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      if (tick)
+        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
 
     case 4:
@@ -118,7 +125,8 @@ void StepRaceFrame(unsigned int gameMode)
 
     case 5:
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      if (tick)
+        RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
       break;
   }
 
@@ -126,13 +134,14 @@ void StepRaceFrame(unsigned int gameMode)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      if (CarTable[*carIndex]->half1E8 != (-1))
+      if (CarTable[*carIndex]->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, CarTable[*carIndex])))
       {
         RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
       }
     }
     RrSpendStepRaceFrameLoop();
   }
+  if (tick || RaceFieldCarStep)
   {
   int impactCars = 0, impacts = 0, contactCars = 0, contacts = 0;
   for (i = 0; i < NumCars; i++)
@@ -232,7 +241,7 @@ void StepRaceFrame(unsigned int gameMode)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      if (CarTable[*carIndex]->half1E8 != (-1))
+      if (CarTable[*carIndex]->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, CarTable[*carIndex])))
       {
         RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
       }

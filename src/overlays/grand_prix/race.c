@@ -153,10 +153,11 @@ void ovl659_update_race(void) {
     StepRaceFrame(GameModeType);
     if (RaceState == 0) {
         DrawLensFlareAndSun(PlayerCars);
-    } else if (!tick) {
     } else if (RaceState == 7) {
-        UpdateFinishingPlayerCar(&PlayerCars[1]);
-    } else {
+        if (tick)
+            UpdateFinishingPlayerCar(&PlayerCars[1]);
+    } else if (tick || CarFieldFast(PlayerCars)) {
+        /* the chase camera follows a fast-lane car every field */
         UpdateRaceChaseCamera(PlayerCars);
     }
     /* every field (objsim.c, rr/field_rate.h) */

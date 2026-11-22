@@ -195,9 +195,24 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      every field with half steps (`RaceFieldHalf`), square-rooted filter
      factors (`RaceFieldKeep`) and two-field differences (`RaceFieldDelta`),
      with its remainders in the per-car sidecar `CarFieldState` because
-     `RaceVehicle` keeps its PS1 size. With every part still in the slow
-     lane, a Time Attack race at field rate has the same state as at the
-     original rate at every field (checked with the autodrive script).
+     `RaceVehicle` keeps its PS1 size. The filters take the share a tick
+     keeps from the game's own tick result, so its truncations and dead
+     zones stay (`RaceFieldDecay`: sqrt per field, the drags with the
+     drive's share `accelShareQ16` so a push against a drag levels where a
+     tick's does; `RaceFieldApproach`: the followers keep 2r/(1+r), a
+     tick's lag behind a moving target; `RaceFieldClose`: sqrt, the slide).
+     In the fast lane: the player cars' input ramp, steering, engine, grip,
+     drag, heading, normal/slide/spin-out states, `IntegrateCarMotion`, the
+     track geometry stages and the chase camera (`CarFieldFast`,
+     `CarStageFast` in racemai2.c). Gear changes, pedal edges and the lift
+     counter stay on the tick. Replays at field rate keep each tick's second
+     field's inputs in `ReplayFieldInputs` (file blocks FieldRate,
+     FieldInputs, CarFieldStates); older files play at the original rate.
+     With the fast lane off (every part in the slow lane, the first step)
+     a race had the same state as at the original rate at every field; with
+     it, the same inputs drive the same line (Time Attack course 1, scripted
+     inputs: within 1000 position units and 1 % speed over 28 s of driving
+     with wall contacts; a slide enters and ends on the same tick).
      Presentation code that runs every field reads tick counters in field
      time (`RaceFieldTimeAfter/Before`: counter * 2 + the field's phase),
      splits a per-tick add over the tick's two fields (`RaceFieldSplit`),

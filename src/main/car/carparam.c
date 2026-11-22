@@ -58,6 +58,10 @@ void UpdatePlayerSteering(RaceVehicle *arg0, int arg1) {
   int t;
   int t2;
   int v0_3;
+  /* Field rate (rr/field_rate.h): the ramps step half a tick's change,
+   * the yaw command its half with the odd part carried. */
+  CarFieldState *fr = CarFieldStateOf(arg0);
+  const s32 ramp = RaceFieldRateLive ? 0x280 : 0x500;
   s2 = 0x1800;
   s1 = &arg0->control;
   if (RaceState < 2)
@@ -92,7 +96,7 @@ void UpdatePlayerSteering(RaceVehicle *arg0, int arg1) {
         {
           if ((-s2) < t2)
           {
-            s1->steerInput0C = t2 - 0x500;
+            s1->steerInput0C = t2 - ramp;
           }
         }
         else
@@ -112,13 +116,14 @@ void UpdatePlayerSteering(RaceVehicle *arg0, int arg1) {
         else
           if (t2 < s2)
         {
-          s1->steerInput0C = t2 + 0x500;
+          s1->steerInput0C = t2 + ramp;
         }
       }
       else
       {
         s1->boostTimer44 = 0;
-        s1->steerInput0C = s1->steerInput0C / 2;
+        s1->steerInput0C = RaceFieldDecay(s1->steerInput0C / 2, s1->steerInput0C,
+                                          &fr->rem[CAR_FIELD_REM_STEER_INPUT]);
       }
       arg0->lateralMotion178 = -s1->steerInput0C;
     }
@@ -280,17 +285,20 @@ void UpdatePlayerSteering(RaceVehicle *arg0, int arg1) {
     if ((a1 < 0x100) && (s1->dynamics94.player.motionState10 == 0))
     {
       d = (((s1->steerInput0C * (s1->reserved36 + a0)) / 256) * a1) / 0x10000;
+      d = RaceFieldHalf(d, &fr->rem[CAR_FIELD_REM_STEER_HEADING]);
       s1->dynamics94.player.steeringHeading08 = s1->dynamics94.player.steeringHeading08 + d;
     }
     else
       if ((a1 < 0x200) && (s1->dynamics94.player.motionState10 == 4))
     {
       d = (((s1->steerInput0C * s1->reserved36) / 256) * a1) / 0x20000;
+      d = RaceFieldHalf(d, &fr->rem[CAR_FIELD_REM_STEER_HEADING]);
       s1->dynamics94.player.steeringHeading08 = s1->dynamics94.player.steeringHeading08 + d;
     }
     else
     {
       d = (s1->steerInput0C * (s1->reserved36 + a0)) / 0x10000;
+      d = RaceFieldHalf(d, &fr->rem[CAR_FIELD_REM_STEER_HEADING]);
       s1->dynamics94.player.steeringHeading08 = s1->dynamics94.player.steeringHeading08 + d;
     }
   }
@@ -448,6 +456,11 @@ void UpdateCarEngine(RaceVehicle *a0) {
   int fl;
   short t;
   int ten;
+  /* Field rate (rr/field_rate.h): the integrators add half a tick, the
+   * filters and drags keep the square root of a tick's share; the pedal
+   * edges, gear blend and lift timers step by the original tick. */
+  CarFieldState *fr = CarFieldStateOf(a0);
+  const int tick = RaceSlowTick();
   q = &a0->control;
   r = q->handling1C;
   off = (q->previewSample84.halves.high * 0x3C) + 4;
@@ -470,7 +483,10 @@ void UpdateCarEngine(RaceVehicle *a0) {
     q->dynamics94.player.throttle18 = (0x400 - a0->lateralOffset172) / 4;
     q->dynamics94.player.brake1A = a0->lateralOffset172 / 8;
   }
-  if (q->dynamics94.player.acceleratorEdge14 == 0)
+  if (!tick)
+  {
+  }
+  else if (q->dynamics94.player.acceleratorEdge14 == 0)
   {
     if (q->dynamics94.player.throttle18 >= 0x85)
     {
@@ -487,7 +503,10 @@ void UpdateCarEngine(RaceVehicle *a0) {
   {
     q->dynamics94.player.acceleratorEdge14 = 0;
   }
-  if (q->dynamics94.player.brakeEdge16 == 0)
+  if (!tick)
+  {
+  }
+  else if (q->dynamics94.player.brakeEdge16 == 0)
   {
     if (q->dynamics94.player.brake1A >= 0x85)
     {
@@ -538,7 +557,8 @@ void UpdateCarEngine(RaceVehicle *a0) {
   }
   if (q->dynamics94.player.motionState10 == 1)
   {
-    q->reserved36 = (q->reserved36 + a2) / 2;
+    q->reserved36 = q->reserved36 + RaceFieldApproach((q->reserved36 + a2) / 2 - q->reserved36, a2 - q->reserved36,
+                                                      &fr->rem[CAR_FIELD_REM_GRIP]);
   }
   else
   {
@@ -552,7 +572,8 @@ void UpdateCarEngine(RaceVehicle *a0) {
       a2 = a2 + ((n2 * r->slopeFactor14) / 1000);
     }
     m4 = a2 * t0;
-    q->reserved36 = q->reserved36 + ((((m4 / 1000) - q->reserved36) * 0x1C) / 32);
+    q->reserved36 = q->reserved36 + RaceFieldApproach((((m4 / 1000) - q->reserved36) * 0x1C) / 32,
+                                                      (m4 / 1000) - q->reserved36, &fr->rem[CAR_FIELD_REM_GRIP]);
   }
   ten = 10;
   s3 = s->scaledRate00;
@@ -565,7 +586,8 @@ void UpdateCarEngine(RaceVehicle *a0) {
   if (q->laneTimer38 > 0)
   {
     s1 = *(s32 *)&q->steering8C;
-    q->laneTimer38 = q->laneTimer38 - 1;
+    if (tick)
+      q->laneTimer38 = q->laneTimer38 - 1;
     if (q->reserved32 == 1)
     {
       s3 = ((s->scaledRate00 * (ten - q->laneTimer38)) + (s[-1].scaledRate00 * q->laneTimer38)) / 10;
@@ -661,7 +683,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
     k1 = 100;
   }
   s4 = (s4 * (k1 + 1000)) / 1000;
-  n3 = q->laneMode88 + (s4 - s1);
+  n3 = q->laneMode88 + RaceFieldHalf(s4 - s1, &fr->rem[CAR_FIELD_REM_REVS]);
   q->laneMode88 = n3;
   if (n3 < 0)
   {
@@ -678,9 +700,10 @@ void UpdateCarEngine(RaceVehicle *a0) {
   {
     a0->physicsFlags1E0 = 0;
     t = a0->steeringLock1B8 | 0x100;
-    a0->steeringLock1B8 = t;
-    a0->input = (a0->input * 999) / 1000;
-    if (t == 0x100)
+    if (tick)
+      a0->steeringLock1B8 = t;
+    a0->input = RaceFieldDecay((a0->input * 999) / 1000, a0->input, &fr->rem[CAR_FIELD_REM_BUMP_LOCK]);
+    if (t == 0x100 && tick)
     {
       q->laneTarget3C = 30;
       *(s16 *)&q->laneCooldown40 = (q->laneMode88 - ((a0->input * 10000) / ((s->speed02 * 0x490) / 160))) / 30;
@@ -694,7 +717,8 @@ void UpdateCarEngine(RaceVehicle *a0) {
     x = (n2 * 100) >> 12;
     k3 = r->slideRetention0E;
     k3 = k3 + 9000;
-    a0->input = (a0->input * (k3 - x)) / 10000;
+    a0->input = RaceFieldDecay((a0->input * (k3 - x)) / 10000, a0->input,
+                               &fr->rem[CAR_FIELD_REM_SLIDE_DRAG]);
     a0->physicsFlags1E0 = 0;
   }
   else
@@ -707,7 +731,9 @@ void UpdateCarEngine(RaceVehicle *a0) {
     }
     a0->physicsFlags1E0 = ((x >> 17) * (30 - q->laneTarget3C)) / 30;
     k2 = (((a0->input * 6) / 100) * (30 - q->laneTarget3C)) / 30;
-    a0->input = a0->input - k2;
+    if (RaceFieldRateLive)
+      fr->accelShareQ16 = (u32)((1ULL << 32) / (0x10000u + RaceFieldDecayKeepQ16(a0->input - k2, a0->input)));
+    a0->input = RaceFieldDecay(a0->input - k2, a0->input, &fr->rem[CAR_FIELD_REM_DRAG]);
   }
   else
   {
@@ -718,7 +744,9 @@ void UpdateCarEngine(RaceVehicle *a0) {
     }
     a0->physicsFlags1E0 = n5 >> 17;
     k2 = (a0->input * 6) / 100;
-    a0->input = a0->input - k2;
+    if (RaceFieldRateLive)
+      fr->accelShareQ16 = (u32)((1ULL << 32) / (0x10000u + RaceFieldDecayKeepQ16(a0->input - k2, a0->input)));
+    a0->input = RaceFieldDecay(a0->input - k2, a0->input, &fr->rem[CAR_FIELD_REM_DRAG]);
   }
   if (a0->input < 8)
   {
@@ -751,7 +779,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
   {
     if (a0->input < 0x20)
     {
-      a0->input = a0->input >> 1;
+      a0->input = RaceFieldDecay(a0->input >> 1, a0->input, &fr->rem[CAR_FIELD_REM_IDLE]);
     }
   }
   if ((a0 == &PlayerCars[0]) || (a0 == &PlayerCars[1]))
@@ -770,7 +798,8 @@ void UpdateCarEngine(RaceVehicle *a0) {
     {
       k2 = 1;
     }
-    PlayerDisplayRpm[q->playerFlags24 & 1] = d1 + (((q->laneMode88 - d1) * 0x14) / k2);
+    PlayerDisplayRpm[q->playerFlags24 & 1] =
+        d1 + RaceFieldApproach(((q->laneMode88 - d1) * 0x14) / k2, q->laneMode88 - d1, &fr->rem[CAR_FIELD_REM_DISPLAY_RPM]);
     if (PlayerDisplayRpm[q->playerFlags24 & 1] < 0x1F5)
     {
       PlayerDisplayRpm[q->playerFlags24 & 1] += 0x1F4 - ((PsyqRand() * 0x64) / 32767);
@@ -789,7 +818,9 @@ void IntegrateCarMotion(RaceVehicle *p) {
     CarFieldState *fs;
 
     s5 = (CarMotionScratch *)SCRATCH_CAR_WORK;
-    fs = RaceFieldCarStep ? CarFieldStateOf(p) : NULL;
+    /* every field: all cars with RaceFieldCarStep, else the fast-lane
+     * player cars (rr/field_rate.h) */
+    fs = RaceFieldCarStep || CarFieldFast(p) ? CarFieldStateOf(p) : NULL;
     if ((p->flags1E4 & 0x10) == 0) {
         m1 = p->halfSpan10E * p->input;
         /* An opponent's drive sets vel30/38 for this shift; on a field its
@@ -807,8 +838,11 @@ void IntegrateCarMotion(RaceVehicle *p) {
         m2 = p->halfSpan10E * p->input;
         v0 = p->control.dynamics94.player.topGearSpeed04 + 1;
         s5->v64.z = (m2 / v0) / 2;
-        p->prevInput1DA = (unsigned short)p->input;
-        p->prevHeading1D6 = (unsigned short)p->heading1D4;
+        /* one tick's differences (UpdateCarSteering, in the slow lane) */
+        if (RaceFieldCarStep || !CarFieldFast(p) || RaceSlowTick()) {
+            p->prevInput1DA = (unsigned short)p->input;
+            p->prevHeading1D6 = (unsigned short)p->heading1D4;
+        }
     }
     s2 = &s5->m24;
     s3 = 0x800;

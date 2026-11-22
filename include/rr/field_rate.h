@@ -144,6 +144,35 @@ s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem);
  * it holds on. *last is the car's sidecar slot (0 = never). */
 int RaceFieldOncePerTick(s32 *last);
 
+/* Filters. The game's own step or result for one tick (tickStep,
+ * tickResult) gives the share r a tick keeps, truncation and dead zones
+ * included (a gap / d that rounds to 0 keeps it all). At the original
+ * rate both return the game's value.
+ *
+ * RaceFieldApproach: the step this field of "x += tickStep" where
+ * tickStep closes part of gap (gap >> 1, gap / d, ...), a follower of a
+ * moving target (yaw, heading, camera). A field keeps 2r / (1 + r): the
+ * same lag behind a target moving steadily as a tick's (r / (1 - r)
+ * ticks), which sets the car's slip in a turn; a still target is closed
+ * a little faster than sqrt(r) would.
+ * RaceFieldDecay: a field keeps sqrt(r); the drags and decays, whose
+ * level against a steady push (CarFieldState.accelShareQ16) and whose
+ * decay over two fields then match a tick's.
+ * RaceFieldDecay: x after a field of "x = tickResult" where tickResult is
+ * a share of x (x * 94 / 100, x / 10, x - x * 6 / 100, ...). */
+s32 RaceFieldDecay(s32 tickResult, s32 x, s32 *rem);
+s32 RaceFieldApproach(s32 tickStep, s32 gap, s32 *rem);
+/* The same step with a field keeping sqrt(r): the gap after two fields
+ * is a tick's. Closer to the game where the target jumps rather than
+ * moves steadily (the slide's and spin's yaw and heading). */
+static inline s32 RaceFieldClose(s32 tickStep, s32 gap, s32 *rem) {
+    if (!RaceFieldRateLive)
+        return tickStep;
+    return gap - RaceFieldDecay(gap - tickStep, gap, rem);
+}
+/* The per-field keep (Q16) of a tick that takes x to tickResult. */
+u32 RaceFieldDecayKeepQ16(s32 tickResult, s32 x);
+
 /* A value made from a one-tick difference, measured per field: the
  * difference over the last two fields (prev2 holds the value of two
  * fields ago, prev1 of one). At the original rate the plain difference
@@ -184,8 +213,39 @@ enum {
     CAR_FIELD_REM_WHEEL_SPIN,     /* ClampAiCarLateralMotion */
     CAR_FIELD_SFX_WALL,           /* RaceFieldOncePerTick: StartCollisionShake */
     CAR_FIELD_SFX_HIT,            /* ResolveCarCollisions */
+    /* the player car's drive (ReadCarInput, UpdatePlayerSteering,
+     * UpdateCarEngine, UpdateCarHeading, StepCarState*) */
+    CAR_FIELD_REM_THROTTLE_RAMP,
+    CAR_FIELD_REM_STEER_INPUT,
+    CAR_FIELD_REM_STEER_HEADING,
+    CAR_FIELD_REM_GRIP,
+    CAR_FIELD_REM_REVS,
+    CAR_FIELD_REM_BUMP_LOCK,
+    CAR_FIELD_REM_SLIDE_DRAG,
+    CAR_FIELD_REM_DRAG,
+    CAR_FIELD_REM_IDLE,
+    CAR_FIELD_REM_DISPLAY_RPM,
+    CAR_FIELD_REM_ACCEL,
+    CAR_FIELD_REM_ROT,
+    CAR_FIELD_REM_HEADING,
+    CAR_FIELD_REM_HEADING_LANE,
+    CAR_FIELD_REM_DRIFT_LIFT,
+    CAR_FIELD_REM_DRIFT_HEADING,
+    CAR_FIELD_REM_SLIDE_HEADING_TRACK,
+    CAR_FIELD_REM_SLIDE_SPEED,
+    CAR_FIELD_REM_SLIDE_YAW,
+    CAR_FIELD_REM_SLIDE_ENERGY,
+    CAR_FIELD_REM_SLIDE_LATCH,
+    CAR_FIELD_REM_SLIDE_LATCH_DECAY,
+    CAR_FIELD_REM_SLIDE_DIVISOR,
+    CAR_FIELD_REM_SPIN_SPEED,
+    CAR_FIELD_REM_SPIN_TIMER,
+    /* the chase camera's ease (UpdateRaceChaseCamera) */
+    CAR_FIELD_REM_CAMERA_PITCH,
+    CAR_FIELD_REM_CAMERA_YAW,
     CAR_FIELD_REM_SLOTS = 96
 };
+_Static_assert(CAR_FIELD_REM_CAMERA_YAW < CAR_FIELD_REM_SLOTS, "CarFieldState rem slots");
 enum {
     CAR_FIELD_HIST_INPUT1,        /* UpdateCarSteering: input, a field ago */
     CAR_FIELD_HIST_INPUT2,        /* two fields ago */
@@ -201,6 +261,11 @@ typedef struct {
     s32 hist[CAR_FIELD_HIST_SLOTS]; /* RaceFieldDelta histories */
     s16 bodyPitch[CAR_FIELD_BODY_RING], bodyRoll[CAR_FIELD_BODY_RING];
     s32 bodyRingPos;
+    /* UpdateCarEngine to UpdateCarHeading: the share (Q16) of a tick's
+     * drive acceleration added this field, 1 / (1 + keep) of the drag's
+     * per-field keep, so drive and drag over two fields give the tick's
+     * x * r + a exactly for a steady a. */
+    u32 accelShareQ16;
 } CarFieldState;
 
 /* PlayerCars[0..1] are 0..1, ComCars[0..10] 2..12. */
@@ -208,9 +273,16 @@ typedef struct {
 extern CarFieldState CarFieldStates[CAR_FIELD_STATES];
 /* The car's sidecar (a dummy for a car outside both arrays). */
 CarFieldState *CarFieldStateOf(const void *car);
+/* The car runs in the fast lane: a race at field rate and a car the
+ * player's model drives (PlayerCars, flags1E4 & 0x10). The others still
+ * step once per tick. */
+int CarFieldFast(const void *car);
 /* Cleared at race setup; SaveCarSnapshots / the replay's start copy the
  * cars' sidecars with the cars. */
 void CarFieldStatesClear(void);
+/* The sidecars SaveCarSnapshots took (CarSnapshots' order), for the
+ * replay files. */
+extern CarFieldState CarFieldSnapshots[8];
 void CarFieldStatesSave(void);
 void CarFieldStatesRestore(void);
 

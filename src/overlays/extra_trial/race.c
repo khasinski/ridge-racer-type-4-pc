@@ -100,9 +100,9 @@ void ovl666_update_race(void) {
             DrawViewportBorderFrames(0);
             SubmitRaceHudPackets(4);
         }
-        if (!tick) {
-        } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+        if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
             UpdateRaceIntroCamera(PlayerCars, ModeFrame);
+        } else if (!tick && !CarFieldFast(PlayerCars)) {
         } else {
             SetModelTexturePage(-1);
             UpdateRaceChaseCamera(PlayerCars);
@@ -202,9 +202,9 @@ void ovl666_update_race(void) {
         DrawViewportBorderFrames(0);
         SubmitRaceHudPackets(4);
     }
-    if (!tick) {
-    } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+    if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
         UpdateRaceIntroCamera(PlayerCars, ModeFrame);
+    } else if (!tick && !CarFieldFast(PlayerCars)) {
     } else {
         UpdateRaceChaseCamera(PlayerCars);
     }

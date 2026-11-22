@@ -16,6 +16,7 @@
 #include "rr/menu_transition.h"
 #include "rr/record_banks.h"
 #include "rr/replay_host.h"
+#include "rr/field_rate.h"
 #include "rr/replay_types.h"
 #include "rr/save_slot_types.h"
 #include "rr/scene_camera_types.h"
@@ -169,6 +170,12 @@ typedef struct ReplayData {
     u8 vram[VRAM_BLOB_MAX];
     u32 trails_size;
     u8 trails[TRAILS_BLOB_MAX];
+    /* recorded at field rate (rr/field_rate.h): each tick's second
+     * field's inputs and the cars' sidecars at the snapshot; a file
+     * without them is an original-rate replay */
+    s32 field_rate;
+    ReplayFrame4 field_inputs[2][3601];
+    CarFieldState field_states[8];
 } ReplayData;
 
 static ReplayData s_last;     /* the replay recorded (or loaded) last */
@@ -658,6 +665,11 @@ static int Capture(ReplayData *d) {
     d->info.cars = NumCars;
     d->info.race_time = GameModeType < 2 ? TotalRaceTime : -1;
     d->info.frames = (u32)ReplayFrame;
+    d->field_rate = ReplayFieldRate != 0;
+    if (d->field_rate) {
+        memcpy(d->field_inputs, ReplayFieldInputs, sizeof(d->field_inputs));
+        memcpy(d->field_states, CarFieldSnapshots, sizeof(d->field_states));
+    }
     Title(&d->info, d->info.title, sizeof(d->info.title));
     /* valid once the context is taken, at the replay's first frame */
     return 1;
@@ -668,6 +680,11 @@ static void Install(const ReplayData *d) {
     memcpy(SharedWorkArena, &d->storage, sizeof(d->storage));
     SavedRaceState = d->saved_race_state;
     ReplayLength = d->replay_length;
+    /* the rate it was recorded at, whatever the option now */
+    ReplayFieldRate = d->field_rate;
+    RaceFieldRateResume(d->field_rate);
+    memcpy(ReplayFieldInputs, d->field_inputs, sizeof(ReplayFieldInputs));
+    memcpy(CarFieldSnapshots, d->field_states, sizeof(CarFieldSnapshots));
     ApplyVram(d);
     for (int i = 0; i < NumCars && i < SNAPSHOTS_MAX; i++) {
         RaceVehicle *snapshot;
@@ -707,6 +724,11 @@ static int ToBlocks(const ReplayData *d, ReplayBlock *blocks) {
         BLOCK(kSetup[i].name, d->setup[i], kSetup[i].size);
     for (int i = 0; i < CONTEXT_COUNT; i++)
         BLOCK(kContext[i].name, d->context[i], kContext[i].size);
+    if (d->field_rate) {
+        BLOCK("FieldRate", &d->field_rate, sizeof(d->field_rate));
+        BLOCK("FieldInputs", d->field_inputs, sizeof(d->field_inputs));
+        BLOCK("CarFieldStates", d->field_states, sizeof(d->field_states));
+    }
 #undef BLOCK
     return n;
 }
@@ -754,6 +776,15 @@ static int FromImage(const ReplayFileImage *image, ReplayData *d, char *err, siz
         } else {
             ok = 0;
         }
+    }
+    /* optional: a field-rate replay (absent in older files) */
+    if (ok && Take(image, "FieldRate", &d->field_rate, sizeof(d->field_rate), 1) && d->field_rate) {
+        d->field_rate = 1;
+        ok = Take(image, "FieldInputs", d->field_inputs, sizeof(d->field_inputs), 1);
+        if (!Take(image, "CarFieldStates", d->field_states, sizeof(d->field_states), 1))
+            memset(d->field_states, 0, sizeof(d->field_states));
+    } else {
+        d->field_rate = 0;
     }
     objects = ReplayFileFind(image, "TrackObjectStates");
     if (ok && objects && objects->size % sizeof(S_ECB4) == 0 &&

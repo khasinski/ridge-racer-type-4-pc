@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/ps1_sizes.h"
 #include "rr/video_timing.h"
 #include "game/data/resinit.h"
@@ -104,11 +105,16 @@ void UpdatePlayerCar(RaceVehicle *a0, int a1)
 {
   if (RaceState > 0)
   {
+    /* Field rate (rr/field_rate.h): the drive every field, the gear
+     * changes (their 10-tick blend) and the course's sounds by the
+     * original tick. */
+    const int tick = RaceSlowTick();
     a0->half1EA = IsCarFacingReverse(a0);
-    UpdateCarGear(a0, a1);
+    if (tick)
+      UpdateCarGear(a0, a1);
     UpdatePlayerSteering(a0, a1);
     UpdateCarEngine(a0);
-    if ((a0 == &PlayerCars[0]) || (a0 == &PlayerCars[1]))
+    if (tick && ((a0 == &PlayerCars[0]) || (a0 == &PlayerCars[1])))
     {
       if (TrackEventSfxEnabled == 1)
       {

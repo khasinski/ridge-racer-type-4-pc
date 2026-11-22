@@ -25,7 +25,7 @@ static int CarStepWanted(void) {
 
 CarFieldState CarFieldStates[CAR_FIELD_STATES];
 static CarFieldState CarFieldDummy;
-static CarFieldState CarFieldSnapshots[8];
+CarFieldState CarFieldSnapshots[8];
 
 /* The edges the slow lane has not seen yet, per pad. */
 static struct {
@@ -150,11 +150,70 @@ u32 RaceFieldKeepQ16(u32 num, u32 den) {
 
 s32 RaceFieldKeep(s32 x, u32 num, u32 den, s32 *rem) {
     long long v;
+    int neg = x < 0;
     if (!RaceFieldRateLive)
         return (s32)((long long)x * (s32)num / (s32)den);
-    v = (long long)x * RaceFieldKeepQ16(num, den) + *rem;
+    /* on the magnitude, as the game's divisions truncate toward zero: a
+     * small value decays to 0 from either side */
+    v = (long long)(neg ? -(long long)x : x) * RaceFieldKeepQ16(num, den) + (*rem & 0xFFFF);
     *rem = (s32)(v & 0xFFFF);
-    return (s32)(v >> 16);
+    v >>= 16;
+    return (s32)(neg ? -v : v);
+}
+
+u32 RaceFieldDecayKeepQ16(s32 tickResult, s32 x) {
+    long long r = tickResult, v = x;
+    if (v == 0)
+        return 0x10000u; /* nothing to take */
+    if (r != 0 && ((r < 0) != (v < 0)))
+        return 0;
+    if (r < 0) {
+        r = -r;
+        v = -v;
+    }
+    if (r >= v)
+        return 0x10000u; /* this filter keeps all of it (or grows) */
+    return IsqrtU64(((unsigned long long)r << 32) / (unsigned long long)v);
+}
+
+s32 RaceFieldDecay(s32 tickResult, s32 x, s32 *rem) {
+    long long v;
+    int neg = x < 0;
+    if (!RaceFieldRateLive)
+        return tickResult;
+    if ((long long)tickResult * (neg ? -1 : 1) > (long long)x * (neg ? -1 : 1))
+        return tickResult; /* growth: not a decay (none in the converted code) */
+    v = (long long)(neg ? -(long long)x : x) * RaceFieldDecayKeepQ16(tickResult, x) + (*rem & 0xFFFF);
+    *rem = (s32)(v & 0xFFFF);
+    v >>= 16;
+    return (s32)(neg ? -v : v);
+}
+
+s32 RaceFieldApproach(s32 tickStep, s32 gap, s32 *rem) {
+    unsigned long long r, k, v;
+    int neg = gap < 0;
+    if (!RaceFieldRateLive)
+        return tickStep;
+    {
+        /* r: the share a tick keeps (Q16), as RaceFieldDecay finds it */
+        long long left = (long long)gap - tickStep, g = gap;
+        if (g == 0)
+            return 0;
+        if (left != 0 && ((left < 0) != (g < 0)))
+            r = 0; /* overshoots: a tick lands past the target */
+        else {
+            if (left < 0) {
+                left = -left;
+                g = -g;
+            }
+            r = left >= g ? 0x10000ull : ((unsigned long long)left << 16) / (unsigned long long)g;
+        }
+    }
+    k = (2 * r << 16) / (0x10000ull + r);
+    v = (unsigned long long)(neg ? -(long long)gap : gap) * k + (unsigned)(*rem & 0xFFFF);
+    *rem = (s32)(v & 0xFFFF);
+    v >>= 16; /* what the field leaves of the gap */
+    return neg ? gap + (s32)v : gap - (s32)v;
 }
 
 s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem) {
@@ -203,6 +262,11 @@ CarFieldState *CarFieldStateOf(const void *car) {
     if (v >= ComCars && v < ComCars + 11)
         return &CarFieldStates[2 + (v - ComCars)];
     return &CarFieldDummy;
+}
+
+int CarFieldFast(const void *car) {
+    const RaceVehicle *v = car;
+    return RaceFieldRateLive && v >= PlayerCars && v < PlayerCars + 2 && (v->flags1E4 & 0x10);
 }
 
 void CarFieldStatesClear(void) {

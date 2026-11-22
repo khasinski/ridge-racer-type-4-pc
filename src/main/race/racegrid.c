@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/cpu_time.h"
 #include "game/gfx/sprefct.h"
 #include "game/data/menuvars.h"
@@ -145,9 +146,13 @@ static void UpdateRaceChaseCameraWork(RaceVehicle *p) {
         g->angles10.words[2] += ((short)a1 / 2) + ((short)a2 / 2);
         return;
     }
-    s.v[0] = (s16)AngleDiffSigned(g->angles10.words[0], p->rot50) / 8;
+    /* the ease per field at field rate (rr/field_rate.h) */
+    r = (s16)AngleDiffSigned(g->angles10.words[0], p->rot50);
+    s.v[0] = CarFieldFast(p) ? RaceFieldApproach(r / 8, r, &CarFieldStateOf(p)->rem[CAR_FIELD_REM_CAMERA_PITCH])
+                             : (s16)r / 8;
     r = (s16)AngleDiffSigned(g->angles10.words[1], p->rot54);
-    t = r / 6;
+    t = CarFieldFast(p) ? RaceFieldApproach(r / 6, r, &CarFieldStateOf(p)->rem[CAR_FIELD_REM_CAMERA_YAW])
+                        : r / 6;
     g->angles10.words[0] += s.v[0];
     s.v[1] = t;
     g->angles10.words[1] += t;

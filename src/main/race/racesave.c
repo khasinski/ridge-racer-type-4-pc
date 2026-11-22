@@ -69,6 +69,7 @@ void SaveCarSnapshots(int unused)
     for (i = 0; i < NumCars; i++)
       *CarSnapshots[i] = *CarTable[i];
     CarFieldStatesSave();
+    ReplayFieldRate = RaceFieldRateLive;
     ReplayState = 1;
   }
 }
@@ -88,12 +89,16 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
     if (RaceState != 0) {
         if (ReplayState == 2) {
             if (ReplayFrame < ReplayLength) {
-                CarInputs[arg1].frame = ReplayInputs[arg1][ReplayFrame];
+                /* at field rate a tick's two fields (rr/replay_types.h) */
+                const int second = RaceFieldRateLive && !RaceSlowTick();
+                CarInputs[arg1].frame = second ? ReplayFieldInputs[arg1 & 1][ReplayFrame]
+                                               : ReplayInputs[arg1][ReplayFrame];
                 if (GameModeType == 4) {
                     if (arg1 == 3) {
                         ReplayFrame += 1;
                     }
-                } else if (arg1 == 1 || GameModeType < 2 || GameModeType == 6) {
+                } else if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) &&
+                           (!RaceFieldRateLive || second)) {
                     ReplayFrame += 1;
                 }
             }
@@ -134,7 +139,8 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t5 = 0;
                         t3 = f | 0x20;
                     }
-                    control->dynamics94.player.digitalThrottle1C += b * 4;
+                    /* the ramp: 4 a tick, 2 a field (rr/field_rate.h) */
+                    control->dynamics94.player.digitalThrottle1C += b * (RaceFieldRateLive ? 2 : 4);
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }
@@ -200,7 +206,7 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t1 = 0xFF;
                     }
                     b = (PlayerControllers[idx].input00.fields.buttons & PadButtonMap[idx].wheel[3]) != 0;
-                    control->dynamics94.player.digitalThrottle1C += b * 4;
+                    control->dynamics94.player.digitalThrottle1C += b * (RaceFieldRateLive ? 2 : 4);
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }
@@ -266,8 +272,12 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                 }
             } else if (ReplayState == 1) {
                 if (ReplayFrame < ReplayLength) {
-                    ReplayInputs[arg1][ReplayFrame] = CarInputs[arg1].frame;
-                    if (arg1 == 1 || GameModeType < 2 || GameModeType == 6) {
+                    const int second = RaceFieldRateLive && !RaceSlowTick();
+                    if (second)
+                        ReplayFieldInputs[arg1 & 1][ReplayFrame] = CarInputs[arg1].frame;
+                    else
+                        ReplayInputs[arg1][ReplayFrame] = CarInputs[arg1].frame;
+                    if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && (!RaceFieldRateLive || second)) {
                         ReplayFrame += 1;
                     }
                 }
@@ -384,8 +394,9 @@ void ReplayModeUpdate(void) {
         }
     }
     SetupViewport(0);
+    /* the node cameras view the cars every field, their timing by the tick */
+    UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
     if (tick) {
-        UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
         RrSpendReplayFrame();
     }
     /* every field (objsim.c, rr/field_rate.h) */
@@ -409,6 +420,8 @@ void ReplayModeUpdate(void) {
 }
 
 /* Initial values of the globals this module owns. */
+ReplayFrame4 ReplayFieldInputs[2][3601];
+s32 ReplayFieldRate;
 int ReplayFrame;
 int SavedRaceState;
 CarInput4 CarInputs[4];

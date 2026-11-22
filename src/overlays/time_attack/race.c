@@ -159,9 +159,10 @@ update_pause_timer:
     StepRaceFrame(GameModeType);
     /* every field (objsim.c, rr/field_rate.h) */
     UpdateTrackObjects();
-    if (!tick) {
-    } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
+    if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
+        /* the orbit by the field (raceinfo.c) */
         UpdateRaceIntroCamera(PlayerCars, ModeFrame);
+    } else if (!tick && !CarFieldFast(PlayerCars)) {
     } else {
         UpdateRaceChaseCamera(PlayerCars);
     }

@@ -384,10 +384,8 @@ static void load_autodrive_replay(void) {
     fclose(in);
 }
 
+static unsigned short autodrive_decide(int port);
 static unsigned short autodrive_mask(int port) {
-    short lateral, track, heading;
-    int error;
-    unsigned short mask;
 
     if (!autodrive || RaceState < 2 || RaceState > 3)
         return 0;
@@ -406,6 +404,23 @@ static unsigned short autodrive_mask(int port) {
         load_autodrive_replay();
     if (autodrive_replay_state > 0)
         return port == 0 && ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
+    /* At field rate the driver decides once per original tick, as at the
+     * original rate (rr/field_rate.h), so both rates see the same
+     * controller. */
+    {
+        static unsigned short held[2];
+        if (RaceFieldRateLive && !RaceSlowTick())
+            return held[port & 1];
+        held[port & 1] = autodrive_decide(port);
+        return held[port & 1];
+    }
+}
+
+static unsigned short autodrive_decide(int port) {
+    short lateral, track, heading;
+    int error;
+    unsigned short mask;
+
     lateral = PlayerCars[port].lateralOffset172;
     track = (short)PlayerCars[port].trackAngle1EC;
     heading = (short)PlayerCars[port].rot54;

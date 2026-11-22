@@ -137,9 +137,9 @@ block_7:
             RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];
             RR_661_FRAME_SCRATCH->position08 = ovl661_camera_positions[var_s2];
             SetupViewport(var_s2 + 2);
-            if (!tick) {
-            } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+            if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
                 UpdateRaceIntroCamera(&PlayerCars[var_s2], ModeFrame);
+            } else if (!tick && !CarFieldFast(&PlayerCars[var_s2])) {
             } else {
                 UpdateRaceChaseCamera(&PlayerCars[var_s2]);
             }
@@ -272,9 +272,9 @@ block_7:
         RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];
         RR_661_FRAME_SCRATCH->position08 = ovl661_camera_positions[var_s2];
         SetupViewport(var_s2 + 2);
-        if (!tick) {
-        } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+        if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
             UpdateRaceIntroCamera(&PlayerCars[var_s2], ModeFrame);
+        } else if (!tick && !CarFieldFast(&PlayerCars[var_s2])) {
         } else {
             UpdateRaceChaseCamera(&PlayerCars[var_s2]);
         }

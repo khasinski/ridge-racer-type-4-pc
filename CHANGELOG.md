@@ -7,11 +7,14 @@
   `RR4_RACE_FIELD_RATE`) runs a race's frame every video field instead of
   every second one, with no interpolation. The race's timers, countdown,
   voices, lap timing and HUD keep the original speed (they step once per
-  original frame, and button presses between them are kept). This first
-  step still moves the cars once per original frame; the car physics, AI,
-  camera and effects follow. The link race and the attract demo stay at
-  the original rate. With Race frame rate on, the PlayStation CPU time
-  model spends nothing in a race.
+  original frame, and button presses between them are kept). The player's
+  car (engine, gears, steering, grip, slides and spins) and the chase
+  camera now move every field, tuned to drive the same line as at 25/30
+  fps for the same inputs; the opponents, contacts, suspension and
+  effects still step once per original frame and follow. Replays record
+  every field; replays saved before keep the original rate. The link race
+  and the attract demo stay at the original rate. With Race frame rate on,
+  the PlayStation CPU time model spends nothing in a race.
 - Race frame rate: the start's orbit, the replay and Grand Prix fly-by
   cameras, the course's moving objects (blimps, planes, the helicopter,
   the train), fireworks, light and brake trails, flashing lights,
