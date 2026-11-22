@@ -221,6 +221,10 @@ def run(fields, trace_path, log_path):
             if m2:
                 masks2[int(v)] = int(m2[0])
     marks = [m for m in os.environ.get('DSF_MARKS', '').split(',') if m]
+    # the stubs (0x60 bytes each from 0x8000C000) reach 0x8000D000 past 42,
+    # and the game hangs where the marks go in (48 did, 39 did not)
+    if len(marks) > 42:
+        raise SystemExit('DSF_MARKS: %d marks, at most 42 fit' % len(marks))
     mark_at = int(os.environ.get('DSF_MARK_AT', '600'))
     lead = int(os.environ.get('DSF_LEAD', '1'))
     func_at = int(os.environ['DSF_FUNCAT']) if os.environ.get('DSF_FUNCAT') else None
