@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Race frame rate: the player's car accelerates, shifts and enters slides
+  as at 25/30 fps (its pedal and slide events act on the field that
+  completes a tick, the drive follows the revs a tick ends on). With the
+  same driver, Time Attack laps on three courses land within 0.33% of the
+  original rate's (one lap 1.8% after a slide the original took and the
+  field rate did not). `RR4_AUTODRIVE=3` (diagnostics) is the
+  reference driver used for these comparisons.
 - **60 Hz by default: the game runs at the NTSC original's speed.** Game
   timing (Escape > Graphics) now defaults to NTSC: the European disc runs
   at 60 fields a second with the Japanese/US release's timing, so with Race

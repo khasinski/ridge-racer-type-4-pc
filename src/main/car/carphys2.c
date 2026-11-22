@@ -103,9 +103,11 @@ void StepCarStateNormal(RaceVehicle *c) {
      * square root of a tick's share; the pedal-edge entries, the lift
      * counter and the slide cooldown act by the original tick. */
     CarFieldState *fr = CarFieldStateOf(c);
-    const int tick = RaceSlowTick();
+    const int tick = RaceSlowTick(), tickEnd = RaceTickEnd();
     d = &c->control;
     t = d->handling1C;
+    if (tick)
+        fr->hist[CAR_FIELD_HIST_ROT_TICK] = c->rot54;
     s2 = AngleDiffSigned(c->rot54, d->dynamics94.player.steeringHeading08);
     if (s2 < d->holdFlag48 && -d->holdFlag48 < s2) {
         c->rot54 = c->rot54 + RaceFieldApproach(s2 >> 1, s2, &fr->rem[CAR_FIELD_REM_ROT]);
@@ -125,7 +127,12 @@ void StepCarStateNormal(RaceVehicle *c) {
     v1 = c->input;
     c->vel38 = (v1 * v0) >> 8;
     if (t->steeringMode0A == 0) {
-        if (d->dynamics94.player.acceleratorEdge14 == 1 && tick) {
+        if (d->dynamics94.player.acceleratorEdge14 == 1 && tickEnd) {
+            /* at field rate the gap as a tick sees it: the yaw command
+             * a whole tick on, the yaw from the tick's start
+             * (rr/field_rate.h) */
+            if (RaceFieldRateLive)
+                s2 = AngleDiffSigned(fr->hist[CAR_FIELD_HIST_ROT_TICK], d->dynamics94.player.steeringHeading08);
             a0 = __builtin_abs(s2);
             d->lateralSpeed58 = (c->input * a0 * d->engine54.word) / 64;
             d->engine54.word = 0;
@@ -157,7 +164,9 @@ void StepCarStateNormal(RaceVehicle *c) {
             }
         } else if (d->dynamics94.player.throttle18 < 0x80) {
             a2 = d->dynamics94.player.brakeEdge16;
-            if (a2 == 1 && tick) {
+            if (a2 == 1 && tickEnd) {
+                if (RaceFieldRateLive)
+                    s2 = AngleDiffSigned(fr->hist[CAR_FIELD_HIST_ROT_TICK], d->dynamics94.player.steeringHeading08);
                 a0 = __builtin_abs(s2);
                 d->lateralSpeed58 = (c->input * a0) / 5;
                 d->engine54.word = 0;
@@ -188,7 +197,7 @@ void StepCarStateNormal(RaceVehicle *c) {
                     d->attenuation4A = (unsigned int)v0 >> 4;
                 }
             } else {
-                if (tick && d->engine54.word < 0x3C && d->laneTarget3C == 0) {
+                if (tickEnd && d->engine54.word < 0x3C && d->laneTarget3C == 0) {
                     d->engine54.word = d->engine54.word + 1;
                 }
                 d->lateralSpeed58 = 0;
@@ -274,7 +283,7 @@ void StepCarStateSlide(RaceVehicle *c0) {
     /* Field rate (rr/field_rate.h): as StepCarStateNormal; the slide's
      * energy, yaw latch and divisor integrate half a tick a field. */
     CarFieldState *fr = CarFieldStateOf(c0);
-    const int tick = RaceSlowTick();
+    const int tickEnd = RaceTickEnd();
     c = c0;
     d = &c->control;
     s6 = (short *)&d->record18->gears04[d->previewSample84.halves.high];
@@ -386,7 +395,7 @@ void StepCarStateSlide(RaceVehicle *c0) {
         d->lateralSpeed58 = d->lateralSpeed58 - RaceFieldHalf(0x80, &fr->rem[CAR_FIELD_REM_SLIDE_ENERGY]);
         *(s32 *)&d->latch60 = RaceFieldDecay(*(s32 *)&d->latch60 * 0x1F / 32, *(s32 *)&d->latch60,
                                              &fr->rem[CAR_FIELD_REM_SLIDE_LATCH_DECAY]);
-    } else if (d->dynamics94.player.acceleratorEdge14 == 1 && tick) {
+    } else if (d->dynamics94.player.acceleratorEdge14 == 1 && tickEnd) {
         *(s32 *)&d->latch60 = *(s32 *)&d->latch60 + (*(s32 *)&d->latch60 >> 9);
     }
     if (d->lateralSpeed58 < 0) {

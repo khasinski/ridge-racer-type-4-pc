@@ -461,7 +461,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
    * filters and drags keep the square root of a tick's share; the pedal
    * edges, gear blend and lift timers step by the original tick. */
   CarFieldState *fr = CarFieldStateOf(a0);
-  const int tick = RaceSlowTick();
+  const int tick = RaceSlowTick(), tickEnd = RaceTickEnd();
   q = &a0->control;
   r = q->handling1C;
   off = (q->previewSample84.halves.high * 0x3C) + 4;
@@ -484,7 +484,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
     q->dynamics94.player.throttle18 = (0x400 - a0->lateralOffset172) / 4;
     q->dynamics94.player.brake1A = a0->lateralOffset172 / 8;
   }
-  if (!tick)
+  if (!tickEnd)
   {
   }
   else if (q->dynamics94.player.acceleratorEdge14 == 0)
@@ -504,7 +504,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
   {
     q->dynamics94.player.acceleratorEdge14 = 0;
   }
-  if (!tick)
+  if (!tickEnd)
   {
   }
   else if (q->dynamics94.player.brakeEdge16 == 0)
@@ -689,6 +689,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
     k1 = 100;
   }
   s4 = (s4 * (k1 + 1000)) / 1000;
+  k5 = q->laneMode88;
   n3 = q->laneMode88 + RaceFieldHalf(s4 - (s1 - revsDeficit), &fr->rem[CAR_FIELD_REM_REVS]) - revsDeficit;
   q->laneMode88 = n3;
   if (n3 < 0)
@@ -702,6 +703,19 @@ void UpdateCarEngine(RaceVehicle *a0) {
   }
   lo = q->laneMode88 * s3;
   q->dynamics94.player.driveProduct0C = lo;
+  if (RaceFieldRateLive && RaceSlowTick())
+  {
+    /* Field rate: a tick drives with the revs it ends on; on its first
+     * field the drive takes the revs a field on (this field's step
+     * again), so the tick's two fields push as the tick does while the
+     * revs climb or fall (rr/field_rate.h). */
+    k5 = q->laneMode88 + (q->laneMode88 - k5 + revsDeficit); /* a contact's cut is whole, once */
+    if (k5 < 0)
+      k5 = 0;
+    else if (k5 > 0x3A98)
+      k5 = 0x3A98;
+    lo = k5 * s3;
+  }
   if (a0->steeringLock1B8 != 0)
   {
     a0->physicsFlags1E0 = 0;

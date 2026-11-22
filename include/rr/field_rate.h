@@ -280,6 +280,9 @@ enum {
     CAR_FIELD_HIST_AI_ERROR2,     /* 2 fields ago */
     CAR_FIELD_HIST_AI_HEADING,    /* heading1D4 before the last field's step */
     CAR_FIELD_HIST_AI_INPUT,      /* input before the last field's step */
+    CAR_FIELD_HIST_ROT_TICK,      /* StepCarStateNormal: the yaw at the
+                                   * tick's start (the slide entry's gap
+                                   * measured as a tick's) */
     CAR_FIELD_HIST_COUNT,
     CAR_FIELD_HIST_SLOTS = 16
 };

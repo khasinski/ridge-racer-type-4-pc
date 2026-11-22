@@ -108,6 +108,13 @@
  *                      "ModeFrame mask 2"), which
  *                      tools/port/duckstation.py replays on the reference
  *                      (same ModeFrame -> same buttons) for comparison;
+ *                      RR4_AUTODRIVE=3 is the reference driver for lap
+ *                      time comparisons: a DualShock (RR4_PAD_TYPE=
+ *                      dualshock) on the left stick, aiming at the centre
+ *                      line some nodes ahead, lifting and braking by the
+ *                      course's curvature ahead; it decides once per
+ *                      original tick, so it drives the same at both race
+ *                      frame rates;
  *                      RR4_AUTODRIVE_REPLAY=file drives from such a log;
  *                      RR4_AUTODRIVE_HOLD=n only accelerates before
  *                      ModeFrame n (a fixed input up to the replay snapshot).
@@ -168,6 +175,7 @@
 #include "diagnostics.h"
 #include "rr/draw_distance.h"
 #include "rr/field_rate.h"
+#include "rr/track_sample_types.h"
 #include "diagnostics_parse.h"
 
 static void setup_card_steps(const char *list);
@@ -362,6 +370,7 @@ static int autodrive;
 static long autodrive_hold = -1; /* RR4_AUTODRIVE_HOLD, or -1 */
 static FILE *autodrive_log;
 static unsigned short *autodrive_replay; /* RR4_AUTODRIVE_REPLAY by ModeFrame */
+static short *autodrive_replay_stick;    /* ... the left stick * 1000 (S field) */
 static int autodrive_replay_state = -1;  /* -1 not read yet, 0 none, 1 loaded */
 
 static void load_autodrive_replay(void) {
@@ -379,14 +388,74 @@ static void load_autodrive_replay(void) {
         fclose(in);
         return;
     }
+    autodrive_replay_stick = calloc(65536, sizeof(*autodrive_replay_stick));
     autodrive_replay_state = 1;
-    while (fscanf(in, "%d %u", &frame, &m) == 2)
-        if (frame >= 0 && frame < 65536)
+    {
+        char line[128];
+        while (fgets(line, sizeof(line), in)) {
+            const char *stick = strstr(line, " S");
+            if (sscanf(line, "%d %u", &frame, &m) != 2 || frame < 0 || frame >= 65536)
+                continue;
+            if (strstr(line, " 2") && !stick)
+                continue; /* pad 2's lines */
             autodrive_replay[frame] = (unsigned short)m;
+            if (stick && autodrive_replay_stick)
+                autodrive_replay_stick[frame] = (short)atoi(stick + 2);
+        }
+    }
     fclose(in);
 }
 
 static unsigned short autodrive_decide(int port);
+/* RR4_AUTODRIVE=3: the reference driver's stick (-1..1), per port. */
+static float autodrive_stick[2];
+
+extern short ReverseCourse;
+static int wrap12(int a) { return ((a + 0x800) & 0xFFF) - 0x800; }
+
+/* RR4_AUTODRIVE=3: steer the left stick at the centre line's heading a
+ * speed-dependent number of nodes ahead (with the lateral offset pulled
+ * in), and lift / brake when the speed is over a limit set by the turn
+ * ahead. Forward courses. */
+static unsigned short autodrive_reference(int port) {
+    const RaceVehicle *car = &PlayerCars[port];
+    int node = car->trackNodeF0, n = TrackNodeCount > 0 ? TrackNodeCount : 1;
+    int speed = car->input;
+    int ahead = 2 + speed / 300, far = 6 + speed / 120;
+    /* a forward course runs down the node list (ConstrainCarToTrack's
+     * distance), a reverse one up it */
+    int dir = ReverseCourse ? 1 : -1;
+    int aim = TrackNodes[((node + dir * ahead) % n + n) % n].road.heading;
+    int turn = 0, error, limit;
+    unsigned short mask;
+    for (int k = 1; k <= far; k++) {
+        int d = wrap12(TrackNodes[((node + dir * k) % n + n) % n].road.heading -
+                       TrackNodes[((node + dir * (k - 1)) % n + n) % n].road.heading);
+        turn += d < 0 ? -d : d;
+    }
+    {
+        int lateral = car->lateralOffset172 / 3;
+        if (lateral > 300) lateral = 300;
+        if (lateral < -300) lateral = -300;
+        /* the yaw runs mirrored to the track heading (0x800 - yaw) */
+        error = wrap12(0x800 - aim - lateral - (short)car->rot54);
+    }
+    autodrive_stick[port & 1] = error / 220.0f;
+    if (autodrive_stick[port & 1] > 1.0f) autodrive_stick[port & 1] = 1.0f;
+    if (autodrive_stick[port & 1] < -1.0f) autodrive_stick[port & 1] = -1.0f;
+    limit = 1400 - turn * 3 / 4;
+    if (limit < 420)
+        limit = 420;
+    mask = 0x0040; /* cross: accelerate */
+    if (speed > limit + 30)
+        mask = 0;
+    if (speed > limit + 160)
+        mask = 0x0080; /* square: brake */
+    if (autodrive_log && port == 0)
+        fprintf(autodrive_log, "%d %u S%d\n", ModeFrame, mask, (int)(autodrive_stick[0] * 1000.0f));
+    return mask;
+}
+
 static unsigned short autodrive_mask(int port) {
 
     if (!autodrive || RaceState < 2 || RaceState > 3)
@@ -401,19 +470,47 @@ static unsigned short autodrive_mask(int port) {
     if (ModeGroup != 1 || (ModeIndex != 26 && ModeIndex != 38 && ModeIndex != 47 &&
                            ModeIndex != 53 && ModeIndex != 82))
         return 0;
-    /* RR4_AUTODRIVE_REPLAY=file: drive from a RR4_AUTODRIVE_LOG instead. */
-    if (autodrive_replay_state < 0)
-        load_autodrive_replay();
-    if (autodrive_replay_state > 0)
-        return port == 0 && ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
     /* At field rate the driver decides once per original tick, as at the
-     * original rate (rr/field_rate.h), so both rates see the same
-     * controller. */
+     * original rate (rr/field_rate.h): on the field that completes tick m
+     * (the state a whole tick on, as the original decides after a tick),
+     * shown to the pad from tick m + 1's first field, so the input
+     * reaches tick m + 2 as at the original rate. A RR4_AUTODRIVE_REPLAY
+     * log the same way. */
     {
-        static unsigned short held[2];
-        if (RaceFieldRateLive && !RaceSlowTick())
+        static unsigned short held[2], pending[2];
+        static float pendingStick;
+        unsigned short mask;
+        const float shown = autodrive_stick[0]; /* the stick the pad shows now */
+        float stick = shown;
+        if (RaceFieldRateLive && RaceSlowTick()) {
+            held[port & 1] = pending[port & 1];
+            if (port == 0)
+                autodrive_stick[0] = pendingStick;
             return held[port & 1];
-        held[port & 1] = autodrive_decide(port);
+        }
+        if (autodrive_replay_state < 0)
+            load_autodrive_replay();
+        if (autodrive_replay_state > 0) {
+            mask = port == 0 && ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
+            if (port == 0 && autodrive_replay_stick && ModeFrame >= 0 && ModeFrame < 65536)
+                stick = autodrive_replay_stick[ModeFrame] / 1000.0f;
+        } else {
+            mask = autodrive == 3 ? autodrive_reference(port) : autodrive_decide(port);
+            if (port == 0)
+                stick = autodrive_stick[0];
+        }
+        if (!RaceFieldRateLive) {
+            held[port & 1] = mask;
+            if (port == 0)
+                autodrive_stick[0] = stick;
+            return mask;
+        }
+        /* the tick's end: kept for the next tick's first field */
+        pending[port & 1] = mask;
+        if (port == 0) {
+            pendingStick = stick;
+            autodrive_stick[0] = shown; /* until the next tick's first field */
+        }
         return held[port & 1];
     }
 }
@@ -465,6 +562,10 @@ static void apply_pad_port(int port, long vsync) {
     unsigned short mask = autodrive_mask(port);
     float axes[RR4_PAD_AXES] = {0};
     int moved = 0;
+    if (autodrive == 3 && port == 0 && RaceState >= 2 && RaceState <= 3) {
+        axes[RR4_PAD_AXIS_LX] = autodrive_stick[0];
+        moved = 1;
+    }
     for (int i = 0; i < pad_script_len; i++) {
         long t = anchor_time(pad_script[i].mode, vsync) - pad_script[i].first;
         if (pad_script[i].port != port || t < 0)
