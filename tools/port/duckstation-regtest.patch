@@ -315,7 +315,7 @@ index 73493c9e7..600ae3a55 100644
    // TODO: Use channel priority. But doing it in ascending order is probably good enough.
    // Main thing is that OTC happens after GPU, because otherwise it'll wipe out the LL.
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
-index d31bc5d83..3299937c9 100644
+index d31bc5d83..676a432f4 100644
 --- a/src/core/gpu.cpp
 +++ b/src/core/gpu.cpp
 @@ -2,6 +2,8 @@
@@ -327,7 +327,44 @@ index d31bc5d83..3299937c9 100644
  #include "bus.h"
  #include "core.h"
  #include "cpu_pgxp.h"
-@@ -1672,6 +1674,12 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
+@@ -767,6 +769,24 @@ void GPU::DoMemoryState(StateWrapper& sw, System::MemorySaveState& mss)
+   VideoThread::PushCommandAndWakeThread(cmd);
+ }
+ 
++
++// RR4 tools/port: DUCKSTATION_GPU_TRACE=<lo>:<hi> logs, in DuckStation frames lo..hi, each GP0 command the GPU
++// starts (GPUC <code> ticks <added> pending <after> fifo <words> tick <t>) and each change to idle (GPUI tick <t>).
++static bool GpuTraceOn()
++{
++  static int lo = -2, hi = 0;
++  if (lo == -2)
++  {
++    const char* v = std::getenv("DUCKSTATION_GPU_TRACE");
++    lo = -1;
++    if (v && std::sscanf(v, "%d:%d", &lo, &hi) != 2)
++      lo = -1;
++  }
++  if (lo < 0)
++    return false;
++  const int f = static_cast<int>(System::GetFrameNumber());
++  return f >= lo && f <= hi;
++}
+ void GPU::UpdateDMARequest()
+ {
+   switch (s_locals.blitter_state)
+@@ -826,8 +846,11 @@ void GPU::UpdateDMARequest()
+ 
+ void GPU::UpdateGPUIdle()
+ {
++  const bool was_idle = s_locals.GPUSTAT.gpu_idle;
+   s_locals.GPUSTAT.gpu_idle =
+     (s_locals.blitter_state == BlitterState::Idle && s_locals.pending_command_ticks <= 0 && s_locals.fifo.IsEmpty());
++  if (s_locals.GPUSTAT.gpu_idle && !was_idle && GpuTraceOn())
++    std::fprintf(stderr, "GPUI tick %llu\n", static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+ }
+ 
+ u32 GPU::ReadRegister(u32 offset)
+@@ -1672,6 +1695,12 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
        }
  
        Timers::SetGate(HBLANK_TIMER_INDEX, new_vblank);
@@ -340,6 +377,26 @@ index d31bc5d83..3299937c9 100644
        InterruptController::SetLineState(InterruptController::IRQ::VBLANK, new_vblank);
        s_locals.crtc_state.in_vblank = new_vblank;
      }
+@@ -2721,8 +2750,19 @@ void GPU::TryExecuteCommands()
+       case BlitterState::Idle:
+       {
+         const u32 command = FifoPeek(0) >> 24;
++        const TickCount before_ticks = s_locals.pending_command_ticks;
++        const u32 before_words = s_locals.fifo.GetSize();
++        if (command >= 0x80 && command < 0xA0 && before_words >= 4 && GpuTraceOn())
++          std::fprintf(stderr, "GPUW %08x %08x %08x %08x\n", FifoPeek(0), FifoPeek(1), FifoPeek(2), FifoPeek(3));
+         if (s_GP0_command_handler_table[command]())
++        {
++          if (GpuTraceOn())
++            std::fprintf(stderr, "GPUC %02x ticks %d pending %d fifo %u tick %llu\n", command,
++                         static_cast<int>(s_locals.pending_command_ticks - before_ticks),
++                         static_cast<int>(s_locals.pending_command_ticks), before_words,
++                         static_cast<unsigned long long>(System::GetGlobalTickCounter()));
+           continue;
++        }
+         else
+           return;
+       }
 diff --git a/src/core/mdec.cpp b/src/core/mdec.cpp
 index 258080e50..f12d9246f 100644
 --- a/src/core/mdec.cpp
