@@ -229,6 +229,7 @@ enum {
     CAR_FIELD_REM_STEER_HEADING,
     CAR_FIELD_REM_GRIP,
     CAR_FIELD_REM_REVS,
+    CAR_FIELD_REM_REVS_STEP,      /* UpdateCarEngine: the tick's revs step */
     CAR_FIELD_REM_BUMP_LOCK,
     CAR_FIELD_REM_SLIDE_DRAG,
     CAR_FIELD_REM_DRAG,
@@ -275,6 +276,11 @@ enum {
     CAR_FIELD_HIST_AI_ERROR2,     /* 2 fields ago */
     CAR_FIELD_HIST_AI_HEADING,    /* heading1D4 before the last field's step */
     CAR_FIELD_HIST_AI_INPUT,      /* input before the last field's step */
+    CAR_FIELD_HIST_STEER_LAST,
+    CAR_FIELD_HIST_STEER_HOLD,
+    CAR_FIELD_HIST_STEER_TICK0,
+    CAR_FIELD_HIST_GRIP_TICK,     /* ... the grip and speed at the tick's start */
+    CAR_FIELD_HIST_SPEED_TICK,   /* ... the steering at a release tick's start */    /* UpdatePlayerSteering: a reversal's tick */    /* UpdateCarEngine: the steering a field ago */
     CAR_FIELD_HIST_ROT_TICK,      /* StepCarStateNormal: the yaw at the
                                    * tick's start (the slide entry's gap
                                    * measured as a tick's) */
