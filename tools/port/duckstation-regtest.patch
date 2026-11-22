@@ -18,7 +18,7 @@ index bcdab1926..dd08dd92e 100644
    {
      if (offset == 0x81)
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
-index 667aaab67..e94c29305 100644
+index 667aaab67..e46d9a1de 100644
 --- a/src/core/cdrom.cpp
 +++ b/src/core/cdrom.cpp
 @@ -38,6 +38,8 @@
@@ -220,10 +220,10 @@ index 19613e9f2..0ab944283 100644
      (g_state.muldiv_completion_tick > g_state.pending_ticks) ? g_state.muldiv_completion_tick : g_state.pending_ticks;
  }
 diff --git a/src/core/dma.cpp b/src/core/dma.cpp
-index 73493c9e7..600ae3a55 100644
+index 73493c9e7..d8f0875c5 100644
 --- a/src/core/dma.cpp
 +++ b/src/core/dma.cpp
-@@ -26,10 +26,25 @@
+@@ -26,11 +26,26 @@
  #include "fmt/format.h"
  
  #include <array>
@@ -233,7 +233,7 @@ index 73493c9e7..600ae3a55 100644
  #include <vector>
  
  LOG_CHANNEL(DMA);
-+
+ 
 +// RR4 tools/port: DUCKSTATION_DMA_TRACE=1 logs DMA transfers, halts and completions with the system tick.
 +static bool DmaTraceOn()
 +{
@@ -246,10 +246,11 @@ index 73493c9e7..600ae3a55 100644
 +    if (DmaTraceOn())                                                                                                  \
 +      std::fprintf(stderr, __VA_ARGS__);                                                                               \
 +  } while (0)
- 
++
  namespace DMA {
  namespace {
-@@ -533,6 +548,8 @@
+ 
+@@ -533,6 +548,8 @@ ALWAYS_INLINE_RELEASE void DMA::CompleteTransfer(Channel channel, ChannelState&
    // start/busy bit is cleared on end of transfer
    DEBUG_LOG("DMA transfer for channel {} complete", channel);
    cs.channel_control.enable_busy = false;
@@ -258,7 +259,7 @@ index 73493c9e7..600ae3a55 100644
    if (s_state.DICR.ShouldSetIRQFlag(channel))
    {
      DEBUG_LOG("Setting DMA interrupt for channel {}", channel);
-@@ -571,6 +588,9 @@
+@@ -571,6 +588,9 @@ bool DMA::TransferChannel()
  
    // start/trigger bit is cleared on beginning of transfer
    cs.channel_control.start_trigger = false;
@@ -268,7 +269,7 @@ index 73493c9e7..600ae3a55 100644
  
    PhysicalMemoryAddress current_address = cs.base_address;
    const PhysicalMemoryAddress increment = cs.channel_control.address_step_reverse ? static_cast<u32>(-4) : UINT32_C(4);
-@@ -653,12 +673,16 @@
+@@ -653,12 +673,16 @@ bool DMA::TransferChannel()
          {
            // Terminator is 24 bits, so is MADR, so it'll always be 0xFFFFFF.
            cs.base_address = LINKED_LIST_TERMINATOR;
@@ -285,7 +286,7 @@ index 73493c9e7..600ae3a55 100644
        if (cs.request)
        {
          // stall the transfer for a bit if we ran for too long
-@@ -728,6 +752,8 @@
+@@ -728,6 +752,8 @@ bool DMA::TransferChannel()
  
        cs.base_address = current_address;
        cs.block_control.request.block_count = blocks_remaining;
@@ -294,7 +295,7 @@ index 73493c9e7..600ae3a55 100644
  
        // finish transfer later if the request was cleared
        if (blocks_remaining > 0)
-@@ -758,6 +784,8 @@
+@@ -758,6 +784,8 @@ bool DMA::TransferChannel()
  void DMA::HaltTransfer(TickCount duration)
  {
    s_state.halt_ticks_remaining += duration;
@@ -303,7 +304,7 @@ index 73493c9e7..600ae3a55 100644
    DEBUG_LOG("Halting DMA for {} ticks", s_state.halt_ticks_remaining);
    if (s_state.unhalt_event.IsActive())
      return;
-@@ -771,6 +799,10 @@
+@@ -771,6 +799,10 @@ void DMA::UnhaltTransfer(void*, TickCount ticks)
    DEBUG_LOG("Resuming DMA after {} ticks", ticks, -(s_state.halt_ticks_remaining - ticks));
    s_state.halt_ticks_remaining -= ticks;
    s_state.unhalt_event.Deactivate();
@@ -315,19 +316,21 @@ index 73493c9e7..600ae3a55 100644
    // TODO: Use channel priority. But doing it in ascending order is probably good enough.
    // Main thing is that OTC happens after GPU, because otherwise it'll wipe out the LL.
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
-index d31bc5d83..676a432f4 100644
+index d31bc5d83..a51e3005d 100644
 --- a/src/core/gpu.cpp
 +++ b/src/core/gpu.cpp
-@@ -2,6 +2,8 @@
+@@ -2,7 +2,10 @@
  // SPDX-License-Identifier: CC-BY-NC-ND-4.0
  
  #include "gpu.h"
 +#include <cstdio>
 +#include <cstdlib>
  #include "bus.h"
++#include "cpu_core.h"
  #include "core.h"
  #include "cpu_pgxp.h"
-@@ -767,6 +769,24 @@ void GPU::DoMemoryState(StateWrapper& sw, System::MemorySaveState& mss)
+ #include "dma.h"
+@@ -767,6 +770,24 @@ void GPU::DoMemoryState(StateWrapper& sw, System::MemorySaveState& mss)
    VideoThread::PushCommandAndWakeThread(cmd);
  }
  
@@ -352,7 +355,7 @@ index d31bc5d83..676a432f4 100644
  void GPU::UpdateDMARequest()
  {
    switch (s_locals.blitter_state)
-@@ -826,8 +846,11 @@ void GPU::UpdateDMARequest()
+@@ -826,8 +847,11 @@ void GPU::UpdateDMARequest()
  
  void GPU::UpdateGPUIdle()
  {
@@ -364,7 +367,43 @@ index d31bc5d83..676a432f4 100644
  }
  
  u32 GPU::ReadRegister(u32 offset)
-@@ -1672,6 +1695,12 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
+@@ -841,10 +865,19 @@ u32 GPU::ReadRegister(u32 offset)
+     {
+       // code can be dependent on the odd/even bit, so update the GPU state when reading.
+       // we can mitigate this slightly by only updating when the raster is actually hitting a new line
+-      if (IsCRTCScanlinePending())
++      const bool pending = IsCRTCScanlinePending();
++      if (pending)
+         SynchronizeCRTC();
+       if (IsCommandCompletionPending())
+         s_locals.command_tick_event.InvokeEarly();
++      {
++        // RR4 tools/port: DUCKSTATION_IOREAD_TRACE=1 logs each GPUSTAT read (no effect on timing)
++        static const bool trace = std::getenv("DUCKSTATION_IOREAD_TRACE") != nullptr;
++        if (trace)
++          std::fprintf(stderr, "IORD GS tick %llu pc %08x sync %d\n",
++                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), CPU::g_state.current_instruction_pc,
++                       pending ? 1 : 0);
++      }
+ 
+       return s_locals.GPUSTAT.bits;
+     }
+@@ -1603,6 +1636,14 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
+ 
+   u32 lines_to_draw = s_locals.crtc_state.current_tick_in_scanline / s_locals.crtc_state.horizontal_total;
+   s_locals.crtc_state.current_tick_in_scanline %= s_locals.crtc_state.horizontal_total;
++  {
++    // RR4 tools/port: DUCKSTATION_IOREAD_TRACE=1 logs each CRTC update past a line's end (no effect on timing)
++    static const bool trace = std::getenv("DUCKSTATION_IOREAD_TRACE") != nullptr;
++    if (trace)
++      std::fprintf(stderr, "CRTCL tick %llu lines %u line %u tick_in_line %d\n",
++                   static_cast<unsigned long long>(System::GetGlobalTickCounter()), lines_to_draw,
++                   s_locals.crtc_state.current_scanline, s_locals.crtc_state.current_tick_in_scanline);
++  }
+ #if 0
+   WARNING_LOG("Old line: {}, new line: {}, drawing {}", s_locals.crtc_state.current_scanline,
+               s_locals.crtc_state.current_scanline + lines_to_draw, lines_to_draw);
+@@ -1672,6 +1713,12 @@ void GPU::CRTCTickEvent(void*, TickCount ticks)
        }
  
        Timers::SetGate(HBLANK_TIMER_INDEX, new_vblank);
@@ -377,7 +416,7 @@ index d31bc5d83..676a432f4 100644
        InterruptController::SetLineState(InterruptController::IRQ::VBLANK, new_vblank);
        s_locals.crtc_state.in_vblank = new_vblank;
      }
-@@ -2721,8 +2750,19 @@ void GPU::TryExecuteCommands()
+@@ -2721,8 +2768,19 @@ void GPU::TryExecuteCommands()
        case BlitterState::Idle:
        {
          const u32 command = FifoPeek(0) >> 24;
@@ -607,10 +646,10 @@ index 824a9ae9a..613295791 100644
      if (MediaCapture* cap = System::GetMediaCapture()) [[unlikely]]
      {
 diff --git a/src/core/timers.cpp b/src/core/timers.cpp
-index c3b6edd26..7da5c8a02 100644
+index c3b6edd26..21bd1741b 100644
 --- a/src/core/timers.cpp
 +++ b/src/core/timers.cpp
-@@ -2,6 +2,8 @@
+@@ -2,10 +2,13 @@
  // SPDX-License-Identifier: CC-BY-NC-ND-4.0
  
  #include "timers.h"
@@ -619,7 +658,40 @@ index c3b6edd26..7da5c8a02 100644
  #include "gpu.h"
  #include "interrupt_controller.h"
  #include "system.h"
-@@ -370,6 +372,12 @@ void Timers::WriteRegister(u32 offset, u32 value)
+ #include "timing_event.h"
++#include "cpu_core.h"
+ 
+ #include "util/imgui_manager.h"
+ #include "util/state_wrapper.h"
+@@ -312,15 +315,27 @@ u32 Timers::ReadRegister(u32 offset)
+   {
+     case 0x00:
+     {
++      bool synced = false;
+       if (timer_index < 2 && cs.external_counting_enabled)
+       {
+         // timers 0/1 depend on the GPU
+         if (timer_index == 0 || GPU::IsCRTCScanlinePending())
++        {
+           GPU::SynchronizeCRTC();
++          synced = true;
++        }
+       }
+ 
+       s_state.sysclk_event.InvokeEarly();
+ 
++      {
++        // RR4 tools/port: DUCKSTATION_IOREAD_TRACE=1 logs each root counter value read (no effect on timing)
++        static const bool trace = std::getenv("DUCKSTATION_IOREAD_TRACE") != nullptr;
++        if (trace)
++          std::fprintf(stderr, "IORD T%u tick %llu pc %08x val %u sync %d\n", timer_index,
++                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), CPU::g_state.current_instruction_pc,
++                       static_cast<unsigned>(cs.counter), synced ? 1 : 0);
++      }
+       return cs.counter;
+     }
+ 
+@@ -370,6 +385,12 @@ void Timers::WriteRegister(u32 offset, u32 value)
    }
  
    s_state.sysclk_event.InvokeEarly();
