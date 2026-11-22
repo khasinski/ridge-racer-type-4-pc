@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.3-alpha
+
+- **Smooth 60 FPS at high resolution** (issue #5). With 60 FPS presentation
+  at 4x, widescreen and either draw distance, races no longer drop frames on
+  our test Mac (1% low ~50 FPS, was ~27; no frame over 25 ms, was dozens).
+  The interpolation's lookup tables use a proper hash, its junction search
+  runs on worker threads (`PSYZ_INTERP_THREADS`), and the presentation
+  deadlines are checked during long draw-list work, so in-between frames are
+  no longer late or skipped. The interpolation tables have twice the room.
+- **Extended draw distance no longer changes the game's speed**, and no
+  longer crashes late in a Grand Prix race at 4x as 0.2 could.
+- `PSYZ_PRESENT_LOG=<file>` writes one line per presented image, to report
+  frame pacing (Windows numbers are welcome).
+- **Console-accurate timing.** The game now runs on the PlayStation's own
+  timeline: CPU time of the race, menus and movies, the CD drive, the memory
+  card driver, the pads, the sequencer and XA audio are timed as measured on
+  the console (DuckStation in its exact interpreter mode is the reference).
+  33 of the 35 compared scenarios — boot, menus, card paths, Time Attack,
+  Grand Prix, Versus, Extra Trial, replays and results — make every
+  decision on the same video field as the console. Random events seeded
+  from timing (such as the race music picked on course 7) now come out as
+  on the console.
+- Fixed: a Grand Prix could hang when an XA music seek failed; long replays
+  stalled after about nine minutes (a 64-bit clock overflow); the course 7
+  load could stall for over two minutes; course 7 played a different music
+  track than the console; opening a pulled-out memory card could succeed;
+  the PocketStation probe and card file creation took the wrong time.
+- The DualShock and digital pad follow libpad's real state machine,
+  including the second pad's exchange and the DualShock's motors.
+- XA music is decoded and resampled exactly as on the console.
+- The original's null-pointer reads see the PS1's low memory, as on the
+  console, instead of host memory.
+
 ## 0.2-alpha
 
 - **Escape > Graphics > Draw distance** offers Original (default) or
