@@ -1,3 +1,4 @@
+#include "rr/cpu_work.h"
 #include "types.h"
 #include "rr/track_sample_types.h"
 #include "rr/race_types.h"
@@ -68,11 +69,13 @@ void ComputeStartDistance(RaceVehicle *vehicle, int direction)
     node = RaceContext.startGrid53C->f0;
     target = vehicle->trackNodeF0;
     distance = 0;
+    int steps = 0;
     if (ReverseCourse == 0) {
         if (direction == 0) {
             while (1) {
                 wrapped = node % TrackNodeCount;
                 distance -= TrackNodes[wrapped].road.segmentLength;
+                steps++;
                 if (target == wrapped) break;
                 node++;
             }
@@ -84,6 +87,7 @@ void ComputeStartDistance(RaceVehicle *vehicle, int direction)
                 node = previous;
                 if (target == node) break;
                 distance += TrackNodes[node].road.segmentLength;
+                steps++;
             }
         }
     } else {
@@ -94,14 +98,18 @@ void ComputeStartDistance(RaceVehicle *vehicle, int direction)
                 if (node < 0) previous = TrackNodeCount + node;
                 node = previous;
                 distance -= TrackNodes[node].road.segmentLength;
+                steps++;
             } while (target != node);
         } else {
             while (1) {
                 if (target == node % TrackNodeCount) break;
                 node++;
                 distance += TrackNodes[node % TrackNodeCount].road.segmentLength;
+                steps++;
             }
         }
     }
+    if (!RrWorkFrame && RrWorkDepth == 0)
+        RR_CPU_CYCLES(RR_CYCLES_START_DISTANCE + steps * RR_CYCLES_START_DISTANCE_STEP);
     vehicle->first = distance;
 }

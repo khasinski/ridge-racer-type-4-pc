@@ -6,6 +6,7 @@
 #include "rr/race_setup.h"
 #include "rr/bios_devices.h"
 #include "psyq/libpad/padctl.h"
+#include "rr/cpu_time.h"
 
 extern s16 PadRangeLimits[];
 extern u8 PadDualShockActAlignCmd[];
@@ -82,6 +83,7 @@ void PadUpdateRumble(void) {
                     t->rumbleFlags48 &= ~mask;
                 }
             } else if (t->actuator44 & mask) {
+                RR_CPU_CYCLES(RR_CYCLES_PAD_RUMBLE_ACTUATOR);
                 s32 cond = (VSyncThreshold == 0x80) && !(t->position43 & mask);
                 if (!cond) {
                     t->actuator44 &= ~mask;
@@ -98,7 +100,9 @@ void PadUpdateRumble(void) {
         }
         a0 = (t->rumbleLevel49 * Options.wheel[i].rumble02) / 2;
         if (t->rumbleActive50 != 0) {
+            RR_CPU_CYCLES(RR_CYCLES_PAD_RUMBLE_ACTIVE);
             if (t->rumbleDir52 != 0 && __builtin_abs((s16)t->position4C) < PadRangeLimits[Options.wheel[i].range01]) {
+                RR_CPU_CYCLES(RR_CYCLES_PAD_RUMBLE_DIRECTION + (a0 != 0 ? RR_CYCLES_PAD_RUMBLE_DIRECTION_LEVEL : 0));
                 if (a0 != 0) {
                     t0 = t1 | (1 << (t->rumbleDir52 + 3));
                 }
@@ -147,7 +151,10 @@ void PadPollPort(int a0)
     s1->flag1B = 0;
   }
   if (s1->flag1B != 0)
+  {
+    RR_CPU_CYCLES(RR_CYCLES_PAD_POLL_PORT);
     return;
+  }
 B:
   if (s0 == 2)
   {

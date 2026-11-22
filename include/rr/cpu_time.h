@@ -111,19 +111,83 @@ enum {
      * calls over the Grand Prix scenario's first 9600 fields (the stubs'
      * clocks included); the calls of 6.6k (loads, the movie) take the
      * previous DrawOTag's list DMA, which PsyZ posts at the DMA's time.
-     * Its mark's stub out, 1950. With a DualShock in port 1 (libpad's
-     * extended controller, in its digital mode too) 48 more: the frame
-     * loop from PadUpdate's entry to the first ClearOTagR is 2047 clocks
-     * on DuckStation with a DualShock against 1999 with a digital pad in
-     * the same menus, the loads and the movies (ds_compare's Time Attack
-     * and Grand Prix scenarios, entry marks on the frame loop's calls, no
-     * exception stubs, 7 clocks a stub; the port's 1986 matched the digital
-     * pad's) [mark]. A DualShock in its analog mode in a race takes about
-     * 60 more again, not separated from the race's list DMA there and not
-     * charged. */
+     * Its mark's stub out, 1950: a digital pad in port 1, port 2 empty,
+     * both ports' buttons as in the previous call, no repeat, no pulse and
+     * no rumble. With a DualShock (libpad's extended controller, in its
+     * digital mode too) 48 more: the frame loop from PadUpdate's entry to
+     * the first ClearOTagR is 2047 clocks on DuckStation with a DualShock
+     * against 1999 with a digital pad in the same menus, the loads and the
+     * movies (ds_compare's Time Attack and Grand Prix scenarios, entry
+     * marks on the frame loop's calls, no exception stubs, 7 clocks a
+     * stub; the port's 1986 matched the digital pad's) [mark]. */
     RR_CYCLES_PAD_UPDATE = 1950,
     RR_CYCLES_PAD_UPDATE_EXTENDED = 48,
     RR_CYCLES_PAD_UPDATE_ANALOG = 0,
+    /* ... and its paths, from entry marks on PadUpdate, PadStepPulse,
+     * PadUpdateRumble, PadPollPort and ClearOTagR on DuckStation against
+     * the port's path in the same call (every field of extra-trial,
+     * gp-rules, options, vs-picks and ta-course4 matches; 40k calls, each
+     * path's clocks constant to 1). A port with a controller takes 157
+     * more in PadUpdate's own loop than an empty one and 75 more in its
+     * PadPollPort (Versus's second pad: 232; the 1950 has one); a port
+     * whose buttons did not change 27 more than one whose did (the
+     * repeat count; the 1950 has both), and the count's wrap (from 34
+     * back to 30: every fourth call of a port held still) 20 more; 1999 clocks to ClearOTagR in a menu frame, 2019 and 2039 with
+     * one or both ports' wrap. [mark] */
+    RR_CYCLES_PAD_UPDATE_PORT = 157,
+    RR_CYCLES_PAD_POLL_PORT = 75,
+    RR_CYCLES_PAD_UPDATE_HELD = 27,
+    RR_CYCLES_PAD_UPDATE_REPEAT = 20,
+    RR_CYCLES_PAD_UPDATE_BASE = RR_CYCLES_PAD_UPDATE - RR_CYCLES_PAD_UPDATE_PORT -
+                                RR_CYCLES_PAD_POLL_PORT - 2 * RR_CYCLES_PAD_UPDATE_HELD,
+    /* PadStepPulse's paths, a port's (the force feedback pattern a race
+     * plays through PadStartPulse: kerb, impact, spin): a repeating
+     * pattern 59 clocks with a digital pad (output19 from one column) and
+     * 66 with a DualShock, a one-shot 61 and 68; a pattern's next row 20
+     * more, the repeating one's wrap 3 and the one-shot's end 13 more
+     * again (PadStepPulse to PadUpdateRumble 101 with none; the race's
+     * 160-277, as the port's paths sum them, in every call of
+     * extra-trial's and ta-course4's races) [mark] */
+    RR_CYCLES_PAD_PULSE_REPEAT = 59,
+    RR_CYCLES_PAD_PULSE_REPEAT_EXTENDED = 66,
+    RR_CYCLES_PAD_PULSE_ONCE = 61,
+    RR_CYCLES_PAD_PULSE_ONCE_EXTENDED = 68,
+    RR_CYCLES_PAD_PULSE_STEP = 20,
+    RR_CYCLES_PAD_PULSE_WRAP = 3,
+    RR_CYCLES_PAD_PULSE_END = 13,
+    /* PadUpdateRumble's paths, a port's: a rumble on 13 more, 39 when its
+     * direction stays within the wheel's range (42 with a level), and an
+     * actuator bit set from the previous call 40 (PadUpdateRumble to
+     * PadPollPort 247 with none, 260-353 in the races) [mark] */
+    RR_CYCLES_PAD_RUMBLE_ACTIVE = 13,
+    RR_CYCLES_PAD_RUMBLE_DIRECTION = 26,
+    RR_CYCLES_PAD_RUMBLE_DIRECTION_LEVEL = 3,
+    RR_CYCLES_PAD_RUMBLE_ACTUATOR = 40,
+    /* SetupRace's car placement outside a race frame (the race's load, the
+     * retry's): PlaceCarOnGrid's own 1490 (the grid, bounds and history
+     * stores), FindTrackNode 266 and 250 a node it steps over, the
+     * starting distance (ComputeStartDistance) 53 and 23 a node, and the
+     * physics stages it runs once: IntegrateCarMotion 1278,
+     * ComputeWheelOffsets 487, ConstrainCarToTrack 1035, FindWheelTrackNodes
+     * 2663, UpdateWheelBumps 1414. ApplyOptionsPadButtonMaps 1030,
+     * InitCourseViewState's lighting and view setup 330, and course 7's
+     * animated objects' SetAnimatedTrackObjectState 220 more than their
+     * VSync(1) and srand (DSF_MARKS name:ret, the stubs out: Time Attack on
+     * course 7 field 2969, the Grand Prix's first race's eight cars, fields
+     * 7725-7728 of gp-team2; FindTrackNode 13-65 nodes, the starting
+     * distance 8-34, each within 10 clocks). The port charged only the car's
+     * bzero there, 12.5k short a car: the objects' rand seed, VSync(1)'s
+     * line count (SetAnimatedTrackObjectState), came 6 lines early and
+     * course 7's random race music (SelectCourseBgmTrack's rand % 14) was
+     * another track than DuckStation's. [mark] */
+    RR_CYCLES_PLACE_CAR_ON_GRID = 1490 + 1278 + 487 + 1035 + 2663 + 1414,
+    RR_CYCLES_FIND_TRACK_NODE = 266,
+    RR_CYCLES_FIND_TRACK_NODE_STEP = 250,
+    RR_CYCLES_START_DISTANCE = 53,
+    RR_CYCLES_START_DISTANCE_STEP = 23,
+    RR_CYCLES_APPLY_PAD_BUTTON_MAPS = 1030,
+    RR_CYCLES_INIT_COURSE_VIEW = 330,
+    RR_CYCLES_ANIMATED_OBJECT_STATE = 220,
     /* SoundUpdate with the routines it calls but the two below, with no
      * sound slot active and the listener off (attract, DS fields 2000-2200)
      * [rec]; in a race (Time Attack, DS fields 3266-3700) an active slot's
@@ -139,15 +203,19 @@ enum {
      * acknowledge and the stream's sectors come at DuckStation's clocks
      * (the whole charge first put them 700-1100 clocks late). CdAudioUpdate
      * on the playing stream: 39 to its switch, 206 for the tick from the
-     * TOC position before its CdSync(1), 100 from a completed CdSync to the
-     * next GetlocP (CdLastCom, CdPosToInt), and the XA player's step 45 to
-     * its CdSync. [mark] */
+     * TOC position before its CdSync(1), 142 from a completed CdSync to the
+     * next GetlocP (CdLastCom, CdPosToInt), and the XA player's step 29 to
+     * its CdSync. [mark] (With PadUpdate's paths and the CD path's refit,
+     * the race frames' CdFileStep entry to the GetlocP's acknowledge was
+     * 42 clocks short of DuckStation's unmarked one in every frame, 1774
+     * of extra-trial's and extra-trial-race's, and to the XA player's
+     * ReadS 16 long, 4 of 4: 100 and 45 before) [trace] */
     RR_CYCLES_SOUND_UPDATE_HEAD = 38,
     RR_CYCLES_SOUND_UPDATE_FADES = 68,
     RR_CYCLES_CD_AUDIO_UPDATE = 39,
     RR_CYCLES_CD_AUDIO_TICK = 206,
-    RR_CYCLES_CD_AUDIO_POSITION = 100,
-    RR_CYCLES_CD_AUDIO_PLAY_STEP = 45,
+    RR_CYCLES_CD_AUDIO_POSITION = 142,
+    RR_CYCLES_CD_AUDIO_PLAY_STEP = 29,
     /* CdAudioReadyCallback in a sector's exception (the XA stream's TOC
      * sector, 32 words fetched): on DuckStation 230 clocks of a 3029-clock
      * exception [mark] (PsyZ takes CdRead's callback out of that sector's
@@ -216,9 +284,12 @@ enum {
     RR_CYCLES_CD_FILE_STEP = 23,
     RR_CYCLES_CD_FILE_STEP_IDLE = 39,
     RR_CYCLES_CD_FILE_STEP_BUSY = 77,
-    RR_CYCLES_CD_FILE_STEP_DISPATCH = 45,
+    /* (a load's CdFileStep entry to its command's CD_cw 481 clocks on
+     * DuckStation's unmarked runs, not 503: 22 of the dispatch's after
+     * the command, with the CD path's refit, PsyZ timing_profile.h) */
+    RR_CYCLES_CD_FILE_STEP_DISPATCH = 45 - 22,
     RR_CYCLES_CD_FILE_START_READ = 15,
-    RR_CYCLES_CD_FILE_STEP_RETURN = 51,
+    RR_CYCLES_CD_FILE_STEP_RETURN = 51 + 22,
     /* LoadR4Directory's CdReadSync(1) loop around the call: its turns 709
      * clocks apart on DuckStation with the call's two marks' stubs (about
      * 17), the call 680 [mark] */

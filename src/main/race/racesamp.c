@@ -1,4 +1,5 @@
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "rr/vehicle_table.h"
 #include "game/race/racegrid.h"
 #include "rr/player_cars.h"
@@ -178,6 +179,8 @@ void PlaceCarOnGrid(RaceVehicle *p, int arg1) {
     int t;
     int *g = (int *)(SCRATCHPAD + 0x7C);
 
+    if (!RrWorkFrame && RrWorkDepth == 0)
+        RR_CPU_CYCLES(RR_CYCLES_PLACE_CAR_ON_GRID);
     ResetVehicleShake(p);
     if (GameModeType == 0 && ReverseCourse == 1) {
         p->trackNodeF0 = RaceContext.startGrid53C->f0;

@@ -4,6 +4,7 @@
 #include "game/math/rotmat.h"
 #include "rr/timing.h"
 #include "rr/cpu_time.h"
+#include "rr/cpu_work.h"
 #include "game/camera/viewini.h"
 #include "rr_asm.h"
 #include "rr/projection_state.h"
@@ -283,6 +284,8 @@ void SetAnimatedTrackObjectState(int index, int flags, const s32 *position, int 
         PolyStripTempCoords[0] = 0x420;
         PolyStripTempCoords[1] = 0x5D0;
         PolyStripTempCoords[2] = 0x610;
+        if (!RrWorkFrame && RrWorkDepth == 0)
+            RR_CPU_CYCLES(RR_CYCLES_ANIMATED_OBJECT_STATE);
         PsyqSrand(VSync(1));
     }
 }

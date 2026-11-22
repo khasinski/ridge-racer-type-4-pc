@@ -26,7 +26,7 @@ extern char StrControllerNoErrorFmt[];
 extern char StrActuatorNoErrorFmt[];
 
 void PadUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE + (PlayerControllers[0].kind1C ? RR_CYCLES_PAD_UPDATE_EXTENDED : 0) +
+    RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_BASE + (PlayerControllers[0].kind1C ? RR_CYCLES_PAD_UPDATE_EXTENDED : 0) +
                   (PadPorts[0].type01 == 0x73 ? RR_CYCLES_PAD_UPDATE_ANALOG : 0));
 
     PadPort28 *ports[2] = { &PadPorts[0], &PadPorts[1] };
@@ -46,6 +46,7 @@ void PadUpdate(void) {
             PadMotorActuatorCmd[i] = 0x22;
             PadPortConnectionFlags[i] |= 0x10;
         } else { /* the original tests the array itself: always true */
+            RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_PORT);
             PadMotorActuatorCmd[i]--;
             if (ports[i]->type01 == 0x23) {
                 u16 btn = ~((ports[i]->data02 << 8) | ports[i]->data03);
@@ -228,8 +229,10 @@ void PadUpdate(void) {
         }
         states[i]->edges08.fields.repeat = states[i]->edges08.fields.pressed;
         if (states[i]->input00.fields.buttons == states[i]->previous04) {
+            RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_HELD);
             states[i]->repeatTick0C++;
             if (states[i]->repeatTick0C >= 0x22) {
+                RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_REPEAT);
                 states[i]->edges08.fields.repeat = states[i]->input00.fields.buttons;
                 states[i]->repeatTick0C = 0x1E;
             }

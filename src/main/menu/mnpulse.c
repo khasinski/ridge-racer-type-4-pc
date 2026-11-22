@@ -1,5 +1,6 @@
 #include "game/system/pad.h"
 #include "rr/menu_pulse.h"
+#include "rr/cpu_time.h"
 
 void PadStepPulse(void) {
     s32 port;
@@ -18,6 +19,7 @@ void PadStepPulse(void) {
             output->output19[1] = 0;
         } else {
             if (state->repeat04 != 0) {
+                RR_CPU_CYCLES(output->kind1C != 0 ? RR_CYCLES_PAD_PULSE_REPEAT_EXTENDED : RR_CYCLES_PAD_PULSE_REPEAT);
                 if (output->kind1C != 0) {
                     repeat_row = &PadPulseRepeatStepTable[state->repeat04 - 1][state->repeatStep0C];
                     output->output19[0] = repeat_row->first;
@@ -29,8 +31,10 @@ void PadStepPulse(void) {
                 }
                 repeat_tick = ++state->repeatTick08;
                 if ((s16)repeat_tick >= repeat_row->duration) {
+                    RR_CPU_CYCLES(RR_CYCLES_PAD_PULSE_STEP);
                     state->repeatStep0C = (u16)state->repeatStep0C + 1;
                     if (repeat_row[1].duration < 0) {
+                        RR_CPU_CYCLES(RR_CYCLES_PAD_PULSE_WRAP);
                         state->repeatTick08 = 0;
                         state->repeatStep0C = 0;
                     }
@@ -40,6 +44,7 @@ void PadStepPulse(void) {
                 output->output19[1] = 0;
             }
             if (state->once06 != 0) {
+                RR_CPU_CYCLES(output->kind1C != 0 ? RR_CYCLES_PAD_PULSE_ONCE_EXTENDED : RR_CYCLES_PAD_PULSE_ONCE);
                 if (output->kind1C != 0) {
                     once_row = &PadPulseOnceStepTable[state->once06 - 1][state->onceStep0E];
                     output->output19[0] = once_row->first;
@@ -51,8 +56,10 @@ void PadStepPulse(void) {
                 }
                 once_tick = ++state->onceTick0A;
                 if ((s16)once_tick >= once_row->duration) {
+                    RR_CPU_CYCLES(RR_CYCLES_PAD_PULSE_STEP);
                     state->onceStep0E = (u16)state->onceStep0E + 1;
                     if (once_row[1].duration < 0) {
+                        RR_CPU_CYCLES(RR_CYCLES_PAD_PULSE_END);
                         state->once06 = 0;
                         if (output->kind1C != 0) {
                             output->output19[0] = 0;
