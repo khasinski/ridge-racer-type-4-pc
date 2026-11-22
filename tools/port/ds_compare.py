@@ -135,6 +135,17 @@ GP_LAPS = ','.join('PlayerCars+388+=TrackLength@m1/47:%d' % d for d in range(700
 # [(slot, 'none', vsync)]: the card pulled out at that field.
 SCENARIOS = {
     'options': (7000, BOOT + ',' + MENU_DOWNS(6) + ',start@m1/4:750,' + OPTIONS, {}),
+    # the options' Music Player (mode 2/9): its XA tracks over the course
+    # scenes, stepped right twice and left once, then back to the options
+    'options-music': (6200, BOOT + ',' + MENU_DOWNS(6) + ',start@m1/4:750,' +
+                      ','.join('down@m2/2:%d' % (300 + 50 * i) for i in range(5)) +
+                      ',circle@m2/2:600,right@m2/9:700,right@m2/9:1300,left@m2/9:1900,cross@m2/9:2500', {}),
+    # a DUAL SHOCK's controller setup: the control type stepped (A, B, C),
+    # its vibration and analog pages, then back out of the options
+    'options-dualshock': (4700, BOOT + ',' + MENU_DOWNS(6) + ',start@m1/4:750,circle@m2/2:300,'
+                          'right@m2/2:500,right@m2/2:560,down@m2/2:700,right@m2/2:800,down@m2/2:900,'
+                          'right@m2/2:1000,circle@m2/2:1200,down@m2/2:1400,circle@m2/2:1500,'
+                          'cross@m2/2:1800,cross@m2/2:2100', {'pad': 'dualshock'}),
     'options-gp': (16000, BOOT + ',' + ','.join('down@%d' % (1437 + 50 * i) for i in range(6)) +
                    ',start@1787,' + OPTIONS + ',start@6857,' + GP, {'watch': CAR_POSE}),
     'records': (6500, BOOT + ',' + MENU_DOWNS(4) + ',start@m1/4:650,down@2364,circle@2464,right@2900,'
@@ -173,6 +184,12 @@ SCENARIOS = {
                     'circle@m1/80:300,circle@m1/80:600,cross@m1/82:100+20000',
                     {'pokes': 'SaveProgress+84:4=1@900,CourseChoiceTable+36:2=0@900',
                      'ds_pokes': '800f3974:01000000@900,800abe2c:0000@900', 'watch': CAR_POSE}),
+    # the second Extra Trial (CourseChoiceTable[1][1] unlocked instead of
+    # the first): its menus, car and race
+    'extra-trial-2': (6000, BOOT + ',' + MENU_DOWNS(7) + ',start@m1/4:800,circle@m1/79:300,'
+                      'circle@m1/80:300,circle@m1/80:600,cross@m1/82:100+20000',
+                      {'pokes': 'SaveProgress+84:4=1@900,CourseChoiceTable+40:2=0@900', 'sym_pokes': True,
+                       'watch': CAR_POSE + [('800f3914:4', 'CourseIndex:4')]}),
     # the Extra Trial's race to its end (the throttle held, nine laps'
     # distance poked), its replay, the results and the retry's race
     'extra-trial-race': (10300, BOOT + ',' + MENU_DOWNS(7) + ',start@m1/4:800,circle@m1/79:300,'
@@ -198,6 +215,13 @@ SCENARIOS = {
     'garage-team': (6500, BOOT + ',' + MENU_DOWNS(3) + ',start@m1/4:600,circle@m1/40:300,'
                     'right@m1/64:150,right@m1/64:200,circle@m1/64:300,right@m1/66:150,'
                     'right@m1/66:200,left@m1/66:260,circle@m1/66:400', {}),
+    # the Grand Prix with the second team (Racing Team Solvalou, hard) and
+    # the second maker (Lizard): its first race to the results, nine laps'
+    # distance poked, and the next heat's menus
+    'gp-team2': (10500, BOOT + ',start@m1/4:400,' + GP.replace(
+                     'circle@m1/8:200+4%154', 'circle@m1/8:200+4%154,right@m1/8:300').replace(
+                     'circle@m1/10:200+4%154', 'circle@m1/10:200+4%154,right@m1/10:490'),
+                 {'pokes': GP_LAPS, 'sym_pokes': True, 'watch': CAR_POSE + RACE_STATE}),
     # Versus with other cars and another course than vs-full's, both cars
     # driven by RR4_AUTODRIVE into the race
     'vs-picks': (9000, VS_AUTO.replace('circle@m1/56:150', 'right@m1/56:100,circle@m1/56:150').replace(

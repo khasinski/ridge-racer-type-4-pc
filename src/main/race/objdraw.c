@@ -64,6 +64,26 @@ extern Vec16 TrackObjWorldOrigin;
 
 
 static RrWork *TrackObjectsWork;
+
+/* A course object's SubmitModel by its own cost (rr/cpu_work.h), not the
+ * course objects' per-operation weights: DuckStation's four calls in the
+ * Grand Prix's countdown on course 7 take 57k-74k clocks of its 125k-143k
+ * DrawTrackObjects, which the objects' weights charged 15k short (the
+ * fly-by's frames, which make none, are unchanged). [mark] */
+static void TrackObjectSubmitModel(RroSceneScratchPrefix *scene, s32 modelIndex) {
+    static const RrWorkCost none;
+    RrWork work;
+    if (TrackObjectsWork) {
+        RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
+        RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
+    }
+    SubmitModel(scene, modelIndex, 0, 0);
+    if (TrackObjectsWork) {
+        RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModel);
+        RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &none);
+    }
+}
+
 static void DrawTrackObjectsWork(s32 arg0) {
     MatrixWords32 sp18;
     MatrixWords32 sp38;
@@ -154,7 +174,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             SetLightMatrix(&sp58);
             SetTrackObjectTransform(i, &sp18, 0);
             SelectModelBank(4);
-            SubmitModel((scene), TrackObjectDefs[i].f0, 0, 0);
+            TrackObjectSubmitModel(scene, TrackObjectDefs[i].f0);
             break;
 
         case 2:
@@ -216,7 +236,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             SetLightMatrix(&sp58);
             SetTrackObjectTransform(i, &sp18, 0);
             SelectModelBank(4);
-            SubmitModel((scene), 1, 0, 0);
+            TrackObjectSubmitModel(scene, 1);
             if (TrackObjectDefs[i].f8 != 14) {
                 v = (0x898 - dist) / 20;
                 if (dist >= 0x899) {
