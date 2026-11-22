@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "game/data/menuvars.h"
 #include "psyq/libgte/rotmat.h"
 #include "rr/player_cars.h"
@@ -98,7 +99,8 @@ static void TrackObjectsSpend(void) {
 
 static s32 TrackObjectRand(void) {
     TrackObjectsSpend();
-    return PsyqRand();
+    /* the flicker's own rand at field rate (rr/field_rate.h) */
+    return RaceDrawRand();
 }
 
 /* The course objects' own code by where it runs: each point below charges
@@ -320,7 +322,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
             SetTrackObjectTransform(i, &sp18, arg0);
             if ((TrackObjectStates[i].f8 / 10) == 1) {
                 s3[0x00 / 4] = TrackObjectStates[i].f8 + (CourseIndex % 4) * 3 - 11;
-                s3[0x04 / 4] = (TrackObjectStates[i].f0 / 6) % OpeningSunbeamPolys[s3[0x00 / 4]];
+                s3[0x04 / 4] = (TrackObjectStates[i].f0 / (6 * RaceFieldsPerTick())) % OpeningSunbeamPolys[s3[0x00 / 4]];
                 s3[0x08 / 4] = OpeningCreditTextTable[s3[0x00 / 4] * 12 + s3[0x04 / 4]];
                 TRACK_OBJECT_SUB(SubmitCourseModel2((scene), TrackObjectDefs[i].f0 + s3[0x08 / 4]), &RrCostTrackObjectCourseModel);
                 continue;
@@ -390,7 +392,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 continue;
             }
             if (TrackObjectStates[i].f8 != 0) {
-                if (TrackObjectStates[i].f4 + 100 == TrackObjectStates[i].f0) {
+                if ((TrackObjectStates[i].f4 + 100) * RaceFieldsPerTick() == TrackObjectStates[i].f0) {
                     if (RacePaused == 0 && GameModeType != 5) {
                         TrackObjectsSpend();
                         PlaySfxVolPan(0x27, 0x7F, 0x40, -1);
@@ -429,7 +431,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
         case 14:
             DtoSeg(DTO_SEG_F8_1_14);
             sp118.x = TrackObjectStates[i].f1C;
-            sp118.y = (TrackObjectStates[i].f0 * 0x188) % 0x1000;
+            sp118.y = (TrackObjectStates[i].f0 * 0x188 / RaceFieldsPerTick()) % 0x1000;
             sp118.z = TrackObjectStates[i].f20;
             BuildObjectMatrix(i, (const s16 *)&sp118, &sp18, 0);
             DtoSeg(DTO_SEG_BOM_3);
@@ -595,13 +597,13 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 pan = 0x7F;
             }
             if (((u16)GameModeType - 2U) < 3U) {
-                if (TrackObjVisibleFrame[i] == ModeFrame) {
+                if (TrackObjVisibleFrame[i] == RaceFieldTimeAfter(ModeFrame)) {
                     SetSoundChannelVolLR(1, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
                 } else {
                     SetSoundChannelVolLR(0, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
                     SetSoundChannelVolLR(1, 0, 0);
                 }
-                TrackObjVisibleFrame[i] = ModeFrame;
+                TrackObjVisibleFrame[i] = RaceFieldTimeAfter(ModeFrame);
             } else {
                 SetSoundChannelVolLR(0, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
             }
@@ -626,13 +628,13 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 v = 0;
             }
             if (((u16)GameModeType - 2U) < 3U) {
-                if (TrackObjVisibleFrame[i] == ModeFrame) {
+                if (TrackObjVisibleFrame[i] == RaceFieldTimeAfter(ModeFrame)) {
                     SetSoundChannelVolLR(1, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
                 } else {
                     SetSoundChannelVolLR(0, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
                     SetSoundChannelVolLR(1, 0, 0);
                 }
-                TrackObjVisibleFrame[i] = ModeFrame;
+                TrackObjVisibleFrame[i] = RaceFieldTimeAfter(ModeFrame);
             } else {
                 SetSoundChannelVolLR(0, (s16)((v * pan) >> 7), (s16)((v * (0x80 - pan)) >> 7));
             }
@@ -652,10 +654,11 @@ static void DrawTrackObjectsWork(s32 arg0) {
 
         q = TrackObjectStates[i].f4 / 100;
         DtoSeg(DTO_SEG_Q);
+        /* the light's fade per draw, a tick's step over its fields (rr/field_rate.h) */
         if (q == 3) {
-            TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 - 300 < 50) ? TrackObjectStates[i].f4 + 10 : TrackObjectStates[i].f4;
+            TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 - 300 < 50) ? TrackObjectStates[i].f4 + RaceFieldSplit(10) : TrackObjectStates[i].f4;
         } else if (q == 0) {
-            TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 > 0) ? TrackObjectStates[i].f4 - 5 : TrackObjectStates[i].f4;
+            TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 > 0) ? TrackObjectStates[i].f4 - RaceFieldSplit(5) : TrackObjectStates[i].f4;
         }
 
         if ((TrackObjectStates[i].f4 % 100) == 0) {
@@ -673,8 +676,8 @@ static void DrawTrackObjectsWork(s32 arg0) {
             sp1CB8 = FindTrackNodeAtXZ(TrackObjectStates[i].fC, TrackObjectStates[i].f14);
             for (j = 0; j < 8; j++) {
                 spA0[j].vy = (TrackNodes[sp1CB8].road.height - TrackObjectStates[i].f10) >> 2;
-                spA0[j].vx = (((spA0[j].vy >> 1)) * rcos(TrackObjectStates[i].f0 * 57 + j * 512)) / 4096;
-                spA0[j].vz = (((spA0[j].vy >> 1)) * rsin(TrackObjectStates[i].f0 * 57 + j * 512)) / 4096 + (((spA0[j].vy >> 1)) + 250) * s3[0x20 / 4];
+                spA0[j].vx = (((spA0[j].vy >> 1)) * rcos(TrackObjectStates[i].f0 * 57 / RaceFieldsPerTick() + j * 512)) / 4096;
+                spA0[j].vz = (((spA0[j].vy >> 1)) * rsin(TrackObjectStates[i].f0 * 57 / RaceFieldsPerTick() + j * 512)) / 4096 + (((spA0[j].vy >> 1)) + 250) * s3[0x20 / 4];
                 sp128[j].b = 0;
                 sp128[j].g = 0;
                 sp128[j].r = 0;
@@ -874,12 +877,12 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 s3[0x00 / 4] = CordicSqrt((dx * dx + dz * dz) >> 12);
             }
             if (((u16)GameModeType - 2U) < 3U) {
-                if (TrackObjVisibleFrame[i] != ModeFrame && RacePaused == 0) {
-                    TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + (((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
+                if (TrackObjVisibleFrame[i] != RaceFieldTimeAfter(ModeFrame) && RacePaused == 0) {
+                    TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + RaceFieldSplit(((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
                 }
-                TrackObjVisibleFrame[i] = ModeFrame;
+                TrackObjVisibleFrame[i] = RaceFieldTimeAfter(ModeFrame);
             } else if (RacePaused == 0) {
-                TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + (((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
+                TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + RaceFieldSplit(((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
             }
             if (s3[0x00 / 4] < 900) {
                 for (j = 0; j < 2; j++) {

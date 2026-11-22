@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 /* Handwritten GTE renderers of the resident executable.
  *
  *   80058118..800587E0  SubmitModelTwoTri and its face loop
@@ -1013,15 +1014,16 @@ static void CourseF4Fog(RroSceneScratchPrefix *s, u32 n) { CourseEmitF4(s, n, 1)
 static void CourseFT4Fog(RroSceneScratchPrefix *s, u32 n) { CourseEmitFT4(s, n, 1); }
 static void CourseGT4Fog(RroSceneScratchPrefix *s, u32 n) { CourseEmitSubdivided(s, n, COURSE_QUAD_FOG); }
 /* func_80060B10 / 80060BB8: the scroll counter advances by ScreenFrame & 0x7F
- * on every list (it accumulates in the scene word). */
+ * on every list (it accumulates in the scene word); at field rate each of a
+ * tick's fields adds half of it (rr/field_rate.h). */
 static void CourseScroll(RroSceneScratchPrefix *s, u32 n)
 {
-    s->draw74.draw.counter += ScreenFrame & 0x7F;
+    s->draw74.draw.counter += RaceFieldSplit(ScreenFrame & 0x7F);
     CourseEmitSubdivided(s, n, COURSE_QUAD_SCROLL);
 }
 static void CourseScrollFog(RroSceneScratchPrefix *s, u32 n)
 {
-    s->draw74.draw.counter += ScreenFrame & 0x7F;
+    s->draw74.draw.counter += RaceFieldSplit(ScreenFrame & 0x7F);
     CourseEmitSubdivided(s, n, COURSE_QUAD_SCROLL_FOG);
 }
 
@@ -3845,17 +3847,24 @@ static s32 AnimatedTrackDecay(s32 scale)
 /* One particle position step: IR = step * scale (INTPL toward a zero far
  * colour with IR0 = 0x1000 - scale), then position += IR with 12 added to y.
  * The new position is written back to the particle and returned packed. */
+/* split: 0 the whole step; at field rate 1 on the tick's field (IR - IR/2),
+ * 2 on the field after it (IR/2), the two adding the tick's step. */
+static s32 AnimatedTrackPart(s32 ir, int split)
+{
+    return split == 1 ? ir - ir / 2 : split == 2 ? ir / 2 : ir;
+}
+
 static void AnimatedTrackAdvance(Vec3sFields8 *position, const Vec3sFields8 *step,
-                                 s32 *xyOut, s32 *zOut)
+                                 s32 *xyOut, s32 *zOut, int split)
 {
     s32 x, y, z, xy;
     gte_mtc2(GTE_IR1, step->x);
     gte_mtc2(GTE_IR2, step->y);
     gte_mtc2(GTE_IR3, step->z);
     gte_cmd(GTE_INTPL);
-    x = position->x + gte_mfc2(GTE_IR1);
-    y = position->y + 0xC + gte_mfc2(GTE_IR2);
-    z = position->z + gte_mfc2(GTE_IR3);
+    x = position->x + AnimatedTrackPart(gte_mfc2(GTE_IR1), split);
+    y = position->y + (split ? 6 : 0xC) + AnimatedTrackPart(gte_mfc2(GTE_IR2), split);
+    z = position->z + AnimatedTrackPart(gte_mfc2(GTE_IR3), split);
     xy = (s32)(((u32)x & 0xFFFF) | ((u32)y << 16));
     position->x = (s16)x;
     position->y = (s16)y;
@@ -3885,9 +3894,12 @@ AnimatedLinePacket *EmitAnimatedTrackLines(AnimatedTrackScratch *scratch,
     s32 colorIndex = colorOffset >> 2;
     s32 countdown = 0;
     u32 color0 = 0, color1 = 0;
+    /* At field rate a tick's step over its two fields: the same scales
+     * (decayed after the second), half the move each (rr/field_rate.h). */
+    const int split = RaceFieldRateLive ? (RaceTickField ? 1 : 2) : 0;
     (void)scratch;
 
-    if (advancing) {
+    if (advancing && split != 1) {
         object->scale20 = AnimatedTrackDecay(object->scale20);
         if (!tailFrozen) object->scale24 = AnimatedTrackDecay(object->scale24);
     }
@@ -3903,11 +3915,11 @@ AnimatedLinePacket *EmitAnimatedTrackLines(AnimatedTrackScratch *scratch,
         if (advancing) {
             gte_mtc2(GTE_IR0, headFactor);
             for (k = 0; k < 3; k++)
-                AnimatedTrackAdvance(&particle[k].position00, &particle[k].step10, &headXY[k], &headZ[k]);
+                AnimatedTrackAdvance(&particle[k].position00, &particle[k].step10, &headXY[k], &headZ[k], split);
             if (!tailFrozen) {
                 gte_mtc2(GTE_IR0, tailFactor);
                 for (k = 0; k < 3; k++)
-                    AnimatedTrackAdvance(&particle[k].position08, &particle[k].step18, &tailXY[k], &tailZ[k]);
+                    AnimatedTrackAdvance(&particle[k].position08, &particle[k].step18, &tailXY[k], &tailZ[k], split);
             }
         } else {
             for (k = 0; k < 3; k++) {

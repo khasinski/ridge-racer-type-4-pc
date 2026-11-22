@@ -214,13 +214,13 @@ void ovl666_update_race(void) {
         DrawRaceStartSignalSprite(0);
     }
     SetupPlayerView(0);
-    if (tick)
-        UpdateTrackObjects();
+    /* every field (objsim.c, rr/field_rate.h) */
+    UpdateTrackObjects();
     DrawTrackObjects(0);
     DrawTrackSceneryForPlayer(0);
     UpdateAndDrawRearViewMirror(ScreenFrame);
-    if (tick)
-        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    /* the engine sound by the field (rr/field_rate.h) */
+    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
     if (RaceState >= 4) {
         StopRaceRumble();
         if (RaceState == 6) {

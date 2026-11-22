@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/release.h"
 #include "rr/widescreen.h"
 #include "psyq/libgte/rotmat.h"
@@ -149,7 +150,8 @@ void DrawTrackObjectModel(int modelIndex, int flashing) {
                 RR_GTE_SWC2_SXYZ(&work->projected58[0]);
                 RR_GTE_RTPS_LDV(&vertices[word3]);
                 if (work->flashing54 != 0) {
-                    word0 = FlashingLightColorTable[((u32)ScreenFrame + quadCursor->flashPhase18) & 0x1F];
+                    /* by the field (rr/field_rate.h) */
+                    word0 = RaceFieldCycleColor(FlashingLightColorTable, (u32)ScreenFrame + quadCursor->flashPhase18, 0x1F);
                 } else {
                     word0 = FlashingLightColorTable[0];
                 }

@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/widescreen.h"
 #include "rr/cpu_time.h"
 #include "types.h"
@@ -59,7 +60,8 @@ void UpdateHudRankDisplay(int a0, int a1) {
         if (PlayerCars[0].half1EE <= /* HudDisplayedLapIndex 0x800AC0E6 */ HudLapTargetThresholds[SelectionState.fields.phase17 / 2]) {
             s1 = 1;
             RR_CPU_CYCLES(RR_CYCLES_HUD_RANK_DISPLAY_FLASH);
-            v = rsin((ScreenFrame & 0x3F) << 6);
+            /* a 64-tick pulse, by the field (rr/field_rate.h) */
+            v = rsin((((s32)RaceFieldTimeAfter(ScreenFrame & 0x3F) << 6) / RaceFieldsPerTick()) & 0xFFF);
             if (v < 0) v += 0x3F;
             s0 = v >> 6;
             if (s0 < 0) {

@@ -16,6 +16,7 @@
 #include "rr/overlay668_camera.h"
 #include "rr/audio_loop.h"
 #include "rr/cpu_work.h"
+#include "rr/field_rate.h"
 
 extern int MenuSoundEffectMap;
 extern int RaceState;
@@ -26,9 +27,25 @@ extern int ObjSimTrainTrackNode;
 extern int ObjSimEventTriggerNode;
 extern int ObjSimLastActiveFrame[];
 
+/* Course objects at field rate (rr/field_rate.h): the simulation runs every
+ * field with its frame count f0 and every time it is compared with counted
+ * in fields: the keys' 6-frame units, the ease windows (10 frames each side
+ * of a key) and the delays are K = RaceFieldsPerTick() times longer, the
+ * ease integrators' per-frame steps per field. Rand draws, light cycles and
+ * the blimp line's acceleration stay per tick. K = 1 is the game as
+ * released. */
+/* x * t1 * t1' / t0 / t0' of the eased keys: in 64 bits at field rate,
+ * whose times in fields make the products four times the original's. */
+static s32 ObjKeyScale(s32 x, const s32 *sp) {
+    if (RaceFieldsPerTick() == 1)
+        return ((x * sp[10] * sp[12]) / sp[11]) / sp[13];
+    return (s32)((((long long)x * sp[10] * sp[12]) / sp[11]) / sp[13]);
+}
+
 void InterpolateObjectKeyframe(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7) {
     s32 *sp = (s32 *)(SCRATCHPAD + 0x7C);
     s32 d1, w, d2;
+    const s32 K = RaceFieldsPerTick();
 
     sp[14] = arg2;
     sp[10] = arg4;
@@ -38,9 +55,9 @@ void InterpolateObjectKeyframe(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
 
     if ((TrackObjectKeyframes[arg1].f08 % 10) == 8 &&
         (arg1 + 1) < (TrackObjectDefs[arg0].f28 + TrackObjectDefs[arg0].f24) &&
-        (TrackObjectStates[arg0].f0 + 10) > (TrackObjectKeyframes[arg1].f00 * 6)) {
-        d1 = (TrackObjectKeyframes[arg1 + 1].f00 - TrackObjectKeyframes[arg1].f00) * 6;
-        w = TrackObjectKeyframes[arg1].f00 * 6 - 10;
+        (TrackObjectStates[arg0].f0 + 10 * K) > (TrackObjectKeyframes[arg1].f00 * 6 * K)) {
+        d1 = (TrackObjectKeyframes[arg1 + 1].f00 - TrackObjectKeyframes[arg1].f00) * 6 * K;
+        w = TrackObjectKeyframes[arg1].f00 * 6 * K - 10 * K;
         w = TrackObjectStates[arg0].f0 - w;
         sp[0] = (TrackObjectKeyframes[arg1].f0C - TrackObjectKeyframes[arg1 - 1].f0C) / sp[11];
         sp[1] = (TrackObjectKeyframes[arg1].f10 - TrackObjectKeyframes[arg1 - 1].f10) / sp[11];
@@ -48,37 +65,37 @@ void InterpolateObjectKeyframe(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
         sp[3] = (TrackObjectKeyframes[arg1 + 1].f0C - TrackObjectKeyframes[arg1].f0C) / d1;
         sp[4] = (TrackObjectKeyframes[arg1 + 1].f10 - TrackObjectKeyframes[arg1].f10) / d1;
         sp[5] = (TrackObjectKeyframes[arg1 + 1].f14 - TrackObjectKeyframes[arg1].f14) / d1;
-        sp[6] = ((sp[0] * (20 - w)) >> 1) + ((sp[3] * w) >> 1);
-        sp[7] = ((sp[1] * (20 - w)) >> 1) + ((sp[4] * w) >> 1);
-        sp[8] = ((sp[2] * (20 - w)) >> 1) + ((sp[5] * w) >> 1);
-        TrackObjectStates[arg0].fC += sp[6] / 10;
-        TrackObjectStates[arg0].f10 += sp[7] / 10;
-        TrackObjectStates[arg0].f14 += sp[8] / 10;
+        sp[6] = ((sp[0] * (20 * K - w)) >> 1) + ((sp[3] * w) >> 1);
+        sp[7] = ((sp[1] * (20 * K - w)) >> 1) + ((sp[4] * w) >> 1);
+        sp[8] = ((sp[2] * (20 * K - w)) >> 1) + ((sp[5] * w) >> 1);
+        TrackObjectStates[arg0].fC += sp[6] / (10 * K);
+        TrackObjectStates[arg0].f10 += sp[7] / (10 * K);
+        TrackObjectStates[arg0].f14 += sp[8] / (10 * K);
     } else if ((arg1 - 1) >= TrackObjectDefs[arg0].f24 &&
                (TrackObjectKeyframes[arg1 - 1].f08 % 10) == 8 &&
-               (TrackObjectStates[arg0].f0 - 10) <= (TrackObjectKeyframes[arg1 - 1].f00 * 6)) {
-        d2 = (TrackObjectKeyframes[arg1 - 1].f00 - TrackObjectKeyframes[arg1 - 2].f00) * 6;
+               (TrackObjectStates[arg0].f0 - 10 * K) <= (TrackObjectKeyframes[arg1 - 1].f00 * 6 * K)) {
+        d2 = (TrackObjectKeyframes[arg1 - 1].f00 - TrackObjectKeyframes[arg1 - 2].f00) * 6 * K;
         sp[0] = (TrackObjectKeyframes[arg1].f0C - TrackObjectKeyframes[arg1 - 1].f0C) / sp[11];
         sp[1] = (TrackObjectKeyframes[arg1].f10 - TrackObjectKeyframes[arg1 - 1].f10) / sp[11];
         sp[2] = (TrackObjectKeyframes[arg1].f14 - TrackObjectKeyframes[arg1 - 1].f14) / sp[11];
         sp[3] = (TrackObjectKeyframes[arg1 - 1].f0C - TrackObjectKeyframes[arg1 - 2].f0C) / d2;
         sp[4] = (TrackObjectKeyframes[arg1 - 1].f10 - TrackObjectKeyframes[arg1 - 2].f10) / d2;
         sp[5] = (TrackObjectKeyframes[arg1 - 1].f14 - TrackObjectKeyframes[arg1 - 2].f14) / d2;
-        sp[6] = ((sp[0] * (sp[10] + 9)) >> 1) + ((sp[3] * (11 - sp[10])) >> 1);
-        sp[7] = ((sp[1] * (sp[10] + 9)) >> 1) + ((sp[4] * (11 - sp[10])) >> 1);
-        sp[8] = ((sp[2] * (sp[10] + 9)) >> 1) + ((sp[5] * (11 - sp[10])) >> 1);
-        TrackObjectStates[arg0].fC += sp[6] / 10;
-        TrackObjectStates[arg0].f10 += sp[7] / 10;
-        TrackObjectStates[arg0].f14 += sp[8] / 10;
+        sp[6] = ((sp[0] * (sp[10] + 9 * K)) >> 1) + ((sp[3] * (11 * K - sp[10])) >> 1);
+        sp[7] = ((sp[1] * (sp[10] + 9 * K)) >> 1) + ((sp[4] * (11 * K - sp[10])) >> 1);
+        sp[8] = ((sp[2] * (sp[10] + 9 * K)) >> 1) + ((sp[5] * (11 * K - sp[10])) >> 1);
+        TrackObjectStates[arg0].fC += sp[6] / (10 * K);
+        TrackObjectStates[arg0].f10 += sp[7] / (10 * K);
+        TrackObjectStates[arg0].f14 += sp[8] / (10 * K);
     } else {
-        TrackObjectStates[arg0].fC = ((((((TrackObjectKeyframes[arg1].f0C - TrackObjectKeyframes[arg1 - 1].f0C) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13] + TrackObjectKeyframes[arg1 - arg3].f0C;
-        TrackObjectStates[arg0].f10 = ((((((TrackObjectKeyframes[arg1].f10 - TrackObjectKeyframes[arg1 - 1].f10) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13] + TrackObjectKeyframes[arg1 - arg3].f10;
-        TrackObjectStates[arg0].f14 = ((((((TrackObjectKeyframes[arg1].f14 - TrackObjectKeyframes[arg1 - 1].f14) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13] + TrackObjectKeyframes[arg1 - arg3].f14;
+        TrackObjectStates[arg0].fC = ObjKeyScale((((TrackObjectKeyframes[arg1].f0C - TrackObjectKeyframes[arg1 - 1].f0C) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp) + TrackObjectKeyframes[arg1 - arg3].f0C;
+        TrackObjectStates[arg0].f10 = ObjKeyScale((((TrackObjectKeyframes[arg1].f10 - TrackObjectKeyframes[arg1 - 1].f10) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp) + TrackObjectKeyframes[arg1 - arg3].f10;
+        TrackObjectStates[arg0].f14 = ObjKeyScale((((TrackObjectKeyframes[arg1].f14 - TrackObjectKeyframes[arg1 - 1].f14) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp) + TrackObjectKeyframes[arg1 - arg3].f14;
     }
 
-    TrackObjectStates[arg0].f1C = TrackObjectKeyframes[arg1 - arg3].f1C + ((((((TrackObjectKeyframes[arg1].f1C - TrackObjectKeyframes[arg1 - 1].f1C) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13];
-    TrackObjectStates[arg0].f1E = TrackObjectKeyframes[arg1 - arg3].f1E + ((((((TrackObjectKeyframes[arg1].f1E - TrackObjectKeyframes[arg1 - 1].f1E) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13];
-    TrackObjectStates[arg0].f20 = TrackObjectKeyframes[arg1 - arg3].f20 + ((((((TrackObjectKeyframes[arg1].f20 - TrackObjectKeyframes[arg1 - 1].f20) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100) * sp[10] * sp[12]) / sp[11]) / sp[13];
+    TrackObjectStates[arg0].f1C = TrackObjectKeyframes[arg1 - arg3].f1C + ObjKeyScale((((TrackObjectKeyframes[arg1].f1C - TrackObjectKeyframes[arg1 - 1].f1C) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp);
+    TrackObjectStates[arg0].f1E = TrackObjectKeyframes[arg1 - arg3].f1E + ObjKeyScale((((TrackObjectKeyframes[arg1].f1E - TrackObjectKeyframes[arg1 - 1].f1E) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp);
+    TrackObjectStates[arg0].f20 = TrackObjectKeyframes[arg1 - arg3].f20 + ObjKeyScale((((TrackObjectKeyframes[arg1].f20 - TrackObjectKeyframes[arg1 - 1].f20) / sp[14]) * (100 - TrackObjectKeyframes[arg1].f04)) / 100, sp);
 
     if (TrackObjectKeyframes[arg1].f04 != 0) {
         if ((TrackObjectKeyframes[arg1].f08 % 10) == 4 || (TrackObjectKeyframes[arg1].f08 % 10) == 5) {
@@ -101,6 +118,9 @@ static void UpdateTrackObjectsWork(void) {
     int r1, r2, r3, r5, r6;
     int r4;
     int *hw;
+    const int K = RaceFieldsPerTick();
+    const int tick = RaceSlowTick();
+    static s32 trainRem; /* MenuSoundEffectMap's half steps */
 
     UpdateTrackObjectActivation();
     for (i = 0; i < TrackObjectCount; i++) {
@@ -138,7 +158,10 @@ static void UpdateTrackObjectsWork(void) {
                     }
                 }
                 if (TrackObjectDefs[i].f4 == 5) {
-                    if (TrackObjectStates[i].f8 == 0 || TrackObjectStates[i].f0 >= 0xD1) {
+                    if (TrackObjectStates[i].f8 == 0 || TrackObjectStates[i].f0 >= 0xD1 * K) {
+                        /* the launch's rand draws per tick */
+                        if (!tick)
+                            goto next_iter;
                         if (TrackObjectDefs[i].f0 > 0 && (PsyqRand() % (TrackObjectDefs[i].f0 * 8 + 0x14)) != 0) {
                             TrackObjectStates[i].f8 = 0;
                             goto next_iter;
@@ -151,7 +174,7 @@ static void UpdateTrackObjectsWork(void) {
                         TrackObjectStates[i].f14 = TrackObjectKeyframes[TrackObjectDefs[i].f24].f14 + (r3 % TrackObjectKeyframes[TrackObjectDefs[i].f24 + 1].f14);
                         SetAnimatedTrackObjectState(TrackObjectDefs[i].f0, 7, &TrackObjectStates[i].fC, (TrackObjectStates[i].f8 = (PsyqRand() % 6) + 1) - 1);
                         TrackObjectStates[i].f0 = 0;
-                    } else if (TrackObjectStates[i].f0 == 0x3C) {
+                    } else if (TrackObjectStates[i].f0 == 0x3C * K) {
                         hw = ((ProjectionScratchPrefix *)SCRATCHPAD)->pose08.position00.words;
                         sp[0] = (TrackObjectStates[i].fC - hw[0]) >> 10;
                         sp[1] = (TrackObjectStates[i].f14 - hw[2]) >> 10;
@@ -161,11 +184,11 @@ static void UpdateTrackObjectsWork(void) {
                     TrackObjectStates[i].f0++;
                 } else {
                     s0 = TrackObjectDefs[i].f24 + TrackObjectStates[i].f28;
-                    if (TrackObjectStates[i].f0 == TrackObjectKeyframes[s0].f00 * 6) {
+                    if (TrackObjectStates[i].f0 == TrackObjectKeyframes[s0].f00 * 6 * K) {
                         if (s0 < TrackObjectDefs[i].f28 + TrackObjectDefs[i].f24) {
                             TrackObjectStates[i].f28++;
                             s0++;
-                            if (TrackObjectStates[i].f0 == TrackObjectDefs[i].f10 * 6) {
+                            if (TrackObjectStates[i].f0 == TrackObjectDefs[i].f10 * 6 * K) {
                                 TrackObjectStates[i].f0 = 0;
                                 TrackObjectStates[i].f28 = 1;
                                 s0 = TrackObjectDefs[i].f24 + 1;
@@ -190,7 +213,8 @@ static void UpdateTrackObjectsWork(void) {
                         TrackObjectStates[i].f1E = TrackObjectKeyframes[s0].f1E;
                         TrackObjectStates[i].f20 = TrackObjectKeyframes[s0].f20;
                     } else {
-                        v1 = TrackObjectStates[i].f4 / 100;
+                        /* the texture and light cycles step per tick */
+                        v1 = tick ? TrackObjectStates[i].f4 / 100 : 0;
                         if (v1 == 1) {
                             TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 == 0x86) ? 0x73 : TrackObjectStates[i].f4 + 1;
                         } else if (v1 == 2) {
@@ -201,16 +225,17 @@ static void UpdateTrackObjectsWork(void) {
                         if ((unsigned short)GameModeType - 2 < 3U) {
                             a2 = TrackObjectStates[i].f0;
                             TrackObjectStates[i].f0 = a2 + 1;
-                            if (ObjSimLastActiveFrame[i] == ModeFrame) {
+                            /* once per field over the split screen's views */
+                            if (ObjSimLastActiveFrame[i] == RaceFieldTimeAfter(ModeFrame)) {
                                 TrackObjectStates[i].f0 = a2;
                             }
-                            ObjSimLastActiveFrame[i] = ModeFrame;
+                            ObjSimLastActiveFrame[i] = RaceFieldTimeAfter(ModeFrame);
                         } else {
                             TrackObjectStates[i].f0++;
                         }
                         v1 = TrackObjectKeyframes[s0 - 1].f00;
-                        t0 = (TrackObjectKeyframes[s0].f00 - v1) * 6;
-                        t1 = TrackObjectStates[i].f0 - v1 * 6;
+                        t0 = (TrackObjectKeyframes[s0].f00 - v1) * 6 * K;
+                        t1 = TrackObjectStates[i].f0 - v1 * 6 * K;
                         if (t0 == 0) {
                             TrackObjectStates[i].f24 = 0;
                         } else {
@@ -248,7 +273,7 @@ static void UpdateTrackObjectsWork(void) {
                                             TrackObjectTrailPoints[sp[1] + a0].vy = TrackObjectStates[i].f10 >> 3;
                                             TrackObjectTrailPoints[sp[1] + a0].vz = TrackObjectStates[i].f14 >> 3;
                                         }
-                                    } else if (TrackObjectStates[i].f0 % 2 == 1) {
+                                    } else if (TrackObjectStates[i].f0 % (2 * K) == 1) {
                                         for (a0 = 19; a0 > 0; a0--) {
                                             TrackObjectTrailPoints[sp[1] + a0] = TrackObjectTrailPoints[sp[1] + a0 - 1];
                                         }
@@ -264,7 +289,7 @@ static void UpdateTrackObjectsWork(void) {
                                             TrackObjectTrailPoints[a0].vy = TrackObjectStates[i].f10 >> 3;
                                             TrackObjectTrailPoints[a0].vz = TrackObjectStates[i].f14 >> 3;
                                         }
-                                    } else if (TrackObjectStates[i].f0 % 12 == 1) {
+                                    } else if (TrackObjectStates[i].f0 % (12 * K) == 1) {
                                         for (a0 = 39; a0 > 0; a0--) {
                                             TrackObjectTrailPoints[a0] = TrackObjectTrailPoints[a0 - 1];
                                         }
@@ -300,13 +325,16 @@ static void UpdateTrackObjectsWork(void) {
                                     ObjSimJetTrackNode = 0x36;
                                     ObjSimCopterTrackNode = 0x35;
                                     ObjSimTrainTrackNode = 0x20;
+                                    trainRem = 0;
                                     if (ModeFrame == RR_PAL_NTSC(0xAF, 0xD2)) {
                                         if (TrackObjectStates[i].f8 != 4) {
                                             TrackObjectStates[i].f24 = -1;
                                         }
                                     }
                                 } else {
-                                    MenuSoundEffectMap += ObjSimTrainTrackNode;
+                                    /* the line's speed per field, its
+                                     * acceleration below per tick */
+                                    MenuSoundEffectMap += RaceFieldHalf(ObjSimTrainTrackNode, &trainRem);
                                     if (MenuSoundEffectMap >= 0x80) {
                                         MenuSoundEffectMap -= 0x80;
                                         a0 = ObjSimCopterTrackNode - 1;
@@ -335,7 +363,8 @@ static void UpdateTrackObjectsWork(void) {
                                     TrackObjectStates[i].f10 += sp[3] - 0xFA;
                                     TrackObjectStates[i].f14 += sp[4];
                                     sp[8] = 0x400 - Atan2Table(sp[5], sp[7]);
-                                    if (sp[8] == ObjSimEventTriggerNode) {
+                                    if (!tick) {
+                                    } else if (sp[8] == ObjSimEventTriggerNode) {
                                         ObjSimTrainTrackNode += (ObjSimTrainTrackNode < 0x2C);
                                     } else if ((sp[8] >> 4) == (ObjSimEventTriggerNode >> 4)) {
                                         if (ObjSimTrainTrackNode < 0x26) {
@@ -348,13 +377,14 @@ static void UpdateTrackObjectsWork(void) {
                                     }
                                     r6 = sp[8];
                                     TrackObjectStates[i].f1E = r6;
-                                    ObjSimEventTriggerNode = r6;
+                                    if (tick)
+                                        ObjSimEventTriggerNode = r6;
                                     TrackObjectStates[i].f1C = 0x400 - Atan2Table(sp[6], CordicSqrt(sp[5] * sp[5] + sp[7] * sp[7]) >> 6);
                                     TrackObjectStates[i].f20 = 0;
                                 }
                             }
                             if (TrackObjectDefs[i].f14 > 0) {
-                                if (TrackObjectStates[i].f0 == TrackObjectDefs[i].f14 * 6) {
+                                if (TrackObjectStates[i].f0 == TrackObjectDefs[i].f14 * 6 * K) {
                                     TrackObjectStates[i].f24 = -1;
                                 }
                             }

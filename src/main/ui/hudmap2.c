@@ -245,19 +245,18 @@ void DrawTrackNodeMap(s32 *arg0) {
     sp18.vy += sp10.vy;
 
     CarCollisionGraceTimers &= 0xFF;
-    /* the dot's pulse steps per original tick (rr/field_rate.h) */
-    if (!RaceSlowTick()) {
-    } else if (CarCollisionGraceTimers & 0x80) {
+    /* the dot's pulse: a tick's step of 6 over its fields (rr/field_rate.h) */
+    if (CarCollisionGraceTimers & 0x80) {
         CarCollisionGraceTimers &= 0x7F;
         if (CarCollisionGraceTimers < 0x7A) {
-            CarCollisionGraceTimers = (CarCollisionGraceTimers + 6) | 0x80;
+            CarCollisionGraceTimers = (CarCollisionGraceTimers + RaceFieldSplit(6)) | 0x80;
         } else {
             CarCollisionGraceTimers = 0x7F;
         }
     } else {
         CarCollisionGraceTimers &= 0x7F;
         if (CarCollisionGraceTimers >= 6) {
-            CarCollisionGraceTimers -= 6;
+            CarCollisionGraceTimers -= RaceFieldSplit(6);
         } else {
             CarCollisionGraceTimers = 0x80;
         }

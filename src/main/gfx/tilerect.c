@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/release.h"
 #include "game/data/menuvars.h"
 #include "rr/widescreen.h"
@@ -519,7 +520,8 @@ void DrawTrackObjectBillboard(int modelIndex) {
                 word2 = work->projected34[0].word;
                 word1 = work->projected34[1].word;
                 word3 = work->projected34[2].word;
-                word0 = TileFadeColorTable[(ScreenFrame - (phaseOffset = quad->flashPhase18 - 0x40)) & 0x3F];
+                /* by the field (rr/field_rate.h) */
+                word0 = RaceFieldCycleColor((const s32 *)TileFadeColorTable, ScreenFrame - (phaseOffset = quad->flashPhase18 - 0x40), 0x3F);
                 RrSxyCopy(&packet->words.xy0, &work->projected34[0].word);
                 RrSxyCopy(&packet->words.xy1, &work->projected34[1].word);
                 RrSxyCopy(&packet->words.xy2, &work->projected34[2].word);
@@ -593,7 +595,7 @@ void DrawTrackObjectFlashQuads(int modelIndex) {
         RR_GTE14_SWC2_MAC0(&work->area20);
         if ((work->area20 ^ windingMask) >= 0) {
             RR_GTE_RTPS_LDV(&vertices[quad->vertices.indices[3]]);
-            word3 = TileRectFlashColors[(0U + ScreenFrame + quad->flashPhase18) & 0x3F];
+            word3 = RaceFieldCycleColor((const s32 *)TileRectFlashColors, 0U + ScreenFrame + quad->flashPhase18, 0x3F);
             word2 = work->projected24[0].word;
             word0 = work->projected24[1].word;
             word1 = work->projected24[2].word;

@@ -159,8 +159,8 @@ void ovl659_update_race(void) {
     } else {
         UpdateRaceChaseCamera(PlayerCars);
     }
-    if (tick)
-        UpdateTrackObjects();
+    /* every field (objsim.c, rr/field_rate.h) */
+    UpdateTrackObjects();
     BuildCameraMatrices();
     DrawCars(0);
     if (PlayerCars[0].half1EA != ReverseCourse) {

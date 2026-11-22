@@ -387,8 +387,9 @@ void ReplayModeUpdate(void) {
     if (tick) {
         UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
         RrSpendReplayFrame();
-        UpdateTrackObjects();
     }
+    /* every field (objsim.c, rr/field_rate.h) */
+    UpdateTrackObjects();
     BuildCameraMatrices();
     DrawCars(6);
     ((RaceFrameScratch *)SCRATCHPAD)->word78 = RaceQuitTargetMode;

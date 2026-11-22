@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/cpu_work.h"
 #include "rr/widescreen.h"
 #include "rr/release.h"
@@ -346,11 +347,15 @@ void DrawSparkLines(RroSpark *sparks, RroEffectWork *work, s32 speed) {
 
     RR_GTE_SETFC_BYTES3(&work->colors15C.palette.rgb160[5]);
     RR_GTE_MTC2_RGB(0x42000000);
-    spawnGate = PsyqRand() & 3;
+    /* At field rate (rr/field_rate.h) a spark launches on a tick's field
+     * only, and its life and motion are split over the tick's fields. */
+    spawnGate = RaceDrawRand() & 3;
+    if (!RaceSlowTick())
+        spawnGate = 1;
     launchZ = (s32)(0U - (0U + speed + 0xA0));
     for (remaining = 0x10; remaining > 0; remaining--, sparks++) {
         RroSparkMotion *motion = &sparks->motion;
-        s32 life = (s32)(sparks->timer - 0xAAU);
+        s32 life = (s32)(sparks->timer - (u32)RaceFieldSplit(0xAA));
         s32 x, y, z, velocityX, velocityY, velocityZ, depth;
 
         if (life <= 0) {
@@ -360,13 +365,13 @@ void DrawSparkLines(RroSpark *sparks, RroEffectWork *work, s32 speed) {
             }
             spawnGate = 1;
             life = 0x1000;
-            dx = (PsyqRand() & 0x1FF) - 0x100;
-            dy = (PsyqRand() & 0x1FF) - 0x100;
+            dx = (RaceDrawRand() & 0x1FF) - 0x100;
+            dy = (RaceDrawRand() & 0x1FF) - 0x100;
             if (dx == 0) dx = 0x100;
             if (dy == 0) dy = 0x100;
             motion->fields.x = dx;
             motion->fields.y = dy + 0x140;
-            motion->fields.z = (PsyqRand() & 0x7F) - 0xC30;
+            motion->fields.z = (RaceDrawRand() & 0x7F) - 0xC30;
             motion->fields.velocityX = dx / 2;
             motion->fields.velocityY = dy / 2;
             motion->fields.velocityZ = (s16)launchZ;
@@ -391,9 +396,9 @@ void DrawSparkLines(RroSpark *sparks, RroEffectWork *work, s32 speed) {
         work->verticesE0[0].fields.y = (y + (velocityY >> 3)) >> 4;
         work->verticesE0[0].fields.z = (z + (velocityZ >> 3)) >> 4;
         RR_GTE_RTPT_LDV2(&work->verticesE0[0]);
-        motion->fields.x = x + (velocityX >> 4);
-        motion->fields.y = y + (velocityY >> 4);
-        motion->fields.z = z + (velocityZ >> 4);
+        motion->fields.x = x + RaceFieldSplit(velocityX >> 4);
+        motion->fields.y = y + RaceFieldSplit(velocityY >> 4);
+        motion->fields.z = z + RaceFieldSplit(velocityZ >> 4);
         RR_GTE14_SWC2_SZ3(&work->depth70);
 
         if (work->depth70 > 0) {
@@ -528,7 +533,7 @@ void TransformRroVertices(CarSlotBufferC8 *slot, RroEffectWork *work)
     } else {
         intensity = (work->vehicle90->input - 0x3E0) * 2;
         intensity = (intensity < 0 ? 0 : intensity) > 0x1000 ? 0x1000 : (intensity < 0 ? 0 : intensity);
-        intensity += PsyqRand() & 0xF;
+        intensity += RaceDrawRand() & 0xF;
         slot->intensity64 = intensity;
     }
     RR_GTE_MTC2_IR0(intensity);
@@ -550,11 +555,11 @@ void TransformRroVertices(CarSlotBufferC8 *slot, RroEffectWork *work)
     frame = ScreenFrame & 3;
     EmitCarBodyQuads(&slot->model->body64[frame], work);
     {
-        s32 jitter = (PsyqRand() & 3) - 1;
+        s32 jitter = (RaceDrawRand() & 3) - 1;
         work->jitterTranslationAC.x = ((u32)work->object00.fields.translation14[0] + jitter);
     }
     {
-        s32 jitter = (PsyqRand() & 3) - 1;
+        s32 jitter = (RaceDrawRand() & 3) - 1;
         work->jitterTranslationAC.y = ((u32)work->object00.fields.translation14[1] + jitter);
     }
     work->jitterTranslationAC.z = work->object00.fields.translation14[2];
@@ -872,15 +877,15 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
                 if (s0 < a0) {
                     s0 = a0;
                 } else if (a0 < s0) {
-                    s0 -= 4;
+                    s0 -= RaceFieldSplit(4);
                 }
             } else if (s0 != 0) {
-                s0 -= 4;
+                s0 -= RaceFieldSplit(4);
             }
             s0 = (s0 < 0 ? 0 : s0) > 0xF0 ? 0xF0 : (s0 < 0 ? 0 : s0);
             slot->intensity60 = s0;
             if (work->flags8C & 1) {
-                s0 += PsyqRand() & 0xF;
+                s0 += RaceDrawRand() & 0xF;
             }
             slot->color08 = s0;
         }
@@ -902,15 +907,16 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
         if (RacePaused == 0) {
             s32 v1;
             s32 d = a0 - s0;
+            /* the ramps' per-tick steps split over the tick's fields */
             if (work->flags8C & 2) {
-                v1 = slot->intensity60 + d / 4;
+                v1 = slot->intensity60 + RaceFieldSplit(d / 4);
                 slot->intensity60 = v1 < a0 ? v1 : a0;
-                v1 = slot->intensity64 + a0 / 4;
+                v1 = slot->intensity64 + RaceFieldSplit(a0 / 4);
                 slot->intensity64 = v1 < a0 ? v1 : a0;
             } else {
-                v1 = slot->intensity60 - d / 8;
+                v1 = slot->intensity60 - RaceFieldSplit(d / 8);
                 slot->intensity60 = v1 > s0 ? v1 : s0;
-                v1 = slot->intensity64 - a0 / 8;
+                v1 = slot->intensity64 - RaceFieldSplit(a0 / 8);
                 slot->intensity64 = v1 > 0 ? v1 : 0;
             }
         }
@@ -979,7 +985,7 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
                 } else if (v1 >= 0x1000) {
                     work->temporaryC4 = 0xFFF;
                 }
-                blend = PsyqRand() & work->temporaryC4;
+                blend = RaceDrawRand() & work->temporaryC4;
                 v1 = (work->facing98.z + 0xEC8) / 2;
                 if (v1 > 0x200) {
                     v1 = 0x200;
@@ -1004,6 +1010,13 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
                 s32 rem = 4 - idx;
                 RroProjectedVertex *dst;
                 const RroProjectedVertex *src;
+                /* The ring holds a pose per original tick, so the streak
+                 * spans the same time at field rate: on the field between
+                 * ticks the newest pose is replaced by this field's, the
+                 * older ones neither age nor move (rr/field_rate.h). */
+                const int push = RaceSlowTick() || slot->mainCount0C == 0;
+                if (!push)
+                    n = 0;
                 while (n > 0) {
                     entry->unk0 += entry->unk0 / 2;
                     if (entry->unk0 > 0x1000) {
@@ -1017,10 +1030,11 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
                     }
                     n--;
                 }
-                if (slot->mainCount0C < 4) {
+                if (push && slot->mainCount0C < 4) {
                     slot->mainCount0C += 1;
                 }
-                slot->mainIndex10 = (slot->mainIndex10 + 3) % 4;
+                if (push)
+                    slot->mainIndex10 = (slot->mainIndex10 + 3) % 4;
                 entry = (TrailEntry4 *)&slot->main14[slot->mainIndex10];
                 v1 = 0x1000 - work->temporaryC4;
                 entry->unk0 = v1 >= 0x200 ? v1 : 0x200;
@@ -1117,10 +1131,12 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
             s32 n;
             RroProjectedVertex *dst;
             const RroProjectedVertex *src;
-            if (slot->secondCount34 < 4) {
+            /* a pose per tick, the newest replaced between (as main14) */
+            const int push = RaceSlowTick() || slot->secondCount34 == 0;
+            if (push && slot->secondCount34 < 4) {
                 slot->secondCount34 += 1;
             }
-            idx = (slot->secondIndex38 + 3) % 4;
+            idx = push ? (slot->secondIndex38 + 3) % 4 : slot->secondIndex38;
             slot->secondIndex38 = idx;
             entry = (TrailEntry4 *)&slot->second3C[idx];
             entry->unk0 = (s16)slot->intensity60;
@@ -1206,7 +1222,8 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
             vsrc++;
             vdst++;
         }
-        if (RacePaused == 0) {
+        /* a sample per tick (rr/field_rate.h) */
+        if (RacePaused == 0 && RaceSlowTick()) {
             Vec3sFields8 *dst;
             const Vec3sFields8 *src;
             slot->historyCount68 += 1;
@@ -1235,14 +1252,14 @@ void DrawWheelTrailEffects(void *arg0, s32 *arg1, void *arg2, void *arg3, s32 ar
         while (nleft > 0) {
             a2 = (TrailEntry8 *)&slot->history84[i8];
             i8 = (i8 + 1) % 8;
-            s5 = a2->unk0 - dec8;
+            s5 = a2->unk0 - RaceFieldSplit(dec8);
             if (s5 < 0) {
                 s5 = 0;
             }
             nleft--;
             a2->unk0 = s5;
         }
-        if (s5 == 0) {
+        if (s5 == 0 && RaceSlowTick()) {
             slot->historyCount68 -= 1;
         }
         if (slot->historyCount68 == 0) {

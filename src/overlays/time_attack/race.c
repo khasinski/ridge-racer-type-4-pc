@@ -157,8 +157,8 @@ update_pause_timer:
     /* the frame's own work before its step (rr/cpu_work.h) */
     RrSpendRaceModeOwn(0);
     StepRaceFrame(GameModeType);
-    if (tick)
-        UpdateTrackObjects();
+    /* every field (objsim.c, rr/field_rate.h) */
+    UpdateTrackObjects();
     if (!tick) {
     } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
         UpdateRaceIntroCamera(PlayerCars, ModeFrame);

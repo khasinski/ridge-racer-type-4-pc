@@ -287,13 +287,13 @@ block_7:
         }
         RR_661_FRAME_SCRATCH->mode5E = 1;
         SetupPlayerView(var_s2);
-        if (tick)
-            UpdateTrackObjects();
+        /* every field (objsim.c, rr/field_rate.h) */
+        UpdateTrackObjects();
         DrawTrackObjects(0);
         temp_s0_4 = var_s2 + 1;
         DrawTrackSceneryForPlayer(temp_s0_4);
-        if (tick)
-            SlotSetLevelProgram(PlayerDisplayRpm[var_s2], PlayerThrottleLoad[var_s2], var_s2);
+        /* the engine sound by the field (rr/field_rate.h) */
+        SlotSetLevelProgram(PlayerDisplayRpm[var_s2], PlayerThrottleLoad[var_s2], var_s2);
         var_s2 = temp_s0_4;
     } while (var_s2 < 2);
     if (RaceState >= 4) {

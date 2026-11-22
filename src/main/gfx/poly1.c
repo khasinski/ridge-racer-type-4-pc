@@ -330,15 +330,23 @@ void DrawAnimatedTrackObject(AnimatedTrackScratch *scratch, int objectIndex, int
     AnimatedLinePacket *last;
     int fraction;
     int initializedThisCall;
+    /* At field rate the burst's timeline (its set-up, frame count and
+     * colour keys) steps per tick and its particles move every field, half
+     * of a tick's step each (EmitAnimatedTrackLines, rr/field_rate.h). */
+    const int tick = RaceSlowTick();
+    int step;
 
     PsyqMemset(&direction, 0, sizeof(direction));
     direction.fields.z = 0x100;
     object = AnimatedTrackObjPool + objectIndex;
     ordering = RR_GPU_SCRATCH->order + 0x240;
     object->advance30 = advance;
+    step = advance && tick;
     colorIndex = (object->frame14 - object->startFrame28) & 0xF;
     if (object->initialized10 < object->capacity08) {
         initializedThisCall = 0;
+        if (!tick)
+            return;
         while (initializedThisCall < 10) {
             if (!(object->initialized10 < object->capacity08)) break;
             particle = object->particles00 + object->initialized10;
@@ -369,7 +377,7 @@ void DrawAnimatedTrackObject(AnimatedTrackScratch *scratch, int objectIndex, int
         } else {
             startFrame = object->startFrame28;
             if (object->frame14 < startFrame) {
-                if (object->advance30) object->frame14 = object->frame14 + 1;
+                if (step) object->frame14 = object->frame14 + 1;
                 object->activeCount04 = 0;
                 object->tailsF0[DrawBufIndex] = 0;
             } else {
@@ -377,7 +385,7 @@ void DrawAnimatedTrackObject(AnimatedTrackScratch *scratch, int objectIndex, int
                 object->activeCount04 = visibleFrames;
                 if (visibleFrames >= 0x10) object->activeCount04 = object->capacity08;
                 else object->activeCount04 = visibleFrames * (object->capacity08 / 16);
-                if (object->advance30) object->frame14 = object->frame14 + 1;
+                if (step) object->frame14 = object->frame14 + 1;
                 key = object->keys40 + object->keyIndex34;
                 if (key->duration == -1) {
                     object->palette48.values[colorIndex] = key->color;
@@ -385,7 +393,7 @@ void DrawAnimatedTrackObject(AnimatedTrackScratch *scratch, int objectIndex, int
                     RR_GTE_SETFC(key[1].color.r << 4, key[1].color.g << 4, key[1].color.b << 4);
                     fraction = (s32)(object->colorTick18 * 0x1000U) / key->duration;
                     DpqColor(&key->color, fraction, &object->palette48.values[colorIndex]);
-                    if (object->advance30) {
+                    if (step) {
                         object->colorTick18 = (object->colorTick18 + 1U);
                         if (object->colorTick18 >= key->duration) {
                             object->colorTick18 = 0;
@@ -400,7 +408,7 @@ void DrawAnimatedTrackObject(AnimatedTrackScratch *scratch, int objectIndex, int
                     RR_GTE_SETFC(key[1].color.r << 4, key[1].color.g << 4, key[1].color.b << 4);
                     fraction = (s32)(object->colorTick1C * 0x1000U) / key->duration;
                     DpqColor(&key->color, fraction, &object->palette88.values[colorIndex]);
-                    if (object->advance30) {
+                    if (step) {
                         object->colorTick1C = (object->colorTick1C + 1U);
                         if (object->colorTick1C >= key->duration) {
                             object->colorTick1C = 0;
