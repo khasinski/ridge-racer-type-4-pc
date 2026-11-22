@@ -47,9 +47,10 @@
   timing.
 - Race frame rate: the wall, kerb and car-to-car contact, the impact and
   landing shakes, the body's roll, pitch and suspension, the wheels' bumps
-  and jumps and the wheels' spin are ready to run every field with the same real-time
-  behaviour (`RR4_CAR_FIELD_STEP=1` while the camera and the player car's
-  handling follow).
+  and jumps and the wheels' spin run every field with the original's
+  real-time behaviour (`RR4_CAR_FIELD_STEP=0` keeps them at the original
+  tick, for comparisons). Fixed: at field rate a wall hit cost the car
+  far too little speed (its losses applied on every second field only).
 - **Race frame rate: the opponents drive at 50 / 60 Hz.** With Race frame
   rate on, the computer cars' driving (steering, lane changes and
   overtakes, corner turns, speed, gear shifts and engine revs) updates every

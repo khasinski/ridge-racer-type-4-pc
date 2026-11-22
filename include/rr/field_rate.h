@@ -50,11 +50,11 @@ static inline int RaceFieldsPerTick(void) { return RaceFieldRateLive ? 2 : 1; }
 
 /* The car stages run every field (StepRaceFrame): the stages
  * (CarUpdateStages), the wall / kerb contact block and the car-vs-car
- * contact take their fast-lane paths; the input, the player cars' and the
- * opponents' updates keep the tick until they are converted. Only with
- * RaceFieldRateLive; until the cameras and the player car follow, it is the
- * development switch RR4_CAR_FIELD_STEP=1 (else 0: the car stages run on
- * the tick, by their original code). */
+ * contact take their fast-lane paths, with the player cars' and the
+ * opponents' updates every field. On whenever RaceFieldRateLive;
+ * RR4_CAR_FIELD_STEP=0 runs them on the tick by their original code (the
+ * player cars' motion stages still every field: CarStageFast), for
+ * comparisons. */
 extern s32 RaceFieldCarStep;
 /* Fields since start-up (RaceFieldRateNextField counts them). */
 extern u32 RaceFieldCount;

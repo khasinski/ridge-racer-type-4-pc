@@ -230,9 +230,9 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `SoundUpdateField` between: listener, two-field Doppler, slot pitches
      and volumes, the master fade half way); the pad's auto-repeat counts
      ticks.
-     `RaceFieldCarStep` (for now the development switch
-     `RR4_CAR_FIELD_STEP=1`) runs `StepRaceFrame`'s car stages every field
-     while the input and the cars' updates keep the tick: the motion's
+     `RaceFieldCarStep` (on at field rate; `RR4_CAR_FIELD_STEP=0` turns it
+     off for comparisons) runs `StepRaceFrame`'s car stages and contact
+     every field: the motion's
      integration halves, the wall / kerb / car contact losses keep the
      square root of their share a field, the shake and contact timers count
      their ticks by every second field (sidecar half flags), the body's

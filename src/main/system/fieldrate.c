@@ -13,12 +13,12 @@ s32 RaceTickField = 1;
 s32 RaceFieldCarStep;
 u32 RaceFieldCount;
 
-/* RR4_CAR_FIELD_STEP=1: the car stages every field (rr/field_rate.h). */
+/* The car stages every field unless RR4_CAR_FIELD_STEP=0 (rr/field_rate.h). */
 static int CarStepWanted(void) {
     static int wanted = -1;
     if (wanted < 0) {
         const char *e = getenv("RR4_CAR_FIELD_STEP");
-        wanted = e && *e && *e != '0';
+        wanted = !(e && *e == '0');
     }
     return wanted;
 }

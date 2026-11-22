@@ -116,6 +116,8 @@
  *                      PSYZ_AUDIO_CLOCK=video the samples follow the VSync
  *                      count instead of the wall clock.
  *   RR4_DRAW_DISTANCE=1 double the course view depth, as the Graphics setting
+ *   RR4_CAR_FIELD_STEP=0 at field rate, the car stages and the contact by the
+ *                      original tick (comparisons; rr/field_rate.h)
  *   RR4_RACE_FIELD_RATE=0|1 races at the original 25/30 fps or every field
  *                      (50/60 Hz), as the Graphics setting Race frame rate
  *   RR4_INTERNAL_RES=n render at n times the PlayStation resolution (1..8)
