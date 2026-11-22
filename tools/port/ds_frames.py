@@ -52,6 +52,8 @@ with the port run headless with PSYZ_CARD_UNPLUG=2.
   DSF_PAUSES=1  log "PAUSE <n> tick <t>" at each field's pause (the trace
               line n is read there)
   DSF_A0=1    also log each BIOS A0 call's number (rand 2f, srand 30)
+  DSF_B0=1    ... and each B0 call's (offset 9b: OpenEvent 08, EnableEvent
+              0c, ReturnFromException 17) and C0 call's (9e)
   DSF_FUNCAT  at that port vsync, print the mode function's address
 
 timeline prints the log's marks, CD commands and completions per field with
@@ -191,6 +193,18 @@ def install_a0_marks(d):
     d.poke(0x800000A0, dc.words([dc.j(stub), 0]))
 
 
+def install_b0_marks(d):
+    """XMARK at offset 9b with the function number of each BIOS B0 call
+    (OpenEvent 08, EnableEvent 0c, ...) and at 9e of each C0 call
+    (SysEnqIntRP 02)."""
+    t1, t8 = 9, 24
+    for vec, stub, off in ((0x800000B0, 0x8000D240, 0x209B), (0x800000C0, 0x8000D280, 0x209E)):
+        old = d.mem(vec, 16)
+        w = list(struct.unpack('<4I', old))
+        d.poke(stub, dc.words([I(0x0F, 0, t8, 0x1F80), I(0x28, t8, t1, off)] + w[:2] + [dc.j(vec + 8), 0]))
+        d.poke(vec, dc.words([dc.j(stub), 0]))
+
+
 def install_mark(d, k, spec):
     name, *flags = spec.split(':')
     fn = int(name, 16) if name.startswith('0x') else (SYM.get(name) or OVL[name])
@@ -264,6 +278,8 @@ def run(fields, trace_path, log_path):
                     install_exception_marks(d)
                 if os.environ.get('DSF_A0') == '1':
                     install_a0_marks(d)
+                if os.environ.get('DSF_B0') == '1':
+                    install_b0_marks(d)
                 for k, m in enumerate(marks):
                     if '@' not in m:
                         install_mark(d, k, m)
