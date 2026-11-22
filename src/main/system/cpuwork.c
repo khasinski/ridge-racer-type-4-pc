@@ -64,6 +64,13 @@ void RrWorkSpend(const RrWork *work, const void *cursor, const RrWorkCost *cost)
     RR_CPU_CYCLES((unsigned)(total / 64));
 }
 
+void RrWorkSpendPart(RrWork *work, const void *cursor, const RrWorkCost *cost) {
+    RrWorkCost part = *cost;
+    part.per[RR_WORK_CALL] = 0;
+    RrWorkSpend(work, cursor, &part);
+    RrWorkBegin(work, cursor);
+}
+
 void RrWorkHoldBegin(const void *cursor) {
     if (HoldDepth++ != 0)
         return;
@@ -103,19 +110,25 @@ void RrWorkHoldEnd(const void *cursor) {
 const RrWorkCost RrCostReadCarInput = W(12622, 0, 0, 0, 0, 0, 0, 0);       /* 218; 42, 158 */
 /* UpdatePlayerCar and UpdateComCars by the race's state, their paths:
  * before the start (RaceState 0) the player's car 177 a call and the AI
- * 8538, in the countdown (1) 2440 and 3530, racing 3060 and 3530 + 7716 an
- * AI car it drives (its projection, the one MVMVA each; 57k-59k with
- * seven). One cost for every state had the AI 3k short racing, 3k long in
- * the countdown and the player's car 2.3k long before the start. */
+ * 2520 besides its BIOS rand calls (two an AI car, 433 each, which charge
+ * themselves: DuckStation's call 8.7k with seven, the Grand Prix's fly-by
+ * on course 7, where 8538 counted them twice and its frames ran 4.5k long),
+ * in the countdown (1) 2440 and 2784 besides the rand calls of the AI's
+ * engine revving (DuckStation 3.5k a call with them, 0.7k of them a frame:
+ * the first race's countdown), racing 3060 and 3530 + 7716 an AI car it
+ * drives (its projection, the one MVMVA each; 57k-59k with seven).
+ * One cost for every state had the AI 3k short racing, 3k long in the
+ * countdown and the player's car 2.3k long before the start. */
 static const RrWorkCost CostUpdatePlayerCar[3] = {
     W(11328, 0, 0, 0, 0, 0, 0, 0), W(156160, 0, 0, 0, 0, 0, 0, 0), W(195840, 0, 0, 0, 0, 0, 0, 0)};
-static const RrWorkCost CostUpdateComCars[2] = {
-    W(546432, 0, 0, 0, 0, 0, 0, 493824), W(225920, 0, 0, 0, 0, 0, 0, 493824)};
+static const RrWorkCost CostUpdateComCars[3] = {
+    W(161280, 0, 0, 0, 0, 0, 0, 493824), W(178176, 0, 0, 0, 0, 0, 0, 493824),
+    W(225920, 0, 0, 0, 0, 0, 0, 493824)};
 const RrWorkCost *RrCostUpdatePlayerCar(void) {
     return &CostUpdatePlayerCar[RaceState <= 0 ? 0 : RaceState == 1 ? 1 : 2];
 }
 const RrWorkCost *RrCostUpdateComCars(void) {
-    return &CostUpdateComCars[RaceState <= 0 ? 0 : 1];
+    return &CostUpdateComCars[RaceState <= 0 ? 0 : RaceState == 1 ? 1 : 2];
 }
 /* ClampAiCarLateralMotion, UpdateCarSteering, DecayCarOffset,
  * IntegrateCarMotion, UpdateCarTrackNode, ComputeWheelOffsets,

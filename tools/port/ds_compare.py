@@ -193,6 +193,17 @@ SCENARIOS = {
     'gp-ending': (26500, BOOT + ',start@m1/4:400,' + GP + ',circle@m1/33:200+4%154',
                   {'pokes': GP_LAPS + ',SelectionState+23:1=6@7700', 'sym_pokes': True,
                    'watch': CAR_POSE + RACE_STATE + GP_STAGE}),
+    # the garage's team car select and history screen stepped to other
+    # teams and cars than garage-save's
+    'garage-team': (6500, BOOT + ',' + MENU_DOWNS(3) + ',start@m1/4:600,circle@m1/40:300,'
+                    'right@m1/64:150,right@m1/64:200,circle@m1/64:300,right@m1/66:150,'
+                    'right@m1/66:200,left@m1/66:260,circle@m1/66:400', {}),
+    # Versus with other cars and another course than vs-full's, both cars
+    # driven by RR4_AUTODRIVE into the race
+    'vs-picks': (9000, VS_AUTO.replace('circle@m1/56:150', 'right@m1/56:100,circle@m1/56:150').replace(
+                     '2:circle@m1/56:450', '2:right@m1/56:400,2:circle@m1/56:450').replace(
+                     'circle@m1/57:200', 'right@m1/57:100,right@m1/57:140,circle@m1/57:200'),
+                 {'autodrive': 2, 'watch': CAR_POSE + RACE_STATE + CAR2_POSE + [('800f3914:4', 'CourseIndex:4')]}),
     'ta-full': (32000, TA_AUTO, {'autodrive': True, 'watch': CAR_POSE + RACE_STATE}),
     'vs-full': (28500, VS_AUTO, {'autodrive': 2, 'watch': CAR_POSE + RACE_STATE + CAR2_POSE}),
 }

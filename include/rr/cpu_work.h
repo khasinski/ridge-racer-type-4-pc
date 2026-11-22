@@ -58,6 +58,12 @@ void RrWorkBegin(RrWork *work, const void *cursor);
  * now (the one RrWorkBegin was given, moved on). A null work spends the
  * cost's RR_WORK_CALL only. */
 void RrWorkSpend(const RrWork *work, const void *cursor, const RrWorkCost *cost);
+/* The work since RrWorkBegin (or the previous part) without the call's own,
+ * spent now: a routine that charges by object spends each object's time
+ * before the next one, so what an object does (a rand call, a sound
+ * register write) comes where its time puts it on the PS1, not at the
+ * routine's start. */
+void RrWorkSpendPart(RrWork *work, const void *cursor, const RrWorkCost *cost);
 /* Host-only work between them is not counted (nested holds count once). */
 void RrWorkHoldBegin(const void *cursor);
 void RrWorkHoldEnd(const void *cursor);

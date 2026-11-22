@@ -63,6 +63,7 @@ extern s32 TrackObjVisibleFrame[];
 extern Vec16 TrackObjWorldOrigin;
 
 
+static RrWork *TrackObjectsWork;
 static void DrawTrackObjectsWork(s32 arg0) {
     MatrixWords32 sp18;
     MatrixWords32 sp38;
@@ -100,6 +101,9 @@ static void DrawTrackObjectsWork(s32 arg0) {
             continue;
         }
         InterpSet(INTERP_OBJECT, (u32)i);
+        if (TrackObjectsWork) {
+            RrWorkSpendPart(TrackObjectsWork, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
+        }
 
         switch (TrackObjectDefs[i].f4 % 10) {
         case 0:
@@ -755,9 +759,17 @@ static void DrawTrackObjectsWork(s32 arg0) {
     InterpEnd(interp);
 }
 
-/* With its PS1 time (rr/cpu_work.h). */
+/* With its PS1 time (rr/cpu_work.h), object by object: the course objects'
+ * rand calls and sound writes come where the objects before them put them
+ * (DuckStation: the Grand Prix fly-by's first 4.2k-4.6k clocks into the
+ * call, the port's at 1.4k with the whole call's time at its end). */
 void DrawTrackObjects(s32 arg0) {
-    RR_WORK_DRAW(DrawTrackObjectsWork(arg0), &RrCostDrawTrackObjects);
+    RrWork work;
+    RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
+    TrackObjectsWork = &work;
+    DrawTrackObjectsWork(arg0);
+    TrackObjectsWork = NULL;
+    RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostDrawTrackObjects);
 }
 
 void BuildObjectMatrix(int unused, const s16 *p, MatrixWords32 *out, int flag) {
