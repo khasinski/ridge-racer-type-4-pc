@@ -18,10 +18,18 @@ index bcdab1926..dd08dd92e 100644
    {
      if (offset == 0x81)
 diff --git a/src/core/cdrom.cpp b/src/core/cdrom.cpp
-index 667aaab67..e46d9a1de 100644
+index 667aaab67..91d0880b5 100644
 --- a/src/core/cdrom.cpp
 +++ b/src/core/cdrom.cpp
-@@ -38,6 +38,8 @@
+@@ -12,6 +12,7 @@
+ #include "settings.h"
+ #include "spu.h"
+ #include "system.h"
++#include "cpu_core.h"
+ #include "timing_event.h"
+ 
+ #include "util/cd_image.h"
+@@ -38,6 +39,8 @@
  #include "imgui.h"
  
  #include <cmath>
@@ -30,7 +38,7 @@ index 667aaab67..e46d9a1de 100644
  #include <map>
  #include <vector>
  
-@@ -1669,6 +1671,12 @@ u32 CDROM::GetSectorsPerTrack(CDImage::LBA lba)
+@@ -1669,6 +1672,12 @@ u32 CDROM::GetSectorsPerTrack(CDImage::LBA lba)
    return spt_table[std::min(mm, static_cast<u32>(spt_table.size() - 1))];
  }
  
@@ -43,7 +51,7 @@ index 667aaab67..e46d9a1de 100644
  TickCount CDROM::GetTicksForSeek(CDImage::LBA new_lba, bool ignore_speed_change)
  {
    if (g_settings.cdrom_seek_speedup == 0)
-@@ -1745,7 +1753,15 @@ TickCount CDROM::GetTicksForSeek(CDImage::LBA new_lba, bool ignore_speed_change)
+@@ -1745,7 +1754,15 @@ TickCount CDROM::GetTicksForSeek(CDImage::LBA new_lba, bool ignore_speed_change)
    // the same seek times repeatedly, end up locking up in an infinite loop. e.g. Resident Evil, Dino Crisis, etc.
    // Add some randomness to timing if we detect them repeatedly seeking, otherwise don't. This somewhat simulates how
    // the real hardware behaves, by adding an additional 0.5-1ms to every seek.
@@ -60,7 +68,22 @@ index 667aaab67..e46d9a1de 100644
  
    if (g_settings.cdrom_seek_speedup > 1)
      ticks = std::max<u32>(ticks / g_settings.cdrom_seek_speedup, MIN_SEEK_TICKS);
-@@ -1911,6 +1927,9 @@ void CDROM::ExecuteCommand(void*, TickCount ticks)
+@@ -1876,6 +1893,14 @@ void CDROM::BeginCommand(Command command)
+   }
+ 
+   s_state.command = command;
++  {
++    // RR4 tools/port: DUCKSTATION_CD_TRACE=1 logs each command register write (no effect on timing)
++    static const bool trace = CdTraceEnabled();
++    if (trace)
++      std::fprintf(stderr, "CDWR %s tick %llu pc %08x delay %d\n", s_command_info[static_cast<u8>(command)].name,
++                   static_cast<unsigned long long>(System::GetGlobalTickCounter()), CPU::g_state.current_instruction_pc,
++                   static_cast<int>(ack_delay));
++  }
+   s_state.command_event.SetIntervalAndSchedule(ack_delay);
+   UpdateCommandEvent();
+   UpdateStatusRegister();
+@@ -1911,6 +1936,9 @@ void CDROM::ExecuteCommand(void*, TickCount ticks)
  
    // Stop command event first, reduces our chances of ending up with out-of-order events.
    s_state.command_event.Deactivate();
@@ -70,7 +93,7 @@ index 667aaab67..e46d9a1de 100644
  
    switch (s_state.command)
    {
-@@ -2665,6 +2684,10 @@ void CDROM::ExecuteTestCommand(u8 subcommand)
+@@ -2665,6 +2693,10 @@ void CDROM::ExecuteTestCommand(u8 subcommand)
  
  void CDROM::ExecuteCommandSecondResponse(void*, TickCount ticks)
  {
@@ -81,7 +104,7 @@ index 667aaab67..e46d9a1de 100644
    switch (s_state.command_second_response)
    {
      case Command::GetID:
-@@ -3376,6 +3399,9 @@ void CDROM::DoSectorRead()
+@@ -3376,6 +3408,9 @@ void CDROM::DoSectorRead()
    }
  
    s_state.current_lba = s_reader.GetLastReadSector();
@@ -91,7 +114,7 @@ index 667aaab67..e46d9a1de 100644
    s_state.current_subq_lba = s_state.current_lba;
    s_state.last_subq_needs_update = false;
    s_state.subq_lba_update_tick = System::GetGlobalTickCounter();
-@@ -3592,6 +3618,15 @@ std::tuple<s16, s16> CDROM::GetAudioFrame()
+@@ -3592,6 +3627,15 @@ std::tuple<s16, s16> CDROM::GetAudioFrame()
  
  void CDROM::AddCDAudioFrame(s16 left, s16 right)
  {
@@ -108,7 +131,7 @@ index 667aaab67..e46d9a1de 100644
  }
  
 diff --git a/src/core/cpu_core.cpp b/src/core/cpu_core.cpp
-index cf80b066c..05691c02e 100644
+index cf80b066c..07dc84d5e 100644
 --- a/src/core/cpu_core.cpp
 +++ b/src/core/cpu_core.cpp
 @@ -2,6 +2,7 @@
@@ -169,7 +192,50 @@ index cf80b066c..05691c02e 100644
    const BreakpointType bptype = (type == MemoryAccessType::Read) ? BreakpointType::Read : BreakpointType::Write;
    if (CheckBreakpointList(bptype, address)) [[unlikely]]
      s_locals.break_type = ExecutionBreakType::Breakpoint;
-@@ -2976,6 +3013,11 @@ ALWAYS_INLINE_RELEASE static u32 ReadICache(VirtualMemoryAddress address)
+@@ -2548,6 +2585,42 @@ template<PGXPMode pgxp_mode, bool debug>
+       if constexpr (debug)
+         ExecutionBreakpointCheck(g_state.pc);
+ 
++      {
++        // RR4 tools/port: DUCKSTATION_PC_TRACE=<lo>:<hi> logs each instruction's start (pc, system tick) between
++        // those ticks (no effect on timing)
++        static u64 pct_lo[16], pct_hi[16];
++        static int pct_n = -1;
++        if (pct_n < 0) [[unlikely]]
++        {
++          pct_n = 0;
++          if (const char* e = std::getenv("DUCKSTATION_PC_TRACE"))
++          {
++            unsigned long long lo, hi;
++            int used;
++            while (pct_n < 16 && std::sscanf(e, "%llu:%llu%n", &lo, &hi, &used) == 2)
++            {
++              pct_lo[pct_n] = lo;
++              pct_hi[pct_n++] = hi;
++              e += used;
++              if (*e != ',')
++                break;
++              e++;
++            }
++          }
++        }
++        if (pct_n > 0) [[unlikely]]
++        {
++          const u64 t = System::GetGlobalTickCounter();
++          for (int i = 0; i < pct_n; i++)
++          {
++            if (t >= pct_lo[i] && t <= pct_hi[i])
++            {
++              std::fprintf(stderr, "PCT %08x %llu\n", g_state.pc, static_cast<unsigned long long>(t));
++              break;
++            }
++          }
++        }
++      }
+       g_state.pending_ticks++;
+ 
+       // now executing the instruction we previously fetched
+@@ -2976,6 +3049,11 @@ ALWAYS_INLINE_RELEASE static u32 ReadICache(VirtualMemoryAddress address)
  }
  } // namespace CPU
  
@@ -181,7 +247,7 @@ index cf80b066c..05691c02e 100644
  ALWAYS_INLINE_RELEASE bool CPU::FetchInstruction()
  {
    DebugAssert(Common::IsAlignedPow2(g_state.npc, 4));
-@@ -2992,7 +3034,9 @@ ALWAYS_INLINE_RELEASE bool CPU::FetchInstruction()
+@@ -2992,7 +3070,9 @@ ALWAYS_INLINE_RELEASE bool CPU::FetchInstruction()
  #if 0
        DoInstructionRead<true, false, 1, false>(address, &g_state.next_instruction.bits);
  #else
@@ -316,7 +382,7 @@ index 73493c9e7..d8f0875c5 100644
    // TODO: Use channel priority. But doing it in ascending order is probably good enough.
    // Main thing is that OTC happens after GPU, because otherwise it'll wipe out the LL.
 diff --git a/src/core/gpu.cpp b/src/core/gpu.cpp
-index d31bc5d83..a51e3005d 100644
+index d31bc5d83..1445b9e75 100644
 --- a/src/core/gpu.cpp
 +++ b/src/core/gpu.cpp
 @@ -2,7 +2,10 @@
@@ -381,9 +447,9 @@ index d31bc5d83..a51e3005d 100644
 +        // RR4 tools/port: DUCKSTATION_IOREAD_TRACE=1 logs each GPUSTAT read (no effect on timing)
 +        static const bool trace = std::getenv("DUCKSTATION_IOREAD_TRACE") != nullptr;
 +        if (trace)
-+          std::fprintf(stderr, "IORD GS tick %llu pc %08x sync %d\n",
++          std::fprintf(stderr, "IORD GS tick %llu pc %08x sync %d ra %08x\n",
 +                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), CPU::g_state.current_instruction_pc,
-+                       pending ? 1 : 0);
++                       pending ? 1 : 0, CPU::g_state.regs.ra);
 +      }
  
        return s_locals.GPUSTAT.bits;
@@ -646,7 +712,7 @@ index 824a9ae9a..613295791 100644
      if (MediaCapture* cap = System::GetMediaCapture()) [[unlikely]]
      {
 diff --git a/src/core/timers.cpp b/src/core/timers.cpp
-index c3b6edd26..21bd1741b 100644
+index c3b6edd26..b628b5655 100644
 --- a/src/core/timers.cpp
 +++ b/src/core/timers.cpp
 @@ -2,10 +2,13 @@
@@ -684,9 +750,9 @@ index c3b6edd26..21bd1741b 100644
 +        // RR4 tools/port: DUCKSTATION_IOREAD_TRACE=1 logs each root counter value read (no effect on timing)
 +        static const bool trace = std::getenv("DUCKSTATION_IOREAD_TRACE") != nullptr;
 +        if (trace)
-+          std::fprintf(stderr, "IORD T%u tick %llu pc %08x val %u sync %d\n", timer_index,
++          std::fprintf(stderr, "IORD T%u tick %llu pc %08x val %u sync %d ra %08x\n", timer_index,
 +                       static_cast<unsigned long long>(System::GetGlobalTickCounter()), CPU::g_state.current_instruction_pc,
-+                       static_cast<unsigned>(cs.counter), synced ? 1 : 0);
++                       static_cast<unsigned>(cs.counter), synced ? 1 : 0, CPU::g_state.regs.ra);
 +      }
        return cs.counter;
      }
