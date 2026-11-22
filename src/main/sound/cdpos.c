@@ -1,5 +1,6 @@
 #include "rr/release.h"
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/audio_cd_controller.h"
 #include "game/sound/cdmain.h"
 #include "psyq/libcd/cdfile.h"
@@ -34,6 +35,7 @@ void CdAudioFindStreamFile(void) {
 void CdAudioInit(void) {
     SoundState.cdMode2658 = 0xC8;
     CdControlB(0xE, &SoundState.cdMode2658, 0);
+    RR_CPU_CYCLES(RR_CYCLES_CD_AUDIO_INIT);
     SsSetSerialVol(0, 0x7F, 0x7F);
     CdReadyCallback(CdAudioReadyCallback);
     SoundState.sector2664 = -1;

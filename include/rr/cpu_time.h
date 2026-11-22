@@ -223,6 +223,10 @@ enum {
     RR_CYCLES_SOUND_UPDATE_MASTER = 208,
     RR_CYCLES_SOUND_UPDATE_QUEUE = 88,
     RR_CYCLES_CD_AUDIO_UPDATE = 39,
+    /* CdAudioInit after its Setmode's CdControlB, beyond what its calls
+     * charge: DuckStation's CdControlB return to CdAudioFindStreamFile's
+     * 389 clocks (DUCKSTATION_PC_TRACE, the boot) [trace] */
+    RR_CYCLES_CD_AUDIO_INIT = 97,
     RR_CYCLES_CD_AUDIO_TICK = 206,
     RR_CYCLES_CD_AUDIO_POSITION = 142,
     RR_CYCLES_CD_AUDIO_PLAY_STEP = 29,
@@ -327,7 +331,12 @@ enum {
     /* LoadR4Directory's CdReadSync(1) loop around the call: its turns 709
      * clocks apart on DuckStation with the call's two marks' stubs (about
      * 17), the call 680 [mark] */
-    RR_CYCLES_CD_READ_SYNC_LOOP = 12,
+    RR_CYCLES_CD_READ_SYNC_LOOP = 4, // (the loop's two branches, DUCKSTATION_PC_TRACE)
+    /* ... from its Setloc's CdControl to its CdRead, and from that to its
+     * first CdReadSync (DUCKSTATION_IOREAD_TRACE: the boot's VSync(-1)
+     * calls, PsyZ timing_profile.h CD_READ_*) [trace] */
+    RR_CYCLES_R4_DIRECTORY_READ_CALL = 10,
+    RR_CYCLES_R4_DIRECTORY_SYNC_CALL = 3,
     /* LoadR4Directory after its read: the directory's entries to sector
      * positions (CdIntToPos, 76 clocks, and the loop), 80.0k for 950 */
     RR_CYCLES_R4_DIRECTORY_ENTRY = 84,
@@ -336,7 +345,7 @@ enum {
      * read's Pause completion (DSF_MARKS SsInit only, DSF_EXC=0), the
      * work between them as charged (the completion's exception now in the
      * loop, PsyZ CD_READ_PAUSE_DONE_CLOCKS) [mark] */
-    RR_CYCLES_R4_DIRECTORY_READ_END = 209,
+    RR_CYCLES_R4_DIRECTORY_READ_END = 209 - 42,
     /* The attract demo's race frame, AttractDemoRaceUpdate less the
      * routines that spend their time by their work (rr/cpu_work.h:
      * StepRaceFrame, UpdateTrackObjects, DrawCars, SetupPlayerView,

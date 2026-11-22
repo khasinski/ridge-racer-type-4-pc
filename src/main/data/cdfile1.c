@@ -106,7 +106,9 @@ void LoadR4Directory(void)
     sectors=2;
     do {
         CdControl(2,file.pos,0);
+        RR_CPU_CYCLES(RR_CYCLES_R4_DIRECTORY_READ_CALL);
         CdRead(sectors,CdDirectoryBuffer,0x80);
+        RR_CPU_CYCLES(RR_CYCLES_R4_DIRECTORY_SYNC_CALL);
         do { status=CdReadSync(1,0); RR_CPU_CYCLES(RR_CYCLES_CD_READ_SYNC_LOOP); } while(status>0);
     } while(status);
     RR_CPU_CYCLES(RR_CYCLES_R4_DIRECTORY_READ_END);
