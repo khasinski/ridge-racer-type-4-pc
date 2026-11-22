@@ -3,21 +3,16 @@
  * for development builds, off for releases). The syntax of the lists is
  * parsed in diagnostics_parse.c; a malformed entry is reported on stderr and
  * skipped, and a malformed number is ignored with a message.
- *   RR4_PRESENTATION_FPS=0|60|120  output rate, independent of PAL/NTSC
- *   RR4_CAPTURE_SAMPLES=1  capture every generated sample and log its fraction
  *   RR4_FRAME_LIMIT=n  exit after n VSyncs
  *   RR4_CAPTURE=file   write the displayed frame as a PPM when exiting
  *   RR4_VRAM=file      write the whole VRAM as a PPM when exiting
  *   RR4_CAPTURE_AT=l   also write the displayed frame at each VSync of the
  *                      comma list l, as <RR4_CAPTURE or "capture">.<vsync>.ppm;
  *                      an entry a-b/s is every s-th VSync from a to b
- *   RR4_CAPTURE_MID=1  with frame interpolation, also write the midpoint
- *                      drawn for the displayed buffer (the in-between of the
- *                      frame shown and the one before it) at each of those
- *                      VSyncs, as <...>.<vsync>.mid.ppm. When no midpoint
- *                      was presented in the two fields before the VSync
- *                      (the frame before stayed on screen), an empty
- *                      <...>.<vsync>.held marks it.
+ *   RR4_CAPTURE_DISPLAY=1  with PSYZ_HEADLESS=gpu, also write the last
+ *                      presented 1280x720 output (window scaling, aspect,
+ *                      bars) at each of those VSyncs, as
+ *                      <...>.<vsync>.display.ppm
  *   RR4_GPU_DUMP_AT=l  record the GPU commands of the frame after each
  *                      VSync of the comma list l (to the next VSync) as
  *                      <RR4_GPU_DUMP or "gpudump">.<vsync>.psxgpu, a GPUDUMP
@@ -32,11 +27,7 @@
  *                      the 1x pixel.
  *   RR4_TRACE=n        print the mode state every n VSyncs (with
  *                      PSYZ_FRAME_LOG also "t ms", the host time of
- *                      the log's present_ms column; with frame
- *                      interpolation "interp p/t/m mid n": the last
- *                      frame's primitives, those tagged for
- *                      interpolation, those paired with the frame
- *                      before, and the midpoints presented so far)
+ *                      the log's present_ms column)
  *   RR4_PAD_SCRIPT=s   test input: hold pad buttons over VSync ranges.
  *                      s is a comma list of [2:]button@vsync[+frames]
  *                      (default 4 frames), e.g. "start@400,cross@900+6,
@@ -131,8 +122,8 @@
  *   RR4_GRAPHICS=l     graphics options for this run, as the Escape menu
  *                      sets them: a comma list of geometry (geometry
  *                      correction), nodither (dithering off), aa
- *                      (antialiasing), filter (texture filtering),
- *                      interpolation (frame interpolation) and wide (the
+ *                      (antialiasing), filter (texture filtering) and
+ *                      wide (the
  *                      Widescreen 16:9 aspect ratio: square pixels, races
  *                      at 16:9). Headless runs turn the options not named
  *                      off; interactive runs keep them as the preferences
@@ -616,14 +607,10 @@ static void finish(void) {
 /* RR4_CAPTURE_AT entries: VSyncs first..last, every step-th. */
 static Rr4VsyncRange capture_at[64];
 static int capture_at_len;
-static int capture_mid;
-static int capture_samples;
+static int capture_display;
 static const char *capture_base;
 
 static void capture_at_vsync(long vsync) {
-    /* midpoints presented by each of the last VSyncs */
-    static unsigned long long presented[4];
-    presented[vsync & 3] = Psyz_GpuGetInterpolatedPresentCount();
     for (int i = 0; i < capture_at_len; i++) {
         if (vsync >= capture_at[i].first && vsync <= capture_at[i].last &&
             (vsync - capture_at[i].first) % capture_at[i].step == 0) {
@@ -632,28 +619,11 @@ static void capture_at_vsync(long vsync) {
             snprintf(path, sizeof(path), "%s.%ld.ppm", capture_base, vsync);
             unsigned char *rgb = Psyz_VideoAllocRenderedFrame(&w, &h);
             write_ppm(path, rgb, w, h);
-            if (capture_samples) {
-                for (unsigned sample = 0; sample < 5; ++sample) {
-                    float fraction;
-                    unsigned char* pixels = Psyz_VideoAllocInterpolationSample(sample, &fraction, &w, &h);
-                    if (!pixels) break;
-                    snprintf(path, sizeof(path), "%s.%ld.sample%u.ppm", capture_base, vsync, sample);
-                    write_ppm(path, pixels, w, h);
-                    fprintf(stderr, "interpolation capture vsync=%ld sample=%u fraction=%.6f\n", vsync, sample, fraction);
-                }
-            }
-            if (capture_mid) {
-                unsigned char *mid = Psyz_VideoAllocMidpointFrame(&w, &h);
-                snprintf(path, sizeof(path), "%s.%ld.mid.ppm", capture_base, vsync);
-                if (mid)
-                    write_ppm(path, mid, w, h);
-                if (mid && presented[vsync & 3] == presented[(vsync - 2) & 3]) {
-                    FILE *held;
-                    snprintf(path, sizeof(path), "%s.%ld.held", capture_base, vsync);
-                    held = Psyz_FileOpen(path, "w");
-                    if (held)
-                        fclose(held);
-                }
+            if (capture_display) {
+                snprintf(path, sizeof(path), "%s.%ld.display.ppm", capture_base, vsync);
+                rgb = Psyz_VideoAllocHiddenDisplay(&w, &h);
+                if (rgb)
+                    write_ppm(path, rgb, w, h);
             }
         }
     }
@@ -693,8 +663,6 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
         prefs->disable_dithering |= (bits & RR4_GRAPHICS_NODITHER) != 0;
         prefs->antialiasing |= (bits & RR4_GRAPHICS_AA) != 0;
         prefs->texture_filtering |= (bits & RR4_GRAPHICS_FILTER) != 0;
-        if ((bits & RR4_GRAPHICS_INTERPOLATION) && !prefs->frame_interpolation)
-            prefs->frame_interpolation = 60;
         if (bits & RR4_GRAPHICS_WIDE)
             prefs->aspect_ratio = RR4_ASPECT_WIDESCREEN;
     } else {
@@ -702,7 +670,6 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
         prefs->disable_dithering = (bits & RR4_GRAPHICS_NODITHER) != 0;
         prefs->antialiasing = (bits & RR4_GRAPHICS_AA) != 0;
         prefs->texture_filtering = (bits & RR4_GRAPHICS_FILTER) != 0;
-        prefs->frame_interpolation = (bits & RR4_GRAPHICS_INTERPOLATION) ? 60 : 0;
         prefs->aspect_ratio = bits & RR4_GRAPHICS_WIDE ? RR4_ASPECT_WIDESCREEN : RR4_ASPECT_CLASSIC;
     }
     Psyz_VideoSetGeometryCorrection(prefs->geometry_correction);
@@ -711,8 +678,6 @@ static void apply_graphics(Rr4Prefs *prefs, const char *list, int interactive) {
     Psyz_VideoSetModelFiltering(prefs->texture_filtering);
     Psyz_VideoSetAspectMode(prefs->aspect_ratio == RR4_ASPECT_WIDESCREEN ? PSYZ_ASPECT_SQUARE
                                                                           : PSYZ_ASPECT_DISPLAY);
-    Psyz_GpuSetFrameInterpolation(prefs->frame_interpolation != 0);
-    Psyz_GpuSetPresentationRate(prefs->frame_interpolation);
     Rr4ApplyWidescreen(prefs->aspect_ratio == RR4_ASPECT_WIDESCREEN);
 }
 
@@ -732,12 +697,6 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     text = getenv("RR4_GRAPHICS");
     if (text && *text)
         apply_graphics(prefs, text, interactive);
-    text = getenv("RR4_PRESENTATION_FPS");
-    if (text && (!strcmp(text, "0") || !strcmp(text, "60") || !strcmp(text, "120"))) {
-        prefs->frame_interpolation = atoi(text);
-        Psyz_GpuSetFrameInterpolation(prefs->frame_interpolation != 0);
-        Psyz_GpuSetPresentationRate(prefs->frame_interpolation);
-    }
     prefs->extended_draw_distance = env_long("RR4_DRAW_DISTANCE", prefs->extended_draw_distance) != 0;
     ExtendedDrawDistance = prefs->extended_draw_distance;
     frame_limit = env_long("RR4_FRAME_LIMIT", 0);
@@ -769,9 +728,8 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     gpu_dump_len = env_long("RR4_GPU_DUMP_LEN", 1);
     gpu_dump_base = path_env("RR4_GPU_DUMP") ? path_env("RR4_GPU_DUMP") : "gpudump";
     capture_at_len = Rr4DiagParseRanges(getenv("RR4_CAPTURE_AT"), 1, capture_at, 64, "RR4_CAPTURE_AT");
-    capture_mid = getenv("RR4_CAPTURE_MID") && *getenv("RR4_CAPTURE_MID") == '1';
-    capture_samples = getenv("RR4_CAPTURE_SAMPLES") && *getenv("RR4_CAPTURE_SAMPLES") == '1';
     capture_base = path_env("RR4_CAPTURE") ? path_env("RR4_CAPTURE") : "capture";
+    capture_display = getenv("RR4_CAPTURE_DISPLAY") && *getenv("RR4_CAPTURE_DISPLAY") == '1';
 }
 
 /* RR4_CARD_SLOT steps. */
@@ -832,12 +790,6 @@ int Rr4DiagnosticsVSync(long vsync, int quitting) {
         fprintf(stderr, "vsync %ld frame %u mode %u/%d sub %u", vsync,
                 FrameCounter, ModeGroup, ModeIndex, SubmodeState);
         print_watches();
-        if (Psyz_GpuGetFrameInterpolation()) {
-            unsigned prims, tagged, paired;
-            Psyz_GpuGetInterpolationStats(&prims, &tagged, &paired);
-            fprintf(stderr, " interp %u/%u/%u mid %llu", prims, tagged, paired,
-                    Psyz_GpuGetInterpolatedPresentCount());
-        }
         /* host time on the clock of PSYZ_FRAME_LOG's present_ms */
         if (frame_log)
             fprintf(stderr, " t %.3f",

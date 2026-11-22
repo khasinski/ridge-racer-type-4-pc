@@ -1,5 +1,33 @@
 # Performance measurements
 
+## Frame interpolation removed (2026-11-22)
+
+The 60 / 120 FPS presentation (in-between pictures guessed from the PS1 draw
+lists) is gone; every game frame is presented once at its field. Paced
+hidden runs (`PSYZ_HEADLESS=gpu PSYZ_HEADLESS_PACED=1 PSYZ_AUDIO_CLOCK=wall`,
+8x, Original draw distance, geometry correction, filtering, widescreen),
+`PSYZ_PRESENT_LOG` intervals; 0.3 with 60 FPS selected vs. this change.
+Single runs on the M5 Max while the user was playing the game on it.
+
+| Section | 0.3, 60 FPS | This change |
+| --- | --- | --- |
+| Opening movie (25 fps, fields 590-2000) | median 20 images/s; intervals 16-368 ms (33, 50, 83, 166, 200 ms: movie frames shown late or skipped) | 691 of 706 intervals 38-43 ms (every second field), 2 at 58 ms, 1 at 80 ms |
+| Main menu (1/4) | 60 images/s | 49.7 images/s (every field), 1% low 41-49, max 20-32 ms |
+| Time Attack race at 8x (1/53, 1619 frames) | - | every second field (25 fps PAL), 13 frames late (54-64 ms) |
+
+The 0.3 60 FPS outputs of screens drawn without widescreen (menus, title,
+garage, every 2D screen) were rendered into a texture of the buffer's
+shape (320x256) and then shown at the display aspect, so they were
+letterboxed twice: squashed vertically, with bars (in Classic too). Now they
+are presented directly, as in Classic, pillarboxed at the display aspect;
+the race view fills 16:9. Captures: `RR4_CAPTURE_DISPLAY=1`.
+
+Still open: the 6 s without a presented image between the boot logo and the
+opening movie (fields 280-290) is the movie's start waiting on the emulated
+CD drive for its first frame (`ovl668_start_stream_playback` →
+`StGetNext` → `Psyz_CdPollDrive`), as on the console; the window does not
+process events meanwhile.
+
 ## Issue #5: 60 FPS at 4x with the extended draw distance (2026-11-22)
 
 Report (0.2-alpha, Windows/D3D12, 4x, 60 FPS on a 60 Hz monitor): slower

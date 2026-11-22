@@ -1,6 +1,5 @@
 #include "rr/release.h"
 #include "game/data/menuvars.h"
-#include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "game/system/pad.h"
 #include "rr/save_slots.h"
@@ -541,7 +540,6 @@ void DrawTrackObjectBillboard(int modelIndex) {
                         if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0) &&
                             (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                             RR_GPU_ADD_PRIM(&(orderingBase + depthBucket)[quad->orderingBias19], packet, 9);
-                            INTERP_TAG(packet, quad, 0);
                             packet++;
                         }
                     }
@@ -627,7 +625,6 @@ void DrawTrackObjectFlashQuads(int modelIndex) {
                             if ((y0 >= 0 || y1 >= 0 || y2 >= 0 || y3 >= 0) &&
                                 (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                                 RR_GPU_ADD_PRIM(&(orderingBase + work->depth1C)[quad->orderingBias19], packet, 9);
-                                INTERP_TAG(packet, quad, 0);
                                 packet++;
                             }
                         }
@@ -676,7 +673,6 @@ u8 *EmitModelTrisGT3(const TrackObjectLitWork *work, GpuDmaTag *head, u8 *packet
             if ((x0 >= WIDE_SCREEN_LEFT || x1 >= WIDE_SCREEN_LEFT || x2 >= WIDE_SCREEN_LEFT) &&
                 (x0 < WIDE_SCREEN_RIGHT || x1 < WIDE_SCREEN_RIGHT || x2 < WIDE_SCREEN_RIGHT)) {
                 RR_GPU_ADD_PRIM(head, packet, 6);
-                INTERP_TAG(packet, triangle, 0);
                 packet++;
             }
         }

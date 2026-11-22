@@ -16,7 +16,6 @@
 #include "rr/widescreen.h"
 #include "rr/video_timing.h"
 #include "rr/release.h"
-#include "rr/frame_interp.h"
 #include <psyz/gpu.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -307,13 +306,10 @@ void MainLoop(void) {
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_STEP);
         CdFileStep();
         SoundUpdate();
-        InterpPollOutput();
         WideBeginFrame();
-        InterpBeginFrame();
         if (ReplayHost)
             ReplayHost->frame();
         ModeFuncTable[ModeGroup][ModeIndex]();
-        InterpPollOutput();
         /* Guards stop out-of-bounds writes. Also reject an invalid final
          * cursor before GPU dispatch, even if no packet was written there. */
         {
@@ -335,10 +331,6 @@ void MainLoop(void) {
             }
         }
         DrawSync(0);
-        /* The frame drawn last is shown at the next VSync(0); a frame of two
-         * fields shows the midpoint to it at the blank between. */
-        if (InterpActive)
-            Psyz_GpuPrepareInterpolatedBlank(DrawBuffers[bank ^ 1].buffer.environment00.draw00.clip.y);
         threshold=VSyncThreshold;
         do {} while (VSync(1)<threshold);
         VSync(0);
@@ -346,8 +338,6 @@ void MainLoop(void) {
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
         PutDrawEnv(&CurrentDrawBuf->buffer.environment00.draw00);
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
-        InterpCommitFrame(DrawBuffers[bank ^ 1].buffer.environment00.draw00.clip.y,
-                          &CurrentDrawBuf->buffer.environment00.draw00.clip);
         WideCommitFrame(CurrentDrawBuf->buffer.environment00.draw00.clip.y,
                         CurrentDrawBuf->buffer.environment00.draw00.clip.w,
                         CurrentDrawBuf->buffer.environment00.draw00.clip.h,
@@ -365,104 +355,6 @@ void MainLoop(void) {
         FrameCounter++;
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_TOP);
     }
-}
-
-/* Frame interpolation identities (rr/frame_interp.h). */
-u32 InterpObject;
-uintptr_t InterpInstance;
-s32 InterpActive;
-/* A cut starts a new generation of identities: globally (InterpEpoch) or for
- * one view's camera (InterpViewEpoch; the mirror follows view 0). */
-static u32 InterpEpoch;
-static u32 InterpViewEpoch[8];
-static struct {
-    u32 frame; /* FrameCounter + 1 of the last pose, 0 for none */
-    s32 position[3], angles[3];
-} InterpViewPose[8];
-static s32 InterpLastGroup = -1, InterpLastIndex = -1;
-
-/* Camera jumps between two frames that count as a cut: world units and
- * 12-bit angle units (192 = 17 degrees). */
-enum { INTERP_CUT_MOVE = 768, INTERP_CUT_TURN = 192 };
-
-static inline u64 InterpMix(u64 x) {
-    x ^= x >> 30;
-    x *= 0xBF58476D1CE4E5B9ULL;
-    x ^= x >> 27;
-    x *= 0x94D049BB133111EBULL;
-    return x ^ (x >> 31);
-}
-
-_Static_assert(INTERP_ANY_TEXTURE == PSYZ_INTERP_ANY_TEXTURE, "PsyZ tag flag");
-_Static_assert(INTERP_MIDPOINT_ONLY == PSYZ_INTERP_MIDPOINT_ONLY, "PsyZ tag flag");
-_Static_assert(INTERP_FRAME_ONLY == PSYZ_INTERP_FRAME_ONLY, "PsyZ tag flag");
-_Static_assert(INTERP_NO_POSE == PSYZ_INTERP_NO_POSE, "PsyZ tag flag");
-
-u32 InterpViewGeneration(void) {
-    u32 view = (u32)ActiveViewportIndex & 7;
-    return InterpEpoch + InterpViewEpoch[view == 1 ? 0 : view];
-}
-
-void InterpTagShape(const void *shape, uintptr_t key, u32 piece, unsigned flags) {
-    u32 view = (u32)ActiveViewportIndex & 7;
-    u32 epoch = InterpViewGeneration();
-    u64 id = InterpMix((u64)key ^ InterpMix((u64)InterpInstance));
-    id = InterpMix(id ^ ((u64)InterpObject << 32 | piece));
-    id = InterpMix(id ^ ((u64)epoch << 8 | view));
-    Psyz_GpuTagInterpolationPacketFlags(shape, id, flags);
-}
-
-void InterpCameraCut(void) {
-    InterpEpoch++;
-}
-
-/* Wrapped difference of two 12-bit angles. */
-static s32 InterpAngleDelta(s32 a, s32 b) {
-    s32 d = (a - b) & 0xFFF;
-    return d >= 0x800 ? 0x1000 - d : d;
-}
-
-void InterpViewCamera(s32 view, const s32 position[3], const s32 angles[3]) {
-    s32 slot = (view & 7) == 1 ? 0 : (view & 7);
-    s32 move = 0, turn = 0;
-    if (!InterpActive || (view & 7) == 1)
-        return;
-    if (InterpViewPose[slot].frame == FrameCounter + 1)
-        return; /* already seen this frame */
-    for (int i = 0; i < 3; i++) {
-        s32 d = abs(position[i] - InterpViewPose[slot].position[i]);
-        s32 a = InterpAngleDelta(angles[i], InterpViewPose[slot].angles[i]);
-        move = d > move ? d : move;
-        turn = a > turn ? a : turn;
-        InterpViewPose[slot].position[i] = position[i];
-        InterpViewPose[slot].angles[i] = angles[i];
-    }
-    /* A chase camera at top speed moves ~300 units and turns a few
-     * degrees per frame; a replay or intro cut jumps far more. */
-    if (InterpViewPose[slot].frame != FrameCounter || move > INTERP_CUT_MOVE || turn > INTERP_CUT_TURN)
-        InterpViewEpoch[slot]++;
-    InterpViewPose[slot].frame = FrameCounter + 1;
-}
-
-void InterpBeginFrame(void) {
-    InterpActive = Psyz_GpuGetFrameInterpolation();
-    InterpObject = 0;
-    if (ModeGroup != InterpLastGroup || ModeIndex != InterpLastIndex)
-        InterpCameraCut();
-    InterpLastGroup = ModeGroup;
-    InterpLastIndex = ModeIndex;
-}
-
-void InterpPollOutput(void) {
-    if (InterpActive) Psyz_GpuPollPresentation();
-}
-
-void InterpCommitFrame(s32 previousY, const GpuRectangleFields *clip) {
-    InterpObject = 0;
-    Psyz_GpuSetPresentationInterval(1 + VSyncThreshold / RR_PAL_NTSC(314, 263));
-    Psyz_GpuBeginInterpolationFrame();
-    if (InterpActive)
-        Psyz_GpuInterpolationBackdrop(clip->x, previousY, clip->y, clip->w, clip->h);
 }
 
 /* Initial values of the globals this module owns. */

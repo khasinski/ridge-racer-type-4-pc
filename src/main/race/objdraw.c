@@ -1,4 +1,3 @@
-#include "rr/frame_interp.h"
 #include "game/data/menuvars.h"
 #include "psyq/libgte/rotmat.h"
 #include "rr/player_cars.h"
@@ -290,12 +289,10 @@ static void DrawTrackObjectsWork(s32 arg0) {
     s32 dist;
     s32 pan;
     s32 q;
-    u32 interp;
 
     PsyqMemset(&sp98, 0, sizeof(sp98));
     s3 = (s32 *)((u8 *)SCRATCHPAD + sizeof(RroSceneScratchPrefix));
     scene = (RroSceneScratchPrefix *)SCRATCHPAD;
-    interp = InterpBegin(INTERP_OBJECT, 0);
     for (i = 0; i < TrackObjectCount; i++) {
         if (TrackObjectStates[i].f24 != 1) {
             continue;
@@ -303,7 +300,6 @@ static void DrawTrackObjectsWork(s32 arg0) {
         if (arg0 == 2 && (TrackObjectDefs[i].f4 / 10) != 1) {
             continue;
         }
-        InterpSet(INTERP_OBJECT, (u32)i);
 #ifdef RR4_OBJDBG_PRINT
         if (TrackObjectsWork && TrackObjectsDebug()) {
             fprintf(stderr, "XMARK OBJ %llu %d %d %d %d\n", Psyz_EmulatedClocks(), (int)i,
@@ -1019,7 +1015,6 @@ static void DrawTrackObjectsWork(s32 arg0) {
             break;
         }
     }
-    InterpEnd(interp);
 }
 
 /* With its PS1 time (rr/cpu_work.h), object by object: the course objects'

@@ -82,7 +82,6 @@ typedef struct Rr4Prefs {
     int antialiasing;
     int texture_filtering;
     int geometry_correction;
-    int frame_interpolation; /* presentation FPS: 0 (original), 60, 120 */
     int aspect_ratio; /* Rr4AspectPref */
     int video_timing; /* Rr4VideoTimingPref, used from the next start */
     int extended_draw_distance; /* double the course view depth */

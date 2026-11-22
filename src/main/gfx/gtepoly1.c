@@ -1,5 +1,4 @@
 #include "rr/cpu_work.h"
-#include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "rr/release.h"
 #include <string.h>
@@ -118,7 +117,6 @@ const u32 *EmitRroRawTexturedQuads(const u32 *commands, RroRenderWork *work, s32
                 packet->words.uv2 = quad->uv10;
                 packet->words.uv3 = quad->uv10 >> 16;
                 RR_GPU_ADD_PRIM(RroScene.workOrdering + work->depth18 + quad->orderingBias15, packet, 9);
-                INTERP_TAG(packet, quad, 0);
                 packet++;
             }
         }
@@ -150,7 +148,6 @@ const u32 *EmitRroLitGouraudQuads(const u32 *commands, RroRenderWork *work, s32 
                 work->normal48 = *RroHighVertex(normals, quad->normals.words[1]);
                 RR_GTE14_LIGHT1();
                 RR_GPU_ADD_PRIM(RroScene.workOrdering + work->depth18 + quad->orderingBias15, packet, 11);
-                INTERP_TAG_SHAPE(&packet->color08, quad, 0, 0);
                 packet->setMask04 = RRO_MASK_COMMAND | 1;
                 packet->nop = RR_GPU_MERGED_PRIM_NOP;
                 packet->restoreMask28 = RRO_MASK_COMMAND | MaskBitSetting;
@@ -245,7 +242,6 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
                     /* Compact the staged body behind a bare GT4 header. */
                     memmove(&direct->body, &e->primary.body, sizeof(direct->body));
                     RR_GPU_ADD_PRIM(head, direct, 12);
-                    INTERP_TAG(direct, quad, 0);
                     cursor += sizeof(GpuEnvMapDirect);
                 } else {
                     e->primary.setMask = RRO_MASK_COMMAND;
@@ -263,8 +259,6 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
                     }
                     RR_GPU_ADD_PRIM(head, &e->reflected, 14);
                     RR_GPU_ADD_PRIM(head, &e->primary, 14);
-                    INTERP_TAG_SHAPE(&e->primary.body, quad, 0, 0);
-                    INTERP_TAG_SHAPE(&e->reflected.body, quad, 1, INTERP_ANY_TEXTURE);
                     e->reflected.body.uv0 = RroEnvMapUV(envVShift) | work->envClut0C;
 
                     RR_GTE14_LWC2_V0(&work->normal48);
@@ -449,7 +443,6 @@ void EmitCarShadowQuads(const RroEffectMesh *mesh, RroEffectWork *work) {
 
     packet = (GpuPolyFT4 *)RR_GPU_SCRATCH->cursor;
     RR_GPU_ADD_PRIM(RR_GPU_SCRATCH->order + 0x80 + depth + quad->orderingBias19, packet, 9);
-    INTERP_TAG(packet, quad, 0);
     RR_SXY_COPY(packet->words.xy0, work->projection188.shadow.xy[0]);
     RR_SXY_COPY(packet->words.xy1, work->projection188.shadow.xy[1]);
     RR_SXY_COPY(packet->words.xy2, work->projection188.shadow.xy[2]);
@@ -506,7 +499,6 @@ void EmitCarBodyQuads(const RroEffectMesh *mesh, RroEffectWork *work) {
                 if (work->firstArea74 != 0) {
                     int i;
                     RR_GPU_ADD_PRIM(ordering + depth, packet, 10);
-                    INTERP_TAG_SHAPE(&packet->vertices[0], quad, 0, 0);
                     for (i = 0; i < 4; i++) {
                         packet->vertices[i].color = work->colors15C.palette.rgb160[quad->colors[i]];
                         RR_SXY_COPY(packet->vertices[i].xy, projected[quad->vertices[i]].sxy);
@@ -622,7 +614,6 @@ void DrawGlowFan(CarSlotBufferC8 *slot, RroEffectWork *work) {
         RR_SXY_COPY(packet->secondXY1C, projected[1]);
         projected++;
         RR_GPU_ADD_PRIM(head, packet, 8);
-        INTERP_TAG_SHAPE(&packet->centerColor08, slot, remaining, 0);
         packet++;
     }
     RR_GPU_SCRATCH->cursor = (u8 *)packet;
@@ -657,7 +648,6 @@ const RroTexturedQuadPrefix *EmitProjectedQuadsFT4(const RroTexturedQuadPrefix *
             depth >>= shift;
             if (depth < 0x1C0) {
                 RR_GPU_ADD_PRIM(work->ordering6C + depth + quad->orderingBias19, packet, 9);
-                INTERP_TAG(packet, quad, 0);
                 packet->words.uv0 = quad->uv0C;
                 packet->words.uv1 = quad->uv10;
                 packet->words.uv2 = quad->uv14;
@@ -735,7 +725,6 @@ void EmitProjectedLitTrisGT3(const RroTrailPanelCommand *command, s32 count, Rro
                             packet[i].words.color14 = secondaryColor;
                             packet[i].words.color1C = 0;
                             RR_GPU_ADD_PRIM(head, &packet[i], 8);
-                            INTERP_TAG(&packet[i], command, (u32)((uintptr_t)TrailPanelSample >> 2) << 2 | (u32)i);
                         }
                         /* Three G4 panels are followed by one E1 command. */
                         mode = (GpuCommandPacket *)(packet + 3);
@@ -808,7 +797,6 @@ const RroGlowPointCommand *EmitProjectedLitQuadsGT4(const RroGlowPointCommand *i
                 packet->color1 = 0;
                 packet->color2 = 0;
                 RR_GPU_ADD_PRIM(head, packet, 6);
-                INTERP_TAG(packet, work, (u32)(projection - work->projection188.glow.points) << 4 | (u32)remaining);
                 RR_GTE_STORE_SXY(14, &previous);
                 RR_SXY_COPY(packet->xy2, previous);
                 packet++;

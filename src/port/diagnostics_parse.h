@@ -82,7 +82,6 @@ enum {
     RR4_GRAPHICS_NODITHER = 1 << 1,
     RR4_GRAPHICS_AA = 1 << 2,
     RR4_GRAPHICS_FILTER = 1 << 3,
-    RR4_GRAPHICS_INTERPOLATION = 1 << 4,
     RR4_GRAPHICS_WIDE = 1 << 5,
 };
 unsigned Rr4DiagParseGraphics(const char *list);

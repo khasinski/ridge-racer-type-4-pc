@@ -296,7 +296,7 @@ unsigned Rr4DiagParseGraphics(const char *list) {
     } kOptions[] = {
         {"geometry", RR4_GRAPHICS_GEOMETRY}, {"nodither", RR4_GRAPHICS_NODITHER},
         {"aa", RR4_GRAPHICS_AA},             {"filter", RR4_GRAPHICS_FILTER},
-        {"interpolation", RR4_GRAPHICS_INTERPOLATION}, {"wide", RR4_GRAPHICS_WIDE},
+        {"wide", RR4_GRAPHICS_WIDE},
     };
     const char *item;
     size_t length;

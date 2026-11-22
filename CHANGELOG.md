@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
+  guessed in-between pictures from the PlayStation's draw lists, which drew
+  visible artifacts and made movies stutter. Every game frame is now
+  presented once, at its own field. (Native 60 FPS will come from running the
+  game at 60 frames a second, not from in-between pictures.) Settings files
+  from 0.3 load as before: their `frame_rate` line is ignored.
+- Fixed: with 60 FPS selected, menus, the title screen and other 2D screens
+  were shown squashed (too wide, with bars above and below) in both
+  Widescreen and Classic 4:3.
+- Fixed: with 60 FPS selected, movies stuttered: their frames were shown
+  late or skipped while the next one decoded.
+- The game no longer waits for the display when the swapchain is full
+  while the frame limiter paces it (VSync present mode on a display at about
+  the game's rate, e.g. Windows/D3D12); that frame is skipped instead of
+  stalling the game's timing.
+- `RR4_CAPTURE_DISPLAY=1` (diagnostics) also captures the final presented
+  1280x720 image of a hidden run at each `RR4_CAPTURE_AT` field.
+
 ## 0.3-alpha
 
 - **Smooth 60 FPS at high resolution** (issue #5). With 60 FPS presentation

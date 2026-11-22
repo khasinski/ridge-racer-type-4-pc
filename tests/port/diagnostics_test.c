@@ -117,7 +117,7 @@ static void TestWatchAndPoke(void) {
 static void TestGraphicsAndPads(void) {
     int kinds[2] = {-1, -1};
 
-    CHECK(Rr4DiagParseGraphics("geometry,nodither,aa,filter,interpolation,wide") == 0x3F);
+    CHECK(Rr4DiagParseGraphics("geometry,nodither,aa,filter,wide") == 0x2F);
     CHECK(Rr4DiagParseGraphics("wide") == RR4_GRAPHICS_WIDE);
     /* Exact names: "aa" is not found inside other words. */
     CHECK(Rr4DiagParseGraphics("aaa,widescreen,nofilter") == 0);

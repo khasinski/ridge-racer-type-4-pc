@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/frame_interp.h"
 #include "rr/widescreen.h"
 #include "psyq/libgte/rotmat.h"
 #include "game/gfx/drawlist.h"
@@ -80,10 +79,8 @@ void DrawTrackObjectLitModel(int placementIndex, int modelIndex)
         bucketDepth = rawDepth >> depthShift;
         if (rawDepth > 0 && bucketDepth < depthLimit) {
             RR_GTE_TR_FROM_IR();
-            InterpInstance = (uintptr_t)p;
             packetCursor = EmitModelTrisGT3(work, orderingBase + bucketDepth + p->orderingBias07,
                                             packetCursor);
-            InterpInstance = 0;
         }
         p++;
     }
@@ -177,7 +174,6 @@ void DrawTrackObjectModel(int modelIndex, int flashing) {
                             (y0 < RR_SCREEN_BOTTOM || y1 < RR_SCREEN_BOTTOM || y2 < RR_SCREEN_BOTTOM || y3 < RR_SCREEN_BOTTOM)) {
                             RR_GPU_ADD_PRIM(orderingBase + work->depth50 + quadCursor->orderingBias19,
                                             packetCursor, 9);
-                            INTERP_TAG(packetCursor, quadCursor, 0);
                             packetCursor++;
                         }
                     }

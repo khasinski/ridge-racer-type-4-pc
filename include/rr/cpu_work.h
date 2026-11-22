@@ -20,7 +20,7 @@
  * the same frames (an RR4_FUNC_MARKS build).
  *
  * Work the PS1 does not do, the host's widescreen and draw distance views
- * past the original list and frame interpolation's second grid, is held
+ * past the original list, is held
  * out of the counts (RrWorkHoldBegin/End), so the emulated time does not
  * depend on those options. */
 enum {

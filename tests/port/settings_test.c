@@ -42,7 +42,7 @@ static void TestDefaults(void) {
     const Rr4Prefs *d = Rr4PrefsDefaults();
     CHECK(d->scale == 1);
     CHECK(d->volume == 100);
-    CHECK(!d->mute && !d->fullscreen && !d->frame_interpolation &&
+    CHECK(!d->mute && !d->fullscreen &&
           d->aspect_ratio == RR4_ASPECT_CLASSIC);
     CHECK(d->vsync == RR4_VSYNC_AUTO);
     CHECK(d->video_timing == RR4_VIDEO_PAL);
@@ -76,13 +76,6 @@ static void TestGraphicsPage(void) {
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 2);
     CHECK(m.prefs.vsync == RR4_VSYNC_OFF);
-    Do(&m, SETTINGS_DOWN, 1);
-    Do(&m, SETTINGS_RIGHT, 1);
-    CHECK(m.prefs.frame_interpolation == 60 && m.prefs.video_timing == RR4_VIDEO_PAL);
-    Do(&m, SETTINGS_RIGHT, 1);
-    CHECK(m.prefs.frame_interpolation == 120 && m.prefs.video_timing == RR4_VIDEO_PAL);
-    Do(&m, SETTINGS_RIGHT, 1);
-    CHECK(m.prefs.frame_interpolation == 0);
     /* Video timing: used from the next start, the status says so. */
     Do(&m, SETTINGS_DOWN, 1);
     Do(&m, SETTINGS_RIGHT, 1);
@@ -90,7 +83,7 @@ static void TestGraphicsPage(void) {
     CHECK(strstr(SettingsModelHelp(&m), "next start") != NULL);
     Do(&m, SETTINGS_UP, 1);
     /* Up from the first row wraps to Quit game. */
-    Do(&m, SETTINGS_UP, 4);
+    Do(&m, SETTINGS_UP, 3);
     CHECK(m.row == SettingsRowCount(&m) - 1);
     {
         SettingsRowView v;
@@ -98,7 +91,7 @@ static void TestGraphicsPage(void) {
         CHECK(v.danger && !strcmp(v.label, "Quit game"));
     }
     /* Draw distance is available to both rasterizers and applies live. */
-    SettingsModelSelect(&m, 6);
+    SettingsModelSelect(&m, 5);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.extended_draw_distance == 1);
     /* Restore page defaults. */
@@ -121,7 +114,7 @@ static void TestUnavailable(void) {
 
     prefs.scale = 4;
     SettingsModelOpen(&m, &prefs, NULL);
-    m.unavailable = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_INTERPOLATION;
+    m.unavailable = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_WIDESCREEN;
     m.unavailable_note = "Needs the SDL GPU renderer.";
     SettingsModelRow(&m, 0, &v); /* internal resolution */
     CHECK(v.disabled && !strcmp(v.value, "4x") && !strcmp(v.help, m.unavailable_note));
@@ -134,8 +127,8 @@ static void TestUnavailable(void) {
     CHECK(!v.disabled);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.fullscreen == 1);
-    SettingsModelRow(&m, 3, &v); /* frame rate: visible near the top */
-    CHECK(v.disabled && !strcmp(v.label, "Frame rate"));
+    SettingsModelRow(&m, 4, &v); /* aspect ratio: visible near the top */
+    CHECK(v.disabled && !strcmp(v.label, "Aspect ratio"));
     SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* geometry correction */
     CHECK(!v.disabled);
 }
@@ -418,7 +411,6 @@ static void TestPrefsFile(const char *dir) {
     p.antialiasing = 1;
     p.aspect_ratio = RR4_ASPECT_WIDESCREEN;
     p.video_timing = RR4_VIDEO_NTSC;
-    p.frame_interpolation = 120;
     p.extended_draw_distance = 1;
     p.volume = 35;
     p.mute = 1;
@@ -436,7 +428,8 @@ static void TestPrefsFile(const char *dir) {
     CHECK(Rr4PrefsLoadFile(&q, path));
     CHECK(!memcmp(&p, &q, sizeof(p)));
 
-    /* Migrate the old boolean without changing the game's video timing. */
+    /* The removed frame interpolation's keys (0.3 and before) load and are
+     * dropped; the other settings stay. */
     snprintf(path, sizeof(path), "%s/legacy-fps.toml", dir);
     f = fopen(path, "w");
     CHECK(f != NULL);
@@ -446,12 +439,13 @@ static void TestPrefsFile(const char *dir) {
     }
     q = *Rr4PrefsDefaults();
     CHECK(Rr4PrefsLoadFile(&q, path));
-    CHECK(q.frame_interpolation == 60 && q.video_timing == RR4_VIDEO_PAL);
+    CHECK(q.video_timing == RR4_VIDEO_PAL);
     f = fopen(path, "w");
     CHECK(f != NULL);
-    if (f) { fputs("[graphics]\nframe_rate = 119\n", f); fclose(f); }
+    if (f) { fputs("[graphics]\nframe_rate = 60\ninternal_resolution = 4\n", f); fclose(f); }
+    q = *Rr4PrefsDefaults();
     CHECK(Rr4PrefsLoadFile(&q, path));
-    CHECK(q.frame_interpolation == 60);
+    CHECK(q.scale == 4);
 
     /* Invalid values are skipped, the rest still loads. */
     snprintf(path, sizeof(path), "%s/partial.toml", dir);

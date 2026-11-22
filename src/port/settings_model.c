@@ -65,10 +65,6 @@ ACCESSORS(Filtering, p->texture_filtering != 0, p->texture_filtering = i)
 
 ACCESSORS(Geometry, p->geometry_correction != 0, p->geometry_correction = i)
 
-static const char *const kInterpolationNames[] = {"Original", "60 FPS", "120 FPS"};
-ACCESSORS(Interpolation, p->frame_interpolation == 120 ? 2 : p->frame_interpolation != 0,
-          p->frame_interpolation = i == 2 ? 120 : i == 1 ? 60 : 0)
-
 static const char *const kDrawDistanceNames[] = {"Original", "Extended (2x)"};
 ACCESSORS(DrawDistance, p->extended_draw_distance != 0, p->extended_draw_distance = i)
 
@@ -76,13 +72,10 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
             kScaleNames, Scale,
             SETTINGS_FEATURE_UPSCALE),
-    SETTING("Display mode", "Window or fullscreen (F4). Match FPS selects a supported display mode at 60/120 Hz, or the original PAL/NTSC field rate when Frame rate is Original.",
+    SETTING("Display mode", "Window or fullscreen (F4). Match FPS selects a supported display mode at the game's field rate (50 Hz PAL, 60 Hz NTSC).",
             kWindowNames, Fullscreen),
-    SETTING("VSync", "Auto/On synchronizes output when the renderer supports it. Off allows tearing. Frame rate controls presentation; PAL/NTSC controls the original game clock.",
+    SETTING("VSync", "Auto/On synchronizes output when the renderer supports it. Off allows tearing. Game timing (PAL/NTSC) sets the game's frame rate.",
             kVsyncNames, Vsync),
-    GPU_SETTING("Frame rate", "Original: the game's own frames. 60/120 FPS: intermediate geometry frames, with original game speed and one game frame of display delay. Higher rates cost GPU time.",
-            kInterpolationNames, Interpolation,
-            SETTINGS_FEATURE_INTERPOLATION),
     {"Game timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Separate from display frame rate. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
     GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
@@ -365,7 +358,6 @@ static void ResetPage(SettingsModel *m) {
         p->texture_filtering = d->texture_filtering;
         p->geometry_correction = d->geometry_correction;
         p->extended_draw_distance = d->extended_draw_distance;
-        p->frame_interpolation = d->frame_interpolation;
         break;
     case SETTINGS_PAGE_CONTROLS:
         memcpy(DeviceBindings(p, m->device), DeviceBindings((Rr4Prefs *)d, m->device),

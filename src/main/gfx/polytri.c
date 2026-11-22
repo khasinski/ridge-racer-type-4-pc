@@ -1,5 +1,4 @@
 #include "rr/cpu_work.h"
-#include "rr/frame_interp.h"
 #include "scratchpad.h"
 #include "rr/menu_selection.h"
 #include "game/race/objrec.h"
@@ -87,7 +86,6 @@ void EmitSemiTransG3List(SemiTransTri38 *a0, int a1, int a2) {
             ot = RR_GPU_SCRATCH->order + (otz + 0x80);
             RR_GPU_ADD_PRIM(ot, pkt, 6);
             /* the list entry of the object's list */
-            INTERP_TAG(pkt, (u32)i | (u32)a1 << 8 | (u32)a2 << 16, 3);
             mode = (GpuCommandPacket *)(pkt + 1);
             mode->command = 0xE1000220;
             RR_GPU_ADD_PRIM(ot, mode, 1);
@@ -137,7 +135,6 @@ void EmitSemiTransG4List(SemiTransQuad48 *a0, int a1, int a2) {
             pkt->c3 = *(s32 *)&a0->c3;
             ot = RR_GPU_SCRATCH->order + (otz + 0x80);
             RR_GPU_ADD_PRIM(ot, pkt, 8);
-            INTERP_TAG(pkt, (u32)i | (u32)a1 << 8 | (u32)a2 << 16, 4);
             mode = (GpuCommandPacket *)(pkt + 1);
             mode->command = 0xE1000220;
             RR_GPU_ADD_PRIM(ot, mode, 1);

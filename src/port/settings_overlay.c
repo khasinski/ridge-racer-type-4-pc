@@ -111,7 +111,7 @@ static void MarkUnavailable(SettingsModel *model) {
     static char note[256];
     unsigned features = Psyz_VideoGetFeatures();
     const unsigned all = SETTINGS_FEATURE_UPSCALE | SETTINGS_FEATURE_ANTIALIASING | SETTINGS_FEATURE_FILTERING |
-                         SETTINGS_FEATURE_GEOMETRY | SETTINGS_FEATURE_WIDESCREEN | SETTINGS_FEATURE_INTERPOLATION;
+                         SETTINGS_FEATURE_GEOMETRY | SETTINGS_FEATURE_WIDESCREEN;
 
     model->unavailable = all & ~features;
     snprintf(note, sizeof(note), "Needs the SDL GPU renderer. This run draws with the %s.",

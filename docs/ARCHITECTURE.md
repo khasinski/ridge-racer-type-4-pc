@@ -84,7 +84,7 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      draws, as at 1x, and an SDL renderer (SDL's own choice, its software
      renderer last) presents the display area at the game's aspect. The
      GPU-only options (internal resolution, widescreen, antialiasing,
-     texture filtering, geometry correction, frame interpolation) are off
+     texture filtering, geometry correction) are off
      and greyed out in the Escape menu with a note naming the renderer
      (`Psyz_VideoGetFeatures`); the Settings panel opens in a window of its
      own, as without the GPU overlay. Only when neither can start, or the
@@ -143,86 +143,16 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      16:9 window, and bit-identical captures. In Classic 4:3 every value is
      the original one.
 
-   - **Frame rate:** Original / 60 FPS / 120 FPS controls presentation,
-     separately from PAL/NTSC simulation and audio. A race frame still takes
-     two original fields. PsyZ evaluates intermediate geometry at output
-     deadlines, with up to five samples and one original frame of display
-     latency. The midpoint solver supplies motion and junction constraints;
-     each sample uses the paired screen positions and view depths, with
-     junctions projected onto their sampled edges. Completed samples use a
-     bounded queue of twelve cropped textures; cooperative polling serves
-     it during CPU rendering and VBlank waits. No extra simulation update
-     or packet consumption happens when presenting. The legacy boolean PsyZ
-     API retains its single-midpoint path when no output rate is selected.
-     The packets come from a linear arena, so the 3D renderers tag
-     each one with a stable identity (`include/rr/frame_interp.h`): the view,
-     the object (`InterpObject`: course, scenery, car and part, track object
-     placement) and a key from the renderer (the face record, the contents of
-     a course tile record with its grid cell and subdivision levels). A
-     packet pairs with the same identity in the previous frame; untagged
-     packets (HUD, 2D) keep their pose. Culling reaches past the view while
-     interpolating (`InterpMargin`), tiles nearer than the projection plane
-     and the previous level of detail of a re-subdivided tile or course model
-     face are drawn into the midpoint only, the new level into the frame
-     only, and the midpoint target starts as the previous frame so nothing
-     uncovered shows an older picture. Tiles (and grid pieces of near tiles)
-     that the facing test drops while a corner is nearer than the projection
-     plane are passing under the camera and are drawn into the midpoint only
-     too, tagged `INTERP_NO_POSE`: their coordinates are no projection, so
-     PsyZ continues the last motion of the pose the frame before drew.
-     Other midpoint-only geometry pairs only with a pose the frame before
-     drew. A camera jump (`InterpViewCamera`) or a mode
-     change starts new identities, also for the level-of-detail history
-     (`InterpViewGeneration`). PsyZ places a paired vertex at the projection
-     of the midpoint of its two view-space positions (the screen positions
-     weighted by their PGXP depths), so subdivided pieces stay on their
-     neighbours' edges and near geometry moves as the camera does. An
-     identity the frame before drew and this frame leaves out (a tile
-     leaving the drawn range, a model switching to another representation,
-     a culled object) is drawn into the midpoint as a ghost, right after
-     the primitive drawn before it in that frame; a new identity where
-     ghosts go stays out of the midpoint. Geometry with one pose only (a
-     ghost, a tile passing under the camera, a newly visible face) moves as
-     the paired vertices next to it at a like depth did, joined to them
-     where it shares their vertex: its own continued motion does not know
-     how the view moved this frame (a camera jolt against a wall), and a
-     new face's pose in this frame is not where its neighbours are in the
-     midpoint. The midpoint keeps its geometry for the whole frame and
-     places these vertices, the T-junctions and the outlines below once
-     the frame is complete (`InterpMidpointSync`, at
-     `Psyz_GpuPrepareInterpolatedBlank`), then draws it, so how the
-     frame's primitives were split into batches (drawing-state changes,
-     texture feedback, a full buffer) makes no difference; it draws
-     earlier only when something would change what it samples or draws
-     over (a VRAM write to its texture pages or drawing area, a full CLUT
-     cache or store), and `PSYZ_INTERP_STATS` counts such splits. A
-     vertex of a finer subdivision that lies on an edge of a coarser
-     neighbour in both frames, to the precision of the projection (a
-     T-junction), is put on
-     that edge's midpoint, so the midpoint is as watertight as the frames.
-     An outline (a line the course renderer draws along a tile's edges, at
-     whole pixels and behind the tile) is drawn into the midpoint as a quad
-     per segment whose points go where the polygon vertices they lie at
-     went, also when its identity is new (an outline's key counts its place
-     in the tile); a new outline where ghosts go stays out. Car light
-     trails are tagged by the trail sample they reach back to, since their
-     ring advances every frame. A triangle the GPU skips for its size in
-     this frame (it
-     passes close to the view) that the frame before drew is still drawn
-     into the midpoint. A midpoint that is no plausible in-between (most
-     identities new: a cut; much of the picture without a pose in the frame
-     before; or an area where it shows something much farther than both
-     frames show there, a hole or the background through a gap, measured on
-     coarse depth grids of the opaque primitives) is not shown: the frame
-     before stays for that field. Off, nothing is tagged and every value is
-     the original one. The PsyZ side is `frame_interp.h` (state, tuned
-     thresholds and the `PSYZ_INTERP_*` diagnostics) and
-     `frame_interp_impl.h`, included by `sdl3_gpu.c`. Its tables do not
-     depend on where ASLR puts the game's data: packet addresses are hashed
-     by their offset in the executable's image and the identity table never
-     drops a live identity, and the car identities are their records in
-     `PlayerCars` / `ComCars`, so a scripted run draws the same midpoints
-     every time.
+   - **Presentation:** every game frame is presented once, at the field
+     blank it is shown from (paced presents, `sdl3_common.h`): with the
+     display at the field rate, driver VSync paces the game; otherwise the
+     frame limiter does, with VSync present mode where the display is
+     faster, and the swapchain image is acquired without waiting
+     (`SDL_AcquireGPUSwapchainTexture`), so a full swapchain queue never
+     stalls the game (that frame is not shown). 2D screens, menus and
+     movies are presented at the display aspect in both Classic and
+     Widescreen. The PS1-era frame interpolation (in-between frames guessed
+     from the PS1 draw lists, 0.3 and before) was removed.
 
    - **Video timing (PAL / NTSC):** the PAL release is the NTSC game with
      every value that counts frames converted to 25 frames a second: frame
