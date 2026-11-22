@@ -7,6 +7,7 @@
 #include "rr/scene_camera_state.h"
 #include "rr/video_timing.h"
 #include "rr/cpu_work.h"
+#include "rr/field_rate.h"
 
 void ovl659_exit_race(void) {
     SetupRaceAndSceneId();
@@ -16,9 +17,14 @@ void ovl659_exit_race(void) {
 }
 
 void ovl659_update_race(void) {
-    ModeFrame = ModeFrame + 1U;
+    /* The mode's counters, timers and state run once per original tick;
+     * the drawing every field (rr/field_rate.h). */
+    const int tick = RaceSlowTick();
+    if (tick)
+        ModeFrame = ModeFrame + 1U;
     SetupViewport(0);
-    if ((RaceState - 1U) < 2U && (PlayerControllers[0].edges08.fields.pressed & 0x800) && FadeCountdown <= 0) {
+    if (!tick) {
+    } else if ((RaceState - 1U) < 2U && (PlayerControllers[0].edges08.fields.pressed & 0x800) && FadeCountdown <= 0) {
         FadeCountdown = 15;
         RacePaused = (RacePaused == 0);
         if (RacePaused != 0) {
@@ -35,8 +41,10 @@ void ovl659_update_race(void) {
     }
 
     if (RacePaused != 0) {
-        UpdatePauseMenu(GameModeType);
-        ModeFrame = ModeFrame - 1U;
+        if (tick) {
+            UpdatePauseMenu(GameModeType);
+            ModeFrame = ModeFrame - 1U;
+        }
         DrawRaceOverlaySprites(1);
         DrawPauseMenu(&CurrentDrawBuf->ordering.ordering70.tags[0], PauseCursor);
         DrawLapTimeList(0);
@@ -61,8 +69,9 @@ void ovl659_update_race(void) {
         return;
     }
 
-    ScreenFrame = ScreenFrame + 1U;
-    if ((RaceState - 2U) < 2U) {
+    if (tick)
+        ScreenFrame = ScreenFrame + 1U;
+    if (tick && (RaceState - 2U) < 2U) {
         if ((RaceTimeRemaining = RaceTimeRemaining - 1U) <= 0) {
             RaceState = 5;
             PlayerCars[0].half1EE = 9;
@@ -72,7 +81,11 @@ void ovl659_update_race(void) {
         }
     }
 
-    if (RaceContext.opening88.done9C != 0 && RaceState == 0) {
+    if (!tick) {
+        if (RaceState >= 4 && FadeCountdown < RR_PAL_NTSC(25, 30))
+            AddScreenFadeTiles(&CurrentDrawBuf->ordering.ordering70.tags[0], (RR_PAL_NTSC(25, 30) - FadeCountdown) * 10,
+                               CarTable[0]->half1EE <= ovl659_finish_rank_limits[SelectionState.fields.phase17 >> 1] ? 37 : 69);
+    } else if (RaceContext.opening88.done9C != 0 && RaceState == 0) {
         ScreenFrame = RR_PAL_NTSC(75, 90);
         ModeFrame = RR_PAL_NTSC(75, 90);
         SlotsStartForRace();
@@ -111,13 +124,17 @@ void ovl659_update_race(void) {
         }
     }
 
-    UpdateLapTiming(PlayerCars);
+    if (tick)
+        UpdateLapTiming(PlayerCars);
     if (RaceState < 4) {
         DrawStartCountdown(&CurrentDrawBuf->ordering.ordering70.tags[0], ModeFrame);
-        PlayStartCountdownVoice(ModeFrame);
+        if (tick)
+            PlayStartCountdownVoice(ModeFrame);
     }
-    UpdateRaceRanking();
-    CheckFinalLapEvent((char *)PlayerCars);
+    if (tick) {
+        UpdateRaceRanking();
+        CheckFinalLapEvent((char *)PlayerCars);
+    }
     if ((RaceState - 1U) < 3U) {
         DrawLapTimeList(0);
         DrawTimeRemaining(RaceTimeRemaining);
@@ -136,12 +153,14 @@ void ovl659_update_race(void) {
     StepRaceFrame(GameModeType);
     if (RaceState == 0) {
         DrawLensFlareAndSun(PlayerCars);
+    } else if (!tick) {
     } else if (RaceState == 7) {
         UpdateFinishingPlayerCar(&PlayerCars[1]);
     } else {
         UpdateRaceChaseCamera(PlayerCars);
     }
-    UpdateTrackObjects();
+    if (tick)
+        UpdateTrackObjects();
     BuildCameraMatrices();
     DrawCars(0);
     if (PlayerCars[0].half1EA != ReverseCourse) {
@@ -163,13 +182,14 @@ void ovl659_update_race(void) {
         /* this block's own (its primitives held after the step: 765 on
          * DuckStation from UpdateAndDrawRearViewMirror to SlotSetLevelProgram) */
         RR_CPU_CYCLES(RR_CYCLES_GP_START_WIPE);
-        if ((RaceStartWipeY = (RaceStartWipeY - 16U)) < 0) {
+        if (tick && (RaceStartWipeY = (RaceStartWipeY - 16U)) < 0) {
             RaceStartWipeY = 0;
             DrawBuffers[1].environment.draw00.background = 0;
             DrawBuffers[0].environment.draw00.background = 0;
         }
     }
-    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    if (tick)
+        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
     if (RaceState >= 4) {
         StopRaceRumble();
         if (RaceState == 6) {

@@ -68,6 +68,9 @@ ACCESSORS(Geometry, p->geometry_correction != 0, p->geometry_correction = i)
 static const char *const kDrawDistanceNames[] = {"Original", "Extended (2x)"};
 ACCESSORS(DrawDistance, p->extended_draw_distance != 0, p->extended_draw_distance = i)
 
+static const char *const kRaceRateNames[] = {"Original", "60 FPS"};
+ACCESSORS(RaceRate, p->race_field_rate != 0, p->race_field_rate = i)
+
 static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
             kScaleNames, Scale,
@@ -78,6 +81,8 @@ static const ChoiceSetting kGraphics[] = {
             kVsyncNames, Vsync),
     {"Game timing", "PAL: this release, races at 25 fps. NTSC: 60 Hz fields and the NTSC release's timing, races at 30 fps and faster. Separate from display frame rate. Used from the next start.",
      COUNT_OF(kVideoTimingNames), kVideoTimingNames, GetVideoTiming, SetVideoTiming, 0, 1},
+    SETTING("Race frame rate", "60 FPS: the race runs every video field, 50 Hz PAL / 60 Hz NTSC, with the original game speed and no interpolation. Original: 25/30 fps as on the PlayStation. The link race and old replays keep the original rate. Used from the next race.",
+            kRaceRateNames, RaceRate),
     GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
             kAspectNames, Aspect,
             SETTINGS_FEATURE_WIDESCREEN),
@@ -358,6 +363,7 @@ static void ResetPage(SettingsModel *m) {
         p->texture_filtering = d->texture_filtering;
         p->geometry_correction = d->geometry_correction;
         p->extended_draw_distance = d->extended_draw_distance;
+        p->race_field_rate = d->race_field_rate;
         break;
     case SETTINGS_PAGE_CONTROLS:
         memcpy(DeviceBindings(p, m->device), DeviceBindings((Rr4Prefs *)d, m->device),

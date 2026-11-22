@@ -85,6 +85,7 @@ typedef struct Rr4Prefs {
     int aspect_ratio; /* Rr4AspectPref */
     int video_timing; /* Rr4VideoTimingPref, used from the next start */
     int extended_draw_distance; /* double the course view depth */
+    int race_field_rate; /* races at 50/60 Hz (rr/field_rate.h), from the next race */
     /* [audio] */
     unsigned volume; /* 0..100 */
     int mute;

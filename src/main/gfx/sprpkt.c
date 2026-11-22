@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/release.h"
 #include "rr/widescreen.h"
 #include "game/sound/sndque.h"
@@ -29,7 +30,7 @@ void DrawRaceOverlaySprites(s32 a0)
         } else {
             s4 = t;
             if (SplitDeltaTimer > 0) {
-                if (a0 == 0) SplitDeltaTimer--;
+                if (a0 == 0 && RaceSlowTick()) SplitDeltaTimer--;
                 s3 = LatchedBestSplitTime;
                 s2 = LatchedSplitIndex;
                 s4 = LatchedSplitTime;
@@ -42,7 +43,7 @@ void DrawRaceOverlaySprites(s32 a0)
                 } else {
                     c = 0x16;
                 }
-                if (SplitDeltaTimer == 0x3B && s2 < 2 && a0 == 0) SoundQueueEnqueue(c, 0);
+                if (SplitDeltaTimer == 0x3B && s2 < 2 && a0 == 0 && RaceSlowTick()) SoundQueueEnqueue(c, 0);
                 RR_CPU_CYCLES(RR_CYCLES_DRAW_LAP_TIME_ROW);
                 RR_GPU_SCRATCH->cursor = (u8 *)GameQueueSprite(&CurrentDrawBuf->buffer.ordering70.tags[0], (SpritePacket *)RR_GPU_SCRATCH->cursor, 0x70, RR_PAL_JP(0x60, 0x58), 0xC, 0xC, s5, 0xA8, 0x7EF8);
                 DrawRaceTime(0x80, RR_PAL_JP(0x60, 0x58), s1, 0x7EF8, 1);

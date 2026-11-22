@@ -2,6 +2,7 @@
 #include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "rr/race_setup.h"
+#include "rr/field_rate.h"
 #include "game/car/carparam.h"
 
 void SetupRace(void)
@@ -133,7 +134,8 @@ void SetupRace(void)
     {
         RaceTimeRemaining = RR_PAL_NTSC(0xAFC8, 0xD2F0); /* 30 minutes */
     }
-    VSyncThreshold = 0x180;
+    /* 0x180 (two fields a frame), or every field (rr/field_rate.h) */
+    RaceFieldRateBegin(GameModeType);
     ClearTrackObjectStates(0);
     PlayerDisplayRpm[0] = 0;
     PlayerDisplayRpm[1] = 0;

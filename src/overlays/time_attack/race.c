@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "game/system/pad.h"
 #include "game/car/carparam.h"
 #include "rr/overlay660.h"
@@ -29,8 +30,13 @@ void ovl660_update_race(void) {
     s32 fadeFlags;
     s8 paused;
 
-    ModeFrame = (ModeFrame + 1U);
-    if (((RaceState - 1U) < 2U) && (PlayerControllers[0].edges08.fields.pressed & 0x800)) {
+    /* The mode's counters, timers and state run once per original tick;
+     * the drawing every field (rr/field_rate.h). */
+    const int tick = RaceSlowTick();
+    if (tick)
+        ModeFrame = (ModeFrame + 1U);
+    if (!tick) {
+    } else if (((RaceState - 1U) < 2U) && (PlayerControllers[0].edges08.fields.pressed & 0x800)) {
         if (FadeCountdown <= 0) {
             FadeCountdown = 0xF;
             paused = RacePaused == 0;
@@ -52,8 +58,10 @@ update_pause_timer:
         }
     }
     if (RacePaused != 0) {
-        UpdatePauseMenu(GameModeType);
-        ModeFrame = (ModeFrame - 1U);
+        if (tick) {
+            UpdatePauseMenu(GameModeType);
+            ModeFrame = (ModeFrame - 1U);
+        }
         DrawPauseMenu(CurrentDrawBuf->ordering.ordering70.tags, PauseCursor);
         DrawRaceOverlaySprites(1);
         DrawLapTimeList(0);
@@ -75,14 +83,17 @@ update_pause_timer:
         UpdateAndDrawRearViewMirror(ScreenFrame);
         return;
     }
-    ScreenFrame = (ScreenFrame + 1U);
+    if (tick)
+        ScreenFrame = (ScreenFrame + 1U);
     if (ModeFrame >= RR_PAL_NTSC(75U, 90U) && RaceState == 0) {
+        if (tick) {
         SlotsStartForRace();
         RaceState=1;
         ResetCarSlotBuffers();
         SetModelTexturePage(-1);
+        }
     } else if (RaceState == 1) {
-            if (ModeFrame >= RR_PAL_NTSC(0xB0U, 0xD3U)) {
+            if (tick && ModeFrame >= RR_PAL_NTSC(0xB0U, 0xD3U)) {
                 UpdateCarStartLineSteering(PlayerCars);
                 RaceState = 2;
                 CdAudioBeginPlay(1);
@@ -95,7 +106,8 @@ update_pause_timer:
                 }
                 AddScreenFadeTiles(CurrentDrawBuf->ordering.ordering70.tags, (RR_PAL_NTSC(0x19, 0x1E) - FadeCountdown) * 0xA, fadeFlags);
             }
-            if (FadeCountdown <= 0) {
+            if (!tick) {
+            } else if (FadeCountdown <= 0) {
                 if (RaceState == 4) {
                     ModeGroup = 1;
                     ModeIndex = 0x15;
@@ -118,15 +130,20 @@ update_pause_timer:
             }
             RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(CurrentDrawBuf->ordering.ordering70.tags, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
     }
-    UpdateLapTiming(PlayerCars);
+    if (tick)
+        UpdateLapTiming(PlayerCars);
     DrawRaceOverlaySprites(0);
-    ovl660_check_reverse_run(PlayerCars);
-    UpdateRaceRanking();
+    if (tick) {
+        ovl660_check_reverse_run(PlayerCars);
+        UpdateRaceRanking();
+    }
     if (RaceState < 4) {
         DrawStartCountdown(CurrentDrawBuf->ordering.ordering70.tags, ModeFrame);
-        PlayStartCountdownVoice(ModeFrame);
+        if (tick)
+            PlayStartCountdownVoice(ModeFrame);
     }
-    CheckFinalLapEvent((char *)(void *)PlayerCars);
+    if (tick)
+        CheckFinalLapEvent((char *)(void *)PlayerCars);
     if ((RaceState - 1U) < 3U) {
         DrawLapTimeList(0);
         DrawHudRotatingQuad(PlayerDisplayRpm[0], 0);
@@ -140,8 +157,10 @@ update_pause_timer:
     /* the frame's own work before its step (rr/cpu_work.h) */
     RrSpendRaceModeOwn(0);
     StepRaceFrame(GameModeType);
-    UpdateTrackObjects();
-    if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
+    if (tick)
+        UpdateTrackObjects();
+    if (!tick) {
+    } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(0x4BU, 0x5AU)) {
         UpdateRaceIntroCamera(PlayerCars, ModeFrame);
     } else {
         UpdateRaceChaseCamera(PlayerCars);
@@ -157,7 +176,8 @@ update_pause_timer:
     SetupPlayerView(0);
     DrawTrackObjects(0);
     DrawTrackSceneryForPlayer(0);
-    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    if (tick)
+        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
     if (RaceState >= 4) {
         StopRaceRumble();
         if (RaceState == 6) {

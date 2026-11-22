@@ -39,6 +39,7 @@
 #include "game/gfx/gtepoly1.h"
 #include "game/menu/mnchoice.h"
 #include "rr/replay_host.h"
+#include "rr/field_rate.h"
 #include "game/sound/sndslot.h"
 
 
@@ -67,6 +68,7 @@ void SaveCarSnapshots(int unused)
     SavedRaceState = RaceState;
     for (i = 0; i < NumCars; i++)
       *CarSnapshots[i] = *CarTable[i];
+    CarFieldStatesSave();
     ReplayState = 1;
   }
 }
@@ -318,6 +320,7 @@ void ReplayModeEnter(void) {
         if (PlayerCars[0].first < PlayerCars[1].first) ReplayFocusCarIndex = 1;
     }
     FadeCountdown = -1;
+    RaceFieldRateTickNext();
     ModeGroup = 1;
     ModeIndex = 0x16;
     SubmodeState = 0;
@@ -326,17 +329,25 @@ void ReplayModeEnter(void) {
 void ReplayModeUpdate(void) {
     int i;
     short t;
-    ModeFrame += 1;
+    /* The counters, fades and the replay's step once per original tick,
+     * the drawing every field (rr/field_rate.h). */
+    const int tick = RaceSlowTick();
+    if (tick)
+        ModeFrame += 1;
     if (ReplayFrame < RR_PAL_NTSC(0x1A, 0x1F)) {
         AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (RR_PAL_NTSC(0x19, 0x1E) - ReplayFrame) * 10, 0x25);
-        if (ReplayFrame == 10) {
+        if (ReplayFrame == 10 && tick) {
             CdAudioBeginPlay(0);
         }
     } else {
         UpdateAndDrawSceneOverlay();
     }
-    ScreenFrame += 1;
-    if (FadeCountdown >= 0) {
+    if (tick)
+        ScreenFrame += 1;
+    if (!tick) {
+        if (FadeCountdown >= 0 && FadeCountdown < RR_PAL_NTSC(0x19, 0x1E))
+            AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], (RR_PAL_NTSC(0x19, 0x1E) - FadeCountdown) * 10, 0x45);
+    } else if (FadeCountdown >= 0) {
         if (FadeCountdown == 0) {
             SetReverbDepthBoth(0);
             if (ReplayHost && ReplayHost->finish()) {
@@ -357,13 +368,13 @@ void ReplayModeUpdate(void) {
     if (rsin((ReplayFrame << 7) & 0xF80) > 0) {
         RR_GPU_SCRATCH->cursor = AddSpriteWithDrawMode(&CurrentDrawBuf->buffer.ordering70.tags[0], RR_GPU_SCRATCH->cursor, WIDE_HUD_LEFT(0x10), 0x10, 0x4C, 0xC, 0x64, 0xC0, 5, 0x7FF8, 0, 0x80);
     }
-    for (i = 0; i < NumCars; i++) {
+    for (i = 0; i < NumCars && tick; i++) {
         if ((s16)CarTable[i]->flags1E4 >= 0x10) {
             CheckRaceFinish(CarTable[i]);
         }
     }
     StepRaceFrame(GameModeType);
-    if (((unsigned short)GameModeType - 2) < 2U) {
+    if (tick && ((unsigned short)GameModeType - 2) < 2U) {
         if ((unsigned char)ReplayFrame == 0) {
             if (PlayerCars[0].first < PlayerCars[1].first) {
                 ReplayFocusCarIndex = 1;
@@ -373,9 +384,11 @@ void ReplayModeUpdate(void) {
         }
     }
     SetupViewport(0);
-    UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
-    RrSpendReplayFrame();
-    UpdateTrackObjects();
+    if (tick) {
+        UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
+        RrSpendReplayFrame();
+        UpdateTrackObjects();
+    }
     BuildCameraMatrices();
     DrawCars(6);
     ((RaceFrameScratch *)SCRATCHPAD)->word78 = RaceQuitTargetMode;
@@ -385,8 +398,10 @@ void ReplayModeUpdate(void) {
     if (ReplayFrame >= RR_PAL_NTSC(0x19, 0x1E)) {
         QueueDrawStp();
     }
-    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
-    SlotSetLevelProgram(PlayerDisplayRpm[1], PlayerThrottleLoad[1], 1);
+    if (tick) {
+        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+        SlotSetLevelProgram(PlayerDisplayRpm[1], PlayerThrottleLoad[1], 1);
+    }
     PadClearPulse(0);
     PadClearPulse(1);
     PadRumbleStop(0);

@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/release.h"
 #include "types.h"
 #include "rr/menu_selection.h"
@@ -45,6 +46,10 @@ void StepRaceFrame(unsigned int gameMode)
   int impactCosine;
   RaceVehicle *car;
   int *carIndex;
+  /* Until its parts move to the fast lane, the whole step runs once per
+   * original tick (rr/field_rate.h). */
+  if (!RaceSlowTick())
+    return;
   RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;

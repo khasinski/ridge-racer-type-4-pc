@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include <string.h>
 #include "game/gfx/poly1.h"
 #include "rr/player_cars.h"
@@ -166,7 +167,9 @@ void UpdateAndDrawRearViewMirror(int arg0) {
         RearViewMirrorVisible = 1;
     }
     if (RearViewMirrorVisible != 0) {
-        if (RearViewMirrorEnabled != 0) {
+        /* the slide moves a line per original tick (rr/field_rate.h) */
+        if (!RaceSlowTick()) {
+        } else if (RearViewMirrorEnabled != 0) {
             if (RearViewMirrorY < 0x12) {
                 RearViewMirrorY += 1;
             }

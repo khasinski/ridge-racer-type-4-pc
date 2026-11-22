@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/release.h"
 #include "types.h"
 #include "rr/cpu_time.h"
@@ -176,7 +177,7 @@ void PadUpdate(void) {
             states[i]->action34 = states[i]->edges08.fields.pressed & 0x40;
             states[i]->idleStage54 = 0;
             if (states[i]->previous04 == states[i]->input00.fields.buttons) {
-                if (VSyncThreshold == 0x80) {
+                if (VSyncThreshold == 0x80 || RaceFieldRateLive) {
                     states[i]->idleTick58 += 1;
                 } else {
                     states[i]->idleTick58 += 2;
@@ -306,8 +307,11 @@ void PadUpdate(void) {
             states[i]->pressure26 = 0x6A;
         }
     }
-    PadStepPulse();
-    PadUpdateRumble();
+    /* the pulse rows and motor toggles by the original tick (rr/field_rate.h) */
+    if (RaceSlowTick()) {
+        PadStepPulse();
+        PadUpdateRumble();
+    }
     for (i = 0; i < 2; i++) {
         PadPollPort(i);
     }

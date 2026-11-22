@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "types.h"
 #include "rr/record_banks.h"
 #include "game/data/ldscn1.h"
@@ -42,6 +43,7 @@ void SetupRaceMemoryArena(s32 layout,s32 mode) {
                 CarTable[i]->flags1E4 &= 255;
             }
         }
+        CarFieldStatesRestore();
     } else {
         SavedRaceState=0;
         if (layout==1) {

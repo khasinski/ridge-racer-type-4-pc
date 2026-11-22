@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/overlay_module.h"
 #include "game/car/carparam.h"
 #include "game/system/pad.h"
@@ -75,8 +76,13 @@ void ovl661_update_race(void) {
     RaceVehicle *temp_s0;
     RaceVehicle *temp_s0_3;
 
-    ModeFrame=ModeFrame+1U;
-    if (((RaceState - 1U) < 2U) && (PlayerControllers[0].edges08.fields.pressed & 0x800)) {
+    /* The mode's counters, timers and state run once per original tick;
+     * the drawing every field (rr/field_rate.h). */
+    const int tick = RaceSlowTick();
+    if (tick)
+        ModeFrame=ModeFrame+1U;
+    if (!tick) {
+    } else if (((RaceState - 1U) < 2U) && (PlayerControllers[0].edges08.fields.pressed & 0x800)) {
         if (FadeCountdown <= 0) {
             FadeCountdown = 0xF;
             temp_v1 = RacePaused == 0;
@@ -98,8 +104,10 @@ block_7:
         }
     }
     if (RacePaused != 0) {
-        UpdatePauseMenu(GameModeType);
-        ModeFrame=ModeFrame-1U;
+        if (tick) {
+            UpdatePauseMenu(GameModeType);
+            ModeFrame=ModeFrame-1U;
+        }
         DrawPauseMenu(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, PauseCursor);
         if (RaceState < 4) {
             DrawStartCountdown(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, ModeFrame);
@@ -129,7 +137,8 @@ block_7:
             RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];
             RR_661_FRAME_SCRATCH->position08 = ovl661_camera_positions[var_s2];
             SetupViewport(var_s2 + 2);
-            if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+            if (!tick) {
+            } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
                 UpdateRaceIntroCamera(&PlayerCars[var_s2], ModeFrame);
             } else {
                 UpdateRaceChaseCamera(&PlayerCars[var_s2]);
@@ -146,8 +155,9 @@ block_7:
         } while (var_s2 < 2);
         return;
     }
-    ScreenFrame=ScreenFrame+1U;
-    if ((RaceState - 2U) < 2U) {
+    if (tick)
+        ScreenFrame=ScreenFrame+1U;
+    if (tick && (RaceState - 2U) < 2U) {
         temp_v0_3 = RaceTimeRemaining - 1U;
         RaceTimeRemaining = temp_v0_3;
         if (temp_v0_3 <= 0) {
@@ -156,7 +166,20 @@ block_7:
             SoundSetMasterVolume(0,RR_PAL_NTSC(0x21, 0x29));
         }
     }
-    if ((ModeFrame >= RR_PAL_NTSC(0x4BU, 0x5AU)) && (RaceState == 0)) {
+    if (!tick) {
+        if (RaceState >= 4 && FadeCountdown < RR_PAL_NTSC(0x19, 0x1E)) {
+            AddScreenFadeTiles(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, (RR_PAL_NTSC(0x19, 0x1E) - FadeCountdown) * 0xA,
+                               TotalRaceTime == -1 ? 0x45 : 0x25);
+            RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
+        } else if (RaceState == 0) {
+            if (ModeFrame >= RR_PAL_NTSC(51U, 61U)) {
+                AddScreenFadeTiles(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,(ModeFrame-RR_PAL_NTSC(50U, 60U))*10U,37);
+            } else if (ModeFrame < RR_PAL_NTSC(25U, 30U)) {
+                AddScreenFadeTiles(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,(RR_PAL_NTSC(25U, 30U)-ModeFrame)*10U,69);
+            }
+            RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
+        }
+    } else if ((ModeFrame >= RR_PAL_NTSC(0x4BU, 0x5AU)) && (RaceState == 0)) {
         RaceState = 1;
         SlotsStartForRace();
         SetModelTexturePage(-1);
@@ -202,10 +225,13 @@ block_7:
             RR_GPU_SCRATCH->cursor = AddDrawAreaPrim(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, RR_GPU_SCRATCH->cursor, 0, 0, 0x140, 0x100);
         }
     }
-    ovl661_update_checkpoint(&PlayerCars[0]);
-    ovl661_update_checkpoint(&PlayerCars[1]);
-    UpdateRaceRanking();
-    if ((s16) PlayerCars[0].half1EE < (s16) PlayerCars[1].half1EE) {
+    if (tick) {
+        ovl661_update_checkpoint(&PlayerCars[0]);
+        ovl661_update_checkpoint(&PlayerCars[1]);
+        UpdateRaceRanking();
+    }
+    if (!tick) {
+    } else if ((s16) PlayerCars[0].half1EE < (s16) PlayerCars[1].half1EE) {
         PlayerCars[0].half1EE = 0U;
         PlayerCars[1].half1EE = 1U;
     } else {
@@ -215,7 +241,8 @@ block_7:
     StepRaceFrame(GameModeType);
     if (RaceState < 4) {
         DrawStartCountdown(CurrentDrawBuf->buffer.secondaryOrderingB70.tags, ModeFrame);
-        PlayStartCountdownVoice(ModeFrame);
+        if (tick)
+            PlayStartCountdownVoice(ModeFrame);
     }
     var_s2 = 0;
     if ((RaceState - 1U) < 3U) {
@@ -245,7 +272,8 @@ block_7:
         RR_661_FRAME_SCRATCH->rotation18 = ovl661_camera_rotations[var_s2];
         RR_661_FRAME_SCRATCH->position08 = ovl661_camera_positions[var_s2];
         SetupViewport(var_s2 + 2);
-        if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
+        if (!tick) {
+        } else if (RaceState == 0 && ModeFrame < RR_PAL_NTSC(75U, 90U)) {
             UpdateRaceIntroCamera(&PlayerCars[var_s2], ModeFrame);
         } else {
             UpdateRaceChaseCamera(&PlayerCars[var_s2]);
@@ -259,11 +287,13 @@ block_7:
         }
         RR_661_FRAME_SCRATCH->mode5E = 1;
         SetupPlayerView(var_s2);
-        UpdateTrackObjects();
+        if (tick)
+            UpdateTrackObjects();
         DrawTrackObjects(0);
         temp_s0_4 = var_s2 + 1;
         DrawTrackSceneryForPlayer(temp_s0_4);
-        SlotSetLevelProgram(PlayerDisplayRpm[var_s2], PlayerThrottleLoad[var_s2], var_s2);
+        if (tick)
+            SlotSetLevelProgram(PlayerDisplayRpm[var_s2], PlayerThrottleLoad[var_s2], var_s2);
         var_s2 = temp_s0_4;
     } while (var_s2 < 2);
     if (RaceState >= 4) {

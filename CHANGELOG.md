@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Races at 50 / 60 frames a second (work in progress).** Graphics >
+  Race frame rate (default 60 FPS; `race_field_rate` in the settings file,
+  `RR4_RACE_FIELD_RATE`) runs a race's frame every video field instead of
+  every second one, with no interpolation. The race's timers, countdown,
+  voices, lap timing and HUD keep the original speed (they step once per
+  original frame, and button presses between them are kept). This first
+  step still moves the cars once per original frame; the car physics, AI,
+  camera and effects follow. The link race and the attract demo stay at
+  the original rate. With Race frame rate on, the PlayStation CPU time
+  model spends nothing in a race.
 - **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
   guessed in-between pictures from the PlayStation's draw lists, which drew
   visible artifacts and made movies stutter. Every game frame is now

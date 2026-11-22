@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/cpu_time.h"
 #include "rr/cpu_work.h"
 #include "rr/release.h"
@@ -244,7 +245,9 @@ void DrawTrackNodeMap(s32 *arg0) {
     sp18.vy += sp10.vy;
 
     CarCollisionGraceTimers &= 0xFF;
-    if (CarCollisionGraceTimers & 0x80) {
+    /* the dot's pulse steps per original tick (rr/field_rate.h) */
+    if (!RaceSlowTick()) {
+    } else if (CarCollisionGraceTimers & 0x80) {
         CarCollisionGraceTimers &= 0x7F;
         if (CarCollisionGraceTimers < 0x7A) {
             CarCollisionGraceTimers = (CarCollisionGraceTimers + 6) | 0x80;

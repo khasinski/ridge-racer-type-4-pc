@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "rr/cpu_work.h"
 #include <string.h>
 #include "rr/cpu_time.h"
@@ -305,7 +306,9 @@ void MainLoop(void) {
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_STEP);
         CdFileStep();
-        SoundUpdate();
+        /* the sound's timers and fades by the original tick (rr/field_rate.h) */
+        if (RaceSlowTick())
+            SoundUpdate();
         WideBeginFrame();
         if (ReplayHost)
             ReplayHost->frame();
@@ -352,6 +355,7 @@ void MainLoop(void) {
             RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_PAD);
         }
         PadUpdate();
+        RaceFieldRateNextField();
         FrameCounter++;
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_TOP);
     }

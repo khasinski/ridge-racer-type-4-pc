@@ -90,15 +90,25 @@ static void TestGraphicsPage(void) {
         SettingsModelRow(&m, m.row, &v);
         CHECK(v.danger && !strcmp(v.label, "Quit game"));
     }
+    /* Race frame rate: on by default, a switch. */
+    {
+        SettingsRowView v;
+        SettingsModelRow(&m, 4, &v);
+        CHECK(!strcmp(v.label, "Race frame rate") && !strcmp(v.value, "60 FPS"));
+    }
+    SettingsModelSelect(&m, 4);
+    Do(&m, SETTINGS_LEFT, 1);
+    CHECK(m.prefs.race_field_rate == 0);
     /* Draw distance is available to both rasterizers and applies live. */
-    SettingsModelSelect(&m, 5);
+    SettingsModelSelect(&m, 6);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.extended_draw_distance == 1);
     /* Restore page defaults. */
     SettingsModelSelect(&m, SettingsContentRows(&m));
     Do(&m, SETTINGS_ACTIVATE, 1);
     CHECK(m.prefs.scale == 1 && !m.prefs.fullscreen && m.prefs.vsync == RR4_VSYNC_AUTO &&
-          m.prefs.video_timing == RR4_VIDEO_PAL && !m.prefs.extended_draw_distance);
+          m.prefs.video_timing == RR4_VIDEO_PAL && !m.prefs.extended_draw_distance &&
+          m.prefs.race_field_rate == 1);
     CHECK(m.open);
     /* Back closes. */
     Do(&m, SETTINGS_BACK, 1);
@@ -127,7 +137,7 @@ static void TestUnavailable(void) {
     CHECK(!v.disabled);
     Do(&m, SETTINGS_RIGHT, 1);
     CHECK(m.prefs.fullscreen == 1);
-    SettingsModelRow(&m, 4, &v); /* aspect ratio: visible near the top */
+    SettingsModelRow(&m, 5, &v); /* aspect ratio: visible near the top */
     CHECK(v.disabled && !strcmp(v.label, "Aspect ratio"));
     SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* geometry correction */
     CHECK(!v.disabled);

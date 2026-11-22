@@ -767,6 +767,14 @@ void Psyz_SpendCycles(unsigned cycles);
 /* PS1 time in nanoseconds, for a cost measured as a span (psyz/system.h). */
 void Psyz_SpendTime(unsigned ns);
 
-#define RR_CPU_CYCLES(cycles) Psyz_SpendCycles(cycles)
+/* A race at field rate (rr/field_rate.h) is a native frame: none of the
+ * PS1's time is spent, so no frame of it is stretched over two fields on
+ * the offline clock (on a real-time clock nothing is spent anyway). */
+extern signed int RaceFieldRateLive;
+#define RR_CPU_CYCLES(cycles)                                                  \
+    do {                                                                       \
+        if (!RaceFieldRateLive)                                                \
+            Psyz_SpendCycles(cycles);                                          \
+    } while (0)
 
 #endif

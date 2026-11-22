@@ -16,6 +16,7 @@
 #include "rr/projection_state.h"
 #include "game/course/trkintp2.h"
 #include "game/demo/opening.h"
+#include "rr/field_rate.h"
 #include "game/gfx/gfxdraw.h"
 #include "game/sound/sndbgm3.h"
 #include "game/sound/sndslot.h"
@@ -243,6 +244,10 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
     SceneRaceContext *gD;
     SceneRaceContext *gS;
     SceneRaceContext *gT;
+    /* Its frame count, fades and volume ramp step once per original tick;
+     * the camera (from the frame count) and the drawing every field
+     * (rr/field_rate.h). */
+    const int tick = RaceSlowTick();
     RR_CPU_CYCLES(RR_CYCLES_LENS_FLARE);
     s0 = 0;
     do {
@@ -252,15 +257,15 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
     g1 = &RaceContext;
     if (g1->opening88.fadeActive90 != 0) {
         AddScreenFadeTiles(&CurrentDrawBuf->buffer.ordering70.tags[0], g1->opening88.fadeFrame8C * 10, 0x25);
-        v1 = g1->opening88.volumeA0 - 8;
+        v1 = g1->opening88.volumeA0 - (tick ? 8 : 0);
         g1->opening88.volumeA0 = v1;
         if (v1 < 0) {
             g1->opening88.volumeA0 = 0;
         }
         SetSoundChannelVolLR(0, (short)g1->opening88.volumeA0, (short)g1->opening88.volumeA0);
-        g1->opening88.fadeFrame8C = g1->opening88.fadeFrame8C + 1;
+        g1->opening88.fadeFrame8C = g1->opening88.fadeFrame8C + (tick ? 1 : 0);
     } else {
-        v2 = g1->opening88.volumeA0 + 8;
+        v2 = g1->opening88.volumeA0 + (tick ? 8 : 0);
         g1->opening88.volumeA0 = v2;
         if (v2 >= 0x61) {
             g1->opening88.volumeA0 = 0x60;
@@ -270,7 +275,7 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
     gB = &RaceContext;
     s0 = gB->opening88.frame88;
     if (s0 < RR_PAL_NTSC(0xC, 0xF)) {
-        if (s0 == 1) {
+        if (s0 == 1 && tick) {
             StartOpeningFadeOut();
             if (gB->opening88.mode94 == s0) {
                 CdAudioBeginPlay(0);
@@ -288,7 +293,14 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
             s0 -= d;
         }
         RR_CPU_CYCLES(RR_CYCLES_RACE_OPENING_OVERLAY);
-        UpdateRaceOpeningOverlay(RR_PAL_NTSC(0x1C2, 0x21C));
+        {
+            s32 fade = OpeningFadeTimer, slide = OpeningSlideTimer;
+            UpdateRaceOpeningOverlay(RR_PAL_NTSC(0x1C2, 0x21C));
+            if (!tick) {
+                OpeningFadeTimer = fade;
+                OpeningSlideTimer = slide;
+            }
+        }
         pk = (GpuTilePacket *)RR_GPU_SCRATCH->cursor;
         pk->code = 0x62;
         pk->r = s0;
@@ -346,7 +358,8 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
             }
         }
         gT = &RaceContext;
-        gT->opening88.frame88++;
+        if (tick)
+            gT->opening88.frame88++;
         if (gT->opening88.frame88 >= gT->opening88.endFrame98) {
             gT->opening88.frame88 = gT->opening88.endFrame98;
             gT->opening88.done9C = 1;
@@ -355,7 +368,8 @@ int DrawLensFlareAndSun(RaceVehicle *arg0)
         break;
 
     case 2:
-        gD->opening88.frame88++;
+        if (tick)
+            gD->opening88.frame88++;
         if (gD->opening88.frame88 >= RR_PAL_NTSC(0x49, 0x58)) {
             gD->opening88.done9C = 1;
             arg0->flags1E4 = arg0->flags1E4 | 0x100;

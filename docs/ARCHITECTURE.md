@@ -183,6 +183,22 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      NTSC-timing splash lasts 314 fields against the Japanese release's
      291.
 
+   - **Race frame rate (field rate):** with Graphics > Race frame rate on
+     (default) a race runs its mode function every field, 50 Hz PAL /
+     60 Hz NTSC, without interpolation (`include/rr/field_rate.h`,
+     `src/main/system/fieldrate.c`). `RaceFieldRateBegin` (race setup)
+     chooses the rate; the link race and the attract demo stay at the
+     original rate, and a mode that sets the menus' `VSyncThreshold` ends
+     it. The slow lane (`RaceSlowTick()`, every second field) runs the
+     counters, timers and one-frame events at the original tick; the pad
+     edges are latched between ticks. Converted code (the fast lane) runs
+     every field with half steps (`RaceFieldHalf`), square-rooted filter
+     factors (`RaceFieldKeep`) and two-field differences (`RaceFieldDelta`),
+     with its remainders in the per-car sidecar `CarFieldState` because
+     `RaceVehicle` keeps its PS1 size. With every part still in the slow
+     lane, a Time Attack race at field rate has the same state as at the
+     original rate at every field (checked with the autodrive script).
+
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
      a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and
      `RR_PAL_JP(pal, jp)` choose the Japanese release's (SLPS-01800) code and
