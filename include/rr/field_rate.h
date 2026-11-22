@@ -266,6 +266,8 @@ enum {
     CAR_FIELD_REM_AI_RPM_Q16,    /* UpdateEngineRpm */
     CAR_FIELD_REM_AI_LATERAL_Q16,/* corner turn mode 3, lateral24 3/4 */
     CAR_FIELD_REM_AI_ROT_Q16,    /* corner turn mode 3, rot54 to heading */
+    CAR_FIELD_HIT_LAST,           /* ResolveCarCollisions: the hitter's last */
+    CAR_FIELD_HIT_RUN,            /* contact field + 1, its fields in a row */
     CAR_FIELD_REM_COUNT,
     CAR_FIELD_REM_SLOTS = 96
 };

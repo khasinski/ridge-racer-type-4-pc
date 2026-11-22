@@ -316,18 +316,44 @@ void ComputeQuadMidpoints(s32 carIndex) {
 }
 
 /* ResolveCarCollisions' exchange of speed with the car stages every field
- * (RaceFieldCarStep), for an overlap of two cars hitter `a` (cars[side]) and
- * `b`. On each tick of the overlap the original takes b halfway to a's
- * speed along b's heading and sets a to 95% of b's: per field b keeps
- * sqrt(1/2) of its distance to a's, and a takes 95.7% of b's, as the pair
- * loses its 2.5% a tick together; the hitter's drive keeps sqrt(92%) and
- * its lateral speed loses half the tick's. The knock back of an opponent
- * hitting (to -99% of b's speed, after which it no longer pushes) is one
- * event, as the original's. */
+ * (RaceFieldCarStep), for an overlap of hitter `a` (cars[side]) and `b`.
+ * On the first tick of an overlap the original takes b halfway to a's
+ * speed along b's heading and sets a to 95% of b's: an impulse, which the
+ * first field of the contact applies whole (the second none). Each further
+ * tick repeats it on the pair now moving together, a decay: per field, b
+ * moves to the geometric mean of its speed and the tick's result, a to 95%
+ * of b. Without the 95% (a slower hitter) b approaches a's speed, keeping
+ * sqrt(1/2) of the distance a field. The hitter's drive keeps sqrt(92%), its
+ * lateral speed loses half the tick's. The knock back of an opponent (to
+ * -99% of b's speed, after which it no longer pushes) is one event. */
+static s32 IsqrtS32(s32 v) {
+    u32 r = 0, bit = 1u << 30, x = (u32)v;
+    while (bit > x)
+        bit >>= 2;
+    while (bit) {
+        if (x >= r + bit) {
+            x -= r + bit;
+            r = (r >> 1) + bit;
+        } else {
+            r >>= 1;
+        }
+        bit >>= 2;
+    }
+    return (s32)r;
+}
+
 static void CollideCarsField(RaceVehicle *arg0, RaceVehicle *a, RaceVehicle *b, s32 ang) {
     CarFieldState *fa = CarFieldStateOf(a);
     CarFieldState *fb = CarFieldStateOf(b);
-    s32 t;
+    s32 *last = &fa->rem[CAR_FIELD_HIT_LAST];
+    s32 *run = &fa->rem[CAR_FIELD_HIT_RUN];
+    s32 t, b1;
+    /* the hitter's contact fields in a row (both cars' calls in a field
+     * are one) */
+    if (*last != (s32)(RaceFieldCount + 1)) {
+        *run = *last == (s32)RaceFieldCount ? *run + 1 : 1;
+        *last = (s32)(RaceFieldCount + 1);
+    }
     if (a->flags1E4 & 0x10) {
         if (a->input >= 0xF1) {
             arg0->control.pathDeltaX30 = 0x40;
@@ -336,13 +362,22 @@ static void CollideCarsField(RaceVehicle *arg0, RaceVehicle *a, RaceVehicle *b, 
         a->control.dynamics94.player.driveProduct0C =
             RaceFieldKeep(a->control.dynamics94.player.driveProduct0C, 92, 100, &fa->rem[CAR_FIELD_REM_HIT_DRIVE]);
         t = (a->input * ang) / 4096;
-        b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
-        if (b->input < 0) {
-            b->input = 0;
-        }
         if (a->input >= 0xF1) {
-            /* (sqrt(0.975) - sqrt(0.5)) / (1 - sqrt(0.5)) */
-            a->input = (b->input * 957) / 1000;
+            if (*run == 1) {
+                b->input = (b->input + t) / 2;
+            } else if (*run > 2) {
+                b1 = (b->input + t) / 2;
+                b->input = b->input > 0 && b1 > 0 ? IsqrtS32(b->input * b1) : b1;
+            }
+            if (b->input < 0) {
+                b->input = 0;
+            }
+            a->input = (b->input * 95) / 100;
+        } else {
+            b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
+            if (b->input < 0) {
+                b->input = 0;
+            }
         }
     } else if (a->input > 0) {
         if (a->input >= 0xF1 || (s16)b->flags1E4 >= 0x10) {
