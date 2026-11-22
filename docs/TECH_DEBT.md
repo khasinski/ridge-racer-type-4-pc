@@ -29,6 +29,7 @@ None open.
 
 | ID | Sev | Where | Problem | Fix |
 | --- | --- | --- | --- | --- |
+| H1 | Medium | PsyZ `frame_interp_impl.h`, `sdl3_gpu.c` (Windows) | Issue #5: 60 FPS at 4x with the extended draw distance is measured only on the hidden Metal renderer (docs/PERFORMANCE.md, 2026-11-22). D3D12's target-copy blending, its VSYNC swapchain acquire (`SDL_WaitAndAcquireGPUSwapchainTexture` blocks the main thread when two frames are in flight) and the timer are unmeasured; `InterpFinishPending` (ghost/new-face placement) is still sequential on the main thread. | A Windows tester's `PSYZ_PRESENT_LOG` / `PSYZ_FRAME_STATS=100` run at 4x Extended; if the swapchain acquire shows up, acquire without waiting at the 60 FPS deadlines and keep the output for the next poll. |
 
 ## 3. Fidelity gaps against the console
 

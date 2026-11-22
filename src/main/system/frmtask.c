@@ -283,6 +283,7 @@ void MainLoop(void) {
         /* The previous frame's ordering table went to the GPU (DrawOTag
          * below, which copies its precise vertices along). */
         Psyz_PgxpNextFrame();
+        Psyz_GpuTimingClearHostPackets();
         RrWorkFrame = 0;
         {
             s32 length=0x2C0;
@@ -324,7 +325,10 @@ void MainLoop(void) {
                 abort();
             }
             static size_t peak;
-            if (getenv("RR4_PACKET_STATS") && used > peak) {
+            static int stats = -1; /* read once: no environment walk a frame */
+            if (stats < 0)
+                stats = getenv("RR4_PACKET_STATS") != NULL;
+            if (stats && used > peak) {
                 peak = used;
                 fprintf(stderr, "RR4: packet peak %zu / %zu bytes\n",
                         peak, sizeof(frame->buffer.packets1670));

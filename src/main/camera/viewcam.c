@@ -155,6 +155,10 @@ void RenderMirrorCourseView(int player) {
     v = LookupOctantVisibility();
     if (!ExtendedDrawDistance && v < PrimaryVisibleViews.objects.count) {
         PrimaryVisibleViews.objects.count = v;
+    } else if (v < PrimaryVisibleViews.objects.count && v < CourseHostViewsFirst) {
+        /* the PS1 draws the mirror's first v views only: the rest are the
+         * host's, outside the PS1 time model as the added views are */
+        CourseHostViewsFirst = v;
     }
     SetupViewLighting();
     SetupViewMatrix();

@@ -1,5 +1,123 @@
 # Performance measurements
 
+## Issue #5: 60 FPS at 4x with the extended draw distance (2026-11-22)
+
+Report (0.2-alpha, Windows/D3D12, 4x, 60 FPS on a 60 Hz monitor): slower
+than 0.1, Extended draw distance "breaks speeds", interpolation worse; the
+log shows `midpoint=0.0` in nearly every window and "interpolation table
+pairs full ... entries dropped".
+
+Reproduced here on the hidden Metal renderer, 4x, geometry correction,
+interpolation, 60 FPS presentation, the GP script below, race fields
+8200-9400 (600 game frames), unpaced (`PSYZ_HEADLESS=gpu`):
+
+| Build | Original (s) | Extended (s) | Midpoints in the slice | Game frames Orig / Ext |
+| --- | ---: | ---: | ---: | ---: |
+| 0.2 | 16.43 | crashed (bus error at field ~8800; ~4 s per 100 fields before) | 0 | 600 / - |
+| main before | 6.41 | 15.52 | 597 / 591 | 600 / 594 |
+| this change | 4.44 | 8.52 | 597 / 597 | 600 / 600 |
+
+0.2 also reports pairs/tags full at 4x Extended; main before and after do
+not (main had already replaced 0.2's midpoint presentation, which presented
+no midpoints in this race at all: the reporter's `midpoint=0.0`).
+
+Causes and fixes (PsyZ unless noted):
+
+1. **Packet address hash** (`InterpHash`): `(n >> 2) ^ (n >> 16) ^ (n >> 30)`
+   kept consecutive words in consecutive slots, so the 4 MiB packet arenas
+   (16 table widths) and the GPU queue folded into long primary clusters.
+   `GPU_Enqueue` looks up every queued word (`Psyz_GpuCopyInterpolationPacket`),
+   mostly misses, and each miss walked a cluster: **56.7% of the main
+   thread** at field 8400 with Extended. Fibonacci hashing of the word
+   offset (still ASLR-independent) brings it to 5-6%.
+2. **Junction search on worker threads**: `InterpSnapJunctions` looks up each
+   paired vertex on its own (its midpoint vertex and motion-field entries
+   are its alone), so the vertices run on a small pool (`PSYZ_INTERP_THREADS`,
+   default logical cores - 2, at most 8; each worker has its own query
+   cache). Outline placement (`InterpFinishLines`) runs there too. The
+   ghost/new-face placement (`InterpFinishPending`) stays sequential: each
+   one may follow one placed before it.
+3. **Bounding-box rejection** in the cached junction scan: each packed edge
+   reference keeps its pose-0 box grown by the widest reach; a vertex outside
+   it is skipped before the edge record is touched (`PSYZ_INTERP_EDGE_BOX=0`
+   disables). Exact (a vertex on an edge lies in its box grown by its
+   distance); a small gain on its own.
+4. **Game speed independent of the draw distance** (game + PsyZ): the CPU
+   cost model already held the added views out, but the emulated GPU still
+   timed their packets, and the mirror's views past the PS1's cut were
+   charged as PS1 work. Extended lost 6 game frames in 1200 fields against
+   Original. The held ranges now go to `Psyz_GpuTimingHostPackets` (no GPU
+   time for them on the offline clock), and the mirror's extra views are host
+   views. Original and Extended now have identical mode/frame traces over the
+   whole 9601-field run. On the real-time clock (interactive play) the cost
+   model is off anyway: there only the host's own speed matters.
+5. **Headroom**: `INTERP_PAIRS` 16384 -> 32768, maps 65536 -> 131072 (0.2's
+   "pairs full"; the ring search for a free pair also gets shorter). The
+   "GPU queue full" info line (every overflowing list, hundreds in the
+   reporter's log) is logged once; `RR4_PACKET_STATS` is read once.
+
+Gates: ctest 17/17, `tools/port/check.sh` 0 failing (layout sweep skipped,
+no decompilation tree next to the worktree), PsyZ ztest 431/0/18,
+`regress.sh check` against 9668f273 all identical, all 35 `ds_compare`
+scenarios byte-identical port traces and reports to 9668f273 (Original
+settings are untouched: no presentation rate, no host views).
+
+Exactness: a per-sync checksum of every midpoint vertex (temporary
+instrumentation) is identical between main before and after (Original, 3623
+syncs) and between threaded and single-threaded, box on/off (Extended, 3703
+syncs). `PSYZ_INTERP_TREE_VERIFY=1 PSYZ_INTERP_QUERY_VERIFY=1` (every query
+against the unfiltered scan, on the workers) completes 9400 Extended fields.
+Captured 60 FPS midpoints are not comparable run to run (their sample
+fractions follow the host clock, also on main before).
+
+`PSYZ_PRESENT_LOG=file` writes one line per presented image (performance
+counter ms, generated flag) to measure the output cadence, which the
+field-rate frame log cannot show.
+
+6. **Presentation polls in the long stretches** (PsyZ): 60 FPS outputs are
+   presented when the main thread polls (the limiter's wait, the horizon
+   submission, the junction search). A poll-gap trace (`POLLGAP`, temporary)
+   at 4x Extended widescreen found 10-39 ms without a poll in `GPU_Enqueue`
+   (the frame's whole list dispatch after VSync) and after the junction
+   search (pending placement, the midpoint's draw): the due output went out
+   late or its deadline was skipped. `GPU_Enqueue` now polls every 256 list
+   nodes, `InterpFinishPending` every 64 primitives, and the midpoint sync
+   once more before drawing (polls present only an output already complete,
+   as the existing ones). No effect without a presentation rate (offline
+   runs, regress).
+
+Real-time measurement: `PSYZ_HEADLESS=gpu PSYZ_HEADLESS_PACED=1
+PSYZ_AUDIO_CLOCK=wall` (the frame limiter and the wall clock of interactive
+play, no window), 4x, geometry correction, interpolation, **widescreen**,
+60 FPS, the same race fields 8200-9400 (24.1 s), intervals between
+presented images from `PSYZ_PRESENT_LOG` (1% low: 1000 / mean of the worst
+1% intervals; min: the longest interval):
+
+| Draw distance / build | Presented/s | Median | 1% low | Min | Intervals > 25 ms | Game frames (600 = full speed) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Extended, main before | 59.53 | 60.0 | 26.7 | 18.8 | 22 | 597 |
+| Extended, this change | 59.99 | 59.9 | 50.7 | 45.4 | 0 | 597 |
+| Original, main before | 59.65 | 59.8 | 29.7 | 27.0 | 86 | 600 |
+| Original, this change | 59.99 | 60.0 | 52.1 | 48.4 | 0 | 600 |
+
+(Single runs, M5 Max, other agents' runs on the machine; "this change"
+Original is the build with the presentation polls.) At real time the game
+frames are the host's: Extended still loses 3 of 600 frames to field
+overruns here (0.5%); a slower CPU loses more, which is the reporter's
+"Extended breaks speeds" (the game, like the PS1, waits for the next field
+when a frame overruns, so the race runs slower than real time).
+
+
+Not measured: Windows/D3D12 (target-copy blending, its swapchain and
+timer). The 60 FPS path does not use the "VSync forced ON/OFF" branches the
+reporter's 0.2 log shows (`ConfigureVSync` returns early with a presentation
+rate): with VSync Auto/On it presents VSYNC images paced by the limiter's
+output deadlines, sleeping at most 1 ms at a time and polling presentation
+in between, so a coarse Windows timer cannot delay a deadline by more than
+its sleep. Remaining main-thread work in the heaviest Extended frames is the
+game's horizon submission, PsyZ command dispatch and the sequential pending
+placement.
+
 ## Independent 60 / 120 FPS presentation (2026-11-15)
 
 Graphics now exposes **Frame rate: Original / 60 FPS / 120 FPS**, independently

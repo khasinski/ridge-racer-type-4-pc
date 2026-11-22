@@ -11,6 +11,8 @@
 
 /* PsyZ (psyz/gte.h, which libgte.h comes with) */
 unsigned long long Psyz_GteOpCount(unsigned op);
+/* psyz/gpu.h: packets the emulated GPU takes no time for */
+void Psyz_GpuTimingHostPackets(const void *begin, const void *end);
 
 unsigned long long RrWorkCount[RR_WORK_UNITS];
 void (*RrWorkPassHook)(int pass, const void *cursor);
@@ -143,9 +145,12 @@ void RrWorkHoldEnd(const void *cursor) {
     WorkRaw(raw);
     for (int k = 0; k < RR_WORK_UNITS; k++)
         Held[k] += raw[k] - HoldStart[k];
-    if (cursor && HoldCursor && cursor > HoldCursor)
+    if (cursor && HoldCursor && cursor > HoldCursor) {
         HeldBytes += (unsigned long long)((const unsigned char *)cursor -
                                           (const unsigned char *)HoldCursor);
+        /* nor the GPU's time for what it drew */
+        Psyz_GpuTimingHostPackets(HoldCursor, cursor);
+    }
 }
 
 /* The race frame's routines: DuckStation's entry-to-return clocks of each
