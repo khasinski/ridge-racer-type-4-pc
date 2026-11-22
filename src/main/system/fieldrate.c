@@ -253,6 +253,21 @@ s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2) {
     return d;
 }
 
+s32 RaceFieldStep(s32 x, s32 next, u32 slopeQ16, s32 *remQ16) {
+    long long v;
+    u32 root;
+    if (!RaceFieldRateLive)
+        return next;
+    if (slopeQ16 > 0x10000u)
+        slopeQ16 = 0x10000u;
+    /* sqrt(slope) in Q16 = sqrt(slope << 16) */
+    root = IsqrtU64((unsigned long long)slopeQ16 << 16);
+    /* (next - x) / (1 + root), in Q16 with the rounding carried */
+    v = ((long long)(next - x) << 32) / (0x10000 + root) + *remQ16;
+    *remQ16 = (s32)(v & 0xFFFF);
+    return x + (s32)(v >> 16);
+}
+
 /* ---- per-car sidecar ---- */
 
 CarFieldState *CarFieldStateOf(const void *car) {

@@ -39,6 +39,12 @@ extern s32 RaceFieldRateLive;
 extern s32 RaceTickField;
 
 static inline int RaceSlowTick(void) { return !RaceFieldRateLive || RaceTickField; }
+/* Non-zero on the fields that complete an original tick's fast-lane steps
+ * (the field after the tick's; always when the race is not at field rate):
+ * a half step on each field of the pair gives the tick's state after the
+ * second. A decision the original takes on its tick's state (a threshold
+ * crossed by up to one tick's step) takes it on this field. */
+static inline int RaceTickEnd(void) { return !RaceFieldRateLive || !RaceTickField; }
 /* Fields per original tick: 2 at field rate, else 1. */
 static inline int RaceFieldsPerTick(void) { return RaceFieldRateLive ? 2 : 1; }
 
@@ -179,6 +185,14 @@ u32 RaceFieldDecayKeepQ16(s32 tickResult, s32 x);
  * now - *prev1. Updates the history. */
 s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2);
 
+/* x after one field of a per-tick update x -> next that is affine in x
+ * with slope `slopeQ16` (Q16: 0 = next does not depend on x, a snap;
+ * 65536 = an add; 94/100 of it = a filter keeping 94%): x + (next - x) /
+ * (1 + sqrt(slope)), so two fields make the tick's update (exactly for an
+ * affine one). The rounding is carried in *remQ16. At the original rate
+ * `next`. */
+s32 RaceFieldStep(s32 x, s32 next, u32 slopeQ16, s32 *remQ16);
+
 /* ---- per-car sidecar ---- */
 
 /* Fast-lane state of one car that RaceVehicle has no room for. Slots are
@@ -243,16 +257,32 @@ enum {
     /* the chase camera's ease (UpdateRaceChaseCamera) */
     CAR_FIELD_REM_CAMERA_PITCH,
     CAR_FIELD_REM_CAMERA_YAW,
+    /* the opponents' driving (UpdateComCars, carai.c and under it) */
+    CAR_FIELD_REM_AI_REVS,       /* pre-start revs, rpm +- slideDivisor5E */
+    CAR_FIELD_REM_AI_HEADING,    /* heading1D4 += steering8C (Q16) */
+    CAR_FIELD_REM_AI_STEER_Q16,  /* filtered90 = (filtered90 + u) / 2 */
+    CAR_FIELD_REM_AI_SPEED,      /* speed4C += accel50 */
+    CAR_FIELD_REM_AI_DRAG_Q16,   /* speed4C * 94/100, 99/100 */
+    CAR_FIELD_REM_AI_RPM_Q16,    /* UpdateEngineRpm */
+    CAR_FIELD_REM_AI_LATERAL_Q16,/* corner turn mode 3, lateral24 3/4 */
+    CAR_FIELD_REM_AI_ROT_Q16,    /* corner turn mode 3, rot54 to heading */
+    CAR_FIELD_REM_COUNT,
     CAR_FIELD_REM_SLOTS = 96
 };
-_Static_assert(CAR_FIELD_REM_CAMERA_YAW < CAR_FIELD_REM_SLOTS, "CarFieldState rem slots");
+_Static_assert(CAR_FIELD_REM_COUNT <= CAR_FIELD_REM_SLOTS, "CarFieldState rem slots");
 enum {
     CAR_FIELD_HIST_INPUT1,        /* UpdateCarSteering: input, a field ago */
     CAR_FIELD_HIST_INPUT2,        /* two fields ago */
     CAR_FIELD_HIST_AI_VEL_X,      /* IntegrateCarMotion: an opponent's */
     CAR_FIELD_HIST_AI_VEL_Z,      /* vel30/38 after their << 8 */
+    CAR_FIELD_HIST_AI_ERROR1,     /* UpdateComCarDrive's error92, 1 field ago */
+    CAR_FIELD_HIST_AI_ERROR2,     /* 2 fields ago */
+    CAR_FIELD_HIST_AI_HEADING,    /* heading1D4 before the last field's step */
+    CAR_FIELD_HIST_AI_INPUT,      /* input before the last field's step */
+    CAR_FIELD_HIST_COUNT,
     CAR_FIELD_HIST_SLOTS = 16
 };
+_Static_assert(CAR_FIELD_HIST_COUNT <= CAR_FIELD_HIST_SLOTS, "CarFieldState hist slots");
 /* UpdateWheelBumps' pitch / roll samples, one a field: the 10-tick moving
  * averages take 20 fields, the delayed one reaches 27 fields back. */
 #define CAR_FIELD_BODY_RING 32

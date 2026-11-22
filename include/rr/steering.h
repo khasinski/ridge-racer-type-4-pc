@@ -8,6 +8,7 @@
 void UpdateComCarLaneChange(RaceVehicle *vehicle);
 s32 AngleDiffAbs(s32 first, s32 second);
 void BuildRateCurve(Curve24 *record, s32 displacement, s32 duration, s32 initialRate);
+void BuildRateCurveQ12(Curve24 *record, s32 displacement, s32 duration, s32 scaledInitialRate);
 s32 EvalRateCurve(const Curve24 *record, s32 time, s32 *output);
 extern s32 TrackNodeCount;
 extern s16 SelectedMakerIndex;
