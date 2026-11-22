@@ -188,8 +188,8 @@ void ovl659_update_race(void) {
             DrawBuffers[0].environment.draw00.background = 0;
         }
     }
-    if (tick)
-        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    /* the engine sound by the field (rr/field_rate.h) */
+    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
     if (RaceState >= 4) {
         StopRaceRumble();
         if (RaceState == 6) {

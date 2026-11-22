@@ -176,8 +176,8 @@ update_pause_timer:
     SetupPlayerView(0);
     DrawTrackObjects(0);
     DrawTrackSceneryForPlayer(0);
-    if (tick)
-        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    /* the engine sound by the field (rr/field_rate.h) */
+    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
     if (RaceState >= 4) {
         StopRaceRumble();
         if (RaceState == 6) {

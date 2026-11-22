@@ -80,6 +80,32 @@ void SoundUpdate(void) {
                   RR_CYCLES_SOUND_UPDATE_MASTER - RR_CYCLES_SOUND_UPDATE_QUEUE);
 }
 
+/* At field rate (rr/field_rate.h) SoundUpdate runs on the original tick
+ * (its fades, the queue, the CD and sequence timers) and this on the field
+ * between: the listener, Doppler and the slots' pitch and volume from the
+ * cars of this field, the master fade's level half way to its next step. */
+void SoundListenerUpdateField(void);
+
+void SoundUpdateField(void) {
+    AudioState *p = &SoundState;
+    int slotIndex;
+    AudioSlot620 *slot;
+    if (p->fadeLength1A > 0 && p->fadeTick1C > 0 && p->fadeTick1C < p->fadeLength1A) {
+        int n = ((p->fadeTarget1E - p->fadeStart20) << 12) / p->fadeLength1A;
+        p->gain18 = (unsigned short)p->fadeStart20 + n * (2 * p->fadeTick1C + 1) / 8192;
+    }
+    SoundListenerUpdateField();
+    for (slotIndex = 0, slot = SoundState.slots38; slotIndex < 4; slotIndex++, slot++) {
+        if (slot->flags00 & 1) {
+            UpdateSoundSlot(slotIndex);
+        }
+    }
+    UpdatePlayerVoices();
+    UpdateLoopVoices();
+    UpdateMasterSoundVolumes();
+    SoundLoopUpdate();
+}
+
 void SetVoiceVolumeScaled(s32 voice, s32 left, s32 right) {
     /* Hardware volume products wrap at 32 bits before the logical shift. */
     u32 scale = SoundState.master08;

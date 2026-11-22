@@ -12,6 +12,14 @@
   camera and effects follow. The link race and the attract demo stay at
   the original rate. With Race frame rate on, the PlayStation CPU time
   model spends nothing in a race.
+- Race frame rate: the start's orbit, the replay and Grand Prix fly-by
+  cameras, the course's moving objects (blimps, planes, the helicopter,
+  the train), fireworks, light and brake trails, flashing lights,
+  scrolling textures and HUD pulses now move every field at the original
+  speed; the engine pitch, Doppler and stereo position follow the cars
+  every field. Their timers (camera cuts, object keyframes, colour
+  cycles, sound fades and the menus' button repeat) keep the original
+  timing.
 - **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
   guessed in-between pictures from the PlayStation's draw lists, which drew
   visible artifacts and made movies stutter. Every game frame is now

@@ -399,10 +399,9 @@ void ReplayModeUpdate(void) {
     if (ReplayFrame >= RR_PAL_NTSC(0x19, 0x1E)) {
         QueueDrawStp();
     }
-    if (tick) {
-        SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
-        SlotSetLevelProgram(PlayerDisplayRpm[1], PlayerThrottleLoad[1], 1);
-    }
+    /* the engine sound by the field (rr/field_rate.h) */
+    SlotSetLevelProgram(PlayerDisplayRpm[0], PlayerThrottleLoad[0], 0);
+    SlotSetLevelProgram(PlayerDisplayRpm[1], PlayerThrottleLoad[1], 1);
     PadClearPulse(0);
     PadClearPulse(1);
     PadRumbleStop(0);

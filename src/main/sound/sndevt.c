@@ -12,6 +12,7 @@
 #include "rr/overlay662_distance.h"
 #include "game/sound/sndevt.h"
 #include "rr/trig.h"
+#include "rr/field_rate.h"
 
 
 typedef struct {
@@ -201,6 +202,15 @@ void SoundCalcCarParams(s32 idx) {
     B2 = &SoundState;
     prev = B2->rec18EC[idx].prevDist0C;
     B2->rec18EC[idx].dist08 = t;
+    /* The Doppler shift is the distance's change over one original tick:
+     * at field rate (called every field) over the last two fields
+     * (rr/field_rate.h). */
+    if (RaceFieldRateLive) {
+        static s32 distTwoAgo[4];
+        s32 older = distTwoAgo[idx & 3];
+        distTwoAgo[idx & 3] = prev;
+        prev = older;
+    }
     a = prev - t;
     B2->rec18EC[idx].deltaDist10 = a;
     if (a == 0x2350) B2->rec18EC[idx].deltaDist10 = 0x234F;

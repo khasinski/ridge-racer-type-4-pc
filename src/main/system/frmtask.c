@@ -306,9 +306,12 @@ void MainLoop(void) {
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
         RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_STEP);
         CdFileStep();
-        /* the sound's timers and fades by the original tick (rr/field_rate.h) */
+        /* the sound's timers and fades by the original tick, its listener,
+         * Doppler, pitches and volumes every field (rr/field_rate.h) */
         if (RaceSlowTick())
             SoundUpdate();
+        else
+            SoundUpdateField();
         WideBeginFrame();
         if (ReplayHost)
             ReplayHost->frame();

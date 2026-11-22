@@ -231,7 +231,10 @@ void PadUpdate(void) {
         states[i]->edges08.fields.repeat = states[i]->edges08.fields.pressed;
         if (states[i]->input00.fields.buttons == states[i]->previous04) {
             RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_HELD);
-            states[i]->repeatTick0C++;
+            /* the repeat's delay and rate count the race's original ticks
+             * at field rate (PadUpdate runs every field; rr/field_rate.h) */
+            if (RaceSlowTick())
+                states[i]->repeatTick0C++;
             if (states[i]->repeatTick0C >= 0x22) {
                 RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE_REPEAT);
                 states[i]->edges08.fields.repeat = states[i]->input00.fields.buttons;

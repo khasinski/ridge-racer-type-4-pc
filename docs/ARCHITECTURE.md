@@ -198,6 +198,23 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `RaceVehicle` keeps its PS1 size. With every part still in the slow
      lane, a Time Attack race at field rate has the same state as at the
      original rate at every field (checked with the autodrive script).
+     Presentation code that runs every field reads tick counters in field
+     time (`RaceFieldTimeAfter/Before`: counter * 2 + the field's phase),
+     splits a per-tick add over the tick's two fields (`RaceFieldSplit`),
+     blends colour cycle tables half way between entries
+     (`RaceFieldCycleColor`) and draws its flicker from a rand of its own
+     (`RaceDrawRand`, PsyqRand at the original rate). Converted this way:
+     the intro orbit, the replay/track cameras' cuts (per tick) and roll and
+     lens lerps (per field), the Grand Prix fly-by; the course objects
+     (`objsim.c`: f0 and every key, ease window and delay in fields, rand
+     launches, light cycles and the blimp line's acceleration per tick); the
+     draw-time light fades, beacons, fireworks (timeline per tick, motion
+     split), light and brake trail rings (a pose per tick, the newest
+     replaced between), glow ramps, sparks, scrolling textures, flashing
+     lights, rank pulse and minimap dot; the sound (`SoundUpdate` per tick,
+     `SoundUpdateField` between: listener, two-field Doppler, slot pitches
+     and volumes, the master fade half way); the pad's auto-repeat counts
+     ticks.
 
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
      a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and
