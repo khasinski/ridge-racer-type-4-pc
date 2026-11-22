@@ -20,6 +20,11 @@
   every field. Their timers (camera cuts, object keyframes, colour
   cycles, sound fades and the menus' button repeat) keep the original
   timing.
+- Race frame rate: the wall, kerb and car-to-car contact, the impact and
+  landing shakes, the body's roll, pitch and suspension, the wheels' bumps
+  and jumps and the wheels' spin are ready to run every field with the same real-time
+  behaviour (`RR4_CAR_FIELD_STEP=1` while the camera and the player car's
+  handling follow).
 - **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
   guessed in-between pictures from the PlayStation's draw lists, which drew
   visible artifacts and made movies stutter. Every game frame is now

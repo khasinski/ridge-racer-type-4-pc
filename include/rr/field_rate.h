@@ -42,6 +42,17 @@ static inline int RaceSlowTick(void) { return !RaceFieldRateLive || RaceTickFiel
 /* Fields per original tick: 2 at field rate, else 1. */
 static inline int RaceFieldsPerTick(void) { return RaceFieldRateLive ? 2 : 1; }
 
+/* The car stages run every field (StepRaceFrame): the stages
+ * (CarUpdateStages), the wall / kerb contact block and the car-vs-car
+ * contact take their fast-lane paths; the input, the player cars' and the
+ * opponents' updates keep the tick until they are converted. Only with
+ * RaceFieldRateLive; until the cameras and the player car follow, it is the
+ * development switch RR4_CAR_FIELD_STEP=1 (else 0: the car stages run on
+ * the tick, by their original code). */
+extern s32 RaceFieldCarStep;
+/* Fields since start-up (RaceFieldRateNextField counts them). */
+extern u32 RaceFieldCount;
+
 /* Race setup (SetupRaceScene): the rate for this race by its game mode
  * (GameModeType 4, the link, and 5, the attract demo, stay at the original
  * rate). Sets VSyncThreshold. */
@@ -118,6 +129,21 @@ u32 RaceFieldKeepQ16(u32 num, u32 den);
  * the rounding carried in *rem (Q16). */
 s32 RaceFieldKeep(s32 x, u32 num, u32 den, s32 *rem);
 
+/* An add of `delta` per original tick into a value that a filter keeping
+ * num/den of it per tick multiplies right after the add (before != 0:
+ * `x = (x + delta) * num / den`) or right before it (`x = x * num / den +
+ * delta`), per field, with the filter at RaceFieldKeep: the add scaled by
+ * sqrt(k)/(1+sqrt(k)) (before) or 1/(1+sqrt(k)) (after), so the filtered
+ * value settles where the original's does, and a decaying value summed
+ * into a position (`pos += v; v = v * num / den`) moves it as far by each
+ * tick. The rounding is carried in *rem (Q16). */
+s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem);
+
+/* A one-shot event (a sound) the original fires on every tick its
+ * condition holds: at most once per tick's two fields, the first field
+ * it holds on. *last is the car's sidecar slot (0 = never). */
+int RaceFieldOncePerTick(s32 *last);
+
 /* A value made from a one-tick difference, measured per field: the
  * difference over the last two fields (prev2 holds the value of two
  * fields ago, prev1 of one). At the original rate the plain difference
@@ -131,11 +157,50 @@ s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2);
 enum {
     CAR_FIELD_REM_POS_X,      /* IntegrateCarMotion */
     CAR_FIELD_REM_POS_Z,
-    CAR_FIELD_REM_SLOTS = 48
+    /* the car stages (RaceFieldCarStep) */
+    CAR_FIELD_REM_STEER_ROLL,     /* UpdateCarSteering: steerRoll1DE */
+    CAR_FIELD_REM_STEER_ROLL_ADD,
+    CAR_FIELD_REM_STEER_PITCH,    /* steerPitch1DC */
+    CAR_FIELD_REM_STEER_PITCH_ADD,
+    CAR_FIELD_REM_WHEEL_OFFSET,   /* wheelOffsetE4[4] */
+    CAR_FIELD_REM_WHEEL_OFFSET_ADD = CAR_FIELD_REM_WHEEL_OFFSET + 4,
+    CAR_FIELD_REM_SUSPENSION = CAR_FIELD_REM_WHEEL_OFFSET_ADD + 4, /* wheelSuspensionDC[4] */
+    CAR_FIELD_REM_SUSPENSION_ADD = CAR_FIELD_REM_SUSPENSION + 4,
+    CAR_FIELD_REM_WHEEL_WOBBLE = CAR_FIELD_REM_SUSPENSION_ADD + 4, /* wheelOffsetE4[2..3] */
+    CAR_FIELD_REM_SHAKE_PUSH_X = CAR_FIELD_REM_WHEEL_WOBBLE + 2, /* DecayCarOffset */
+    CAR_FIELD_REM_SHAKE_PUSH_Z,
+    CAR_FIELD_REM_SHAKE_X,
+    CAR_FIELD_REM_SHAKE_Z,
+    CAR_FIELD_REM_SHAKE_HALF,     /* shakeTimer19E: 1 = half a tick past */
+    CAR_FIELD_REM_STATE_HALF,     /* stateTimer1A5 (UpdateCarShake) */
+    CAR_FIELD_REM_CONTACT_HALF,   /* contactTimer1A7 */
+    CAR_FIELD_REM_WALL_INPUT,     /* StepRaceFrame's wall / car contact loss */
+    CAR_FIELD_REM_WALL_DRIVE,
+    CAR_FIELD_REM_WALL_LATERAL,
+    CAR_FIELD_REM_KERB_INPUT,     /* the kerb / off-road loss */
+    CAR_FIELD_REM_HIT_INPUT,      /* ResolveCarCollisions */
+    CAR_FIELD_REM_HIT_DRIVE,
+    CAR_FIELD_REM_HIT_LATERAL,
+    CAR_FIELD_REM_WHEEL_SPIN,     /* ClampAiCarLateralMotion */
+    CAR_FIELD_SFX_WALL,           /* RaceFieldOncePerTick: StartCollisionShake */
+    CAR_FIELD_SFX_HIT,            /* ResolveCarCollisions */
+    CAR_FIELD_REM_SLOTS = 96
 };
+enum {
+    CAR_FIELD_HIST_INPUT1,        /* UpdateCarSteering: input, a field ago */
+    CAR_FIELD_HIST_INPUT2,        /* two fields ago */
+    CAR_FIELD_HIST_AI_VEL_X,      /* IntegrateCarMotion: an opponent's */
+    CAR_FIELD_HIST_AI_VEL_Z,      /* vel30/38 after their << 8 */
+    CAR_FIELD_HIST_SLOTS = 16
+};
+/* UpdateWheelBumps' pitch / roll samples, one a field: the 10-tick moving
+ * averages take 20 fields, the delayed one reaches 27 fields back. */
+#define CAR_FIELD_BODY_RING 32
 typedef struct {
     s32 rem[CAR_FIELD_REM_SLOTS];
-    s32 hist[16];             /* RaceFieldDelta histories */
+    s32 hist[CAR_FIELD_HIST_SLOTS]; /* RaceFieldDelta histories */
+    s16 bodyPitch[CAR_FIELD_BODY_RING], bodyRoll[CAR_FIELD_BODY_RING];
+    s32 bodyRingPos;
 } CarFieldState;
 
 /* PlayerCars[0..1] are 0..1, ComCars[0..10] 2..12. */

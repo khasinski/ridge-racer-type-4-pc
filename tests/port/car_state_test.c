@@ -2,6 +2,7 @@
  * Entering a mode with no opponents must clear every byte of every slot,
  * including the last car and the tail of its pointer-bearing control. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "rr/player_cars.h"
 #include "rr/scene_camera_state.h"
@@ -9,6 +10,9 @@
 #include "rr/race_setup.h"
 #include "game/car/carlane.h"
 #include "game/race/raceset.h"
+#include "game/car/carstate.h"
+#include "game/car/cartimer.h"
+#include "rr/field_rate.h"
 
 extern s32 LapTimes[10], NumLaps;
 
@@ -42,8 +46,109 @@ static int first_lap(void) {
     return 0;
 }
 
+/* The car stages every field (rr/field_rate.h): one tick of the original
+ * against two fields, sampled at the ticks. */
+static void set_rate(int field) {
+    RaceFieldRateLive = field;
+    RaceFieldCarStep = field;
+    CarFieldStatesClear();
+}
+
+static int field_filters(void) {
+    /* x = (x + 16) * 26 / 32 a tick settles where its field form does
+     * (the original's truncation settles anywhere in 65..69) */
+    s32 x = 0, y = 0, rem = 0, remAdd = 0;
+    set_rate(0);
+    for (int t = 0; t < 200; t++)
+        x = ((x + 16) * 26) / 32;
+    set_rate(1);
+    for (int f = 0; f < 400; f++) {
+        y += RaceFieldFilterAdd(16, 26, 32, 1, &remAdd);
+        y = RaceFieldKeep(y, 26, 32, &rem);
+    }
+    CHECK(x >= 65 && x <= 69 && y >= 65 && y <= 69);
+    /* a sound once a tick while its condition holds, from the first field */
+    s32 last = 0, fired = 0;
+    for (int f = 0; f < 10; f++) {
+        fired += RaceFieldOncePerTick(&last);
+        RaceFieldCount++;
+    }
+    CHECK(fired == 5);
+    return 0;
+}
+
+static int field_shake(void) {
+    /* A wall hit's roll shake (UpdateCarShake, state 2): the same waveform
+     * at every tick, over the same 30 ticks. */
+    static s16 tick[32];
+    RaceVehicle *car = &ComCars[0];
+    int t, f, end = -1;
+    for (int field = 0; field < 2; field++) {
+        set_rate(field);
+        memset(car, 0, sizeof *car);
+        car->input = 0x400;
+        car->trackAngle1EC = 0x200;
+        SetCarImpactState(2, car);
+        CHECK(car->stateTimer1A5 == 30 && car->steerAngle1A2 != 0);
+        for (t = 0; t < 32 * (field + 1); t++) {
+            car->renderAngleZ1AE = 0;
+            UpdateCarShake(car);
+            if (!field) {
+                tick[t] = car->shakeRollOffset1B6;
+                if (!car->state1A4 && end < 0) end = t;
+            } else if (t & 1) {
+                CHECK(abs(car->shakeRollOffset1B6 - tick[t / 2]) <= 1);
+                if (!car->state1A4) CHECK(t / 2 >= end);
+            } else if (t / 2 < end) {
+                CHECK(car->state1A4 == 2);
+            }
+        }
+        CHECK(!car->state1A4);
+    }
+    /* the kerb's contact shake (contactTimer1A7): 10 ticks, 20 fields */
+    for (int field = 0; field < 2; field++) {
+        set_rate(field);
+        memset(car, 0, sizeof *car);
+        car->input = 0x400;
+        car->contactTimer1A7 = 10;
+        for (f = 0; car->contactTimer1A7 && f < 100; f++)
+            UpdateCarShake(car);
+        CHECK(f == 10 * (field + 1));
+    }
+    return 0;
+}
+
+static int field_offset(void) {
+    /* A push off a car (DecayCarOffset): as far by every tick. */
+    static s32 pos[16];
+    RaceVehicle *car = &ComCars[0];
+    for (int field = 0; field < 2; field++) {
+        set_rate(field);
+        memset(car, 0, sizeof *car);
+        car->shakeActive19C = 2;
+        car->shakeTimer19E = 15;
+        car->shakeX198 = 3000;
+        car->shakeY19A = -1800;
+        for (int t = 0; t < 16; t++) {
+            DecayCarOffset(car);
+            if (field)
+                DecayCarOffset(car);
+            if (!field)
+                pos[t] = car->posScaled00[0];
+            else
+                CHECK(abs(car->posScaled00[0] - pos[t]) <= 30);
+        }
+        CHECK(!car->shakeActive19C);
+    }
+    return 0;
+}
+
 int main(void) {
     CHECK(!first_lap());
+    CHECK(!field_filters());
+    CHECK(!field_shake());
+    CHECK(!field_offset());
+    set_rate(0);
     static RaceSpecEntry30 specs[11];
     RaceContext.carSpecs540 = specs;
     GameModeType = 0;

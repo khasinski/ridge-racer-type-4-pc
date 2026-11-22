@@ -4,11 +4,24 @@
 #include "rr/player_cars.h"
 #include "rr/vehicle_table.h"
 #include "game/system/pad.h"
+#include <stdlib.h>
 #include <string.h>
 
 /* RaceFieldRate: the host preferences own it (src/port/preferences.c). */
 s32 RaceFieldRateLive;
 s32 RaceTickField = 1;
+s32 RaceFieldCarStep;
+u32 RaceFieldCount;
+
+/* RR4_CAR_FIELD_STEP=1: the car stages every field (rr/field_rate.h). */
+static int CarStepWanted(void) {
+    static int wanted = -1;
+    if (wanted < 0) {
+        const char *e = getenv("RR4_CAR_FIELD_STEP");
+        wanted = e && *e && *e != '0';
+    }
+    return wanted;
+}
 
 CarFieldState CarFieldStates[CAR_FIELD_STATES];
 static CarFieldState CarFieldDummy;
@@ -36,6 +49,7 @@ void RaceFieldRateBegin(s32 gameMode) {
      * peer that may run the original rate; the attract demo stays as the
      * console shows it. */
     RaceFieldRateLive = RaceFieldRate && gameMode != 4 && gameMode != 5;
+    RaceFieldCarStep = RaceFieldRateLive && CarStepWanted();
     ResetLane();
     CarFieldStatesClear();
     VSyncThreshold = RaceFieldRateThreshold();
@@ -43,12 +57,14 @@ void RaceFieldRateBegin(s32 gameMode) {
 
 void RaceFieldRateResume(s32 live) {
     RaceFieldRateLive = live != 0;
+    RaceFieldCarStep = RaceFieldRateLive && CarStepWanted();
     ResetLane();
     VSyncThreshold = RaceFieldRateThreshold();
 }
 
 void RaceFieldRateEnd(void) {
     RaceFieldRateLive = 0;
+    RaceFieldCarStep = 0;
     ResetLane();
 }
 
@@ -59,6 +75,7 @@ void RaceFieldRateTickNext(void) {
 
 void RaceFieldRateNextField(void) {
     int next;
+    RaceFieldCount++;
     if (RaceFieldRateLive && VSyncThreshold != FIELD_RATE_THRESHOLD)
         RaceFieldRateEnd();
     if (!RaceFieldRateLive) {
@@ -138,6 +155,29 @@ s32 RaceFieldKeep(s32 x, u32 num, u32 den, s32 *rem) {
     v = (long long)x * RaceFieldKeepQ16(num, den) + *rem;
     *rem = (s32)(v & 0xFFFF);
     return (s32)(v >> 16);
+}
+
+s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem) {
+    long long v;
+    u32 k, f;
+    if (!RaceFieldRateLive)
+        return delta;
+    k = RaceFieldKeepQ16(num, den);
+    /* sqrt(k)/(1+sqrt(k)) or 1/(1+sqrt(k)), Q16 */
+    f = (u32)(((unsigned long long)(before ? k : 0x10000u) << 16) / (0x10000u + k));
+    v = (long long)delta * f + *rem;
+    *rem = (s32)(v & 0xFFFF);
+    return (s32)(v >> 16);
+}
+
+int RaceFieldOncePerTick(s32 *last) {
+    if (!RaceFieldRateLive)
+        return 1;
+    /* *last = the field it fired on + 1 */
+    if (*last != 0 && RaceFieldCount - (u32)(*last - 1) < 2u)
+        return 0;
+    *last = (s32)(RaceFieldCount + 1);
+    return 1;
 }
 
 s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2) {

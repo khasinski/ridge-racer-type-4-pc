@@ -215,6 +215,17 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `SoundUpdateField` between: listener, two-field Doppler, slot pitches
      and volumes, the master fade half way); the pad's auto-repeat counts
      ticks.
+     `RaceFieldCarStep` (for now the development switch
+     `RR4_CAR_FIELD_STEP=1`) runs `StepRaceFrame`'s car stages every field
+     while the input and the cars' updates keep the tick: the motion's
+     integration halves, the wall / kerb / car contact losses keep the
+     square root of their share a field, the shake and contact timers count
+     their ticks by every second field (sidecar half flags), the body's
+     spring-dampers settle where the original's do (`RaceFieldFilterAdd`),
+     a wheel's bump arc counts fields as half ticks, and the body's 10-tick
+     pitch / roll averages take 20 field samples in the sidecar's ring
+     (`RaceVehicle`'s holds 16). Sounds the original fires on every tick a
+     contact lasts fire once per tick (`RaceFieldOncePerTick`).
 
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
      a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and

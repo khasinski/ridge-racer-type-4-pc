@@ -4,6 +4,7 @@
 #include "game/car/carstate.h"
 #include "rr/trig.h"
 #include "game/course/trkintp.h"
+#include "rr/field_rate.h"
 
 extern int ReplayState;
 
@@ -13,6 +14,8 @@ void SetCarImpactState(int state, RaceVehicle *vehicle) {
     int absoluteSteer;    int negatedSteer;
     int speed;
     vehicle->state1A4 = state;
+    /* the car stages every field: the timer's ticks from here */
+    CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_STATE_HALF] = 0;
     switch (state) {
     case 1:
         pulseStrength = 0;
@@ -53,11 +56,23 @@ void SetCarImpactState(int state, RaceVehicle *vehicle) {
     }
 }
 
+/* The car stages every field (RaceFieldCarStep): the timers count their
+ * ticks by every second field (the sidecar's half flags; their setters clear
+ * them), the shake's waveform and its decay take the time in half ticks,
+ * value / k with k = 2, and an event on a tick's value (the landing's thud)
+ * plays on the field it is reached. */
 void UpdateCarShake(RaceVehicle *vehicle) {
     int amplitude, oscillation, value, wave;
+    CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(vehicle) : NULL;
+    int k = fs ? 2 : 1;
+    int reached = 1; /* the timer reached its value on this field */
 
     if (vehicle->state1A4) {
-        vehicle->stateTimer1A5 = vehicle->stateTimer1A5 - 1;
+        if (!fs || (fs->rem[CAR_FIELD_REM_STATE_HALF] ^= 1) == 0) {
+            vehicle->stateTimer1A5 = vehicle->stateTimer1A5 - 1;
+        } else {
+            reached = 0;
+        }
         if (vehicle->stateTimer1A5 == 0) {
             vehicle->state1A4 = 0;
             vehicle->bumpPitch1B4 = 0;
@@ -65,14 +80,14 @@ void UpdateCarShake(RaceVehicle *vehicle) {
             vehicle->shakePitch1B0 = 0;
             vehicle->shakeRoll1B2 = 0;
         }
-        value = vehicle->stateTimer1A5;
-        amplitude = (value * vehicle->steerAngle1A2) / 128;
-        wave = rsin((value * 0x3000) / 30);
+        value = vehicle->stateTimer1A5 * k - (fs ? fs->rem[CAR_FIELD_REM_STATE_HALF] : 0);
+        amplitude = (value * vehicle->steerAngle1A2) / (128 * k);
+        wave = rsin((value * 0x3000) / (30 * k));
         oscillation = (wave * amplitude) / 2048;
         switch (vehicle->state1A4) {
         case 1:
             if (vehicle == &PlayerCars[0] || vehicle == &PlayerCars[1]) {
-                if (ReplayState != 2 && vehicle->stateTimer1A5 == 0x1D) {
+                if (ReplayState != 2 && vehicle->stateTimer1A5 == 0x1D && reached) {
                     value = vehicle->steerInput1BA * 4;
                     if (value > 0x64) value = 0x64;
                     PlaySfxVolPan(0x28, (short)value, 0x40, -1);
@@ -100,13 +115,15 @@ void UpdateCarShake(RaceVehicle *vehicle) {
             PadStartPulse(vehicle->control.playerFlags24 & 1, 1, 1);
         }
         amplitude = vehicle->input >> 2;
-        value = vehicle->contactTimer1A7;
-        amplitude = (value * amplitude) / 128;
-        wave = rsin((value * 0x3000) / 30);
+        value = vehicle->contactTimer1A7 * k - (fs ? fs->rem[CAR_FIELD_REM_CONTACT_HALF] : 0);
+        amplitude = (value * amplitude) / (128 * k);
+        wave = rsin((value * 0x3000) / (30 * k));
         oscillation = (wave * amplitude) / 2048;
         if (vehicle->steeringLock1B8 == 0) vehicle->shakeRollOffset1B6 = oscillation;
         vehicle->renderAngleZ1AE += vehicle->shakeRollOffset1B6;
-        vehicle->contactTimer1A7 = vehicle->contactTimer1A7 - 1;
+        if (!fs || (fs->rem[CAR_FIELD_REM_CONTACT_HALF] ^= 1) == 0) {
+            vehicle->contactTimer1A7 = vehicle->contactTimer1A7 - 1;
+        }
     } else {
         vehicle->shakeRollOffset1B6 = 0;
         if (vehicle == &PlayerCars[0] || vehicle == &PlayerCars[1]) {

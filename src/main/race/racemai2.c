@@ -32,6 +32,15 @@ extern int RaceVoiceFlags;
 extern short ReverseCourse;
 
 void ResolveCarCollisions(RaceVehicle *arg0);
+
+/* A wall's loss of speed, x * keep / 100 a tick, every field (the car
+ * stages every field: rr/field_rate.h). A loss of all of it stays one. */
+static s32 WallKeep(s32 x, s32 keep, s32 *rem)
+{
+  if (keep <= 0 || keep >= 100)
+    return (x * keep) / 100;
+  return RaceFieldKeep(x, (u32)keep, 100, rem);
+}
 void UpdateRumbleStrip(RaceVehicle *p, int b);
 void CheckFinalLapEvent(RaceVehicle *vehicle);
 
@@ -46,16 +55,23 @@ void StepRaceFrame(unsigned int gameMode)
   int impactCosine;
   RaceVehicle *car;
   int *carIndex;
-  /* Until its parts move to the fast lane, the whole step runs once per
-   * original tick (rr/field_rate.h). */
-  if (!RaceSlowTick())
+  /* The parts not yet in the fast lane run once per original tick
+   * (rr/field_rate.h): the whole step, or with RaceFieldCarStep the
+   * input and the cars' updates, the car stages and the contact every
+   * field. */
+  const int tick = RaceSlowTick();
+  if (!tick && !RaceFieldCarStep)
     return;
   RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
-  switch (gameMode)
+  switch (tick ? (int)gameMode : -1)
   {
+    case -1:
+      /* the field between two ticks */
+      break;
+
     case 0:
     default:
       RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
@@ -124,6 +140,7 @@ void StepRaceFrame(unsigned int gameMode)
     if (CarTable[i]->half1E8 != (-1))
     {
       impactCars++;
+      CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(CarTable[i]) : NULL;
       if (CarTable[i]->impactFlags1A0 & 7)
       {
         SetCarImpactState(2, CarTable[i]);
@@ -144,10 +161,20 @@ void StepRaceFrame(unsigned int gameMode)
               car = CarTable[i];
             }
             speedScale = (car->input * 0x3A) / (car->control.dynamics94.player.topGearSpeed04 + 1);
-            car->control.lateralSpeed58 -= 0x1388;
             impactCosine = rcos(impactAngle);
+            if (fs)
+            {
+              /* every field: the tick's loss as two fields' (rr/field_rate.h) */
+              car->control.lateralSpeed58 += RaceFieldHalf(-0x1388, &fs->rem[CAR_FIELD_REM_WALL_LATERAL]);
+              car->control.dynamics94.player.driveProduct0C = WallKeep(car->control.dynamics94.player.driveProduct0C,
+                  0x64 - ((speedScale * impactCosine) >> 12), &fs->rem[CAR_FIELD_REM_WALL_DRIVE]);
+            }
+            else
+            {
+            car->control.lateralSpeed58 -= 0x1388;
             car = CarTable[i];
             car->control.dynamics94.player.driveProduct0C = (car->control.dynamics94.player.driveProduct0C * (0x64 - ((speedScale * impactCosine) >> 12))) / 100;
+            }
           }
           else
           {
@@ -155,6 +182,9 @@ void StepRaceFrame(unsigned int gameMode)
           }
           impactCosine = rcos(impactAngle);
           car = CarTable[i];
+          if (fs)
+            car->input = WallKeep(car->input, 0x64 - ((speedScale * impactCosine) / 4096), &fs->rem[CAR_FIELD_REM_WALL_INPUT]);
+          else
           car->input = (car->input * (0x64 - ((speedScale * impactCosine) / 4096))) / 100;
         }
       }
@@ -162,23 +192,36 @@ void StepRaceFrame(unsigned int gameMode)
       {
         if (CarTable[i]->steeringLock1B8 == 0)
         {
+          int kerbLoss = 0;
           contactCars++;
           for (j = 0; j < 4; j++)
           {
             if (CarTable[i]->contactFlags1F0.bytes[j] != 0)
             {
               contacts++;
+              if (fs)
+              {
+                if (CarTable[i]->contactFlags1F0.bytes[j] != 2)
+                  kerbLoss -= CourseStartSteeringBias[courseGroup];
+              }
+              else
+              {
               CarTable[i]->input -= CourseStartSteeringBias[courseGroup];
               if (CarTable[i]->contactFlags1F0.bytes[j] == 2)
               {
                 CarTable[i]->input += CourseStartSteeringBias[courseGroup];
               }
+              }
               if (courseGroup == 2 || CarTable[i]->contactTimer1A7 == 0)
               {
                 CarTable[i]->contactTimer1A7 = 0xA;
+                if (fs)
+                  fs->rem[CAR_FIELD_REM_CONTACT_HALF] = 0;
               }
             }
           }
+          if (fs)
+            CarTable[i]->input += RaceFieldHalf(kerbLoss, &fs->rem[CAR_FIELD_REM_KERB_INPUT]);
         }
       }
     }
@@ -200,6 +243,9 @@ void StepRaceFrame(unsigned int gameMode)
    * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
   {
   int projected = RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1;
+  /* its countdowns are the opponents' decisions: by the tick */
+  if (!tick)
+    projected = 0;
   if (projected)
   {
     UpdateComCarTrackProjections();
@@ -260,6 +306,53 @@ void ComputeQuadMidpoints(s32 carIndex) {
          work->pts40[carIndex][COLLISION_CORNER1].pt.y +
          work->pts40[carIndex][COLLISION_CORNER2].pt.y +
          work->pts40[carIndex][COLLISION_CORNER3].pt.y) >> 2;
+}
+
+/* ResolveCarCollisions' exchange of speed with the car stages every field
+ * (RaceFieldCarStep), for an overlap of two cars hitter `a` (cars[side]) and
+ * `b`. On each tick of the overlap the original takes b halfway to a's
+ * speed along b's heading and sets a to 95% of b's: per field b keeps
+ * sqrt(1/2) of its distance to a's, and a takes 95.7% of b's, as the pair
+ * loses its 2.5% a tick together; the hitter's drive keeps sqrt(92%) and
+ * its lateral speed loses half the tick's. The knock back of an opponent
+ * hitting (to -99% of b's speed, after which it no longer pushes) is one
+ * event, as the original's. */
+static void CollideCarsField(RaceVehicle *arg0, RaceVehicle *a, RaceVehicle *b, s32 ang) {
+    CarFieldState *fa = CarFieldStateOf(a);
+    CarFieldState *fb = CarFieldStateOf(b);
+    s32 t;
+    if (a->flags1E4 & 0x10) {
+        if (a->input >= 0xF1) {
+            arg0->control.pathDeltaX30 = 0x40;
+        }
+        a->control.lateralSpeed58 += RaceFieldHalf(-0x1388, &fa->rem[CAR_FIELD_REM_HIT_LATERAL]);
+        a->control.dynamics94.player.driveProduct0C =
+            RaceFieldKeep(a->control.dynamics94.player.driveProduct0C, 92, 100, &fa->rem[CAR_FIELD_REM_HIT_DRIVE]);
+        t = (a->input * ang) / 4096;
+        b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
+        if (b->input < 0) {
+            b->input = 0;
+        }
+        if (a->input >= 0xF1) {
+            /* (sqrt(0.975) - sqrt(0.5)) / (1 - sqrt(0.5)) */
+            a->input = (b->input * 957) / 1000;
+        }
+    } else if (a->input > 0) {
+        if (a->input >= 0xF1 || (s16)b->flags1E4 >= 0x10) {
+            /* the knock back: once, as the original's */
+            b->input = (b->input + (a->input * ang) / 4096) / 2;
+            if (b->input < 0) {
+                b->input = 0;
+            }
+            a->input = (-b->input * 99) / 100;
+        } else {
+            t = (a->input * ang) / 4096;
+            b->input = t + RaceFieldKeep(b->input - t, 1, 2, &fb->rem[CAR_FIELD_REM_HIT_INPUT]);
+            if (b->input < 0) {
+                b->input = 0;
+            }
+        }
+    }
 }
 
 void ResolveCarCollisions(RaceVehicle *arg0) {
@@ -461,7 +554,9 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                             if (side < 2) {
                                 SetVehicleShake(cars[0], -sp->dx30, -sp->dy34);
                                 SetVehicleShake(cars[1], sp->dx30, sp->dy34);
-                                if (cars[side]->flags1E4 & 0x10) {
+                                if (RaceFieldCarStep) {
+                                    CollideCarsField(arg0, cars[side], cars[side ^ 1], ang);
+                                } else if (cars[side]->flags1E4 & 0x10) {
                                     if (cars[side]->input >= 0xF1) {
                                         arg0->control.pathDeltaX30 = 0x40;
                                     }
@@ -521,13 +616,18 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                                     cars[side ^ 1]->stateTimer1A5 == 0) {
                                     SetCarImpactState(8, cars[side ^ 1]);
                                 }
-                                if ((arg0 == &PlayerCars[0] || arg0 == &PlayerCars[1]) && arg0->stateTimer1A5 == 0x1E) {
+                                if ((arg0 == &PlayerCars[0] || arg0 == &PlayerCars[1]) && arg0->stateTimer1A5 == 0x1E &&
+                                    (!RaceFieldCarStep ||
+                                     (CarFieldStateOf(arg0)->rem[CAR_FIELD_REM_STATE_HALF] == 0 &&
+                                      RaceFieldOncePerTick(&CarFieldStateOf(arg0)->rem[CAR_FIELD_SFX_HIT])))) {
                                     s16 pan = (other_F4 - arg0_F4) / 2;
                                     s16 vol;
                                     if (arg0->half1EA != 0) {
                                         pan = -pan;
                                     }
-                                    vol = cars[side]->prevInput1DA - cars[side]->input;
+                                    /* the speed lost in a tick: at field rate, since two fields ago */
+                                    vol = (RaceFieldCarStep ? CarFieldStateOf(cars[side])->hist[CAR_FIELD_HIST_INPUT2]
+                                                            : cars[side]->prevInput1DA) - cars[side]->input;
                                     pan += 0x40;
                                     if (vol >= 0x200) {
                                         vol = 0x1FF;

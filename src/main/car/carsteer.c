@@ -4,6 +4,18 @@
 #include "rr/menu_overlay_runtime.h"
 #include "game/course/trkintp.h"
 #include "game/math/rotmat.h"
+#include "rr/field_rate.h"
+
+/* The car stages every field (RaceFieldCarStep): the body's spring-dampers
+ * (roll, pitch, the wheels' offsets and suspension) each keep the
+ * square root of their per-tick share a field (RaceFieldKeep), their
+ * pushes scaled to settle where the original's do (RaceFieldFilterAdd), the
+ * speed's change taken over the last two fields: the same body motion in
+ * real time, drawn every field. */
+static s32 SpringField(s32 x, s32 add, u32 keep, s32 *rem, s32 *remAdd) {
+    x += RaceFieldFilterAdd(add, keep, 32, 1, remAdd);
+    return RaceFieldKeep(x, keep, 32, rem);
+}
 
 
 void UpdateCarSteering(RaceVehicle *arg0) {
@@ -12,9 +24,16 @@ void UpdateCarSteering(RaceVehicle *arg0) {
     s32 s3;
     s32 v0;
     s32 i;
+    CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(arg0) : NULL;
 
     s3 = 0;
-    s2 = (arg0->prevInput1DA - arg0->input) * 4;
+    if (fs) {
+        /* the speed's change over a tick: its last two fields */
+        s2 = -RaceFieldDelta(arg0->input, &fs->hist[CAR_FIELD_HIST_INPUT1],
+                             &fs->hist[CAR_FIELD_HIST_INPUT2]) * 4;
+    } else {
+        s2 = (arg0->prevInput1DA - arg0->input) * 4;
+    }
     if (arg0->flags1E4 & 0x10) {
         s1 = AngleDiffSigned(arg0->heading1D4, arg0->rot54) * 4;
         if (arg0->control.handling1C->steeringMode0A != 0) {
@@ -30,6 +49,35 @@ void UpdateCarSteering(RaceVehicle *arg0) {
         s1 = (s1 * 1000) / 1800;
     }
 
+    if (fs) {
+        s32 add = s2 < -0x10 ? -0x10 : s2 > 0x10 ? 0x10 : 0;
+        arg0->steerRoll1DE = SpringField(arg0->steerRoll1DE, add, 26, &fs->rem[CAR_FIELD_REM_STEER_ROLL],
+                                         &fs->rem[CAR_FIELD_REM_STEER_ROLL_ADD]);
+        add = s1 < -0x20 ? -0x20 : s1 > 0x20 ? 0x20 : 0;
+        arg0->steerPitch1DC = SpringField(arg0->steerPitch1DC, add, 24, &fs->rem[CAR_FIELD_REM_STEER_PITCH],
+                                          &fs->rem[CAR_FIELD_REM_STEER_PITCH_ADD]);
+        for (i = 0; i < 4; i++) {
+            s32 w = arg0->wheelOffsetE4[i];
+            add = 0;
+            if (arg0->wheelBumpState1BC[i] == 0) {
+                add = ((i & 1) ? -arg0->steerPitch1DC : arg0->steerPitch1DC) +
+                      ((i >= 2) ? -arg0->steerRoll1DE : arg0->steerRoll1DE);
+            } else if (arg0->wheelBumpState1BC[i] > 0) {
+                add = -8;
+            }
+            w += RaceFieldFilterAdd(add, 24, 32, 1, &fs->rem[CAR_FIELD_REM_WHEEL_OFFSET_ADD + i]);
+            if (w > 0x100) {
+                w = 0x100;
+            } else if (w < -0x300) {
+                w = -0x300;
+            }
+            arg0->wheelOffsetE4[i] = RaceFieldKeep(w, 24, 32, &fs->rem[CAR_FIELD_REM_WHEEL_OFFSET + i]);
+        }
+        if (arg0->steerRoll1DE > 0) {
+            arg0->wheelOffsetE4[2] += RaceFieldFilterAdd(s3, 24, 32, 0, &fs->rem[CAR_FIELD_REM_WHEEL_WOBBLE]);
+            arg0->wheelOffsetE4[3] += RaceFieldFilterAdd(s3, 24, 32, 0, &fs->rem[CAR_FIELD_REM_WHEEL_WOBBLE + 1]);
+        }
+    } else {
     /* Note: increase s2 ref count so global.c allocates $s2 before $s3 */
     if (s2 < -0x10) {
         arg0->steerRoll1DE -= 0x10;
@@ -65,6 +113,7 @@ void UpdateCarSteering(RaceVehicle *arg0) {
         arg0->wheelOffsetE4[2] += s3;
         arg0->wheelOffsetE4[3] += s3;
     }
+    }
 
     s1 = 4 - CarBoundsTable[(s16)arg0->slotIndex1E6 >> 1]->reserved0B;
     if (s1 <= 0) {
@@ -74,6 +123,26 @@ void UpdateCarSteering(RaceVehicle *arg0) {
     arg0->renderAngleX1AC = Atan2Table(arg0->halfSpan10E, ((arg0->wheelOffsetE4[0] + arg0->wheelOffsetE4[1]) - (arg0->wheelOffsetE4[2] + arg0->wheelOffsetE4[3])) >> 4) >> 3;
     arg0->renderAngleZ1AE = (s16)(Atan2Table(arg0->width10C, ((arg0->wheelOffsetE4[0] + arg0->wheelOffsetE4[2]) - (arg0->wheelOffsetE4[1] + arg0->wheelOffsetE4[3])) >> 4) >> 2) / s1;
 
+    if (fs) {
+        s32 add[4] = {0, 0, 0, 0};
+        if (arg0->renderAngleZ1AE > 0x20) {
+            add[0] = arg0->steerPitch1DC / 20;
+            add[2] = arg0->steerPitch1DC / 16;
+        } else if (arg0->renderAngleZ1AE < -0x20) {
+            add[1] = (-arg0->steerPitch1DC) / 20;
+            add[3] = (-arg0->steerPitch1DC) / 16;
+        }
+        for (i = 0; i < 4; i++) {
+            s32 w = SpringField(arg0->wheelSuspensionDC[i], add[i], 22, &fs->rem[CAR_FIELD_REM_SUSPENSION + i],
+                                &fs->rem[CAR_FIELD_REM_SUSPENSION_ADD + i]);
+            if (w <= 0) {
+                w = 0;
+            } else if (w >= (arg0->height108 << 3)) {
+                w = arg0->height108 << 3;
+            }
+            arg0->wheelSuspensionDC[i] = w;
+        }
+    } else {
     if (arg0->renderAngleZ1AE > 0x20) {
         arg0->wheelSuspensionDC[0] += arg0->steerPitch1DC / 20;
         arg0->wheelSuspensionDC[2] += arg0->steerPitch1DC / 16;
@@ -89,6 +158,7 @@ void UpdateCarSteering(RaceVehicle *arg0) {
         } else if (arg0->wheelSuspensionDC[i] >= (arg0->height108 << 3)) {
             arg0->wheelSuspensionDC[i] = arg0->height108 << 3;
         }
+    }
     }
 
     arg0->wheelRotX1A8 = Atan2Table(arg0->halfSpan10E, ((arg0->wheelSuspensionDC[0] + arg0->wheelSuspensionDC[1]) - (arg0->wheelSuspensionDC[2] + arg0->wheelSuspensionDC[3])) >> 5);

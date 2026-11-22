@@ -28,6 +28,7 @@
 #include "rr/badge_rows.h"
 #include "game/ui/badgespr.h"
 #include "rr/animated_glyph.h"
+#include "rr/field_rate.h"
 
 typedef struct { unsigned char c[4]; } B4;
 
@@ -795,17 +796,29 @@ void StartCollisionShake(RaceVehicle *vehicle, s32 impactKind) {
     }
     vehicle->shakeX198 = shakeX;
     vehicle->shakeY19A = shakeY;
+    /* the car stages every field: the timer's ticks from here
+     * (DecayCarOffset); the wall's sound once a tick while it holds */
+    CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
     if (vehicle->flags1E4 & 0x10) {
         panCosine = rcos(AngleDiffAbs(reverseTrackHeading, vehicle->heading1D4)) >> 6;
         if (vehicle->lateralVelF4 < 0) panCosine = -panCosine;
         pan = panCosine + 0x40;
         if (vehicle == &PlayerCars[0] || vehicle == &PlayerCars[1]) {
-            if (ReplayState != 2) PlaySfxVolPan(0x21, volume, (s16)pan, -1);
+            if (ReplayState != 2 &&
+                (!RaceFieldCarStep || RaceFieldOncePerTick(&CarFieldStateOf(vehicle)->rem[CAR_FIELD_SFX_WALL])))
+                PlaySfxVolPan(0x21, volume, (s16)pan, -1);
         }
     }
 }
 
 void SetVehicleShake(RaceVehicle *vehicle, s32 x, s32 y) {
+    if (RaceFieldCarStep) {
+        /* The push is the cars' overlap of this step, half a tick's in a
+         * field: as a speed (DecayCarOffset), twice it. */
+        x = x * 2 > 0x7FFF ? 0x7FFF : x * 2 < -0x8000 ? -0x8000 : x * 2;
+        y = y * 2 > 0x7FFF ? 0x7FFF : y * 2 < -0x8000 ? -0x8000 : y * 2;
+        CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
+    }
     vehicle->shakeActive19C = 2;
     vehicle->shakeX198 = x;
     vehicle->shakeY19A = y;

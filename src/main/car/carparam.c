@@ -1,3 +1,4 @@
+#include "rr/field_rate.h"
 #include "game/system/pad.h"
 #include "psyq/libgte/gtemat3.h"
 #include "game/data/bankrec.h"
@@ -785,12 +786,22 @@ void IntegrateCarMotion(RaceVehicle *p) {
     MatrixWords32 *s0;
     int s3;
     int v1, v0, a1, a0, m1, m2;
+    CarFieldState *fs;
 
     s5 = (CarMotionScratch *)SCRATCH_CAR_WORK;
+    fs = RaceFieldCarStep ? CarFieldStateOf(p) : NULL;
     if ((p->flags1E4 & 0x10) == 0) {
         m1 = p->halfSpan10E * p->input;
-        p->vel30 = p->vel30 << 8;
-        p->vel38 = p->vel38 << 8;
+        /* An opponent's drive sets vel30/38 for this shift; on a field its
+         * drive did not run they are this function's (RaceFieldCarStep). */
+        if (!fs || p->vel30 != fs->hist[CAR_FIELD_HIST_AI_VEL_X] || p->vel38 != fs->hist[CAR_FIELD_HIST_AI_VEL_Z]) {
+            p->vel30 = p->vel30 << 8;
+            p->vel38 = p->vel38 << 8;
+        }
+        if (fs) {
+            fs->hist[CAR_FIELD_HIST_AI_VEL_X] = p->vel30;
+            fs->hist[CAR_FIELD_HIST_AI_VEL_Z] = p->vel38;
+        }
         s5->v64.z = m1 / (p->control.maxSpeedF8 / 128 + 1);
     } else {
         m2 = p->halfSpan10E * p->input;
@@ -802,8 +813,14 @@ void IntegrateCarMotion(RaceVehicle *p) {
     s2 = &s5->m24;
     s3 = 0x800;
     a1 = s3 - p->rot54;
+    if (fs) {
+        /* a tick's move over two fields */
+        p->posScaled00[0] += RaceFieldHalf(p->vel30, &fs->rem[CAR_FIELD_REM_POS_X]);
+        p->posScaled00[2] += RaceFieldHalf(p->vel38, &fs->rem[CAR_FIELD_REM_POS_Z]);
+    } else {
     p->posScaled00[0] = p->posScaled00[0] + p->vel30;
     p->posScaled00[2] = p->posScaled00[2] + p->vel38;
+    }
     p->worldPosition10.words[0] = p->posScaled00[0] >> 6;
     p->worldPosition10.words[2] = p->posScaled00[2] >> 6;
     BuildRotMatrixY(s2, a1);
