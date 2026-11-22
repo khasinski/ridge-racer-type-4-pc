@@ -33,13 +33,21 @@ extern short ReverseCourse;
 
 void ResolveCarCollisions(RaceVehicle *arg0);
 
-/* A wall's loss of speed, x * keep / 100 a tick, every field (the car
- * stages every field: rr/field_rate.h). A loss of all of it stays one. */
-static s32 WallKeep(s32 x, s32 keep, s32 *rem)
+/* A wall's (or a car's) contact costs the original's loss, and arms its
+ * shake, once per tick it is seen on. With the car stages every field (rr/field_rate.h) a contact
+ * opens a window of a tick's two fields: its first field takes the tick's
+ * whole loss, a contact on the second takes none, a contact after it
+ * opens the next window. A one-field touch then costs what the original's
+ * one-tick touch does (a hit's loss scaled to a field left the car fast
+ * and further along, back on the wall), a contact held costs one loss a
+ * tick. */
+static int WallLossThisField(CarFieldState *fs)
 {
-  if (keep <= 0 || keep >= 100)
-    return (x * keep) / 100;
-  return RaceFieldKeep(x, (u32)keep, 100, rem);
+  s32 *open = &fs->rem[CAR_FIELD_WALL_WINDOW];
+  if (*open != 0 && RaceFieldCount - (u32)(*open - 1) == 1u)
+    return 0;
+  *open = (s32)(RaceFieldCount + 1);
+  return 1;
 }
 void UpdateRumbleStrip(RaceVehicle *p, int b);
 void CheckFinalLapEvent(RaceVehicle *vehicle);
@@ -147,12 +155,15 @@ void StepRaceFrame(unsigned int gameMode)
     {
       impactCars++;
       CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(CarTable[i]) : NULL;
-      if (CarTable[i]->impactFlags1A0 & 7)
+      /* a contact's tick: its shake (armed from the speed before the
+       * loss) and its loss once (WallLossThisField) */
+      int contactTick = !fs || ((short) CarTable[i]->impactFlags1A0) == 0 || WallLossThisField(fs);
+      if ((CarTable[i]->impactFlags1A0 & 7) && contactTick)
       {
         SetCarImpactState(2, CarTable[i]);
         StartCollisionShake(CarTable[i], (short) CarTable[i]->impactFlags1A0);
       }
-      if (((short) CarTable[i]->impactFlags1A0) != 0)
+      if (((short) CarTable[i]->impactFlags1A0) != 0 && contactTick)
       {
         impacts++;
         impactAngle = ((AngleDiffAbs(0x800 - (s16)CarTable[i]->trackAngle1EC, CarTable[i]->heading1D4) - 0x400) * 3) / 5;
@@ -167,20 +178,10 @@ void StepRaceFrame(unsigned int gameMode)
               car = CarTable[i];
             }
             speedScale = (car->input * 0x3A) / (car->control.dynamics94.player.topGearSpeed04 + 1);
-            impactCosine = rcos(impactAngle);
-            if (fs)
-            {
-              /* every field: the tick's loss as two fields' (rr/field_rate.h) */
-              car->control.lateralSpeed58 += RaceFieldHalf(-0x1388, &fs->rem[CAR_FIELD_REM_WALL_LATERAL]);
-              car->control.dynamics94.player.driveProduct0C = WallKeep(car->control.dynamics94.player.driveProduct0C,
-                  0x64 - ((speedScale * impactCosine) >> 12), &fs->rem[CAR_FIELD_REM_WALL_DRIVE]);
-            }
-            else
-            {
             car->control.lateralSpeed58 -= 0x1388;
+            impactCosine = rcos(impactAngle);
             car = CarTable[i];
             car->control.dynamics94.player.driveProduct0C = (car->control.dynamics94.player.driveProduct0C * (0x64 - ((speedScale * impactCosine) >> 12))) / 100;
-            }
           }
           else
           {
@@ -188,9 +189,6 @@ void StepRaceFrame(unsigned int gameMode)
           }
           impactCosine = rcos(impactAngle);
           car = CarTable[i];
-          if (fs)
-            car->input = WallKeep(car->input, 0x64 - ((speedScale * impactCosine) / 4096), &fs->rem[CAR_FIELD_REM_WALL_INPUT]);
-          else
           car->input = (car->input * (0x64 - ((speedScale * impactCosine) / 4096))) / 100;
         }
       }

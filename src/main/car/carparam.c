@@ -422,6 +422,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
   int v0;
   int v1;
   int s1;
+  int revsDeficit = 0;
   int s3;
   int s4;
   short v;
@@ -598,6 +599,11 @@ void UpdateCarEngine(RaceVehicle *a0) {
     m5 = (q->laneMode88 * s->scaledRate00) - q->dynamics94.player.driveProduct0C;
     q->reserved32 = 0;
     s1 = m5 / s3;
+    /* driveProduct0C is laneMode88 * s3 from the last step but for a
+     * contact's cut since (StepRaceFrame, ResolveCarCollisions): its revs
+     * drop is one event, taken whole on the next field, not halved */
+    if (RaceFieldRateLive)
+      revsDeficit = s1;
   }
   if (q->laneTarget3C > 0)
   {
@@ -683,7 +689,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
     k1 = 100;
   }
   s4 = (s4 * (k1 + 1000)) / 1000;
-  n3 = q->laneMode88 + RaceFieldHalf(s4 - s1, &fr->rem[CAR_FIELD_REM_REVS]);
+  n3 = q->laneMode88 + RaceFieldHalf(s4 - (s1 - revsDeficit), &fr->rem[CAR_FIELD_REM_REVS]) - revsDeficit;
   q->laneMode88 = n3;
   if (n3 < 0)
   {

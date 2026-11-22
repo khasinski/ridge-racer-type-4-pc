@@ -217,9 +217,7 @@ enum {
     CAR_FIELD_REM_SHAKE_HALF,     /* shakeTimer19E: 1 = half a tick past */
     CAR_FIELD_REM_STATE_HALF,     /* stateTimer1A5 (UpdateCarShake) */
     CAR_FIELD_REM_CONTACT_HALF,   /* contactTimer1A7 */
-    CAR_FIELD_REM_WALL_INPUT,     /* StepRaceFrame's wall / car contact loss */
-    CAR_FIELD_REM_WALL_DRIVE,
-    CAR_FIELD_REM_WALL_LATERAL,
+    CAR_FIELD_WALL_WINDOW,        /* StepRaceFrame's contact loss: its window's first field + 1 */
     CAR_FIELD_REM_KERB_INPUT,     /* the kerb / off-road loss */
     CAR_FIELD_REM_HIT_INPUT,      /* ResolveCarCollisions */
     CAR_FIELD_REM_HIT_DRIVE,
