@@ -1,8 +1,12 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "scratchpad.h"
 #include "rr_asm.h"
 #include "game/gfx/light2.h"
 #include "rr/menu_overlay_runtime.h"
 void SetLightColorsFromAngle(int a0) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_LIGHT_COLORS_FROM_ANGLE);
     int *p = (int *)(SCRATCHPAD + 0x7C);
     int s2, v0, z;
     s2 = rsin(a0 / 4 - 0x400) + 0x1000;

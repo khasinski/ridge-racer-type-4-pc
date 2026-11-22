@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/ps1_low_ram.h"
 #include "game/ui/uipart1.h"
 #include "game/menu/menu8.h"
@@ -40,6 +41,7 @@ extern char FractionText[];
 
 void *DrawCarSpecBadgePanel(GpuDmaTag *arg0, void *arg1, s32 arg2)
 {
+    RR_CPU_CYCLES(RR_CYCLES_CAR_SPEC_BADGE_PANEL);
   char sp28[8];
   int sp30;
   int sp34;
@@ -290,6 +292,7 @@ void *DrawGpSaveSlotsPanel(GpuDmaTag *arg0, void *arg1, s32 arg2)
 
 
 char *FormatCountOfTotal(int a, int b, int c) {
+    RR_CPU_CYCLES(RR_CYCLES_FORMAT_COUNT_OF_TOTAL);
     int i = 7;
     char *p = FractionText + i;
     do {
@@ -306,6 +309,7 @@ char *FormatCountOfTotal(int a, int b, int c) {
 
 void *DrawControllerConfigPanel(GpuDmaTag *ordering, void *cursor, s32 row)
 {
+    RR_CPU_CYCLES(RR_CYCLES_CONTROLLER_CONFIG_PANEL);
   char text[8];
   int character;
   char *textCursor;

@@ -175,6 +175,7 @@ void SkipDialoguePage(MenuTextState *arg0) {
 }
 
 s32 DecodeCourseIndex(s32 a0) {
+    RR_CPU_CYCLES(RR_CYCLES_DECODE_COURSE_INDEX);
     ReverseCourse = a0 >= 8;
     return CoursePreviewSceneIds[a0 & 7];
 }

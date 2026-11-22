@@ -26,7 +26,8 @@ extern char StrControllerNoErrorFmt[];
 extern char StrActuatorNoErrorFmt[];
 
 void PadUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE);
+    RR_CPU_CYCLES(RR_CYCLES_PAD_UPDATE + (PlayerControllers[0].kind1C ? RR_CYCLES_PAD_UPDATE_EXTENDED : 0) +
+                  (PadPorts[0].type01 == 0x73 ? RR_CYCLES_PAD_UPDATE_ANALOG : 0));
 
     PadPort28 *ports[2] = { &PadPorts[0], &PadPorts[1] };
     ControllerState5C *states[2] = { &PlayerControllers[0], &PlayerControllers[1] };

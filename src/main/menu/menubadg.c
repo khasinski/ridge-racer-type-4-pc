@@ -1,6 +1,10 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/badge_rows.h"
 
 void *EmitBadgePatternSprites(void *cursor, s32 style, s32 index) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_BADGE_PATTERN_SPRITES);
     void *result = cursor;
     s32 i = 0;
     s32 xshift;

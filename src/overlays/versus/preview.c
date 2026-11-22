@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "rr/versus_names.h"
 #include "game/menu/menutra21.h"
@@ -160,6 +161,7 @@ void ovl661_reset_preview_selection(void)
 
 void ovl661_update_preview(void)
 {
+    RR_CPU_CYCLES(RR_CYCLES_VS_CAR_SELECT);
     PreviewColor color;
     s16 active;
     s32 result;

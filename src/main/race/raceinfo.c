@@ -143,6 +143,7 @@ void DrawCourseMapPreview(int unusedSelection,int unusedMode) {
         r++;
         i = n - r;
     }
+    RR_CPU_CYCLES(RR_CYCLES_COURSE_MAP_PREVIEW);
     t = &TrackNodes[i];
     v.x = t->road.x;
     v.z = t->road.z;

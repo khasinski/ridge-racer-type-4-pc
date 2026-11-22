@@ -40,6 +40,7 @@ void InitBadgeRow(s32 a0, s32 a1, s16 a2, s32 a3, u16 a4, u16 a5, u16 a6) {
 }
 
 SpritePacket *DrawBadgeTitleBar(GpuDmaTag *ordering,SpritePacket *cursor,s32 x,s32 y,s32 style) {
+    RR_CPU_CYCLES(RR_CYCLES_BADGE_TITLE_BAR);
     UiBarDescriptor *descriptor=&SelectionBarDescriptors[style];
     s32 offset=4;
     s32 index=0;

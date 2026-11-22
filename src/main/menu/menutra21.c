@@ -76,6 +76,7 @@ void CheckCardFileExistsTransition(void);
 void StepCardDataTransfer(void);
 
 void RunCardSaveOrLoadStep(void) {
+    RR_CPU_CYCLES(RR_CYCLES_CARD_SAVE_OR_LOAD_STEP);
     s32 i = MenuStateTable[MenuStateIndex].tableIdx04;
     s32 a = TeamSelectBannerUvs[i].a;
     s32 c = TeamSelectBannerUvs[i].c;
@@ -218,6 +219,7 @@ void InitCardMenuSession(void) {
 
 
 void CloseCardMenuUiRows(void) {
+    RR_CPU_CYCLES(RR_CYCLES_CLOSE_CARD_MENU_ROWS);
     int i;
     UiRow24 *q;
     if (UiRows[0x23].byte14 == 2) {

@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/save_slots.h"
 #include "rr/menu_arena_state.h"
 #include "game/system/pad.h"
@@ -65,6 +66,7 @@ void ovl659_init_preview(void) {
 }
 
 void ovl659_update_preview(void) {
+    RR_CPU_CYCLES(RR_CYCLES_GP_PREVIEW);
 
     PreviewColor color;
     s32 renderMask;

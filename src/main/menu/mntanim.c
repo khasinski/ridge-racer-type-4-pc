@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 /* RODATA 0x80010ea0 0x2c */
 #include "scratchpad.h"
 #include "rr/gpu.h"
@@ -15,6 +17,8 @@
 
 
 void UpdateMenuTextRow(s32 row) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_UPDATE_MENU_TEXT_ROW);
     s32 x[4];
     s32 y[4];
     s32 u[4];

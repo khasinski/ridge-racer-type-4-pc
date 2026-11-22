@@ -35,23 +35,38 @@
  * (docs/ARCHITECTURE.md, PS1 time model). */
 enum {
     /* d1dff76a: the attract cycle's loading screen (DS fields 8400-9100) */
-    RR_CYCLES_INTRO_SCRIPT_STEP = 1282,    // IntroScriptStep [call]
+    /* IntroScriptStep's own code besides its callees (DuckStation's exact
+     * timing, DSF_MARKS on it and every callee, the main menu: 826-870 with
+     * the marks' stubs taken out, below; the [call] value 1282 had its
+     * callees) [mark] */
+    RR_CYCLES_INTRO_SCRIPT_STEP = 848,
     RR_CYCLES_ADD_TILE_PRIM = 184,         // AddTilePrim [rec]
-    RR_CYCLES_ADD_TILE_GRID_2X2 = 277,     // AddTileGrid2x2 [mark], besides its AddTilePrims (321 [call])
+    /* ... outside a race frame (whose own costs were fitted with 184):
+     * 171 on DuckStation, SetTile's 5 charged by PsyZ (the main menu, the
+     * marks' stubs taken out) [mark] */
+    RR_CYCLES_ADD_TILE_PRIM_MENU = 171 - 5,
+    RR_CYCLES_ADD_TILE_GRID_2X2 = 222,     // AddTileGrid2x2 [mark], besides its AddTilePrims (321 [call])
     RR_CYCLES_ADD_VERTICAL_GRADIENT = 270, // AddVerticalGradientRect [rec]
     RR_CYCLES_ADD_GOURAUD_RECT = 284,      // AddGouraudRect [rec]
-    RR_CYCLES_ADD_LINE_F2 = 125,           // AddLineF2Prim [rec]
+    RR_CYCLES_ADD_LINE_F2 = 125,           // AddLineF2Prim [rec], in a race frame
+    RR_CYCLES_ADD_LINE_F2_MENU = 112,      // ... elsewhere [mark] (the [rec] value had a stub)
     RR_CYCLES_ADD_SLANTED_GRADIENT = 290,  // AddSlantedGradientRect [rec]
-    RR_CYCLES_UPDATE_PARTICLES = 840,      // UpdateParticles [call]
-    RR_CYCLES_UPDATE_PARTICLE = 53,        // UpdateParticle [rec]
-    RR_CYCLES_DRAW_PARTICLE = 2110,        // DrawParticle [rec ratio] 0.895
-    RR_CYCLES_DRAW_INTRO_RIPPLES = 2064,   // DrawIntroRippleSprites [rec ratio] 0.939
-    RR_CYCLES_UPDATE_FADE_TINT = 112,      // UpdateFadeTint [rec]
-    RR_CYCLES_EMIT_FADE_SPRITE = 81,       // EmitFadeSprite [rec]
-    RR_CYCLES_FONT_DRAW = 116,             // AddTextSprites [rec ratio] 0.969,
-    RR_CYCLES_FONT_GLYPH = 186,            // and each glyph it draws
+    RR_CYCLES_UPDATE_PARTICLES = 683,      // UpdateParticles [mark] (840 [call])
+    RR_CYCLES_UPDATE_PARTICLE = 40,        // UpdateParticle [mark] (53 [rec])
+    RR_CYCLES_DRAW_PARTICLE = 2110 - 171,  // DrawParticle [rec ratio] 0.895, 171 long [mark] (main menu)
+    /* DrawIntroRippleSprites: 1756 on DuckStation with the SDK calls PsyZ
+     * charges (the port's took 2930 with the [rec ratio] 2064) [mark] */
+    RR_CYCLES_DRAW_INTRO_RIPPLES = 2064 - (2930 - 1756),
+    RR_CYCLES_UPDATE_FADE_TINT = 99,       // UpdateFadeTint [mark] (112 [rec])
+    RR_CYCLES_EMIT_FADE_SPRITE = 158,      // EmitFadeSprite besides its AddSpritePrim [mark] (main menu)
+    /* AddTextSprites, and each glyph it draws: 186 a glyph on DuckStation
+     * with its SetSprt, SetSemiTrans and AddPrim, which PsyZ charges (56;
+     * the main menu's title and fade-out text: 1708 and 2289 against the
+     * port's 2294 and 3020) [mark] */
+    RR_CYCLES_FONT_DRAW = 105,
+    RR_CYCLES_FONT_GLYPH = 186 - 56,
     /* the menus of a Time Attack run (DS fields 283-3266) */
-    RR_CYCLES_UPDATE_MENU_SCRIPT = 433,    // UpdateMenuScript [rec ratio] 0.855
+    RR_CYCLES_UPDATE_MENU_SCRIPT = 199,    // UpdateMenuScript [mark] (433 [rec ratio] with its callees)
     /* SetMenuTextRow, entry to return [ret] (tools/port/ds_frames.py
      * DSF_MARKS name:ret, Time Attack's results setup, 55 calls): 159 and
      * 44 a template character (6 to 22: 423 to 1127), the row's format on
@@ -95,8 +110,20 @@ enum {
     /* PadUpdate, with the routines it calls [ret]: 1961 in 3771 of 8216
      * calls over the Grand Prix scenario's first 9600 fields (the stubs'
      * clocks included); the calls of 6.6k (loads, the movie) take the
-     * previous DrawOTag's list DMA, which PsyZ posts at the DMA's time. */
-    RR_CYCLES_PAD_UPDATE = 1930,
+     * previous DrawOTag's list DMA, which PsyZ posts at the DMA's time.
+     * Its mark's stub out, 1950. With a DualShock in port 1 (libpad's
+     * extended controller, in its digital mode too) 48 more: the frame
+     * loop from PadUpdate's entry to the first ClearOTagR is 2047 clocks
+     * on DuckStation with a DualShock against 1999 with a digital pad in
+     * the same menus, the loads and the movies (ds_compare's Time Attack
+     * and Grand Prix scenarios, entry marks on the frame loop's calls, no
+     * exception stubs, 7 clocks a stub; the port's 1986 matched the digital
+     * pad's) [mark]. A DualShock in its analog mode in a race takes about
+     * 60 more again, not separated from the race's list DMA there and not
+     * charged. */
+    RR_CYCLES_PAD_UPDATE = 1950,
+    RR_CYCLES_PAD_UPDATE_EXTENDED = 48,
+    RR_CYCLES_PAD_UPDATE_ANALOG = 0,
     /* SoundUpdate with the routines it calls but the two below, with no
      * sound slot active and the listener off (attract, DS fields 2000-2200)
      * [rec]; in a race (Time Attack, DS fields 3266-3700) an active slot's
@@ -166,7 +193,26 @@ enum {
      * dispatch 45 (CdFileStateStartRead's CdRead call 15 more) and the
      * return after it 51 [mark] (DSF_MARKS CdFileStep, CdSync:ret,
      * CdControlF, CdRead, CdReadSync, SoundUpdate: Save and Load, 1391
-     * frames) */
+     * frames). Without the stubs CdFileStep's entry to a Setloc's CD_cw
+     * is 481 clocks on DuckStation (one entry mark each, DSF_EXC=0, their
+     * stubs' 7 out; ta-course4's menus and course load), 503 here, and to
+     * a ReadN's 966 against 1010; taking them off puts the card scenarios
+     * and the loads off (unformatted from 2632): not yet (docs/TECH_DEBT.md
+     * F13) [mark] */
+    /* The frame loop's own code (MainLoop) between its calls after the
+     * VSync: from PutDispEnv to PutDrawEnv and from it to DrawOTag (25 each
+     * on DuckStation, 14 without the marks' stubs), to PadUpdate (29), from
+     * PadUpdate's return to the first ClearOTagR (the frame counter and the
+     * buffers' set-up, 56), between the ClearOTagRs (26) and to CdFileStep
+     * (18) [mark] (DSF_MARKS on each, the main menu's 391 frames); not
+     * charged, so with the SDK calls' charges fitted with the stubs in the
+     * frames started about right in most menus and 120-350 early where
+     * the GPU's list was still going */
+    RR_CYCLES_FRAME_LOOP_ENV = 14,
+    RR_CYCLES_FRAME_LOOP_PAD = 18,
+    RR_CYCLES_FRAME_LOOP_TOP = 45 - 9, // (the movies' frames after their DrawOTag's wait kept where they were)
+    RR_CYCLES_FRAME_LOOP_CLEARS = 15,
+    RR_CYCLES_FRAME_LOOP_STEP = 7,
     RR_CYCLES_CD_FILE_STEP = 23,
     RR_CYCLES_CD_FILE_STEP_IDLE = 39,
     RR_CYCLES_CD_FILE_STEP_BUSY = 77,
@@ -199,11 +245,180 @@ enum {
      * DrawTrackNodeMap's tile a track node (1063 on course 0: 74.1k, 809 on
      * course 7: 56.6k) besides the primitives the port charges itself;
      * DrawCourseInfoPanel's own code past its primitives' (6267 against
-     * 3340) [mark] */
-    RR_CYCLES_MAP_BITMAP_ISO = 77100,
+     * 3340) [mark]. DuckStation's clocks of DrawMapBitmapIso hold the
+     * previous frame's list DMA, which the GPU still takes then: 28.3k of
+     * 3319 slices in the port, which stalls the CPU there too, so its own
+     * code is 79.4k less those (the port's call took 105.4k); the course
+     * menus have half the track nodes counted above (529 on course 0, 563
+     * on course 1: 74.0k and 79.0k on DuckStation, 139 a node; the port
+     * charged 36.9k) */
+    RR_CYCLES_MAP_BITMAP_ISO = 79400 - 28300,
     RR_CYCLES_TRACK_NODE_MAP = 435,
-    RR_CYCLES_TRACK_NODE_MAP_NODE_X100 = 6886,
-    RR_CYCLES_COURSE_INFO_PANEL = 2927,
+    RR_CYCLES_TRACK_NODE_MAP_NODE_X100 = 13900,
+    RR_CYCLES_COURSE_INFO_PANEL = 725,
+    /* The Time Attack course menu (mode 1/50), each routine's own code
+     * besides its callees charged themselves (DSF_MARKS on each and its
+     * callees, DuckStation's exact timing, ta-course1 fields 1893-2193):
+     * DrawCourseInfoPanel 725 (its 2927 had held its digit strings and
+     * times); DrawDigitString16 118 and 100 a character (218, 518, 1016 for
+     * 1, 4 and 9), 26 of them the SetShadeTex and SetSemiTrans PsyZ
+     * charges; FormatMillisecondsTime; DrawMenuStepArrows (its two
+     * triangles, besides EmitPolyF3's PsyZ calls: 852 against 112);
+     * ovl660_update_menu's own (161, 816 with the selection's step);
+     * DrawCourseMapPreview's own, DecodeCourseIndex, LoadTrackNodesStep
+     * once loaded, SetMenuFrameOptions [mark] (the stubs out). Not charged
+     * before: the course menu's frames ended 9k early. */
+    RR_CYCLES_DIGIT_STRING16 = 118,
+    RR_CYCLES_DIGIT_STRING16_CHAR = 100 - 13 - 13,
+    RR_CYCLES_FORMAT_MS_TIME = 79,
+    RR_CYCLES_MENU_STEP_ARROWS = 489,
+    RR_CYCLES_TA_COURSE_MENU = 161,
+    RR_CYCLES_TA_COURSE_MENU_SELECT = 816 - 161,
+    RR_CYCLES_COURSE_MAP_PREVIEW = 108,
+    RR_CYCLES_DECODE_COURSE_INDEX = 15,
+    RR_CYCLES_LOAD_TRACK_NODES_IDLE = 45,
+    RR_CYCLES_SET_MENU_FRAME_OPTIONS = 4,
+    /* Time Attack's car select (1/51), the same way: EmitPolyF3 besides its
+     * SetPolyF3, SetSemiTrans and AddPrim (179 against 56: DrawMenuStepArrows
+     * 478-500 besides its triangles), DrawSelectionIconGrid (900-1050),
+     * DrawCarSpecBadgePanel (2234-2579), AddScreenFadeTiles (662 against
+     * 353), UpdateImageRow's own, ovl660_update_preview's own (2989 against
+     * 1997) [mark] */
+    RR_CYCLES_EMIT_POLY_F3 = 179 - 56,
+    RR_CYCLES_SELECTION_ICON_GRID = 900 - 129,
+    RR_CYCLES_CAR_SPEC_BADGE_PANEL = 2234 - 129,
+    RR_CYCLES_SCREEN_FADE_TILES = 662 - 353,
+    RR_CYCLES_UPDATE_IMAGE_ROW = 91,
+    RR_CYCLES_TA_CAR_SELECT = 2989 - 1997,
+    /* ... its car's set-up outside a race frame: SetCarBounds (195),
+     * SetupViewport (434 against 38), SetupMenuCarCamera (2097 against
+     * 1959) [mark] */
+    RR_CYCLES_SET_CAR_BOUNDS_MENU = 195,
+    RR_CYCLES_SETUP_VIEWPORT_MENU = 434 - 38,
+    RR_CYCLES_MENU_CAR_CAMERA = 2097 - 1959,
+    /* Versus's car select (1/56) the same: ovl661_update_preview's own (3097
+     * against 1997), EmitPolyFT3 besides its SDK calls (325 against 69),
+     * UpdateRect16Row (2431 against 224), FormatDecimalDigits (22) [mark] */
+    RR_CYCLES_VS_CAR_SELECT = 3097 - 1997,
+    RR_CYCLES_EMIT_POLY_FT3 = 325 - 69,
+    RR_CYCLES_UPDATE_RECT16_ROW = 2431 - 224,
+    RR_CYCLES_FORMAT_DECIMAL_DIGITS = 22,
+    /* The garage's name entry (1/28): ovl662_draw_character_grid's own
+     * (4313 against the port's 1629 for its callees' charges),
+     * ovl662_draw_name_entry_chars' (2114 against 1497),
+     * ovl662_update_name_entry's (4457 against 3716) [mark] */
+    RR_CYCLES_NAME_ENTRY_GRID = 4313 - 1629,
+    RR_CYCLES_NAME_ENTRY_CHARS = 2114 - 1497,
+    RR_CYCLES_NAME_ENTRY = 4457 - 3716,
+    /* ... and its progress menu (1/40: ovl662_update_progress_menu 12518
+     * against 7995) and history (1/66: ovl662_draw_history_arrows 647
+     * against 171, ovl662_draw_team_car_counts_label 1954 against 1375,
+     * FormatCountOfTotal 153 against 44) [mark] */
+    RR_CYCLES_GARAGE_PROGRESS_MENU = 12518 - 7995,
+    RR_CYCLES_HISTORY_ARROWS = 647 - 171,
+    RR_CYCLES_TEAM_CAR_COUNTS_LABEL = 1954 - 1375,
+    RR_CYCLES_FORMAT_COUNT_OF_TOTAL = 153 - 44,
+    /* The Grand Prix's screens: the car standings (1/16: AddBadgeSpriteStrip
+     * 409, DrawCarStatBars 385, DrawStepProgressBar 282,
+     * EmitBadgePatternSprites 2629 against 1562, DrawMenuCarPreviewScene 1547
+     * against 927, CarStandingsModeUpdate 392 against 222), the course
+     * preview's ovl659_update_preview (285), the garage's car preview
+     * (13056 against 11456), the new car (1608 against 1438), the results
+     * (DrawResultsRankIcons' 242 cells 24185 less its two AddDrawModePrim,
+     * UpdateMenuTextRow 191, DrawResultsStandingsOverlay 487,
+     * ovl659_update_results 370), the dialogues (DialogueModeUpdate 168,
+     * UpdateDialogueBox 205) [mark] */
+    RR_CYCLES_BADGE_SPRITE_STRIP = 409,
+    RR_CYCLES_CAR_STAT_BARS = 385,
+    RR_CYCLES_STEP_PROGRESS_BAR = 282,
+    RR_CYCLES_BADGE_PATTERN_SPRITES = 2629 - 1562,
+    RR_CYCLES_MENU_CAR_PREVIEW_SCENE = 1547 - 927,
+    RR_CYCLES_CAR_STANDINGS = 392 - 222,
+    RR_CYCLES_GP_PREVIEW = 285,
+    RR_CYCLES_GARAGE_CAR_PREVIEW = 13056 - 11456,
+    RR_CYCLES_NEW_CAR_MODE = 1608 - 1438,
+    RR_CYCLES_RESULTS_RANK_ICONS = 24185 - 2 * 129,
+    RR_CYCLES_UPDATE_MENU_TEXT_ROW = 191,
+    RR_CYCLES_RESULTS_STANDINGS_OVERLAY = 487,
+    RR_CYCLES_GP_RESULTS = 370,
+    RR_CYCLES_DIALOGUE_MODE = 168,
+    RR_CYCLES_DIALOGUE_BOX = 205,
+    RR_CYCLES_JITTER_SPRITE = 321 - 56, // AddJitterSprites a sprite, its SDK calls out
+    /* The Grand Prix's intro scenes (0/2, StepIntroScene) outside a race
+     * frame: StepIntroScene's own (1533 against 38), the title model's
+     * DrawTransformedTitleModel (4899 against 3731) and
+     * DrawRotatingTitleModel (1893 against 1230), SetLightColorsFromAngle
+     * (148), RampValueTo4096 and RampValueToLimit (18), and the scene's
+     * rarer steps: DrawMenuGridMesh (73187), the sky's RunSkyCommandList
+     * (64395), RenderSkyToRect (959), SetupSkyLightMatrices (322),
+     * DrawRotatingSky (266), EmitTitleMaskSprites (127)
+     * [mark]; none was charged but by the callees */
+    RR_CYCLES_INTRO_SCENE = 1533 - 38,
+    RR_CYCLES_TRANSFORMED_TITLE_MODEL = 4899 - 3731,
+    RR_CYCLES_ROTATING_TITLE_MODEL = 1893 - 1230,
+    RR_CYCLES_LIGHT_COLORS_FROM_ANGLE = 148,
+    RR_CYCLES_RAMP_VALUE = 18,
+    RR_CYCLES_MENU_GRID_MESH = 73187,
+    RR_CYCLES_SKY_COMMAND_LIST = 64395,
+    RR_CYCLES_RENDER_SKY_TO_RECT = 959,
+    RR_CYCLES_SKY_LIGHT_MATRICES = 322,
+    RR_CYCLES_ROTATING_SKY = 266,
+    RR_CYCLES_TITLE_MASK_SPRITES = 127,
+    /* The results' text rows (DrawMenuTextRow, besides its AddDrawModePrim):
+     * 166 and by its characters, a glyph shown 355 (its brightness's
+     * rsin/rcos and the divisions), a glyph not yet shown 120, a space 30,
+     * a glyph of the two-sprite styles 466 (6501 calls on DuckStation in
+     * Time Attack's results, the counts from the port's same calls: a row
+     * 1.6k-11k, 71k a frame, which the port did not charge) [mark] */
+    RR_CYCLES_MENU_TEXT_ROW_DRAW = 166,
+    RR_CYCLES_MENU_TEXT_ROW_GLYPH = 355,
+    RR_CYCLES_MENU_TEXT_ROW_HIDDEN = 120,
+    RR_CYCLES_MENU_TEXT_ROW_SPACE = 30,
+    RR_CYCLES_MENU_TEXT_ROW_GLYPH2 = 466,
+    RR_CYCLES_TILE_SEMI_TRANS = 78,
+    RR_CYCLES_TA_RESULTS = 350,         // ovl660_update_results' own [mark]     // AddTileSemiTransPrim outside a race frame, its own [mark]
+    /* The menus' presentation (StepCameraScript's): DrawPresentationTrackModel's
+     * own (its 16 x 16 banner grid and its markers' projections: 18420 on
+     * DuckStation in the records' menu), each marker's
+     * EmitProjectedMarkerSprt (58), SetupObjectLightMatrices (2233),
+     * DrawRingEffects' own (93); none was charged [mark] */
+    RR_CYCLES_PRESENTATION_TRACK_MODEL = 18420 - 1900, // its projections' GTE time PsyZ charges
+    RR_CYCLES_PROJECTED_MARKER = 58,
+    RR_CYCLES_OBJECT_LIGHT_MATRICES = 2233,
+    RR_CYCLES_RING_EFFECTS = 93,
+    /* The records (1/74, 1/75): ovl663_update_selection's own (187, 763 as
+     * it steps the course), ovl663_update_menu's (264), a records table's
+     * (ovl663_draw_lap_records, ovl663_draw_race_records: its five rows'
+     * blink test and columns, 1642 against the port's 258 for its two
+     * AddDrawModePrim); its times as FormatMillisecondsTime [mark] */
+    RR_CYCLES_RECORDS_SELECTION = 187,
+    RR_CYCLES_RECORDS_SELECTION_STEP = 763,
+    RR_CYCLES_RECORDS_MENU = 264,
+    RR_CYCLES_RECORDS_TABLE = 1642 - 258,
+    /* The options (2/2): DrawHudDigit outside a race (114), the controller
+     * page's DrawControllerConfigPanel (551 against 344) and callout strokes
+     * (3230 against 1680) [mark] */
+    RR_CYCLES_HUD_DIGIT_MENU = 114,
+    RR_CYCLES_CONTROLLER_CONFIG_PANEL = 551 - 344,
+    RR_CYCLES_CALLOUT_STROKES = 3230 - 1680,
+    /* The card menu and a save (Save and Load, 1/72): the save's
+     * BuildSaveData (45648) and BuildCardHeaderStatic (8181), the card
+     * events' polls (ClearHwCardEvents, GetHwCardEvent, PollHwCardEvents),
+     * CardSaveStep, RunCardSaveOrLoadStep, CardUpdate: not charged [mark] */
+    RR_CYCLES_BUILD_SAVE_DATA = 45648,
+    RR_CYCLES_BUILD_CARD_HEADER = 8181,
+    RR_CYCLES_CLEAR_HW_CARD_EVENTS = 238,
+    RR_CYCLES_GET_HW_CARD_EVENT = 252,
+    RR_CYCLES_POLL_HW_CARD_EVENTS = 285,
+    RR_CYCLES_CARD_SAVE_STEP = 71,
+    RR_CYCLES_CARD_SAVE_OR_LOAD_STEP = 105,
+    RR_CYCLES_CARD_UPDATE = 156,
+    /* ... and the card menu's close into Versus's car select (CountChoiceGlyphs
+     * 143, UnpackChoiceGlyph 17, CloseCardMenuUiRows 7232 against 6481)
+     * [mark] */
+    RR_CYCLES_COUNT_CHOICE_GLYPHS = 143,
+    RR_CYCLES_UNPACK_CHOICE_GLYPH = 17,
+    RR_CYCLES_CLOSE_CARD_MENU_ROWS = 7232 - 6481,
 };
 
 /* The race HUD's lap list (DrawLapTimeList): its own and a lap's row with
@@ -281,10 +496,19 @@ enum {
  * the display range has started and the next frame runs a field sooner
  * than the port's, which read it in the blank. */
 enum {
-    RR_CYCLES_ADD_SPRITE_PRIM = 212,          // AddSpritePrim, brightness set
-    RR_CYCLES_ADD_SPRITE_PRIM_SHADE_TEX = 14, // its SetShadeTex call instead
-    RR_CYCLES_ADD_DRAW_AREA_PRIM = 320,       // AddDrawAreaPrim
-    RR_CYCLES_ADD_DRAW_MODE_PRIM = 140,       // AddDrawModePrim
+    /* AddSpritePrim, brightness set: 201 on DuckStation with SetSprt and
+     * SetSemiTrans, which PsyZ charges (PRIM_SETTER_CYCLES,
+     * PRIM_SET_ATTR_CYCLES: the port's call took 230); its SetShadeTex call
+     * instead 14 more (PsyZ's 13). Here and below a mark's stub is taken
+     * out of DuckStation's clocks: 11 clocks of a :ret mark fall between a
+     * routine's entry and return marks and 11 in its caller's own (each
+     * marked callee lengthened TitleMenuUpdate by 22-25 clocks); the menus'
+     * charges fitted with the stubs in were that much long, which put the
+     * main menu's frames 1.1k late with all else matched */
+    RR_CYCLES_ADD_SPRITE_PRIM = 201 - 5 - 13,
+    RR_CYCLES_ADD_SPRITE_PRIM_SHADE_TEX = 14 - 13,
+    RR_CYCLES_ADD_DRAW_AREA_PRIM = 309,       // AddDrawAreaPrim
+    RR_CYCLES_ADD_DRAW_MODE_PRIM = 129,       // AddDrawModePrim
     /* AddSpriteWithDrawMode besides its two AddDrawModePrim; DrawImageRow's
      * own a cell of its 18 x 4 (a car select's image row 56.3k a frame on
      * DuckStation: 72 of them, 41.4k, and 18 GetClut); UpdateCarWorldTransform
@@ -292,34 +516,67 @@ enum {
      * DuckStation's exact timing, the list DMA's stalls taken out; less the
      * marks' own stubs, about 17 clocks a call: the row's 50.5k without its
      * callees marked) [mark] */
-    RR_CYCLES_ADD_SPRITE_WITH_DRAW_MODE = 245,
-    RR_CYCLES_DRAW_IMAGE_ROW_CELL = 150,
+    RR_CYCLES_ADD_SPRITE_WITH_DRAW_MODE = 245 - 14,
+    RR_CYCLES_DRAW_IMAGE_ROW_CELL = 189, // 13635 a row on DuckStation (its GetClut calls in), the stubs out
+    RR_CYCLES_DRAW_IMAGE_ROW_CELL_FT3 = 456, // its triangles' path (the Versus select's close: 32846)
     RR_CYCLES_UPDATE_CAR_WORLD_TRANSFORM = 1895,
-    RR_CYCLES_DRAW_UI_ROW = 628,              // DrawUiRow (535-900 by its state)
-    RR_CYCLES_DRAW_UI_BOX = 2677,             // DrawUiBox, besides its AddTilePrim
-    RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT = 663,  // DrawUiWindowRowText
-    RR_CYCLES_DRAW_MENU_FRAME = 2182,         // DrawMenuFrame
+    RR_CYCLES_DRAW_UI_ROW = 550,              // DrawUiRow (535-900 by its state, the stubs in)
+    /* DrawUiBox besides its AddTilePrim: 2655 on DuckStation with its four
+     * AddPartialLine's eight line packets' SetLineF2, SetShadeTex and
+     * AddPrim, which PsyZ charges (56 a line: the port's call took 3125) */
+    RR_CYCLES_DRAW_UI_BOX = 2655 - 8 * 56,
+    /* DrawUiWindowRowText: 300 and 60 a cell (one 360 in the main menu's
+     * rows, two 376-410 in the car selects, more 795 in the new car's) */
+    RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT = 300,
+    RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT_CELL = 60,
+    RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT_TILE = 321, // a row of no cells (its one tile: the card menu's)
+    RR_CYCLES_DRAW_MENU_FRAME = 1320,         // DrawMenuFrame's own, each callee marked (Time Attack's results)
     RR_CYCLES_UPDATE_SCREEN_FADE = 247,       // UpdateScreenFade
-    RR_CYCLES_STEP_CAMERA_SCRIPT = 400,       // StepCameraScript (217 idle)
-    RR_CYCLES_UPDATE_BADGE_ROW_ANIM = 173,    // UpdateBadgeRowAnim
-    RR_CYCLES_DRAW_BADGE_ROW = 2304,          // DrawBadgeRow
+    RR_CYCLES_STEP_CAMERA_SCRIPT = 260,       // StepCameraScript (215-389, the menus' frames: 251-273 median)
+    RR_CYCLES_UPDATE_BADGE_ROW_ANIM = 151,    // UpdateBadgeRowAnim
+    /* DrawBadgeRow's own and its title bar's (DrawBadgeTitleBar besides the
+     * SetSprt, SetShadeTex and AddPrim of its GameQueueSprite calls, which
+     * PsyZ charges): 2368 on DuckStation in the main menu with the title
+     * bar, 1830-2036 the bar alone in Time Attack's car select, 1232-1424
+     * the row without it (its AddDrawAreaPrim and AddDrawModePrim in) */
+    RR_CYCLES_DRAW_BADGE_ROW = 346,           // 346 in the dialogues (its own alone)
+    RR_CYCLES_BADGE_TITLE_BAR = 1400,
     RR_CYCLES_UPDATE_DIALOGUE = 130,          // UpdateDialogue
+    /* The main menu (mode 1/4), each routine's own code besides the
+     * routines it calls that are charged themselves (the BIOS's
+     * _sio_control calls included): TitleMenuUpdate by its submode (the
+     * title, the mode select, its fade out; 221 in the unlock notices),
+     * RunIntroScriptStep, ModeSelectMenuStep, StepMenuValue (a short value,
+     * an int 8 more), DrawModeSelectRows (DSF_MARKS on each and its
+     * callees, DuckStation's exact timing, ta-course1 fields 1037-1667)
+     * [mark]. Not charged before: the main menu's frames ended 13.5k late
+     * with the routines that were charged too long (DrawUiBox,
+     * DrawUiWindowRowText, AddSpritePrim, IntroScriptStep, DrawParticle) */
+    RR_CYCLES_TITLE_MENU_NOTICE = 200,
+    RR_CYCLES_TITLE_MENU_TITLE = 206,
+    RR_CYCLES_TITLE_MENU_SELECT = 271,
+    RR_CYCLES_TITLE_MENU_FADE = 102,
+    RR_CYCLES_RUN_INTRO_SCRIPT_STEP = 17,
+    RR_CYCLES_MODE_SELECT_MENU_STEP = 253,
+    RR_CYCLES_STEP_MENU_VALUE = 115,
+    RR_CYCLES_STEP_MENU_VALUE_INT = 8,
+    RR_CYCLES_DRAW_MODE_SELECT_ROWS = 277,
     /* DrawAnimatedText: 123, 69 for each glyph it draws, 25 for each other
      * entry; DrawAnimatedGlyph 345 */
     RR_CYCLES_DRAW_ANIMATED_TEXT = 123,
     RR_CYCLES_DRAW_ANIMATED_TEXT_GLYPH = 69,
     RR_CYCLES_DRAW_ANIMATED_TEXT_ENTRY = 25,
-    RR_CYCLES_DRAW_ANIMATED_GLYPH = 345,
-    RR_CYCLES_CARD_MENU_MODE_UPDATE = 138,    // CardMenuModeUpdate
+    RR_CYCLES_DRAW_ANIMATED_GLYPH = 345 - 92, // (334 on DuckStation, the port's 426 with its SDK calls)
+    RR_CYCLES_CARD_MENU_MODE_UPDATE = 40,     // CardMenuModeUpdate (its frame's 2276 against the port's 2471)
     /* StepCardMenuStateMachine 356, 294 more with its card poll;
      * DrawCardMenuStatusText 203, 79 more for a status lookup */
-    RR_CYCLES_STEP_CARD_MENU = 356,
+    RR_CYCLES_STEP_CARD_MENU = 221,          // (356 with its callees' marks' stubs)
     RR_CYCLES_STEP_CARD_MENU_POLL = 294,
-    RR_CYCLES_DRAW_CARD_MENU_STATUS = 203,
+    RR_CYCLES_DRAW_CARD_MENU_STATUS = 203 - 105,
     RR_CYCLES_DRAW_CARD_MENU_STATUS_LOOKUP = 79,
-    RR_CYCLES_POLL_CARD_STATUS = 472,         // PollCardStatus
-    RR_CYCLES_UPDATE_CARD_SLOT_ROWS = 193,    // UpdateCardSlotUiRows
-    RR_CYCLES_DRAW_CARD_MENU_COMMANDS = 269,  // DrawCardMenuCommandRows
+    RR_CYCLES_POLL_CARD_STATUS = 257,         // PollCardStatus (472 with its callees' marks)
+    RR_CYCLES_UPDATE_CARD_SLOT_ROWS = 90,     // UpdateCardSlotUiRows (193 with the stubs)
+    RR_CYCLES_DRAW_CARD_MENU_COMMANDS = 151,  // DrawCardMenuCommandRows (269 with the stubs)
     /* InitAnimatedTrackObjects (course 7's fireworks pools: 2 x 5 x 255
      * line packets set up and linked, then 18 key pointers): 74230 on
      * DuckStation [mark], of which its SetLineG2 calls charge 2550 x 5 */

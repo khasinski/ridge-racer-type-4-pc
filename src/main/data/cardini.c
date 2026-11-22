@@ -92,6 +92,7 @@ void CardSystemShutdown(void) {
 }
 
 int PollHwCardEvents(int arg) {
+    RR_CPU_CYCLES(RR_CYCLES_POLL_HW_CARD_EVENTS);
     int r;
     int t;
     r = TestEvent(HwCardEvIoe) == 1;
@@ -104,6 +105,7 @@ int PollHwCardEvents(int arg) {
 }
 
 s32 GetHwCardEvent(void) {
+    RR_CPU_CYCLES(RR_CYCLES_GET_HW_CARD_EVENT);
     if (TestEvent(HwCardEvIoe) == 1) {
         return 1;
     }
@@ -117,6 +119,7 @@ s32 GetHwCardEvent(void) {
 }
 
 void ClearHwCardEvents(void) {
+    RR_CPU_CYCLES(RR_CYCLES_CLEAR_HW_CARD_EVENTS);
     TestEvent(HwCardEvIoe);
     TestEvent(HwCardEvError);
     TestEvent(HwCardEvTimeout);
@@ -303,6 +306,7 @@ int CardWriteFileAt(int port, int slot, const char *name, const void *buffer, in
 }
 
 int CardUpdate(int port, int slot) {
+    RR_CPU_CYCLES(RR_CYCLES_CARD_UPDATE);
     int channel;
     int status;
     int sync[2];

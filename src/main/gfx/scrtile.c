@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/gpu_scratch_types.h"
 #include "rr/frame_storage_types.h"
@@ -9,6 +11,8 @@
 #include "rr/widescreen.h"
 #include <psyz/video.h>
 void AddScreenFadeTiles(GpuDmaTag *ordering,s32 intensity,u32 mode) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_SCREEN_FADE_TILES);
     GpuTilePacket *tile;
     s32 index;
     s32 column;

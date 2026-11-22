@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "rr/player_cars.h"
 #include "rr/save_slots.h"
@@ -32,6 +33,7 @@ void ovl659_init_results(void) {
 }
 
 void ovl659_update_results(void) {
+    RR_CPU_CYCLES(RR_CYCLES_GP_RESULTS);
     s32 group;
     s32 lapOffset;
     s32 rowOffset;

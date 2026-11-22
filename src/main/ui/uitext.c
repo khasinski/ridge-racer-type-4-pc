@@ -370,6 +370,7 @@ void InitImageRow(int i, int a, int b, int j) {
 }
 
 int UpdateImageRow(int a0) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_IMAGE_ROW);
     int s1;
     int s2;
     int state;
@@ -445,7 +446,7 @@ void DrawImageRow(int a0, int a1, int a2, int a3) {
 
     cursor = RR_GPU_SCRATCH->cursor;
     if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_DRAW_IMAGE_ROW_CELL * 72u);
+        RR_CPU_CYCLES((a1 == 1 ? RR_CYCLES_DRAW_IMAGE_ROW_CELL_FT3 : RR_CYCLES_DRAW_IMAGE_ROW_CELL) * 72u);
     for (i = 0; i < 18; i++) {
         tx = ImageRows[a0].geom.coords.u + (i % 9) * 24;
         ty = ImageRows[a0].geom.coords.v + (i / 9) * 96;

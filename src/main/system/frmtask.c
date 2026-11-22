@@ -301,7 +301,9 @@ void MainLoop(void) {
             scratch->cursor=frame->buffer.packets1670;
             ClearOTagR(ordering,length);
         }
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_CLEARS);
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_STEP);
         CdFileStep();
         SoundUpdate();
         InterpPollOutput();
@@ -337,7 +339,9 @@ void MainLoop(void) {
         do {} while (VSync(1)<threshold);
         VSync(0);
         PutDispEnv(&CurrentDrawBuf->buffer.environment00.display5C);
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
         PutDrawEnv(&CurrentDrawBuf->buffer.environment00.draw00);
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_ENV);
         InterpCommitFrame(DrawBuffers[bank ^ 1].buffer.environment00.draw00.clip.y,
                           &CurrentDrawBuf->buffer.environment00.draw00.clip);
         WideCommitFrame(CurrentDrawBuf->buffer.environment00.draw00.clip.y,
@@ -347,8 +351,10 @@ void MainLoop(void) {
                         DrawSubOtFlag ? &CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703] : NULL);
         DrawOTag(&CurrentDrawBuf->buffer.ordering70.tags[703]);
         if(DrawSubOtFlag) DrawOTag(&CurrentDrawBuf->buffer.secondaryOrderingB70.tags[703]);
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_PAD);
         PadUpdate();
         FrameCounter++;
+        RR_CPU_CYCLES(RR_CYCLES_FRAME_LOOP_TOP);
     }
 }
 

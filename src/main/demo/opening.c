@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/video_timing.h"
 #include "rr/cpu_work.h"
 #include "rr/cpu_work.h"
@@ -484,6 +485,8 @@ void StartOpeningFadeOut(void) {
 
 void EmitProjectedMarkerSprt(int a0, int a1, int a2)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_PROJECTED_MARKER);
     GpuScratchPointers *scratch = RR_GPU_SCRATCH;
     SpritePacket *p = (SpritePacket *)scratch->cursor;
     p->code = 0x65;

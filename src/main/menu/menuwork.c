@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "game/data/menuvars.h"
 #include "game/ui/uipart1.h"
@@ -155,6 +156,7 @@ void CarPreviewModeUpdate(void) {
 
 void GarageCarPreviewModeUpdate(void)
 {
+    RR_CPU_CYCLES(RR_CYCLES_GARAGE_CAR_PREVIEW);
     int rowStatus, ready, optionCount, rowState, row;
     void *loadedArena;
     UiRow24 *rows;

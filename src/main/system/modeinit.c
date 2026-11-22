@@ -1,4 +1,5 @@
 #include "rr/release.h"
+#include "rr/cpu_time.h"
 #include "game/data/menuvars.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
@@ -147,6 +148,10 @@ void TitleMenuUpdate(void)
     int c3, c4;
     BadgeRow1C *a0;
 
+    RR_CPU_CYCLES(SubmodeState == 1   ? RR_CYCLES_TITLE_MENU_TITLE
+                  : SubmodeState == 2 ? RR_CYCLES_TITLE_MENU_SELECT
+                  : SubmodeState == 3 ? RR_CYCLES_TITLE_MENU_FADE
+                                      : RR_CYCLES_TITLE_MENU_NOTICE);
     ModeFrame = ModeFrame + 1;
     ScreenFrame = ScreenFrame + 1;
     s0 = RunIntroScriptStep();

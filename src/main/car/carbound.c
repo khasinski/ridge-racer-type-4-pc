@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/ps1_sizes.h"
 #include "psyq/libgte/gtemat5.h"
 #include "game/race/racegrid.h"
@@ -98,6 +99,8 @@ void DrawCars(s32 a0) {
 
 void SetCarBounds(RaceVehicle *vehicle)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_SET_CAR_BOUNDS_MENU);
     int boundsIndex;
     CarBounds **boundsSlot;
     CarBounds **boundsTable;

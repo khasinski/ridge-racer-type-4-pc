@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "game/ui/uibar.h"
 #include "rr/release.h"
@@ -22,6 +23,7 @@ extern short MenuIconRowWidth[];
 extern short MenuIconRowHeight[];
 
 void DrawMenuCarPreviewScene(int a0) {
+    RR_CPU_CYCLES(RR_CYCLES_MENU_CAR_PREVIEW_SCENE);
     int s0, t0;
     void *s1;
     BadgeRow1C *p;

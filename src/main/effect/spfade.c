@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "scratchpad.h"
 #include "rr/gpu_scratch_types.h"
@@ -8,6 +10,8 @@ static const SpritePreset PresetSpriteDescriptorsJp[55];
 
 
 void RampValueToLimit(unsigned short *a0, short *a1, int a2) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_RAMP_VALUE);
     int v = *a1;
     unsigned short u = *(unsigned short *)a1;
     if (v > 0) {
@@ -44,6 +48,8 @@ void RampValuePairTo4096(unsigned short *a0, unsigned short *a1, short *a2) {
 }
 
 void RampValueTo4096(unsigned short *a0, short *a1) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_RAMP_VALUE);
     int v = *a1;
     unsigned short u = *(unsigned short *)a1;
     if (v > 0) {
@@ -146,6 +152,8 @@ void EmitFadeTile(s32 intensity, s32 scale, u32 pos, s32 width) {
 
 void EmitTitleMaskSprites(s32 mask, s32 animation)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_TITLE_MASK_SPRITES);
     GpuSpriteCommand *packet = (GpuSpriteCommand *)RR_GPU_SCRATCH->cursor;
     u32 uv = (((s32)(0U - (u32)animation) >> 3) & 3U) | 0x1BA4F0D0U;
     s16 *vertex = SpinningWheelBaseVerts;

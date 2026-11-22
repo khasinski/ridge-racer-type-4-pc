@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "game/gfx/model.h"
 #include "rr/overlay662_progress_init.h"
@@ -75,6 +76,7 @@ void ovl662_init_garage_scene(void) {
 
 void ovl662_update_progress_menu(void)
 {
+    RR_CPU_CYCLES(RR_CYCLES_GARAGE_PROGRESS_MENU);
     s32 i;
     s32 state;
     s32 unused[2]; /* never referenced; original frame reserves 8 local bytes */

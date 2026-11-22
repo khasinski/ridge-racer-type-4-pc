@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/data/menuvars.h"
 #include "psyq/libgte/rotmat.h"
@@ -27,6 +29,8 @@ void IntroSceneModeEnter(void);
 
 int DrawRotatingTitleModel(int objectIndex, int animate)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ROTATING_TITLE_MODEL);
     MatrixWords32 rotation;
     RroScratchWork *work = &((RroModelScratch *)SCRATCHPAD)->work7C;
     int yaw;
@@ -53,6 +57,8 @@ int DrawRotatingTitleModel(int objectIndex, int animate)
 
 void DrawRotatingSky(void)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_ROTATING_SKY);
     GpuRectangleFields sp10;
     MatrixWords32 sp18;
     int t;
@@ -76,6 +82,8 @@ void DrawRotatingSky(void)
 void DrawTransformedTitleModel(int modelIndex, const Vec3s8 *angles,
                                const VectorWords16 *position)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_TRANSFORMED_TITLE_MODEL);
     MatrixWords32 rotation;
     SelectModelBank(4);
     RotMatrix(&angles->fields, &((RroModelScratch *)SCRATCHPAD)->work7C.setup.rotation);

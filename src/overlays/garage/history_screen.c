@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "rr/overlay662_setup.h"
 #include "rr/menu_arenas.h"
@@ -180,6 +181,7 @@ void ovl662_update_history_screen(void)
 }
 
 s32 ovl662_draw_history_arrows(u32 unused,s32 mode){
+    RR_CPU_CYCLES(RR_CYCLES_HISTORY_ARROWS);
  s32 selected;
  if(mode)selected=SelectionRows.choice.bytes[1];else selected=SelectionRows.choice.bytes[0];
  DrawMenuStepArrows(160,204,48,0,selected,0,4);

@@ -114,6 +114,7 @@ extern const RrWorkCost RrCostUpdateTrackObjects, RrCostChaseCamera, RrCostCamer
 extern const RrWorkCost RrCostDrawPlayerCar, RrCostDrawOpponentCar, RrCostDrawCars;
 extern const RrWorkCost RrCostViewSegmentList, RrCostSegmentVisibility, RrCostCourseView;
 extern const RrWorkCost RrCostDrawTrackObjects, RrCostDrawTrackScenery, RrCostSubmitModel;
+extern const RrWorkCost RrCostSubmitModelTwoTri, RrCostMeshPrimList;
 /* StepRaceFrame's own work and its later stages', by the cars it ran and,
  * comCars set (the frame ran UpdateComCars), the AI cars. */
 void RrSpendStepRaceFrameOwn(int comCars);

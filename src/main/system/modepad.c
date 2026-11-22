@@ -5,6 +5,7 @@
 #include "game/system/pad.h"
 /* RODATA 0x800104f4 0x1c */
 #include "types.h"
+#include "rr/cpu_time.h"
 #include "rr/tables.h"
 #include "rr/ui.h"
 #include "game/system/modepad.h"
@@ -23,10 +24,12 @@ extern short MenuCursor;
 extern int DialogueSceneMode;
 
 int RunIntroScriptStep(void) {
+    RR_CPU_CYCLES(RR_CYCLES_RUN_INTRO_SCRIPT_STEP);
     return IntroScriptStep();
 }
 
 void DrawModeSelectRows(void) {
+    RR_CPU_CYCLES(RR_CYCLES_DRAW_MODE_SELECT_ROWS);
     int n = ModeSelectBaseCount + IsLinkPeerPresent();
     int i = 0;
     if (n > 0) {
@@ -47,6 +50,7 @@ int ModeSelectMenuStep(void)
     int s1, s2, i;
     int v;
 
+    RR_CPU_CYCLES(RR_CYCLES_MODE_SELECT_MENU_STEP);
     s1 = ModeSelectBaseCount + IsLinkPeerPresent();
     if (MenuCursor == ModeSelectBaseCount) {
         if (s1 == MenuCursor) {

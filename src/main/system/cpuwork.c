@@ -162,6 +162,13 @@ const RrWorkCost RrCostDrawTrackScenery = W(50928, 140, 6787, 915, 7702, 915, 11
  * selects' cars, 49k clocks a frame in the Grand Prix's), from its calls in
  * the race frames above (2981 frames) */
 const RrWorkCost RrCostSubmitModel = W(6975, 174, 3466, 3943, 3466, 0, 0, 1993); /* 26916; 28, 133 */
+/* SubmitModelTwoTri and DrawMeshPrimList outside a race frame (the menus'
+ * presentation models and meshes, the options' controller): SubmitModel's
+ * costs scaled to DuckStation's clocks for the records' menu's motion model
+ * (34.6k against 40.0k, the median of 138 calls) and its meshes (3161
+ * against 4102, 156 calls), DSF_MARKS, the stubs out [mark] */
+const RrWorkCost RrCostSubmitModelTwoTri = W(6033, 151, 2998, 3411, 2998, 0, 0, 1724);
+const RrWorkCost RrCostMeshPrimList = W(5375, 134, 2671, 3039, 2671, 0, 0, 1536);
 #undef W
 
 /* StepRaceFrame less the calls above, without its stalls, by the cars it

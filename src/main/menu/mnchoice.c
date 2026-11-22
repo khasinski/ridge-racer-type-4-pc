@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "rr/player_cars.h"
 #include "rr/save_slots.h"
@@ -118,6 +119,7 @@ void DrawTrackSceneryForPlayer(int a0) {
 }
 
 void UnpackChoiceGlyph(signed char *a0, int a1) {
+    RR_CPU_CYCLES(RR_CYCLES_UNPACK_CHOICE_GLYPH);
     int t = a1 / 160;
     a0[0] = t;
     a0[1] = a1 / 40 - t * 4;
@@ -129,6 +131,7 @@ s32 PackChoiceGlyph(void *arg0) {
 }
 
 s32 CountChoiceGlyphs(const CourseChoice4 *a0) {
+    RR_CPU_CYCLES(RR_CYCLES_COUNT_CHOICE_GLYPHS);
     int i;
     for (i = 0; i < 9; i++) {
         if (a0[i].glyph == -1) break;

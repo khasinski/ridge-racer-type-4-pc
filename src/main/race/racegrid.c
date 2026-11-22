@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "game/gfx/sprefct.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
@@ -76,6 +77,8 @@ int PollLinkStatus(void);
 
 void SetupMenuCarCamera(int a)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_MENU_CAR_CAMERA);
   ProjectionView32 *g = &((ProjectionScratchPrefix *)SCRATCHPAD)->pose08;
   int i;
   g->position00.words[0] = StartSignalLightOffsetsB[a].x;

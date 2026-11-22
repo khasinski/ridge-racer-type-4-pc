@@ -47,7 +47,7 @@ void *AddDrawModePrim(GpuDmaTag *ordering, GpuDrawModePacket *packet, u16 page) 
 
 void *AddTilePrim(GpuDmaTag *ordering, void *cursor, s32 x, s32 y, s32 width,
                   s32 height, s32 red, s32 green, s32 blue) {
-    RR_CPU_CYCLES(RR_CYCLES_ADD_TILE_PRIM);
+    RR_CPU_CYCLES(RrWorkFrame ? RR_CYCLES_ADD_TILE_PRIM : RR_CYCLES_ADD_TILE_PRIM_MENU);
     GpuTilePacket *tile = cursor;
     SetTile(tile);
     tile->x = x;

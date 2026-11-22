@@ -1,9 +1,11 @@
+#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "rr/overlay663.h"
 #include "rr/frame_storage_types.h"
 #include "rr/load_cursor.h"
 
 void ovl663_update_selection(void) {
+    RR_CPU_CYCLES(SubmodeState == 1 ? RR_CYCLES_RECORDS_SELECTION_STEP : RR_CYCLES_RECORDS_SELECTION);
     s32 car;
     s32 renderMask;
     s32 modelReady;

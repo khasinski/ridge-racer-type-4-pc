@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/ps1_sizes.h"
 #include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
@@ -31,6 +33,8 @@ typedef struct {
 extern u16 HudFinalLapBannerParts[];
 
 void DrawPresentationTrackModel(void) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_PRESENTATION_TRACK_MODEL);
     MotionMarkerWork work;
     PresentationController *controller;
     u16 *row;

@@ -557,11 +557,18 @@ void SubmitModel2(RroSceneScratchPrefix *scene, s32 modelIndex, s32 lightingMode
 /* 80058768 */
 void SubmitModelTwoTri(PreviewRenderScratch *scratch, s32 object, s32 blend, s32 depth)
 {
+    /* by its work as SubmitModel (the menus' presentation models, the
+     * options' controller: not charged before, 31-35k a frame on
+     * DuckStation for the records' motion model) */
+    int charge = !RrWorkFrame && RrWorkDepth == 0;
+    RrWork work;
+    if (charge) RrWorkBegin(&work, RR_GPU_SCRATCH->cursor);
     RroFogColorFT4 = *(const u32 *)&DefaultScreenClearColor;
     RroFogColorGT4 = *(const u32 *)&LoadingScreenClearColor;
     RroLightingMode = blend;
     RroDepthBias = depth;
     SubmitModelStream(&scratch->scene, object, 4, 1);
+    if (charge) RrWorkSpend(&work, RR_GPU_SCRATCH->cursor, &RrCostSubmitModelTwoTri);
 }
 
 /* ------------------------------------------------------------------------ */

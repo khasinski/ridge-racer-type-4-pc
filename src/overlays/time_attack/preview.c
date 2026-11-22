@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "game/system/pad.h"
 #include "rr/overlay660.h"
@@ -38,6 +39,7 @@ void ovl660_init_preview(void)
 }
 
 void ovl660_update_preview(void) {
+    RR_CPU_CYCLES(RR_CYCLES_TA_CAR_SELECT);
     PreviewColor color;
     s32 drawFlags;
     s32 scale;

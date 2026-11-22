@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "rr/video_timing.h"
 #include "game/system/pad.h"
@@ -29,6 +31,7 @@ extern RaceVehicle PlayerCars[2];
 extern unsigned char MenuCameraPresetIndices[];
 
 void CarStandingsModeUpdate(void) {
+    RR_CPU_CYCLES(RR_CYCLES_CAR_STANDINGS);
     int sp[3];
     unsigned int x;
     int r;
@@ -111,6 +114,8 @@ void CarStandingsModeUpdate(void) {
 }
 
 void *AddBadgeSpriteStrip(int a, GpuDmaTag *p, void *x, int y, int w, int z) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_BADGE_SPRITE_STRIP);
     void *t0 = x;
     int s1 = y;
     int i = 0;

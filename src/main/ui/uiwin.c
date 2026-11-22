@@ -210,7 +210,9 @@ void InitUiRow(s32 index,s32 a,s32 b,s32 c,s32 d,s32 e,s32 f,s32 count,s32 g,s32
 }
 
 void DrawUiWindowRowText(s32 arg0, s32 arg1, s32 arg2) {
-    RR_CPU_CYCLES(RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT);
+    RR_CPU_CYCLES(UiRows[arg0].byte02 == 0 ? RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT_TILE
+                  : RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT +
+                        (unsigned)UiRows[arg0].byte02 * RR_CYCLES_DRAW_UI_WINDOW_ROW_TEXT_CELL);
     s32 pad[8];
     s32 s0;
     s32 s1;

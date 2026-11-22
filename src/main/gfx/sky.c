@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "rr/release.h"
 #include "rr/frame_interp.h"
@@ -886,6 +888,8 @@ static SkyLitTexQuad24 *SkyEmitSpecTexQuadGT4(SkyLitTexQuad24 *a0, SkyLitCtx *a1
 
 void RunSkyCommandList(const u8 *table, int index)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_SKY_COMMAND_LIST);
     SkyLitCtx *s = &SkyLitWork;
     const SkyOffsetRecord *record = SkyRecord(table, index);
     const u8 *p;
@@ -923,6 +927,8 @@ void RunSkyCommandList(const u8 *table, int index)
 
 void SetupSkyLightMatrices(char *a0, unsigned short *a1_in)
 {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_SKY_LIGHT_MATRICES);
     volatile unsigned short *p = (unsigned short *)(SCRATCHPAD + 0x7C), *a1 = a1_in;
     RR_GTE_SETROT(SkyDefaultRotMatrix);
     RR_GTE_MV3_COL(a1);
@@ -972,6 +978,8 @@ static void SkyEmitDrawArea(GpuRectangleFields *rectangle, int order) {
 /* Renders the sky into an off-screen rectangle (rect x/y/w/h) and copies it
  * back with two blended sprites of the given intensity. */
 void RenderSkyToRect(const void *translation, const void *rotation, const GpuRectangleFields *a2, int a3) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_RENDER_SKY_TO_RECT);
     GpuRectangleFields rectangle;
     SkySpritePacket *sprite;
     GpuTileCommandWords *tile;

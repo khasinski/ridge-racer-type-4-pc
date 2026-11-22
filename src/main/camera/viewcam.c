@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/geometry.h"
 #include "rr/release.h"
 #include "rr/draw_distance.h"
@@ -195,6 +196,8 @@ void BuildLightMatrix(void) {
 
 
 void SetupViewport(s32 viewport) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_SETUP_VIEWPORT_MENU);
     RroSceneScratchPrefix *scene = (RroSceneScratchPrefix *)SCRATCHPAD;
     u8 *packet;
     s32 isMirror;

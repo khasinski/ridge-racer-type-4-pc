@@ -1,6 +1,8 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay663.h"
 
 u8 *ovl663_format_time(s32 milliseconds) {
+    RR_CPU_CYCLES(RR_CYCLES_FORMAT_MS_TIME);
     s32 seconds = milliseconds / 1000;
     s32 minutes = seconds / 60;
     s32 remainder = seconds % 60;
@@ -16,6 +18,7 @@ u8 *ovl663_format_time(s32 milliseconds) {
 }
 
 void *ovl663_draw_race_records(GpuDmaTag *ordering, void *cursor, s32 row) {
+    RR_CPU_CYCLES(RR_CYCLES_RECORDS_TABLE);
     s32 i = 0, x, y, clut, rowY;
     s32 group = SelectedCourseChoice >= 8;
     y = BadgeRows[row].y06 + 40;
@@ -56,6 +59,7 @@ void *ovl663_draw_race_records(GpuDmaTag *ordering, void *cursor, s32 row) {
 }
 
 void *ovl663_draw_lap_records(GpuDmaTag *ordering, void *cursor, s32 row) {
+    RR_CPU_CYCLES(RR_CYCLES_RECORDS_TABLE);
     s32 i = 0, x, y, clut, rowY;
     s32 group = SelectedCourseChoice >= 8;
     y = BadgeRows[row].y06 + 40;

@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/scene_camera_state.h"
 #include "game/camera/viewcam.h"
 #include "scratchpad.h"
@@ -11,6 +13,8 @@
 extern MatrixWords32 *ScaleMatrix(MatrixWords32 *matrix, s32 *scale);
 
 void DrawRingEffects(void) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_RING_EFFECTS);
     int i;
     SceneCameraPose18 pose;
     s32 scale[3];

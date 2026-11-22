@@ -148,6 +148,7 @@ void InitRect16Row(s32 index, s16 x, s16 y, s16 width, s16 height, s16 phase, s1
 }
 
 int UpdateRect16Row(int index) {
+    RR_CPU_CYCLES(RR_CYCLES_UPDATE_RECT16_ROW);
     MenuRectCorners corners;
     int intensity[4];
     int complete;

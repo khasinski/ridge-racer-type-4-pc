@@ -1,3 +1,4 @@
+#include "rr/cpu_time.h"
 #include "rr/overlay_module.h"
 #include "game/gfx/model.h"
 #include "scratchpad.h"
@@ -215,6 +216,7 @@ void ovl665_draw_twist_gauge_needle(s32 arg0)
 }
 
 void ovl665_draw_callout_strokes(const StrokeStep4 *const *paths,s32 factor) {
+    RR_CPU_CYCLES(RR_CYCLES_CALLOUT_STROKES);
     u16 xy[4];
     StrokeColor4 color=ovl665_callout_stroke_color;
     const StrokeStep4 *step;

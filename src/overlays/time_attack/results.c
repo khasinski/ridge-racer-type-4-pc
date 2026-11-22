@@ -57,6 +57,7 @@ s32 ovl660_update_retry_choice(s32 reserved){
 }
 
 void ovl660_update_results(void) {
+    RR_CPU_CYCLES(RR_CYCLES_TA_RESULTS);
     s32 group;
     s32 base;
     s32 row;

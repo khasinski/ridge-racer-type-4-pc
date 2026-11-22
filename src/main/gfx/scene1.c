@@ -1,3 +1,5 @@
+#include "rr/cpu_work.h"
+#include "rr/cpu_time.h"
 #include "rr/ps1_sizes.h"
 #include "rr/release.h"
 #include "game/system/pad.h"
@@ -237,6 +239,8 @@ void InitCameraState(int mode, int flags)
 }
 
 void SetupObjectLightMatrices(const SceneCameraPose18 *pose, const PreviewLighting40 *lighting, MatrixWords32 *light, MatrixWords32 *rotation) {
+    if (!RrWorkFrame)
+        RR_CPU_CYCLES(RR_CYCLES_OBJECT_LIGHT_MATRICES);
     MatrixWords32 basis, temporary, axis;
     MatrixWords32 color;
     VectorWords16 scale;
