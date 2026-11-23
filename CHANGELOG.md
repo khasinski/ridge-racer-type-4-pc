@@ -11,19 +11,16 @@
   hot reset, and its log says "SPU mixer initialized". Headless runs of the
   attract mode, Time Attack, Grand Prix and Versus give the same state
   traces, pictures and mixed audio as before.
-- Race frame rate: the player's car drives exactly as at 25/30 fps. Each
-  tick's second field ends on the original's state: the car's update lands
-  on the tick's result, and its track, suspension, bump and wall stages are
-  re-run from the tick's start at the original rate (the first field's run
-  is only drawn); car-vs-car contact is resolved on the tick's second
-  field. Replaying the same stick inputs at both rates, the car's speed,
+- Race frame rate: the player's car drives exactly as at 25/30 fps, and
+  its motion is smooth at 60 fps. The car's game tick is computed whole on
+  the tick's first field at the original rate. That field draws the car
+  half way from the previous tick, and the second field draws the tick's
+  result. Replaying the same stick inputs at both rates, the car's speed,
   revs, heading, pitch/roll and position match at every tick over three
-  NTSC laps. The remaining differences came from a wheel bump's steering
-  lock taking effect one field early, the lock's speed loss, and the revs
-  used when the lock or a slide ends. With the closed-loop reference
-  driver, Time Attack laps on three courses land within 0.05% of the
-  original rate's (before: up to 0.9%). `RR4_AUTODRIVE=3` (diagnostics)
-  is the reference driver used for these comparisons.
+  NTSC laps. With the closed-loop reference driver,
+  Time Attack laps on three courses land within 0.03% of the original
+  rate's (two courses identical to the millisecond). `RR4_AUTODRIVE=3`
+  (diagnostics) is the reference driver used for these comparisons.
 - **60 Hz by default: the game runs at the NTSC original's speed.** Game
   timing (Escape > Graphics) now defaults to NTSC: the European disc runs
   at 60 fields a second with the Japanese/US release's timing, so with Race

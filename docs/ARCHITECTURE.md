@@ -249,21 +249,23 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      pitch / roll averages take 20 field samples in the sidecar's ring
      (`RaceVehicle`'s holds 16). Sounds the original fires on every tick a
      contact lasts fire once per tick (`RaceFieldOncePerTick`).
-     A fast-lane player car's tick ends on the original's state: its update
-     takes the tick's result from the tick's start on the tick's first
-     field (the drive, grip, revs and the revs it ends on, yaw command, yaw,
-     heading, position, a slide on a copy at the original rate, a bump
-     lock's speed and its start / end, `rem` slots in `CarFieldState`) and
-     lands on it on the second. The car stages run on the first field for
-     what is drawn; on the second `StepRaceFrame` takes those stages back
-     (each byte they wrote that nothing since has) and runs every stage and
-     the wall / kerb contact for the car at the original rate from the
-     tick's start. The car-vs-car contact (`ResolveCarCollisions`) runs for
-     every car on the tick's second field, the tick's motion whole. Open
-     loop (the reference driver's NTSC Time Attack stick log replayed at
-     both rates) the player car's speed, revs, yaw, heading, yaw command,
-     pitch / roll and position are the original's at every tick end over
-     the whole log (8,030 ticks, three laps).
+     A fast-lane player car (`CarFieldFast`: the player cars at field
+     rate) runs the original's tick whole on the tick's first field: its
+     update, every car stage and the wall / kerb contact at the original
+     rate (`PlayerTickUpdate`, `PlayerTickMode` in racemai2.c), and
+     nothing on the second. What is drawn lies on one trajectory: the first
+     field draws the pose half way from the last tick's end to this one's
+     (`CarPoseHalf` over `CarPoseFields`: position, angles, suspension,
+     shakes and the drawn offsets the renderer and cameras read), the
+     second the tick's end, and the pose goes back to the tick's end
+     before the next field runs. A tick's inputs show on its first field,
+     as with a per-field step. The car-vs-car contact runs on the tick's
+     field. Open loop (the reference driver's NTSC Time Attack stick log
+     replayed at both rates) the player car's state is the original's at
+     every tick end over the whole log (8,030 ticks, three laps). Before
+     this a per-field run of the car stages drew the first field and the
+     second field landed on the original's tick: two trajectories, whose
+     pitch and roll alternated field to field (a shaking picture).
      The opponents' driving (`UpdateComCars` and everything under it:
      `carai.c`, `cardrive.c`, `carctrl.c`, `carcurv.c`, `carrpm.c`,
      `trkproj.c`, `trkres2.c`, `trkseek2.c`) is in the fast lane:
