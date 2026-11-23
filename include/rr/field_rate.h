@@ -238,6 +238,12 @@ enum {
     CAR_FIELD_REM_YAW_FLAGS,      /* UpdatePlayerSteering / StepCarStateNormal: */
     CAR_FIELD_REM_STH_END,        /* the yaw command a tick ends on (bit 0), */
     CAR_FIELD_REM_ROT_END,        /* the yaw it ends on (bit 1) */
+    /* UpdateCarEngine: a slide's tick, the original's result from the
+     * tick's start (its first field), landed on by its second */
+    CAR_FIELD_REM_SLIDE_FLAG,
+    CAR_FIELD_REM_SLIDE_INPUT_TICK, /* the speed after the tick's slide drag */
+    CAR_FIELD_REM_SLIDE_END,        /* ... 13 values from here */
+    CAR_FIELD_REM_SLIDE_END_LAST = CAR_FIELD_REM_SLIDE_END + 12,
     CAR_FIELD_REM_BUMP_LOCK,
     CAR_FIELD_REM_SLIDE_DRAG,
     CAR_FIELD_REM_DRAG,

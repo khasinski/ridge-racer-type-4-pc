@@ -16,6 +16,7 @@
 #include "rr/overlay665_render.h"
 #include "rr/trig.h"
 #include "game/car/carphys2.h"
+#include "game/sound/sndown.h"
 
 typedef struct {
   s32 pad00;
@@ -490,6 +491,65 @@ static s32 CarTickDrag(RaceVehicle *a0, CarFieldState *fr, s32 k2) {
   return RaceFieldDecay(a0->input - k2, a0->input, &fr->rem[CAR_FIELD_REM_DRAG]);
 }
 
+/* Field rate (rr/field_rate.h): a slide's tick. On its first field the
+ * original's whole tick (StepCarStateSlide at the original rate) is taken
+ * on a copy of the car from the tick's start, with the tick's inputs: the
+ * speed after the tick's slide drag, the yaw command the tick ends on and
+ * the steering; the first field then steps by the field's own slide, the
+ * second lands on the tick's result. */
+enum {
+  SLIDE_ROT, SLIDE_HEADING, SLIDE_INPUT, SLIDE_VX, SLIDE_VZ, SLIDE_LATCH, SLIDE_ENERGY,
+  SLIDE_DIVISOR, SLIDE_COMMAND, SLIDE_STATE, SLIDE_LANE_TARGET, SLIDE_LANE_COOLDOWN, SLIDE_VALUES
+};
+_Static_assert(SLIDE_VALUES <= CAR_FIELD_REM_SLIDE_END_LAST - CAR_FIELD_REM_SLIDE_END + 1, "slide slots");
+
+static void CarSlideTick(RaceVehicle *a0, CarFieldState *fr) {
+  static RaceVehicle copy;
+  s32 *e = &fr->rem[CAR_FIELD_REM_SLIDE_END];
+  copy = *a0;
+  copy.input = fr->rem[CAR_FIELD_REM_SLIDE_INPUT_TICK];
+  if (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 1)
+    copy.control.dynamics94.player.steeringHeading08 = fr->rem[CAR_FIELD_REM_STH_END];
+  if ((CarInputs[a0->control.playerFlags24].buttons & 0xE0) == 0x20)
+    copy.control.steerInput0C = a0->control.steerInput0C +
+                                (a0->control.steerInput0C - fr->hist[CAR_FIELD_HIST_STEER_LAST]);
+  RaceFieldRateLive = 0;
+  StepCarStateSlide(&copy);
+  RaceFieldRateLive = 1;
+  e[SLIDE_ROT] = copy.rot54;
+  e[SLIDE_HEADING] = copy.heading1D4;
+  e[SLIDE_INPUT] = copy.input;
+  e[SLIDE_VX] = copy.vel30;
+  e[SLIDE_VZ] = copy.vel38;
+  e[SLIDE_LATCH] = *(s32 *)&copy.control.latch60;
+  e[SLIDE_ENERGY] = copy.control.lateralSpeed58;
+  e[SLIDE_DIVISOR] = copy.control.slideDivisor5E;
+  e[SLIDE_COMMAND] = copy.control.dynamics94.player.steeringHeading08;
+  e[SLIDE_STATE] = copy.control.dynamics94.player.motionState10;
+  e[SLIDE_LANE_TARGET] = copy.control.laneTarget3C;
+  e[SLIDE_LANE_COOLDOWN] = *(s16 *)&copy.control.laneCooldown40;
+  fr->rem[CAR_FIELD_REM_SLIDE_FLAG] = 1;
+}
+
+static void CarSlideLand(RaceVehicle *a0, CarFieldState *fr) {
+  const s32 *e = &fr->rem[CAR_FIELD_REM_SLIDE_END];
+  fr->rem[CAR_FIELD_REM_SLIDE_FLAG] = 0;
+  a0->rot54 = e[SLIDE_ROT];
+  a0->heading1D4 = e[SLIDE_HEADING];
+  a0->input = e[SLIDE_INPUT];
+  a0->vel30 = e[SLIDE_VX];
+  a0->vel38 = e[SLIDE_VZ];
+  *(s32 *)&a0->control.latch60 = e[SLIDE_LATCH];
+  a0->control.lateralSpeed58 = e[SLIDE_ENERGY];
+  a0->control.slideDivisor5E = e[SLIDE_DIVISOR];
+  a0->control.dynamics94.player.steeringHeading08 = e[SLIDE_COMMAND];
+  a0->control.dynamics94.player.motionState10 = e[SLIDE_STATE];
+  a0->control.laneTarget3C = e[SLIDE_LANE_TARGET];
+  *(s16 *)&a0->control.laneCooldown40 = (s16)e[SLIDE_LANE_COOLDOWN];
+  if (e[SLIDE_STATE] != 2 && (a0 == &PlayerCars[0] || a0 == &PlayerCars[1]))
+    SetPlayerVoice(0, 0, 0, a0->control.playerFlags24 & 1);
+}
+
 void UpdateCarEngine(RaceVehicle *a0) {
   RaceVehicleControl *q;
   VehicleHandlingPrefix *r;
@@ -839,6 +899,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
     x = (n2 * 100) >> 12;
     k3 = r->slideRetention0E;
     k3 = k3 + 9000;
+    fr->rem[CAR_FIELD_REM_SLIDE_INPUT_TICK] = (a0->input * (k3 - x)) / 10000;
     a0->input = RaceFieldDecay((a0->input * (k3 - x)) / 10000, a0->input,
                                &fr->rem[CAR_FIELD_REM_SLIDE_DRAG]);
     a0->physicsFlags1E0 = 0;
@@ -876,6 +937,15 @@ void UpdateCarEngine(RaceVehicle *a0) {
   }
   if (RaceState >= 2)
   {
+    if (RaceFieldRateLive && !tick && fr->rem[CAR_FIELD_REM_SLIDE_FLAG])
+    {
+      /* a slide's tick's second field: the original's tick result */
+      CarSlideLand(a0, fr);
+    }
+    else
+    {
+    if (RaceFieldRateLive && tick && q->dynamics94.player.motionState10 == 2)
+      CarSlideTick(a0, fr);
     switch (q->dynamics94.player.motionState10)
     {
       case 0:
@@ -890,6 +960,7 @@ void UpdateCarEngine(RaceVehicle *a0) {
         StepCarStateSpinOut(a0);
         break;
 
+    }
     }
 
   }
