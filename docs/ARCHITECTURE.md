@@ -249,6 +249,21 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      pitch / roll averages take 20 field samples in the sidecar's ring
      (`RaceVehicle`'s holds 16). Sounds the original fires on every tick a
      contact lasts fire once per tick (`RaceFieldOncePerTick`).
+     A fast-lane player car's tick ends on the original's state: its update
+     takes the tick's result from the tick's start on the tick's first
+     field (the drive, grip, revs and the revs it ends on, yaw command, yaw,
+     heading, position, a slide on a copy at the original rate, a bump
+     lock's speed and its start / end, `rem` slots in `CarFieldState`) and
+     lands on it on the second. The car stages run on the first field for
+     what is drawn; on the second `StepRaceFrame` takes those stages back
+     (each byte they wrote that nothing since has) and runs every stage and
+     the wall / kerb contact for the car at the original rate from the
+     tick's start. The car-vs-car contact (`ResolveCarCollisions`) runs for
+     every car on the tick's second field, the tick's motion whole. Open
+     loop (the reference driver's NTSC Time Attack stick log replayed at
+     both rates) the player car's speed, revs, yaw, heading, yaw command,
+     pitch / roll and position are the original's at every tick end over
+     the whole log (8,030 ticks, three laps).
      The opponents' driving (`UpdateComCars` and everything under it:
      `carai.c`, `cardrive.c`, `carctrl.c`, `carcurv.c`, `carrpm.c`,
      `trkproj.c`, `trkres2.c`, `trkseek2.c`) is in the fast lane:

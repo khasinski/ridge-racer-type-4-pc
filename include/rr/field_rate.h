@@ -239,6 +239,11 @@ enum {
     CAR_FIELD_REM_STH_END,        /* the yaw command a tick ends on (bit 0), */
     CAR_FIELD_REM_ROT_END,        /* the yaw it ends on (bit 1) */
     CAR_FIELD_REM_HEAD_END,       /* UpdateCarHeading: the heading it ends on (bit 2) */
+    CAR_FIELD_REM_REVS_END,       /* UpdateCarEngine: the revs the tick ends on */
+    CAR_FIELD_REM_BUMP_LOCK_TICK, /* UpdateCarEngine: the tick drives in a bump lock */
+    CAR_FIELD_REM_BUMP_LOCK_END,  /* UpdateCarEngine: the input a bump lock's tick ends on */
+    CAR_FIELD_REM_GRIP_FLAG,      /* UpdateCarEngine: the grip the tick ends on */
+    CAR_FIELD_REM_GRIP_END,
     CAR_FIELD_REM_POS_FLAG,       /* IntegrateCarMotion: the tick's velocity known, */
     CAR_FIELD_REM_VEL_END_X,      /* the velocity it ends on (the original's move), */
     CAR_FIELD_REM_VEL_END_Z,

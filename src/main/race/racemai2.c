@@ -62,6 +62,29 @@ static int CarStageFast(int stage, const RaceVehicle *car) {
   return fast[stage] && CarFieldFast(car);
 }
 
+/* Field rate (rr/field_rate.h): a fast-lane player car's tick. Its first
+ * field runs the car stages on the field's state (what is drawn) without
+ * the car-vs-car exchange; its second takes the first field's stages back
+ * and runs every stage and the contact as the original's tick from the
+ * tick's start, with the tick's own driving result (the player's update
+ * lands on the original's: carparam.c), so the tick ends on the
+ * original's state. Taking back: every byte the first field's stages
+ * wrote and nothing since has, back to before them. */
+static RaceVehicle PlayerStagesBefore[2], PlayerStagesAfter[2];
+static int PlayerTickMode(const RaceVehicle *car, int tick) {
+  if (!CarFieldFast(car))
+    return 0;
+  return tick ? 1 : 2;
+}
+static void PlayerStagesTakeBack(RaceVehicle *car) {
+  unsigned char *now = (unsigned char *) car;
+  const unsigned char *before = (const unsigned char *) &PlayerStagesBefore[car - PlayerCars];
+  const unsigned char *after = (const unsigned char *) &PlayerStagesAfter[car - PlayerCars];
+  for (size_t k = 0; k < sizeof(RaceVehicle); k++)
+    if (now[k] == after[k])
+      now[k] = before[k];
+}
+
 void StepRaceFrame(unsigned int gameMode)
 {
   int i;
@@ -79,10 +102,20 @@ void StepRaceFrame(unsigned int gameMode)
    * RaceFieldCarStep, else the player cars' motion stages every field
    * (CarStageFast) and the rest by the tick. */
   const int tick = RaceSlowTick();
+  const s32 carStep = RaceFieldCarStep;
   RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
+  /* the second field's update sees the tick's start, as the original's;
+   * a bump lock the tick starts in (its first field may end it) */
+  for (i = 0; i < 2 && RaceFieldRateLive; i++)
+  {
+    if (tick)
+      CarFieldStateOf(&PlayerCars[i])->rem[CAR_FIELD_REM_BUMP_LOCK_TICK] = PlayerCars[i].steeringLock1B8 != 0;
+    else if (CarFieldFast(&PlayerCars[i]))
+      PlayerStagesTakeBack(&PlayerCars[i]);
+  }
   switch (gameMode)
   {
     case 0:
@@ -135,22 +168,43 @@ void StepRaceFrame(unsigned int gameMode)
       break;
   }
 
+  for (i = 0; i < 2 && RaceFieldRateLive && tick; i++)
+    if (CarFieldFast(&PlayerCars[i]))
+      PlayerStagesBefore[i] = PlayerCars[i];
   for (i = 0; i < 7; i++)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      if (CarTable[*carIndex]->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, CarTable[*carIndex])))
+      RaceVehicle *sc = CarTable[*carIndex];
+      int pm = PlayerTickMode(sc, tick);
+      if (sc->half1E8 != (-1) && pm == 2)
       {
-        RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
+        RaceFieldRateLive = 0;
+        RaceFieldCarStep = 0;
+        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        RaceFieldRateLive = 1;
+        RaceFieldCarStep = carStep;
+      }
+      else if (sc->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, sc)))
+      {
+        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
       }
     }
     RrSpendStepRaceFrameLoop();
   }
-  if (tick || RaceFieldCarStep)
+  if (tick || RaceFieldCarStep || RaceFieldRateLive)
   {
   int impactCars = 0, impacts = 0, contactCars = 0, contacts = 0;
   for (i = 0; i < NumCars; i++)
   {
+    int pm = PlayerTickMode(CarTable[i], tick);
+    if (pm == 1 || (pm == 0 && !tick && !RaceFieldCarStep))
+      continue;
+    if (pm == 2)
+    {
+      RaceFieldRateLive = 0;
+      RaceFieldCarStep = 0;
+    }
     if (CarTable[i]->half1E8 != (-1))
     {
       impactCars++;
@@ -229,6 +283,11 @@ void StepRaceFrame(unsigned int gameMode)
         }
       }
     }
+    if (pm == 2)
+    {
+      RaceFieldRateLive = 1;
+      RaceFieldCarStep = carStep;
+    }
   }
   RrSpendStepRaceFrameImpacts(impactCars, impacts, contactCars, contacts);
   }
@@ -236,13 +295,27 @@ void StepRaceFrame(unsigned int gameMode)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      if (CarTable[*carIndex]->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, CarTable[*carIndex])))
+      RaceVehicle *sc = CarTable[*carIndex];
+      int pm = PlayerTickMode(sc, tick);
+      if (sc->half1E8 != (-1) && pm == 2)
       {
-        RR_WORK_CALL(CarUpdateStages[i](CarTable[*carIndex]), &RrCostCarStages[i]);
+        RaceFieldRateLive = 0;
+        RaceFieldCarStep = 0;
+        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        RaceFieldRateLive = 1;
+        RaceFieldCarStep = carStep;
+      }
+      else if (sc->half1E8 != (-1) && !(pm == 1 && i == 7) &&
+               (tick || RaceFieldCarStep || CarStageFast(i, sc)))
+      {
+        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
       }
     }
     RrSpendStepRaceFrameLoop();
   }
+  for (i = 0; i < 2 && RaceFieldRateLive && tick; i++)
+    if (CarFieldFast(&PlayerCars[i]))
+      PlayerStagesAfter[i] = PlayerCars[i];
   /* The Japanese release projects the opponents in every mode but the
    * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
   {
@@ -342,14 +415,16 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
         return;
     }
     /* Field rate (the car stages every field, rr/field_rate.h): the
-     * contact runs as the original's, once a tick, on the tick's field. Its
+     * contact runs as the original's, once a tick, on the tick's last field
+     * (the tick's motion whole, a fast-lane player car's from the tick's
+     * start: StepRaceFrame). Its
      * outcome (the knock back, the push, the shakes and their sideways
      * balance, the next contact's timing) hangs on the overlap a tick's
      * motion makes: met each field, a half-depth overlap pushed the cars
      * apart and sideways unbalanced, and an opponent pushing the player
      * slid past it. Between ticks two cars may overlap by half a tick's
      * closing for one field. */
-    if (RaceFieldCarStep && !RaceSlowTick()) {
+    if (RaceFieldCarStep && !RaceTickEnd()) {
         return;
     }
 
