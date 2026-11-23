@@ -2,7 +2,7 @@
 #include "rr/field_rate.h"
 #include "game/car/cartimer.h"
 
-/* The car stages every field (RaceFieldCarStep): the timer counts its ticks
+/* The car stages every field (at field rate): the timer counts its ticks
  * by every second field (CAR_FIELD_REM_SHAKE_HALF; the setters clear it),
  * the push keeps sqrt(7/8) a field and moves the car by 1/(1+sqrt(7/8)) of
  * itself, as far by each tick as the original's. */
@@ -10,7 +10,7 @@ void DecayCarOffset(RaceVehicle *vehicle) {
     RaceVehicle *car = vehicle;
     if (car->shakeActive19C != 0) {
         if (car->shakeTimer19E > 0) {
-            CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(car) : NULL;
+            CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(car) : NULL;
             if (!fs || (fs->rem[CAR_FIELD_REM_SHAKE_HALF] ^= 1) == 0) {
                 car->shakeTimer19E = car->shakeTimer19E - 1;
             }

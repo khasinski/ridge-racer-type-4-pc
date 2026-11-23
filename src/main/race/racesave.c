@@ -88,16 +88,15 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
     if (RaceState != 0) {
         if (ReplayState == 2) {
             if (ReplayFrame < ReplayLength) {
-                /* at field rate a tick's two fields (rr/replay_types.h) */
-                const int second = RaceFieldRateLive && !RaceSlowTick();
-                CarInputs[arg1].frame = second ? ReplayFieldInputs[arg1 & 1][ReplayFrame]
-                                               : ReplayInputs[arg1][ReplayFrame];
+                /* at field rate a tick's inputs on its first field, where
+                 * the cars' tick reads them (rr/replay_types.h) */
+                if (!RaceFieldPhase())
+                    CarInputs[arg1].frame = ReplayInputs[arg1][ReplayFrame];
                 if (GameModeType == 4) {
                     if (arg1 == 3) {
                         ReplayFrame += 1;
                     }
-                } else if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) &&
-                           (!RaceFieldRateLive || second)) {
+                } else if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && RaceTickEnd()) {
                     ReplayFrame += 1;
                 }
             }
@@ -272,12 +271,9 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                 }
             } else if (ReplayState == 1) {
                 if (ReplayFrame < ReplayLength) {
-                    const int second = RaceFieldRateLive && !RaceSlowTick();
-                    if (second)
-                        ReplayFieldInputs[arg1 & 1][ReplayFrame] = CarInputs[arg1].frame;
-                    else
+                    if (!RaceFieldPhase())
                         ReplayInputs[arg1][ReplayFrame] = CarInputs[arg1].frame;
-                    if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && (!RaceFieldRateLive || second)) {
+                    if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && RaceTickEnd()) {
                         ReplayFrame += 1;
                     }
                 }
@@ -417,7 +413,6 @@ void ReplayModeUpdate(void) {
 }
 
 /* Initial values of the globals this module owns. */
-ReplayFrame4 ReplayFieldInputs[2][3601];
 s32 ReplayFieldRate;
 int ReplayFrame;
 int SavedRaceState;

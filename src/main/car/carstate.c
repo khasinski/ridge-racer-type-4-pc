@@ -56,14 +56,14 @@ void SetCarImpactState(int state, RaceVehicle *vehicle) {
     }
 }
 
-/* The car stages every field (RaceFieldCarStep): the timers count their
+/* The car stages every field (at field rate): the timers count their
  * ticks by every second field (the sidecar's half flags; their setters clear
  * them), the shake's waveform and its decay take the time in half ticks,
  * value / k with k = 2, and an event on a tick's value (the landing's thud)
  * plays on the field it is reached. */
 void UpdateCarShake(RaceVehicle *vehicle) {
     int amplitude, oscillation, value, wave;
-    CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(vehicle) : NULL;
+    CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(vehicle) : NULL;
     int k = fs ? 2 : 1;
     int reached = 1; /* the timer reached its value on this field */
 

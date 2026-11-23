@@ -221,7 +221,7 @@ void ClampAiCarLateralMotion(RaceVehicle *arg0) {
     temp_v1 = arg0->lateralMotion178;
     /* the wheels' spin: a tick's turn over two fields with the car stages
      * every field (rr/field_rate.h) */
-    if (RaceFieldCarStep)
+    if (RaceFieldRateLive)
         var_v1 = RaceFieldHalf(var_v1, &CarFieldStateOf(arg0)->rem[CAR_FIELD_REM_WHEEL_SPIN]);
     arg0->wheelSteering17C = (arg0->wheelSteering17C - var_v1) & 0xFFF;
     if (temp_v1 >= 0x1000) {

@@ -194,7 +194,7 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
     } while (g->wheelIndex08 < 4);
 }
 
-/* The car stages every field (RaceFieldCarStep): a wheel's bump counts
+/* The car stages every field (at field rate): a wheel's bump counts
  * fields, state c at (c + 1) / 2 ticks from its start, the arc the
  * original's at that time (its speed per tick, wheelBumpVel1C4, as
  * TriggerWheelBump sets it); it lands from 2 ticks, its strength the ticks
@@ -223,7 +223,7 @@ void UpdateWheelBumps(RaceVehicle *vehicle)
     int *q7c = (int *)(SCRATCHPAD + 0x7C);
     CarTrackWork *work = (CarTrackWork *)SCRATCH_CAR_WORK;
     int t, t2, t3, v;
-    CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(vehicle) : NULL;
+    CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(vehicle) : NULL;
     work->wheelIndex08 = 0;
     do {
         t = work->wheelIndex08;

@@ -228,22 +228,19 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      with its remainders in the per-car sidecar `CarFieldState` because
      `RaceVehicle` keeps its PS1 size. The filters take the share a tick
      keeps from the game's own tick result, so its truncations and dead
-     zones stay (`RaceFieldDecay`: sqrt per field, the drags with the
-     drive's share `accelShareQ16` so a push against a drag levels where a
-     tick's does; `RaceFieldApproach`: the followers keep 2r/(1+r), a
-     tick's lag behind a moving target; `RaceFieldClose`: sqrt, the slide).
-     In the fast lane: the player cars' input ramp, steering, engine, grip,
-     drag, heading, normal/slide/spin-out states, `IntegrateCarMotion`, the
-     track geometry stages and the chase camera (`CarFieldFast`,
-     `CarStageFast` in racemai2.c). Gear changes, pedal edges and the lift
-     counter stay on the tick. Replays at field rate keep each tick's second
-     field's inputs in `ReplayFieldInputs` (file blocks FieldRate,
-     FieldInputs, CarFieldStates); older files play at the original rate.
-     With the fast lane off (every part in the slow lane, the first step)
-     a race had the same state as at the original rate at every field; with
-     it, the same inputs drive the same line (Time Attack course 1, scripted
-     inputs: within 1000 position units and 1 % speed over 28 s of driving
-     with wall contacts; a slide enters and ends on the same tick).
+     zones stay (`RaceFieldApproach`: the followers keep 2r/(1+r), a
+     tick's lag behind a moving target). In the fast lane: the opponents,
+     every car's stages and contact, the chase camera. The player cars
+     are not: they run the original's tick whole (below), so their
+     steering, engine, grip, drag, heading, gears and normal / slide /
+     spin-out states are the released code with no field-rate paths; only
+     `ReadCarInput` runs every field (its digital throttle ramp steps on
+     the tick's first field). A replay at
+     field rate records and plays each tick's inputs once, on the tick's
+     first field, and keeps the cars' sidecars at its snapshot (file blocks
+     FieldRate, CarFieldStates; an older file's FieldInputs block, the
+     second fields' inputs, is not read). Original-rate replays play at
+     the original rate.
      Presentation code that runs every field reads tick counters in field
      time (`RaceFieldTimeAfter/Before`: counter * 2 + the field's phase),
      splits a per-tick add over the tick's two fields (`RaceFieldSplit`),
@@ -261,8 +258,7 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `SoundUpdateField` between: listener, two-field Doppler, slot pitches
      and volumes, the master fade half way); the pad's auto-repeat counts
      ticks.
-     `RaceFieldCarStep` (on at field rate; `RR4_CAR_FIELD_STEP=0` turns it
-     off for comparisons) runs `StepRaceFrame`'s car stages and contact
+     At field rate `StepRaceFrame` runs the other cars' stages and contact
      every field: the motion's
      integration halves, the wall / kerb / car contact losses keep the
      square root of their share a field, the shake and contact timers count
@@ -270,8 +266,8 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      spring-dampers settle where the original's do (`RaceFieldFilterAdd`),
      a wheel's bump arc counts fields as half ticks, and the body's 10-tick
      pitch / roll averages take 20 field samples in the sidecar's ring
-     (`RaceVehicle`'s holds 16). Sounds the original fires on every tick a
-     contact lasts fire once per tick (`RaceFieldOncePerTick`).
+     (`RaceVehicle`'s holds 16). The contact sounds are the player cars',
+     which run at the original rate.
      A fast-lane player car (`CarFieldFast`: the player cars at field
      rate) runs the original's tick whole on the tick's first field: its
      update, every car stage and the wall / kerb contact at the original
@@ -282,13 +278,9 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      shakes and the drawn offsets the renderer and cameras read), the
      second the tick's end, and the pose goes back to the tick's end
      before the next field runs. A tick's inputs show on its first field,
-     as with a per-field step. The car-vs-car contact runs on the tick's
-     field. Open loop (the reference driver's NTSC Time Attack stick log
+     The car-vs-car contact runs on the tick's field. Open loop (the reference driver's NTSC Time Attack stick log
      replayed at both rates) the player car's state is the original's at
-     every tick end over the whole log (8,030 ticks, three laps). Before
-     this a per-field run of the car stages drew the first field and the
-     second field landed on the original's tick: two trajectories, whose
-     pitch and roll alternated field to field (a shaking picture).
+     every tick end over the whole log (8,030 ticks, three laps).
      The opponents' driving (`UpdateComCars` and everything under it:
      `carai.c`, `cardrive.c`, `carctrl.c`, `carcurv.c`, `carrpm.c`,
      `trkproj.c`, `trkres2.c`, `trkseek2.c`) is in the fast lane:
@@ -311,8 +303,8 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      fields of the tick after it (`RaceFieldCount` at the impact), not
      until the next field's `UpdateComCarTrackProjections`. `prevHeading1D6` / `prevInput1DA` hold the values of one
      tick (two fields) ago, so the shared stages' one-tick differences
-     (body roll, contact sounds) keep their meaning. With
-     `RaceFieldCarStep` `UpdateComCarTrackProjections` reacts to an
+     (body roll, contact sounds) keep their meaning. At field rate
+     `UpdateComCarTrackProjections` runs every field and reacts to an
      opponent's impact on the field the stages see it.
 
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects

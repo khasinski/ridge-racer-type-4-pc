@@ -59,6 +59,23 @@
   Time Attack laps on three courses land within 0.03% of the original
   rate's (two courses identical to the millisecond). `RR4_AUTODRIVE=3`
   (diagnostics) is the reference driver used for these comparisons.
+- Clean-up, no change in play: with the player car's tick computed whole at
+  the original rate, the per-field player physics of the earlier field-rate
+  work is gone (about 650 lines): the player's steering, engine, grip,
+  drag, heading and normal / slide / spin-out code is the released code
+  again, without the slide and tick look-ahead copies, the tick-end
+  landing slots or the second field's take-back. `RR4_CAR_FIELD_STEP` is
+  removed (at field rate the opponents' stages and contact always run
+  every field). Replays no longer record the second field's inputs, which
+  nothing reads: new replay files have no FieldInputs block and older
+  builds report them incomplete; older field-rate files still load. Race
+  frame rate off still runs the original rate. Headless NTSC runs of Time
+  Attack on three courses (reference driver), a Grand Prix through its
+  replay and results, Versus 2P and Extra Trial with its replay, at both
+  race frame rates, give the same state of every car, camera and rand and
+  the same picture on every field as before (two frames of the Grand Prix
+  results screen also differ between two runs of the same build), and the
+  open-loop stick log still matches the original rate at every tick end.
 - **60 Hz by default: the game runs at the NTSC original's speed.** Game
   timing (Escape > Graphics) now defaults to NTSC: the European disc runs
   at 60 fields a second with the Japanese/US release's timing, so with Race
@@ -130,8 +147,7 @@
 - Race frame rate: the wall, kerb and car-to-car contact, the impact and
   landing shakes, the body's roll, pitch and suspension, the wheels' bumps
   and jumps and the wheels' spin run every field with the original's
-  real-time behaviour (`RR4_CAR_FIELD_STEP=0` keeps them at the original
-  tick, for comparisons). Fixed: at field rate a wall hit cost the car
+  real-time behaviour. Fixed: at field rate a wall hit cost the car
   far too little speed (its losses applied on every second field only).
 - **Race frame rate: the opponents drive at 50 / 60 Hz.** With Race frame
   rate on, the computer cars' driving (steering, lane changes and

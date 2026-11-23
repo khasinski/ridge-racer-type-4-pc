@@ -51,10 +51,8 @@ typedef union {
 } ReplayStorage;
 extern ReplayFrame4 *ReplayInputs[4];
 /* A replay recorded at field rate (rr/field_rate.h): ReplayInputs holds
- * each original tick's first field (the tick), ReplayFieldInputs its
- * second, and ReplayFrame counts ticks. Host-only; the two players of a
- * single or split-screen race (the link stays at the original rate). */
-extern ReplayFrame4 ReplayFieldInputs[2][3601];
+ * each original tick's inputs (its first field's, which the player cars'
+ * tick reads) and ReplayFrame counts ticks. */
 /* The rate the replay was recorded at: 1 per field, 0 the original. */
 extern s32 ReplayFieldRate;
 

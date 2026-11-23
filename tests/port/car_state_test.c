@@ -50,7 +50,6 @@ static int first_lap(void) {
  * against two fields, sampled at the ticks. */
 static void set_rate(int field) {
     RaceFieldRateLive = field;
-    RaceFieldCarStep = field;
     CarFieldStatesClear();
 }
 
@@ -67,13 +66,6 @@ static int field_filters(void) {
         y = RaceFieldKeep(y, 26, 32, &rem);
     }
     CHECK(x >= 65 && x <= 69 && y >= 65 && y <= 69);
-    /* a sound once a tick while its condition holds, from the first field */
-    s32 last = 0, fired = 0;
-    for (int f = 0; f < 10; f++) {
-        fired += RaceFieldOncePerTick(&last);
-        RaceFieldCount++;
-    }
-    CHECK(fired == 5);
     return 0;
 }
 

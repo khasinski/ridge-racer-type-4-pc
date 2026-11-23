@@ -5,24 +5,12 @@
 #include "rr/vehicle_table.h"
 #include "game/system/pad.h"
 #include "game/data/menuvars.h"
-#include <stdlib.h>
 #include <string.h>
 
 /* RaceFieldRate: the host preferences own it (src/port/preferences.c). */
 s32 RaceFieldRateLive;
 s32 RaceTickField = 1;
-s32 RaceFieldCarStep;
 u32 RaceFieldCount;
-
-/* The car stages every field unless RR4_CAR_FIELD_STEP=0 (rr/field_rate.h). */
-static int CarStepWanted(void) {
-    static int wanted = -1;
-    if (wanted < 0) {
-        const char *e = getenv("RR4_CAR_FIELD_STEP");
-        wanted = !(e && *e == '0');
-    }
-    return wanted;
-}
 
 CarFieldState CarFieldStates[CAR_FIELD_STATES];
 static CarFieldState CarFieldDummy;
@@ -38,7 +26,7 @@ static struct {
  * the menus' 0x80 (or the original 0x180) has left the race, which ends the
  * field rate wherever the game leaves its race (RaceFieldRateNextField). */
 #define FIELD_RATE_THRESHOLD 0x81
-s32 RaceFieldRateThreshold(void) { return RaceFieldRateLive ? FIELD_RATE_THRESHOLD : 0x180; }
+static s32 RaceFieldRateThreshold(void) { return RaceFieldRateLive ? FIELD_RATE_THRESHOLD : 0x180; }
 
 static void ResetLane(void) {
     RaceTickField = 1;
@@ -50,7 +38,6 @@ void RaceFieldRateBegin(s32 gameMode) {
      * peer that may run the original rate; the attract demo stays as the
      * console shows it. */
     RaceFieldRateLive = RaceFieldRate && gameMode != 4 && gameMode != 5;
-    RaceFieldCarStep = RaceFieldRateLive && CarStepWanted();
     ResetLane();
     CarFieldStatesClear();
     VSyncThreshold = RaceFieldRateThreshold();
@@ -58,14 +45,12 @@ void RaceFieldRateBegin(s32 gameMode) {
 
 void RaceFieldRateResume(s32 live) {
     RaceFieldRateLive = live != 0;
-    RaceFieldCarStep = RaceFieldRateLive && CarStepWanted();
     ResetLane();
     VSyncThreshold = RaceFieldRateThreshold();
 }
 
 void RaceFieldRateEnd(void) {
     RaceFieldRateLive = 0;
-    RaceFieldCarStep = 0;
     ResetLane();
 }
 
@@ -156,7 +141,8 @@ static u32 IsqrtU64(unsigned long long v) {
     return (u32)r;
 }
 
-u32 RaceFieldKeepQ16(u32 num, u32 den) {
+/* sqrt(num/den) (Q16): a field's share of a filter keeping num/den a tick */
+static u32 RaceFieldKeepQ16(u32 num, u32 den) {
     /* sqrt(num/den) in Q16 = sqrt(num * 2^32 / den) */
     if (!den || num >= den)
         return num >= den ? 0x10000u : 0;
@@ -176,41 +162,13 @@ s32 RaceFieldKeep(s32 x, u32 num, u32 den, s32 *rem) {
     return (s32)(neg ? -v : v);
 }
 
-u32 RaceFieldDecayKeepQ16(s32 tickResult, s32 x) {
-    long long r = tickResult, v = x;
-    if (v == 0)
-        return 0x10000u; /* nothing to take */
-    if (r != 0 && ((r < 0) != (v < 0)))
-        return 0;
-    if (r < 0) {
-        r = -r;
-        v = -v;
-    }
-    if (r >= v)
-        return 0x10000u; /* this filter keeps all of it (or grows) */
-    return IsqrtU64(((unsigned long long)r << 32) / (unsigned long long)v);
-}
-
-s32 RaceFieldDecay(s32 tickResult, s32 x, s32 *rem) {
-    long long v;
-    int neg = x < 0;
-    if (!RaceFieldRateLive)
-        return tickResult;
-    if ((long long)tickResult * (neg ? -1 : 1) > (long long)x * (neg ? -1 : 1))
-        return tickResult; /* growth: not a decay (none in the converted code) */
-    v = (long long)(neg ? -(long long)x : x) * RaceFieldDecayKeepQ16(tickResult, x) + (*rem & 0xFFFF);
-    *rem = (s32)(v & 0xFFFF);
-    v >>= 16;
-    return (s32)(neg ? -v : v);
-}
-
 s32 RaceFieldApproach(s32 tickStep, s32 gap, s32 *rem) {
     unsigned long long r, k, v;
     int neg = gap < 0;
     if (!RaceFieldRateLive)
         return tickStep;
     {
-        /* r: the share a tick keeps (Q16), as RaceFieldDecay finds it */
+        /* r: the share a tick keeps (Q16), from the tick's own step */
         long long left = (long long)gap - tickStep, g = gap;
         if (g == 0)
             return 0;
@@ -242,16 +200,6 @@ s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem) {
     v = (long long)delta * f + *rem;
     *rem = (s32)(v & 0xFFFF);
     return (s32)(v >> 16);
-}
-
-int RaceFieldOncePerTick(s32 *last) {
-    if (!RaceFieldRateLive)
-        return 1;
-    /* *last = the field it fired on + 1 */
-    if (*last != 0 && RaceFieldCount - (u32)(*last - 1) < 2u)
-        return 0;
-    *last = (s32)(RaceFieldCount + 1);
-    return 1;
 }
 
 s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2) {

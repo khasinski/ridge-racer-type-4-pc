@@ -6,7 +6,7 @@
 #include "game/math/rotmat.h"
 #include "rr/field_rate.h"
 
-/* The car stages every field (RaceFieldCarStep): the body's spring-dampers
+/* The car stages every field (at field rate): the body's spring-dampers
  * (roll, pitch, the wheels' offsets and suspension) each keep the
  * square root of their per-tick share a field (RaceFieldKeep), their
  * pushes scaled to settle where the original's do (RaceFieldFilterAdd), the
@@ -24,7 +24,7 @@ void UpdateCarSteering(RaceVehicle *arg0) {
     s32 s3;
     s32 v0;
     s32 i;
-    CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(arg0) : NULL;
+    CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(arg0) : NULL;
 
     s3 = 0;
     if (fs) {

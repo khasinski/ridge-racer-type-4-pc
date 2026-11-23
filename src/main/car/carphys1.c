@@ -1,4 +1,3 @@
-#include "rr/field_rate.h"
 #include "game/car/carphys1.h"
 #include "rr/race_types.h"
 #include "rr/menu_overlay_runtime.h"
@@ -10,52 +9,14 @@ void UpdateCarHeading(RaceVehicle *a0) {
     int v1, a1, d;
     int v;
     int t;
-    CarFieldState *fr = CarFieldStateOf(a0);
     s2 = &a0->control;
     s1 = s2->handling1C;
-    /* Field rate: on a tick's first field with the yaw the tick ends on
-     * (StepCarStateNormal), the tick's drive and heading as the original's */
-    const int tickYaw = RaceFieldRateLive && RaceSlowTick() && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 2);
-    const int landHeading = RaceFieldRateLive && !RaceSlowTick() && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 4);
-    const int heading0 = a0->heading1D4;
-    v1 = a0->physicsFlags1E0 * rcos(a0->heading1D4 - (tickYaw ? fr->rem[CAR_FIELD_REM_ROT_END] : a0->rot54));
+    v1 = a0->physicsFlags1E0 * rcos(a0->heading1D4 - a0->rot54);
     if (v1 < 0) v1 += 0xFFF;
-    if (RaceFieldRateLive) {
-        /* the tick's drive (truncated as the game does), its share this
-         * field against the drag's (rr/field_rate.h
-         * CarFieldState.accelShareQ16), the fraction carried in Q16 */
-        long long q, add;
-        if (!RaceSlowTick() && (fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] & 2)) {
-            /* the tick's second field: the rest of the tick's drive, taken on
-             * its first field from the revs it ends on (exactly the tick's) */
-            fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] &= ~2;
-            add = fr->rem[CAR_FIELD_REM_ACCEL_TICK] - fr->rem[CAR_FIELD_REM_ACCEL_DONE];
-        } else {
-            q = (long long)(v1 >> 12) * (fr->accelShareQ16 ? fr->accelShareQ16 : 0x8000u) +
-                fr->rem[CAR_FIELD_REM_ACCEL];
-            add = q >> 16;
-            fr->rem[CAR_FIELD_REM_ACCEL] = (s32)(q - (add << 16));
-            if (RaceSlowTick() && (fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] & 1)) {
-                fr->rem[CAR_FIELD_REM_ACCEL_TICK] = v1 >> 12;
-                fr->rem[CAR_FIELD_REM_ACCEL_DONE] = (s32)add;
-                fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] |= 2;
-            }
-        }
-        a0->input = (unsigned short)a0->input + (s32)add;
-    } else {
-        a0->input = (unsigned short)a0->input + (v1 >> 12);
-    }
-    if (landHeading) {
-        /* the tick's second field: the heading the original's tick ends on */
-        fr->rem[CAR_FIELD_REM_YAW_FLAGS] &= ~4;
-        a0->heading1D4 = fr->rem[CAR_FIELD_REM_HEAD_END] & 0xFFF;
-        return;
-    }
+    a0->input = (unsigned short)a0->input + (v1 >> 12);
     if (s1->steeringMode0A == 0) {
         if (s2->laneTarget3C > 0) {
-            a0->heading1D4 = (unsigned short)a0->heading1D4 +
-                             RaceFieldHalf(((AngleDiffSigned(a0->heading1D4, GetTrackTargetHeading(a0)) * s2->laneTarget3C) >> 2) / 60,
-                                           &fr->rem[CAR_FIELD_REM_HEADING_LANE]);
+            a0->heading1D4 = (unsigned short)a0->heading1D4 + ((AngleDiffSigned(a0->heading1D4, GetTrackTargetHeading(a0)) * s2->laneTarget3C) >> 2) / 60;
         }
     }
     a1 = AngleDiffSigned(a0->heading1D4, a0->rot54);
@@ -89,25 +50,11 @@ void UpdateCarHeading(RaceVehicle *a0) {
             d += v / t;
         }
     }
-    if (tickYaw) {
-        /* the original's tick from the heading at its start: the lane's pull
-         * whole, then the step toward the yaw the tick ends on */
-        int h = heading0, g;
-        if (s1->steeringMode0A == 0 && s2->laneTarget3C > 0)
-            h += ((AngleDiffSigned(h, GetTrackTargetHeading(a0)) * s2->laneTarget3C) >> 2) / 60;
-        g = AngleDiffSigned(h, fr->rem[CAR_FIELD_REM_ROT_END]);
-        if (a0->steeringLock1B8 == 0)
-            h += g < d && -d < g ? g >> 1 : g / d;
-        fr->rem[CAR_FIELD_REM_HEAD_END] = h & 0xFFF;
-        fr->rem[CAR_FIELD_REM_YAW_FLAGS] |= 4;
-    }
     if (a0->steeringLock1B8 == 0) {
         if (a1 < d && -d < a1) {
-            a0->heading1D4 = (unsigned short)a0->heading1D4 +
-                             RaceFieldApproach(a1 >> 1, a1, &fr->rem[CAR_FIELD_REM_HEADING]);
+            a0->heading1D4 = (unsigned short)a0->heading1D4 + (a1 >> 1);
         } else {
-            a0->heading1D4 = (unsigned short)a0->heading1D4 +
-                             RaceFieldApproach(a1 / d, a1, &fr->rem[CAR_FIELD_REM_HEADING]);
+            a0->heading1D4 = (unsigned short)a0->heading1D4 + a1 / d;
         }
     }
     a0->heading1D4 = (unsigned short)a0->heading1D4 & 0xFFF;

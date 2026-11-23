@@ -170,11 +170,9 @@ typedef struct ReplayData {
     u8 vram[VRAM_BLOB_MAX];
     u32 trails_size;
     u8 trails[TRAILS_BLOB_MAX];
-    /* recorded at field rate (rr/field_rate.h): each tick's second
-     * field's inputs and the cars' sidecars at the snapshot; a file
-     * without them is an original-rate replay */
+    /* recorded at field rate (rr/field_rate.h): the cars' sidecars at
+     * the snapshot; a file without them is an original-rate replay */
     s32 field_rate;
-    ReplayFrame4 field_inputs[2][3601];
     CarFieldState field_states[8];
 } ReplayData;
 
@@ -666,10 +664,8 @@ static int Capture(ReplayData *d) {
     d->info.race_time = GameModeType < 2 ? TotalRaceTime : -1;
     d->info.frames = (u32)ReplayFrame;
     d->field_rate = ReplayFieldRate != 0;
-    if (d->field_rate) {
-        memcpy(d->field_inputs, ReplayFieldInputs, sizeof(d->field_inputs));
+    if (d->field_rate)
         memcpy(d->field_states, CarFieldSnapshots, sizeof(d->field_states));
-    }
     Title(&d->info, d->info.title, sizeof(d->info.title));
     /* valid once the context is taken, at the replay's first frame */
     return 1;
@@ -683,7 +679,6 @@ static void Install(const ReplayData *d) {
     /* the rate it was recorded at, whatever the option now */
     ReplayFieldRate = d->field_rate;
     RaceFieldRateResume(d->field_rate);
-    memcpy(ReplayFieldInputs, d->field_inputs, sizeof(ReplayFieldInputs));
     memcpy(CarFieldSnapshots, d->field_states, sizeof(CarFieldSnapshots));
     ApplyVram(d);
     for (int i = 0; i < NumCars && i < SNAPSHOTS_MAX; i++) {
@@ -726,7 +721,6 @@ static int ToBlocks(const ReplayData *d, ReplayBlock *blocks) {
         BLOCK(kContext[i].name, d->context[i], kContext[i].size);
     if (d->field_rate) {
         BLOCK("FieldRate", &d->field_rate, sizeof(d->field_rate));
-        BLOCK("FieldInputs", d->field_inputs, sizeof(d->field_inputs));
         BLOCK("CarFieldStates", d->field_states, sizeof(d->field_states));
     }
 #undef BLOCK
@@ -777,10 +771,10 @@ static int FromImage(const ReplayFileImage *image, ReplayData *d, char *err, siz
             ok = 0;
         }
     }
-    /* optional: a field-rate replay (absent in older files) */
+    /* optional: a field-rate replay (absent in older files; their
+     * FieldInputs block, a tick's second field's inputs, is not read) */
     if (ok && Take(image, "FieldRate", &d->field_rate, sizeof(d->field_rate), 1) && d->field_rate) {
         d->field_rate = 1;
-        ok = Take(image, "FieldInputs", d->field_inputs, sizeof(d->field_inputs), 1);
         if (!Take(image, "CarFieldStates", d->field_states, sizeof(d->field_states), 1))
             memset(d->field_states, 0, sizeof(d->field_states));
     } else {
