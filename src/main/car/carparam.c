@@ -529,6 +529,9 @@ static void CarSlideTick(RaceVehicle *a0, CarFieldState *fr) {
   e[SLIDE_LANE_TARGET] = copy.control.laneTarget3C;
   e[SLIDE_LANE_COOLDOWN] = *(s16 *)&copy.control.laneCooldown40;
   fr->rem[CAR_FIELD_REM_SLIDE_FLAG] = 1;
+  fr->rem[CAR_FIELD_REM_VEL_END_X] = copy.vel30;
+  fr->rem[CAR_FIELD_REM_VEL_END_Z] = copy.vel38;
+  fr->rem[CAR_FIELD_REM_POS_FLAG] = 1;
 }
 
 static void CarSlideLand(RaceVehicle *a0, CarFieldState *fr) {
@@ -843,15 +846,20 @@ void UpdateCarEngine(RaceVehicle *a0) {
      * curve as the original walks it a tick at a time (a per-field step
      * climbs faster where the torque rises with the revs, and the car
      * shifts a tick early). The pedals reach it from the next tick. */
-    s32 step = s4 - (s1 - revsDeficit);
+    s32 step = s4 - (s1 - revsDeficit), part = step;
     if (RaceFieldRateLive)
     {
+      /* its first field half (floored), its second the rest: whole */
       if (tick)
+      {
         fr->rem[CAR_FIELD_REM_REVS_STEP] = step;
+        part = step >> 1;
+        fr->rem[CAR_FIELD_REM_REVS] = part;
+      }
       else
-        step = fr->rem[CAR_FIELD_REM_REVS_STEP];
+        part = fr->rem[CAR_FIELD_REM_REVS_STEP] - fr->rem[CAR_FIELD_REM_REVS];
     }
-    n3 = q->laneMode88 + RaceFieldHalf(step, &fr->rem[CAR_FIELD_REM_REVS]) - revsDeficit;
+    n3 = q->laneMode88 + part - revsDeficit;
   }
   q->laneMode88 = n3;
   if (n3 < 0)
@@ -1041,7 +1049,20 @@ void IntegrateCarMotion(RaceVehicle *p) {
     s2 = &s5->m24;
     s3 = 0x800;
     a1 = s3 - p->rot54;
-    if (fs) {
+    if (fs && CarFieldFast(p) && fs->rem[CAR_FIELD_REM_POS_FLAG]) {
+        /* a tick's move by the velocity the original's tick ends on: half
+         * on its first field, the rest on its second */
+        if (RaceSlowTick()) {
+            fs->rem[CAR_FIELD_REM_POS_PART_X] = fs->rem[CAR_FIELD_REM_VEL_END_X] >> 1;
+            fs->rem[CAR_FIELD_REM_POS_PART_Z] = fs->rem[CAR_FIELD_REM_VEL_END_Z] >> 1;
+            p->posScaled00[0] += fs->rem[CAR_FIELD_REM_POS_PART_X];
+            p->posScaled00[2] += fs->rem[CAR_FIELD_REM_POS_PART_Z];
+        } else {
+            p->posScaled00[0] += fs->rem[CAR_FIELD_REM_VEL_END_X] - fs->rem[CAR_FIELD_REM_POS_PART_X];
+            p->posScaled00[2] += fs->rem[CAR_FIELD_REM_VEL_END_Z] - fs->rem[CAR_FIELD_REM_POS_PART_Z];
+            fs->rem[CAR_FIELD_REM_POS_FLAG] = 0;
+        }
+    } else if (fs) {
         /* a tick's move over two fields */
         p->posScaled00[0] += RaceFieldHalf(p->vel30, &fs->rem[CAR_FIELD_REM_POS_X]);
         p->posScaled00[2] += RaceFieldHalf(p->vel38, &fs->rem[CAR_FIELD_REM_POS_Z]);

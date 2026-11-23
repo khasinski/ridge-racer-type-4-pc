@@ -238,6 +238,12 @@ enum {
     CAR_FIELD_REM_YAW_FLAGS,      /* UpdatePlayerSteering / StepCarStateNormal: */
     CAR_FIELD_REM_STH_END,        /* the yaw command a tick ends on (bit 0), */
     CAR_FIELD_REM_ROT_END,        /* the yaw it ends on (bit 1) */
+    CAR_FIELD_REM_HEAD_END,       /* UpdateCarHeading: the heading it ends on (bit 2) */
+    CAR_FIELD_REM_POS_FLAG,       /* IntegrateCarMotion: the tick's velocity known, */
+    CAR_FIELD_REM_VEL_END_X,      /* the velocity it ends on (the original's move), */
+    CAR_FIELD_REM_VEL_END_Z,
+    CAR_FIELD_REM_POS_PART_X,     /* its first field's part */
+    CAR_FIELD_REM_POS_PART_Z,
     /* UpdateCarEngine: a slide's tick, the original's result from the
      * tick's start (its first field), landed on by its second */
     CAR_FIELD_REM_SLIDE_FLAG,
@@ -278,7 +284,7 @@ enum {
     CAR_FIELD_REM_AI_ROT_Q16,    /* corner turn mode 3, rot54 to heading */
     CAR_FIELD_REM_AI_IMPACT_FIELD,/* RaceFieldCount at the last impact */
     CAR_FIELD_REM_COUNT,
-    CAR_FIELD_REM_SLOTS = 96
+    CAR_FIELD_REM_SLOTS = 128
 };
 _Static_assert(CAR_FIELD_REM_COUNT <= CAR_FIELD_REM_SLOTS, "CarFieldState rem slots");
 enum {

@@ -119,7 +119,7 @@ void StepCarStateNormal(RaceVehicle *c) {
     }
     if (RaceFieldRateLive && !tick && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 2)) {
         c->rot54 = fr->rem[CAR_FIELD_REM_ROT_END];
-        fr->rem[CAR_FIELD_REM_YAW_FLAGS] = 0;
+        fr->rem[CAR_FIELD_REM_YAW_FLAGS] &= ~2; /* bit 2: the heading's (UpdateCarHeading) */
     } else if (s2 < d->holdFlag48 && -d->holdFlag48 < s2) {
         c->rot54 = c->rot54 + RaceFieldApproach(s2 >> 1, s2, &fr->rem[CAR_FIELD_REM_ROT]);
     } else {
@@ -137,6 +137,18 @@ void StepCarStateNormal(RaceVehicle *c) {
     v0 = rcos(c->heading1D4);
     v1 = c->input;
     c->vel38 = (v1 * v0) >> 8;
+    if (RaceFieldRateLive && tick && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 4) &&
+        (fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] & 3) == 3) {
+        /* the velocity the original's tick ends on (its speed: this
+         * field's, less its part of the tick's drag and drive, plus the
+         * whole; its heading: the tick's), for IntegrateCarMotion */
+        s32 inEnd = c->input + fr->rem[CAR_FIELD_REM_DRAG_DONE] - fr->rem[CAR_FIELD_REM_ACCEL_DONE] -
+                    fr->rem[CAR_FIELD_REM_DRAG_TICK] + fr->rem[CAR_FIELD_REM_ACCEL_TICK];
+        s32 hEnd = fr->rem[CAR_FIELD_REM_HEAD_END];
+        fr->rem[CAR_FIELD_REM_VEL_END_X] = (inEnd * rsin(hEnd)) >> 8;
+        fr->rem[CAR_FIELD_REM_VEL_END_Z] = (inEnd * rcos(hEnd)) >> 8;
+        fr->rem[CAR_FIELD_REM_POS_FLAG] = 1;
+    }
     if (t->steeringMode0A == 0) {
         if (d->dynamics94.player.acceleratorEdge14 == 1 && tickEnd) {
             /* at field rate the gap as a tick sees it: the yaw command

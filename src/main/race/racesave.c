@@ -139,8 +139,9 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t5 = 0;
                         t3 = f | 0x20;
                     }
-                    /* the ramp: 4 a tick, 2 a field (rr/field_rate.h) */
-                    control->dynamics94.player.digitalThrottle1C += b * (RaceFieldRateLive ? 2 : 4);
+                    /* the ramp: 4 a tick, on its first field (rr/field_rate.h): the
+                     * engine takes a tick's step from it */
+                    control->dynamics94.player.digitalThrottle1C += b * (RaceSlowTick() ? 4 : 0);
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }
@@ -206,7 +207,7 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t1 = 0xFF;
                     }
                     b = (PlayerControllers[idx].input00.fields.buttons & PadButtonMap[idx].wheel[3]) != 0;
-                    control->dynamics94.player.digitalThrottle1C += b * (RaceFieldRateLive ? 2 : 4);
+                    control->dynamics94.player.digitalThrottle1C += b * (RaceSlowTick() ? 4 : 0);
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }

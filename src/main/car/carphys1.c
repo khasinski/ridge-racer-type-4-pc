@@ -13,7 +13,12 @@ void UpdateCarHeading(RaceVehicle *a0) {
     CarFieldState *fr = CarFieldStateOf(a0);
     s2 = &a0->control;
     s1 = s2->handling1C;
-    v1 = a0->physicsFlags1E0 * rcos(a0->heading1D4 - a0->rot54);
+    /* Field rate: on a tick's first field with the yaw the tick ends on
+     * (StepCarStateNormal), the tick's drive and heading as the original's */
+    const int tickYaw = RaceFieldRateLive && RaceSlowTick() && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 2);
+    const int landHeading = RaceFieldRateLive && !RaceSlowTick() && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 4);
+    const int heading0 = a0->heading1D4;
+    v1 = a0->physicsFlags1E0 * rcos(a0->heading1D4 - (tickYaw ? fr->rem[CAR_FIELD_REM_ROT_END] : a0->rot54));
     if (v1 < 0) v1 += 0xFFF;
     if (RaceFieldRateLive) {
         /* the tick's drive (truncated as the game does), its share this
@@ -39,6 +44,12 @@ void UpdateCarHeading(RaceVehicle *a0) {
         a0->input = (unsigned short)a0->input + (s32)add;
     } else {
         a0->input = (unsigned short)a0->input + (v1 >> 12);
+    }
+    if (landHeading) {
+        /* the tick's second field: the heading the original's tick ends on */
+        fr->rem[CAR_FIELD_REM_YAW_FLAGS] &= ~4;
+        a0->heading1D4 = fr->rem[CAR_FIELD_REM_HEAD_END] & 0xFFF;
+        return;
     }
     if (s1->steeringMode0A == 0) {
         if (s2->laneTarget3C > 0) {
@@ -77,6 +88,18 @@ void UpdateCarHeading(RaceVehicle *a0) {
             if (v < 0) v = -v;
             d += v / t;
         }
+    }
+    if (tickYaw) {
+        /* the original's tick from the heading at its start: the lane's pull
+         * whole, then the step toward the yaw the tick ends on */
+        int h = heading0, g;
+        if (s1->steeringMode0A == 0 && s2->laneTarget3C > 0)
+            h += ((AngleDiffSigned(h, GetTrackTargetHeading(a0)) * s2->laneTarget3C) >> 2) / 60;
+        g = AngleDiffSigned(h, fr->rem[CAR_FIELD_REM_ROT_END]);
+        if (a0->steeringLock1B8 == 0)
+            h += g < d && -d < g ? g >> 1 : g / d;
+        fr->rem[CAR_FIELD_REM_HEAD_END] = h & 0xFFF;
+        fr->rem[CAR_FIELD_REM_YAW_FLAGS] |= 4;
     }
     if (a0->steeringLock1B8 == 0) {
         if (a1 < d && -d < a1) {
