@@ -19,10 +19,23 @@ void UpdateCarHeading(RaceVehicle *a0) {
         /* the tick's drive (truncated as the game does), its share this
          * field against the drag's (rr/field_rate.h
          * CarFieldState.accelShareQ16), the fraction carried in Q16 */
-        long long q = (long long)(v1 >> 12) * (fr->accelShareQ16 ? fr->accelShareQ16 : 0x8000u) +
-                      fr->rem[CAR_FIELD_REM_ACCEL];
-        long long add = q >> 16;
-        fr->rem[CAR_FIELD_REM_ACCEL] = (s32)(q - (add << 16));
+        long long q, add;
+        if (!RaceSlowTick() && (fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] & 2)) {
+            /* the tick's second field: the rest of the tick's drive, taken on
+             * its first field from the revs it ends on (exactly the tick's) */
+            fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] &= ~2;
+            add = fr->rem[CAR_FIELD_REM_ACCEL_TICK] - fr->rem[CAR_FIELD_REM_ACCEL_DONE];
+        } else {
+            q = (long long)(v1 >> 12) * (fr->accelShareQ16 ? fr->accelShareQ16 : 0x8000u) +
+                fr->rem[CAR_FIELD_REM_ACCEL];
+            add = q >> 16;
+            fr->rem[CAR_FIELD_REM_ACCEL] = (s32)(q - (add << 16));
+            if (RaceSlowTick() && (fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] & 1)) {
+                fr->rem[CAR_FIELD_REM_ACCEL_TICK] = v1 >> 12;
+                fr->rem[CAR_FIELD_REM_ACCEL_DONE] = (s32)add;
+                fr->rem[CAR_FIELD_REM_DRIVE_FLAGS] |= 2;
+            }
+        }
         a0->input = (unsigned short)a0->input + (s32)add;
     } else {
         a0->input = (unsigned short)a0->input + (v1 >> 12);

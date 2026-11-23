@@ -109,7 +109,18 @@ void StepCarStateNormal(RaceVehicle *c) {
     if (tick)
         fr->hist[CAR_FIELD_HIST_ROT_TICK] = c->rot54;
     s2 = AngleDiffSigned(c->rot54, d->dynamics94.player.steeringHeading08);
-    if (s2 < d->holdFlag48 && -d->holdFlag48 < s2) {
+    if (RaceFieldRateLive && tick && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 1)) {
+        /* the yaw the tick ends on: the original's step from the yaw now
+         * to the command the tick ends on; the second field lands on it */
+        s32 g = AngleDiffSigned(c->rot54, fr->rem[CAR_FIELD_REM_STH_END]);
+        fr->rem[CAR_FIELD_REM_ROT_END] =
+            c->rot54 + (g < d->holdFlag48 && -d->holdFlag48 < g ? g >> 1 : g / d->holdFlag48);
+        fr->rem[CAR_FIELD_REM_YAW_FLAGS] = 2;
+    }
+    if (RaceFieldRateLive && !tick && (fr->rem[CAR_FIELD_REM_YAW_FLAGS] & 2)) {
+        c->rot54 = fr->rem[CAR_FIELD_REM_ROT_END];
+        fr->rem[CAR_FIELD_REM_YAW_FLAGS] = 0;
+    } else if (s2 < d->holdFlag48 && -d->holdFlag48 < s2) {
         c->rot54 = c->rot54 + RaceFieldApproach(s2 >> 1, s2, &fr->rem[CAR_FIELD_REM_ROT]);
     } else {
         c->rot54 = c->rot54 + RaceFieldApproach(s2 / d->holdFlag48, s2,

@@ -370,7 +370,7 @@ static int autodrive;
 static long autodrive_hold = -1; /* RR4_AUTODRIVE_HOLD, or -1 */
 static FILE *autodrive_log;
 static unsigned short *autodrive_replay; /* RR4_AUTODRIVE_REPLAY by ModeFrame */
-static short *autodrive_replay_stick;    /* ... the left stick * 1000 (S field) */
+static float *autodrive_replay_stick;    /* ... the left stick (S field, exact) */
 static int autodrive_replay_state = -1;  /* -1 not read yet, 0 none, 1 loaded */
 
 static void load_autodrive_replay(void) {
@@ -400,7 +400,7 @@ static void load_autodrive_replay(void) {
                 continue; /* pad 2's lines */
             autodrive_replay[frame] = (unsigned short)m;
             if (stick && autodrive_replay_stick)
-                autodrive_replay_stick[frame] = (short)atoi(stick + 2);
+                autodrive_replay_stick[frame] = strtof(stick + 2, NULL);
         }
     }
     fclose(in);
@@ -452,7 +452,7 @@ static unsigned short autodrive_reference(int port) {
     if (speed > limit + 160)
         mask = 0x0080; /* square: brake */
     if (autodrive_log && port == 0)
-        fprintf(autodrive_log, "%d %u S%d\n", ModeFrame, mask, (int)(autodrive_stick[0] * 1000.0f));
+        fprintf(autodrive_log, "%d %u S%a\n", ModeFrame, mask, (double)autodrive_stick[0]);
     return mask;
 }
 
@@ -482,6 +482,14 @@ static unsigned short autodrive_mask(int port) {
         unsigned short mask;
         const float shown = autodrive_stick[0]; /* the stick the pad shows now */
         float stick = shown;
+        static int decided[2] = {-1, -1};
+        if (!RaceFieldRateLive && (autodrive == 3 || autodrive_replay_state > 0)) {
+            /* the original rate: once per tick too (a tick may span two
+             * VSyncs), so a log replays the inputs it recorded */
+            if (ModeFrame == decided[port & 1])
+                return held[port & 1];
+            decided[port & 1] = ModeFrame;
+        }
         if (RaceFieldRateLive && RaceSlowTick()) {
             held[port & 1] = pending[port & 1];
             if (port == 0)
@@ -493,7 +501,7 @@ static unsigned short autodrive_mask(int port) {
         if (autodrive_replay_state > 0) {
             mask = port == 0 && ModeFrame >= 0 && ModeFrame < 65536 ? autodrive_replay[ModeFrame] : 0;
             if (port == 0 && autodrive_replay_stick && ModeFrame >= 0 && ModeFrame < 65536)
-                stick = autodrive_replay_stick[ModeFrame] / 1000.0f;
+                stick = autodrive_replay_stick[ModeFrame];
         } else {
             mask = autodrive == 3 ? autodrive_reference(port) : autodrive_decide(port);
             if (port == 0)

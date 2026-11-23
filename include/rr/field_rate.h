@@ -230,6 +230,14 @@ enum {
     CAR_FIELD_REM_GRIP,
     CAR_FIELD_REM_REVS,
     CAR_FIELD_REM_REVS_STEP,      /* UpdateCarEngine: the tick's revs step */
+    CAR_FIELD_REM_DRIVE_FLAGS,    /* ... the tick's drag (1) / drive (2) begun on its first field */
+    CAR_FIELD_REM_DRAG_TICK,      /* ... the tick's drag and what its first field took */
+    CAR_FIELD_REM_DRAG_DONE,
+    CAR_FIELD_REM_ACCEL_TICK,     /* UpdateCarHeading: the tick's drive, its first field's part */
+    CAR_FIELD_REM_ACCEL_DONE,
+    CAR_FIELD_REM_YAW_FLAGS,      /* UpdatePlayerSteering / StepCarStateNormal: */
+    CAR_FIELD_REM_STH_END,        /* the yaw command a tick ends on (bit 0), */
+    CAR_FIELD_REM_ROT_END,        /* the yaw it ends on (bit 1) */
     CAR_FIELD_REM_BUMP_LOCK,
     CAR_FIELD_REM_SLIDE_DRAG,
     CAR_FIELD_REM_DRAG,
