@@ -80,6 +80,11 @@ int Rr4PadTypeFromKind(int kind) {
 
 /* ---- defaults ---- */
 
+/* Supersampling past twice the window's pixels costs GPU time for little
+ * gain (a 16x antialiased 8x picture on a 1080p window drew 19.7 million
+ * pixels a frame for 2.1 million shown). */
+float Rr4RenderBudget = 2.0f;
+
 static Rr4Prefs s_defaults;
 static int s_defaults_ready;
 
@@ -87,7 +92,7 @@ void Rr4PrefsCaptureDefaults(void) {
     if (s_defaults_ready)
         return;
     memset(&s_defaults, 0, sizeof(s_defaults));
-    s_defaults.scale = 1;
+    s_defaults.scale = 0; /* auto: the window's resolution */
     s_defaults.vsync = RR4_VSYNC_AUTO;
     s_defaults.volume = 100;
     s_defaults.force_feedback = 1;
@@ -230,7 +235,14 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
     }
     if (!strcmp(section, "graphics")) {
         if (!strcmp(key, "internal_resolution")) {
-            if (!ParseInt(value, &v) || v < 1 || v > PSYZ_INTERNAL_RES_MAX)
+            char mode[8];
+            if (*value == '"' || *value == '\'') {
+                if (!ParseString(value, mode, sizeof(mode)) || strcmp(mode, "auto"))
+                    return 0;
+                p->scale = 0; /* auto */
+                return 1;
+            }
+            if (!ParseInt(value, &v) || v < 0 || v > PSYZ_INTERNAL_RES_MAX)
                 return 0;
             if (v > 1 && (v & 1))
                 ++v; /* odd scales are not offered */
@@ -467,9 +479,16 @@ static void WriteString(FILE *file, const char *value) {
 
 static const char *Bool(int v) { return v ? "true" : "false"; }
 
+static const char *ScaleText(unsigned scale, char *text, size_t size) {
+    if (!scale)
+        return "\"auto\"";
+    snprintf(text, size, "%u", scale);
+    return text;
+}
+
 int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
     static const char *const kVsync[] = {"auto", "on", "off"};
-    char temporary[RR4_PREFS_PATH_MAX + 8];
+    char temporary[RR4_PREFS_PATH_MAX + 8], scale_text[16];
     FILE *file;
     int failed;
 
@@ -482,7 +501,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
     fprintf(file,
             "# Ridge Racer Type 4 preferences (Escape opens the settings menu)\n"
             "[graphics]\n"
-            "internal_resolution = %u\n"
+            "internal_resolution = %s\n"
             "fullscreen = %s\n"
             "fullscreen_field_rate = %s\n"
             "vsync = \"%s\"\n"
@@ -504,7 +523,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             "controller_1 = \"%s\"\n"
             "controller_2 = \"%s\"\n"
             "force_feedback = %s\n",
-            p->scale, Bool(p->fullscreen), Bool(p->fullscreen_field_rate),
+            ScaleText(p->scale, scale_text, sizeof(scale_text)), Bool(p->fullscreen), Bool(p->fullscreen_field_rate),
             kVsync[p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0],
             p->video_timing == RR4_VIDEO_NTSC ? "ntsc" : "pal",
             p->aspect_ratio == RR4_ASPECT_WIDESCREEN ? "widescreen" : "classic",
@@ -703,7 +722,8 @@ void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
 
     ExtendedDrawDistance = p->extended_draw_distance != 0;
     RaceFieldRate = p->race_field_rate != 0;
-    Psyz_VideoSetInternalResolution(p->scale >= 1 ? p->scale : 1);
+    Psyz_VideoSetRenderBudget(Rr4RenderBudget);
+    Psyz_VideoSetInternalResolution(p->scale <= PSYZ_INTERNAL_RES_MAX ? p->scale : PSYZ_INTERNAL_RES_AUTO);
     Psyz_VideoSetDitheringMode(p->disable_dithering ? PSYZ_DITHER_OFF : PSYZ_DITHER_AUTO);
     Psyz_VideoSetAntialiasing(p->antialiasing != 0);
     Psyz_VideoSetModelFiltering(p->texture_filtering != 0);

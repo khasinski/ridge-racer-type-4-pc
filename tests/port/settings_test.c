@@ -40,7 +40,7 @@ static void Do(SettingsModel *m, SettingsAction a, int times) {
 
 static void TestDefaults(void) {
     const Rr4Prefs *d = Rr4PrefsDefaults();
-    CHECK(d->scale == 1);
+    CHECK(d->scale == 0); /* auto: the window's resolution */
     CHECK(d->volume == 100);
     CHECK(!d->mute && !d->fullscreen &&
           d->aspect_ratio == RR4_ASPECT_CLASSIC);
@@ -62,12 +62,17 @@ static void TestGraphicsPage(void) {
     SettingsModel m;
     SettingsModelOpen(&m, Rr4PrefsDefaults(), "/discs/rr4.cue");
     CHECK(m.open && m.page == SETTINGS_PAGE_GRAPHICS && m.row == 0);
-    Do(&m, SETTINGS_RIGHT, 3); /* 1x -> 2x -> 4x -> 6x */
+    {
+        SettingsRowView v;
+        SettingsModelRow(&m, 0, &v);
+        CHECK(!strcmp(v.value, "Auto (window)"));
+    }
+    Do(&m, SETTINGS_RIGHT, 4); /* auto -> 1x -> 2x -> 4x -> 6x */
     CHECK(m.prefs.scale == 6);
     CHECK(SettingsModelTakeChanged(&m) == 1);
     CHECK(SettingsModelTakeChanged(&m) == 0);
-    Do(&m, SETTINGS_RIGHT, 2); /* 8x, wraps to 1x */
-    CHECK(m.prefs.scale == 1);
+    Do(&m, SETTINGS_RIGHT, 2); /* 8x, wraps to auto */
+    CHECK(m.prefs.scale == 0);
     Do(&m, SETTINGS_LEFT, 1);
     CHECK(m.prefs.scale == 8);
     Do(&m, SETTINGS_DOWN, 1);
@@ -107,7 +112,7 @@ static void TestGraphicsPage(void) {
     /* Restore page defaults. */
     SettingsModelSelect(&m, SettingsContentRows(&m));
     Do(&m, SETTINGS_ACTIVATE, 1);
-    CHECK(m.prefs.scale == 1 && !m.prefs.fullscreen && m.prefs.vsync == RR4_VSYNC_AUTO &&
+    CHECK(m.prefs.scale == 0 && !m.prefs.fullscreen && m.prefs.vsync == RR4_VSYNC_AUTO &&
           m.prefs.video_timing == RR4_VIDEO_NTSC && !m.prefs.extended_draw_distance &&
           m.prefs.race_field_rate == 1);
     CHECK(m.open);
@@ -534,12 +539,18 @@ static void TestPrefsFile(const char *dir) {
     SDL_setenv_unsafe("RR4_CONFIG_HOME", path, 1);
     CHECK(Rr4PrefsLoad(&q));
     CHECK(strstr(Rr4PrefsPath(), "/home/ridge-racer-type-4.toml") != NULL);
-    CHECK(q.scale == 1); /* fresh: defaults */
+    CHECK(q.scale == 0); /* fresh: defaults (auto) */
     q.scale = 2;
     CHECK(Rr4PrefsSave(&q));
     p = *Rr4PrefsDefaults();
     CHECK(Rr4PrefsLoad(&p));
     CHECK(p.scale == 2);
+    /* Auto is written as "auto" and read back; 0 means it too. */
+    q.scale = 0;
+    CHECK(Rr4PrefsSave(&q));
+    p.scale = 4;
+    CHECK(Rr4PrefsLoad(&p));
+    CHECK(p.scale == 0);
     SDL_unsetenv_unsafe("RR4_CONFIG_HOME");
 }
 

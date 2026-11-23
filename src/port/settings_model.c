@@ -29,10 +29,12 @@ typedef struct ChoiceSetting {
 
 static const char *const kSwitchNames[] = {"Off", "On"};
 
-static const unsigned kScales[] = {1, 2, 4, 6, 8};
-static const char *const kScaleNames[] = {"1x (original)", "2x", "4x", "6x", "8x"};
+static const unsigned kScales[] = {0, 1, 2, 4, 6, 8};
+static const char *const kScaleNames[] = {"Auto (window)", "1x (original)", "2x", "4x", "6x", "8x"};
 static int ScaleIndex(unsigned scale) {
-    for (int i = 0; i < COUNT_OF(kScales); i++)
+    if (!scale)
+        return 0;
+    for (int i = 1; i < COUNT_OF(kScales); i++)
         if (scale <= kScales[i])
             return i;
     return COUNT_OF(kScales) - 1;
@@ -57,7 +59,7 @@ ACCESSORS(Aspect, p->aspect_ratio == RR4_ASPECT_WIDESCREEN,
 static const char *const kDitherNames[] = {"Original", "Off"};
 ACCESSORS(Dither, p->disable_dithering != 0, p->disable_dithering = i)
 
-static const char *const kAntialiasNames[] = {"Off", "4x SSAA"};
+static const char *const kAntialiasNames[] = {"Off", "SSAA"};
 ACCESSORS(Antialiasing, p->antialiasing != 0, p->antialiasing = i)
 
 static const char *const kFilterNames[] = {"Original", "Bilinear"};
@@ -72,7 +74,7 @@ static const char *const kRaceRateNames[] = {"Original", "60 FPS"};
 ACCESSORS(RaceRate, p->race_field_rate != 0, p->race_field_rate = i)
 
 static const ChoiceSetting kGraphics[] = {
-    GPU_SETTING("Internal resolution", "Renders 3D at a multiple of the PlayStation resolution. Higher values cost GPU time.",
+    GPU_SETTING("Internal resolution", "Auto (default): draws at the window's own resolution. A fixed multiple of the PlayStation resolution is drawn at most at about twice the window's pixels; more costs GPU time without a sharper picture.",
             kScaleNames, Scale,
             SETTINGS_FEATURE_UPSCALE),
     SETTING("Display mode", "Window or fullscreen (F4). Match FPS selects a supported display mode at the game's field rate (50 Hz PAL, 60 Hz NTSC).",
@@ -90,7 +92,7 @@ static const ChoiceSetting kGraphics[] = {
             kDrawDistanceNames, DrawDistance),
     SETTING("Dithering", "Original: PlayStation 15-bit colour, dithered on shaded polygons. Off: smooth full-colour shading.",
             kDitherNames, Dither),
-    GPU_SETTING("Antialiasing", "Smoother edges: twice each axis, four samples per pixel. Costs GPU time and memory.",
+    GPU_SETTING("Antialiasing", "Smoother edges: supersampling, up to twice the window's pixels. Costs GPU time and memory.",
             kAntialiasNames, Antialiasing,
             SETTINGS_FEATURE_ANTIALIASING),
     GPU_SETTING("Texture filtering", "Experimental. Bilinear filtering for 3D textures.",

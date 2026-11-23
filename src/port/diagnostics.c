@@ -128,8 +128,13 @@
  *   RR4_RACE_FIELD_RATE=0|1 races at the original 25/30 fps or every field
  *                      (50/60 Hz), as the Graphics setting Race frame rate
  *   RR4_INTERNAL_RES=n render at n times the PlayStation resolution (1..8)
- *                      for this run, over the preferences; with
- *                      PSYZ_HEADLESS=gpu the captured frames grow with it.
+ *                      for this run, over the preferences, without the
+ *                      render budget; with PSYZ_HEADLESS=gpu the captured
+ *                      frames grow with it. "auto" follows the output
+ *                      (PSYZ_HEADLESS_SIZE=WxH for the hidden renderer,
+ *                      1280x720 by default) as the game's default does.
+ *   RR4_RENDER_BUDGET=x the pixels drawn at most, as x times the output's
+ *                      (the game uses 2; 0 removes the limit)
  *   RR4_GRAPHICS=l     graphics options for this run, as the Escape menu
  *                      sets them: a comma list of geometry (geometry
  *                      correction), nodither (dithering off), aa
@@ -817,11 +822,27 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
     if (text && !strcmp(text, "gpu"))
         Psyz_VideoSetNativeRasterizer(0);
     {
-        long scale = env_long("RR4_INTERNAL_RES", 0);
         /* The settings menu applies the preferences again (headless with
-         * RR4_SETTINGS_SCRIPT too): keep this scale there. */
-        if (scale > 0 && Psyz_VideoSetInternalResolution((unsigned)scale) == 0)
-            prefs->scale = (unsigned)scale;
+         * RR4_SETTINGS_SCRIPT too): keep this scale there. An explicit
+         * scale is drawn as asked (no render budget); "auto" follows the
+         * output with the game's budget. RR4_RENDER_BUDGET=x sets it. */
+        const char *res = getenv("RR4_INTERNAL_RES");
+        const char *budget = getenv("RR4_RENDER_BUDGET");
+        long scale = 0;
+        if (res && !strcmp(res, "auto")) {
+            if (Psyz_VideoSetInternalResolution(PSYZ_INTERNAL_RES_AUTO) == 0)
+                prefs->scale = 0;
+        } else {
+            scale = env_long("RR4_INTERNAL_RES", 0);
+            if (scale > 0) {
+                Rr4RenderBudget = 0.0f;
+                if (Psyz_VideoSetInternalResolution((unsigned)scale) == 0)
+                    prefs->scale = (unsigned)scale;
+            }
+        }
+        if (budget && *budget)
+            Rr4RenderBudget = strtof(budget, NULL);
+        Psyz_VideoSetRenderBudget(scale > 0 && !(budget && *budget) ? 0.0f : Rr4RenderBudget);
     }
     text = getenv("RR4_GRAPHICS");
     if (text && *text)

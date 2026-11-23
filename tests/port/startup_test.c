@@ -506,7 +506,7 @@ static void TestPrefsRules(void) {
     /* Without it the working directory's portable file is the one. */
     SDL_unsetenv_unsafe("RR4_CONFIG_HOME");
     p = *Rr4PrefsDefaults();
-    CHECK(Rr4PrefsLoad(&p) && p.volume == 10 && p.scale == 1);
+    CHECK(Rr4PrefsLoad(&p) && p.volume == 10 && p.scale == 0); /* default: auto */
     CHECK(strstr(Rr4PrefsPath(), "ridge-racer-type-4.toml") != NULL);
     SDL_RemovePath("ridge-racer-type-4.toml");
     /* A preferences directory that cannot be created is no location. */

@@ -75,7 +75,7 @@ enum {
 
 typedef struct Rr4Prefs {
     /* [graphics] */
-    unsigned scale; /* internal resolution: 1, 2, 4, 6 or 8 */
+    unsigned scale; /* internal resolution: 0 (auto: the window's), 1, 2, 4, 6 or 8 */
     int fullscreen;
     int fullscreen_field_rate; /* fullscreen at 50 Hz when the display can */
     int vsync; /* Rr4VsyncPref */
@@ -105,6 +105,11 @@ typedef struct Rr4Prefs {
     int keys[RR4_PREFS_BUTTONS];
     int buttons[RR4_PREFS_BUTTONS];
 } Rr4Prefs;
+
+/* The pixels drawn for the picture at most, as a multiple of the window's
+ * (Psyz_VideoSetRenderBudget): antialiasing and a saved high scale stay
+ * affordable at any window size. Diagnostics set 0 for an exact scale. */
+extern float Rr4RenderBudget;
 
 /* Psyz_VideoSetWidescreen for RR4: buffers already drawn stay 4:3. */
 void Rr4ApplyWidescreen(int enabled);

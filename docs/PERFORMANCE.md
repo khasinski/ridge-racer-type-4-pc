@@ -1,5 +1,81 @@
 # Performance measurements
 
+## Output-sized resolution, render budget, batched palette loads (2026-11-23)
+
+Report: a Mac (Apple Silicon, 120 Hz, Metal) mostly at 59.8 FPS with dips
+to 43-44; its log shows `internal resolution set to 16x (16384x8192)`:
+the saved 8x with antialiasing doubled to a 16x scaled VRAM and a
+4096x3840 picture for the window.
+
+Changes (PsyZ unless noted):
+
+1. **Auto resolution** (`PSYZ_INTERNAL_RES_AUTO`, RR4's new default
+   "Auto (window)"): the whole scale that draws a 240-line picture at
+   least at the output's height, the 16:9 box of the window's drawable size
+   (1080p: 5x, 4K / 3456x2234: 9x, 720p: 3x). Chosen again 250 ms after the
+   drawable size changes.
+2. **Render budget** (`Psyz_VideoSetRenderBudget`, RR4 sets 2): the scale
+   drawn at (antialiasing doubles the shown one) is lowered until the
+   picture has at most twice the output's pixels, never below the
+   output-matching scale and at most 12x. It applies to fixed scales too,
+   so the reporter's saved 8x + antialiasing draws 11x at 3456x2234 and 6x
+   at 1080p. Diagnostics' `RR4_INTERNAL_RES=n` draws exactly n (no budget);
+   `RR4_INTERNAL_RES=auto` and `RR4_RENDER_BUDGET=x` reproduce the game.
+3. **Palette (CLUT cache) loads**: each load was its own copy pass; a race
+   frame loads a few dozen palettes some hundred times and on Metal every
+   texture copy is a compute dispatch (1.5 ms of a race frame's GPU time,
+   independent of the resolution). Loads are now queued and recorded in
+   one copy pass before the next command, and a palette loaded again
+   before any other command was recorded reuses the row loaded first.
+   Captures of boot, menus and a Time Attack race at 4x are byte-identical
+   to before (6 frames, deterministic `PSYZ_AUDIO_CLOCK=video` runs).
+
+GPU time per frame, Metal System Trace (`xctrace`, template "Metal System
+Trace", 5 s of a Time Attack race at Helter Skelter, union of the game's
+GPU intervals per 16.72 ms window), M5 Max, hidden renderer
+(`PSYZ_HEADLESS=gpu PSYZ_HEADLESS_PACED=1`, `PSYZ_HEADLESS_SIZE` for the
+output), geometry correction, filtering, widescreen:
+
+| Output | Setting | Drawn at | Before: mean / p99 / max ms | After: mean / p99 / max ms |
+| --- | --- | ---: | ---: | ---: |
+| 3456x2234 (reporter's fullscreen class) | 8x + AA | 16x -> 11x | 5.53 / 9.11 / 9.95 | 3.15 / 6.30 / 6.58 |
+| 3456x2234 | Auto, no AA | 9x | - | 1.78 / 3.37 / 4.18 |
+| 1920x1080 | 8x + AA | 16x -> 6x | 5.83 / 9.04 / 9.84 | 1.00 / 2.60 / 2.72 |
+| 1280x720 (low end) | Auto, no AA | 3x | - | 0.32 / 0.96 / 1.05 |
+
+(The 3456x2234 8x + AA "after" with the old palette copies measured 4.53
+/ 8.65 / 9.09 ms: the palette batching alone is ~0.9 ms a frame there.)
+
+Presented-image intervals, paced hidden runs of the Grand Prix script
+(below), fields 0-10500, race = mode 1/47 from its 300th field:
+
+| Run | Race: median / p99 / max ms, intervals > 20 ms | GPU per frame (PSYZ_GPU_TIME, serialised) median / p99 / max |
+| --- | --- | --- |
+| 1920x1080, 8x + AA, before | 16.72 / 33.90 / 184.5, 173 (with PSYZ_GPU_TIME) | 6.07 / 11.48 / 15.60 |
+| 1920x1080, same settings, after (6x) | 16.72 / 17.27 / 17.45, 0 (with PSYZ_GPU_TIME) | 3.27 / 4.48 / 4.81 |
+| 1280x720, Auto, after (3x) | 16.72 / 17.17 / 17.36, 0 | 1.80 / 2.70 / 2.99 |
+| 3456x2234, 8x + AA, before, no GPU timing | 16.72 / 16.79 / 33.45, 2 | - |
+| 3456x2234, same settings, after, no GPU timing | 16.72 / 16.79 / 33.42, 1 | - |
+
+`PSYZ_GPU_TIME=file` waits for each submission (drawing at the blank,
+then presentation), so its times include the wake-up latency and it
+serialises the CPU and GPU: on its own the M5 Max keeps 60 FPS in the race
+at every setting (last two rows); the serialised runs show how close a
+slower GPU would come to the 16.7 ms field. The menus' and boot's longer
+intervals (33/50 ms) are the 25 fps movies' 2-3 field pulldown and loading,
+the same at every setting. CPU: the main thread's own work in the race is
+a few ms a frame (`sample`); the rest is the limiter's wait and the
+emulated-timing polls (VSync, kernel clock), which another change removes.
+
+Not changed, measured: the presentation (copy of the shown region, the
+antialiasing resolve and the reductions) costs 0.3-1.0 ms; each batch is
+still drawn twice (native 1x VRAM for read-backs and texture feedback,
+then the scaled target); the scaled VRAM is the whole 1024x512 VRAM at the
+scale (two RGBA8 textures: 288 MiB each at 12x, 512 MiB each at the old
+16x), not only the display buffers. Not measured: Windows/Linux GPUs (target-copy
+semi-transparency instead of Metal framebuffer fetch).
+
+
 ## Frame interpolation removed (2026-11-22)
 
 The 60 / 120 FPS presentation (in-between pictures guessed from the PS1 draw

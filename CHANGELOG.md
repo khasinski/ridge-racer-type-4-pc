@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Resolution follows the window; antialiasing and high scales stay
+  affordable.** Internal resolution has a new default, Auto (window): the
+  game draws at the whole multiple of the PlayStation picture that matches
+  the window's drawable height (5x at 1080p, 9x at 4K or a Retina
+  MacBook's fullscreen), chosen again after a resize. Whatever is selected,
+  the picture drawn is held to about twice the window's pixels (at most
+  12x): a saved 8x with antialiasing drew a 16x picture (4096x3840, in a
+  16384x8192 scaled VRAM) even for a 1080p window; it now draws 6x there
+  and 11x on a 3456x2234 display. Settings files keep their value
+  (`internal_resolution = "auto"` is the new default; 1-8 stay valid).
+  The GPU's time for a Time Attack race frame on an M5 Max (Metal System
+  Trace): 8x + antialiasing 5.5 ms (p99 9.1) -> 3.2 ms (p99 6.3) at
+  3456x2234, 5.8 ms (p99 9.0) -> 1.0 ms (p99 2.6) at 1920x1080; Auto
+  without antialiasing at 1280x720 0.3 ms. docs/PERFORMANCE.md has the
+  measurements.
+- Palette loads are batched: a race frame loaded a few dozen palettes
+  some hundred times, each a separate GPU copy (a compute dispatch on
+  Metal); now a palette is copied once until the VRAM changes and the
+  copies go to the GPU together. The frame's copy time went from 1.5 to
+  0.4 ms on an M5 Max; captures are pixel-identical.
+
 - Clean-up, no change in play: the race and car modules no longer carry
   the calls of the removed PS1 CPU time model (`RR_CPU_CYCLES`,
   `RR_WORK_CALL`, the course objects' per-segment clock table and their
