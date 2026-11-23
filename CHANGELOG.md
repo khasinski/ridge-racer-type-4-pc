@@ -30,6 +30,10 @@
   time, two or three fields (2-3-2-3-2, 24.99 fps over the opening movie),
   in step with their sound; the opening movie lasts 130.5 s at either
   timing.
+- Fixed: with Race frame rate on, the Grand Prix crashed on the first
+  fields of a race on course 7 (a rotating beacon light was drawn as the
+  start banner with a missing model). A race now also always starts on a
+  whole original frame, as on the console.
 - **No more PlayStation timing emulation: fast loads and a responsive
   game.** The CD drive, movies, memory cards, sound transfers and the GPU
   no longer imitate the console's hardware delays, and the game's code no

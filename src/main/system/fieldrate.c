@@ -4,6 +4,7 @@
 #include "rr/player_cars.h"
 #include "rr/vehicle_table.h"
 #include "game/system/pad.h"
+#include "game/data/menuvars.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -83,6 +84,20 @@ void RaceFieldRateNextField(void) {
         return;
     }
     next = !RaceTickField;
+    /* A mode's first field is a tick, as a mode's first frame is a whole
+     * frame on the PS1: its counters, setup and events run before anything
+     * that runs every field reads them. The race is set up (and the lane
+     * reset) before its load screens, whose length decides the phase the
+     * race mode would otherwise start on: half of the races began on the
+     * field between ticks, drawn with ModeFrame 0 before the race's first
+     * tick (its ranking, step and camera setup) had run. */
+    {
+        static s32 laneMode = -1;
+        s32 mode = (s32)(((u32)ModeGroup << 8) | (ModeIndex & 0xFF));
+        if (mode != laneMode)
+            next = 1;
+        laneMode = mode;
+    }
     for (int i = 0; i < 2; i++) {
         ControllerState5C *pad = &PlayerControllers[i];
         s32 *action[4] = {&pad->action28, &pad->action2C, &pad->action30, &pad->action34};
