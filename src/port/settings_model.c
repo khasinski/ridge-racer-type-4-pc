@@ -88,7 +88,7 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Aspect ratio", "Classic 4:3 matches a TV. Widescreen 16:9 shows more of the race to the sides; menus stay 4:3.",
             kAspectNames, Aspect,
             SETTINGS_FEATURE_WIDESCREEN),
-    SETTING("Draw distance", "Doubles the course view depth and draws more track scenery. Costs CPU and GPU time. Original keeps the PlayStation visibility.",
+    SETTING("Draw distance", "Doubles the course view depth, draws more track scenery and keeps shading, shadows and car detail at any distance. Costs CPU and GPU time. Original keeps the PlayStation visibility.",
             kDrawDistanceNames, DrawDistance),
     SETTING("Dithering", "Original: PlayStation 15-bit colour, dithered on shaded polygons. Off: smooth full-colour shading.",
             kDitherNames, Dither),

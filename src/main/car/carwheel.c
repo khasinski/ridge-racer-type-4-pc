@@ -1,4 +1,5 @@
 #include "rr/ps1_low_ram.h"
+#include "rr/draw_distance.h"
 #include "rr/rro_model.h"
 #include "game/gfx/model.h"
 #include "rr/track_lighting.h"
@@ -261,6 +262,25 @@ void DrawPlayerCar(RaceVehicle *arg0, s32 viewMode) {
 
 
 
+/* An opponent car's model at manhattan distance i (quarter units) from the
+ * camera: 0 the full car with its wheels, 1 the body and its shadow, 2 the
+ * low body without a shadow, 3 nothing. */
+static int OpponentCarLod(const LodDist6 *d, s32 i) {
+    return i < d->d0 ? 0 : i < d->d2 ? 1 : i < d->d4 ? 2 : 3;
+}
+
+/* Extended draw distance: the original's steps (main view: wheels from about
+ * 2700 units, the shadow from 12800, the whole car from 34800) are well inside
+ * the extended view, so each car keeps the most detailed model its view has
+ * (the mirror never draws the wheel models) wherever it is drawn; the depth
+ * range still culls it past the view. Only the drawn models change: the trail
+ * effects keep the original steps, as outside field-rate races they draw from
+ * the game's rand (RaceDrawRand). */
+static int OpponentCarDrawLod(const LodDist6 *d, int lod) {
+    int best = d->d0 < 0 ? 1 : 0;
+    return ExtendedDrawDistance && lod > best ? best : lod;
+}
+
 void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     MatrixWords32 sp20;
     MatrixWords32 sp40;
@@ -269,14 +289,17 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     s16 spA0[4];
     MatrixWords32 spA8[6];
     Vector sp168[5];
+    MatrixWords32 lowRotation;
+    Vector lowPosition;
+    const LodDist6 *steps = &CarModelLodDistances[arg1];
     s32 slot_half;
     s32 slot_idx;
     s32 fp_val;
     s32 s7_val;
     s32 s5_val;
-    s32 v0_drag;
     s32 s4_val;
     s32 i;
+    int lod, drawLod;
     u8 a1_val;
 
     slot_half = arg0->slotIndex1E6 >> 1;
@@ -295,146 +318,156 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         sp168[0].z = -sp168[0].z;
     }
     i = sp168[0].x + sp168[0].z;
-    if (sp168[1].z >= 0) {
-        s7_val = 0;
-        if (arg1 == 1) {
-            s7_val = -0x5A;
+    if (sp168[1].z < 0) {
+        DrawWheelTrailEffects(arg0, 0, 0, 0, slot_idx, 0, 0);
+        return;
+    }
+    s7_val = 0;
+    if (arg1 == 1) {
+        s7_val = -0x5A;
+    }
+    s5_val = ComputeCarSurfaceLighting((void *)arg0, GetCarTrackLightIndex(arg0));
+    s5_val = (s16)(TrackLightTable[s5_val].flags02 | ForceTailLightTrails);
+    if (arg0->flags1E4 & 0x10) {
+        if (arg0->control.dynamics94.steering.target18.halves.high > 0) {
+            s5_val |= 2;
         }
-        s5_val = ComputeCarSurfaceLighting((void *)arg0, GetCarTrackLightIndex(arg0));
-        s5_val = (s16)(TrackLightTable[s5_val].flags02 | ForceTailLightTrails);
-        if (arg0->flags1E4 & 0x10) {
-            if (arg0->control.dynamics94.steering.target18.halves.high > 0) {
-                s5_val |= 2;
-            }
-        } else {
-            if (arg0->control.dragFlag46 > 0) {
-                s5_val |= 2;
-            }
-        }
-        s5_val &= 3;
-        BuildRotMatrixY(&sp80, -arg0->rot54);
-        BuildRotMatrixX(&sp40, -arg0->rot50);
-        BuildRotMatrixZ(&sp60, -arg0->rot58);
-        MulMatrix(&sp40, &sp60);
-        MulMatrix(&sp80, &sp40);
-        MulMatrix0(&LightMatrix.matrix, &sp80, &sp60);
-        RR_GTE_SETLLM(&sp60);
-        if (i < CarModelLodDistances[arg1].d0) {
-            BuildRotMatrixY(&sp20, -arg0->rot54);
-            MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
-            BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
-            BuildRotMatrixZ(&sp60, arg0->wheelRotZ1AA - arg0->rot58);
-            MulMatrix(&spA8[0], &sp60);
-            MulMatrix2(&sp20, &spA8[0]);
-            sp168[0] = arg0->bodyPosition;
-            sp168[1].x = arg0->ir70[0] + arg0->ir60[0];
-            sp168[1].y = arg0->ir70[1] + arg0->ir60[1];
-            sp168[1].z = arg0->ir70[2] + arg0->ir60[2];
-            BuildRotMatrixX(&spA8[1], -arg0->ang80);
-            BuildRotMatrixZ(&sp60, -arg0->ang84);
-            MulMatrix(&spA8[1], &sp60);
-            MulMatrix2(&sp20, &spA8[1]);
-            sp168[2].x = arg0->worldPosition10.words[0] + arg0->ir60[0];
-            sp168[2].y = arg0->worldPosition10.words[1] + arg0->ir60[1];
-            sp168[2].z = arg0->worldPosition10.words[2] + arg0->ir60[2];
-            if (arg0->wheelSteering17C & 0x1000) {
-                s4_val = -arg0->wheelSteering17C;
-            } else {
-                s4_val = arg0->wheelSteering17C;
-            }
-            if (CarBoundsTable[slot_half]->wheelRotationAxis == 1) {
-                BuildRotMatrixY(&spA8[3], s4_val);
-            } else {
-                BuildRotMatrixX(&spA8[3], s4_val);
-            }
-            spA8[2] = sp40;
-            MulMatrix2(&sp20, &spA8[2]);
-            MulMatrix2(&spA8[2], &spA8[3]);
-            BuildRotMatrixY(&spA8[4], arg0->lateralMotion178 / 12);
-            BuildRotMatrixX(&spA8[5], s4_val);
-            MulMatrix2(&spA8[2], &spA8[4]);
-            MulMatrix2(&spA8[4], &spA8[5]);
-            RR_GTE_SETROT(&sp80);
-            for (i = 0; i < 2; i++) {
-                s32 v0_w = CarBoundsTable[slot_half]->halfWidth;
-                if (i & 1) {
-                    v0_w = -v0_w;
-                }
-                spA0[0] = v0_w * 4;
-                spA0[1] = CarBoundsTable[slot_half]->wheelOffsetY * 4;
-                spA0[2] = -CarBoundsTable[slot_half]->halfLength * 4;
-                RR_GTE_MVMVA_ROT_V0_NOCV(spA0);
-                RR_GTE_STORE_IR(&sp168[i + 3]);
-                sp168[i + 3].x += sp168[2].x;
-                sp168[i + 3].y += sp168[2].y;
-                sp168[i + 3].z += sp168[2].z;
-            }
-            DrawWheelTrailEffects(arg0, &sp168[1].x, &spA8[1], &sp80, slot_idx, s5_val, 0);
-            for (i = 0; i < 8; i++) {
-                u8 s0_mode = CarPartRenderModes[i];
-                if (s0_mode != 1 || DrawRroModel(&sp168[CarPartTransformIndices[i]], &spA8[CarPartMatrixIndices[i]], CarPartModelIndices[i], fp_val) != s0_mode) {
-                    SetGteObjectTransform(
-                        (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
-                        (const s16 *)&sp168[CarPartTransformIndices[i]],
-                        spA8[CarPartMatrixIndices[i]].w);
-                    G->col78 = fp_val;
-                    a1_val = 1;
-                    if (CarPartModelIndices[i] < ModelBankFormat) {
-                        a1_val = CarPartModelIndices[i];
-                    }
-                    SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, i != 0, 0);
-                }
-            }
-            return;
-        } else if (i < CarModelLodDistances[arg1].d2) {
-            BuildRotMatrixY(&sp20, -arg0->rot54);
-            MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
-            BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
-            BuildRotMatrixZ(&sp60, arg0->wheelRotZ1AA - arg0->rot58);
-            MulMatrix(&spA8[0], &sp60);
-            MulMatrix2(&sp20, &spA8[0]);
-            sp168[0] = arg0->bodyPosition;
-            sp168[1].x = arg0->ir70[0] + arg0->ir60[0];
-            sp168[1].y = arg0->ir70[1] + arg0->ir60[1];
-            sp168[1].z = arg0->ir70[2] + arg0->ir60[2];
-            BuildRotMatrixX(&spA8[1], -arg0->ang80);
-            BuildRotMatrixZ(&sp60, -arg0->ang84);
-            MulMatrix(&spA8[1], &sp60);
-            MulMatrix2(&sp20, &spA8[1]);
-            DrawWheelTrailEffects(arg0, &sp168[1].x, &spA8[1], &sp80, slot_idx, s5_val, s7_val);
-            SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&sp168[0], spA8[0].w);
-            G->col78 = 0;
-            a1_val = 1;
-            if (ModelBankFormat >= 4) {
-                a1_val = 3;
-            }
-            SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 0, s7_val);
-            if (DrawRroModel(&sp168[1], &spA8[1], 1, fp_val) == 0) {
-                SetGteObjectTransform(
-                    (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
-                    (const s16 *)&sp168[1],
-                    spA8[1].w);
-                G->col78 = fp_val;
-                SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, 1, 1, s7_val);
-            }
-            return;
-        } else if (i < CarModelLodDistances[arg1].d4) {
-            MulMatrix0((const MatrixWords32 *)((void *)SCRATCH_ROT_MATRIX), &sp80, &spA8[0]);
-            sp168[0].x = arg0->worldPosition10.words[0];
-            sp168[0].y = arg0->worldPosition10.words[1];
-            sp168[0].z = arg0->worldPosition10.words[2];
-            DrawWheelTrailEffects(arg0, &sp168[0].x, &spA8[0], &sp80, slot_idx, s5_val, s7_val);
-            SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&sp168[0], spA8[0].w);
-            G->col78 = fp_val;
-            a1_val = 1;
-            if (ModelBankFormat >= 3) {
-                a1_val = 2;
-            }
-            SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 1, s7_val);
-            return;
+    } else {
+        if (arg0->control.dragFlag46 > 0) {
+            s5_val |= 2;
         }
     }
-    DrawWheelTrailEffects(arg0, 0, 0, 0, slot_idx, 0, 0);
+    s5_val &= 3;
+    BuildRotMatrixY(&sp80, -arg0->rot54);
+    BuildRotMatrixX(&sp40, -arg0->rot50);
+    BuildRotMatrixZ(&sp60, -arg0->rot58);
+    MulMatrix(&sp40, &sp60);
+    MulMatrix(&sp80, &sp40);
+    MulMatrix0(&LightMatrix.matrix, &sp80, &sp60);
+    RR_GTE_SETLLM(&sp60);
+    lod = OpponentCarLod(steps, i);
+    drawLod = OpponentCarDrawLod(steps, lod);
+
+    /* Poses: the body (0) and its shadow (1), then the wheels (2..4). */
+    if (drawLod <= 1) {
+        BuildRotMatrixY(&sp20, -arg0->rot54);
+        MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
+        BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
+        BuildRotMatrixZ(&sp60, arg0->wheelRotZ1AA - arg0->rot58);
+        MulMatrix(&spA8[0], &sp60);
+        MulMatrix2(&sp20, &spA8[0]);
+        sp168[0] = arg0->bodyPosition;
+        sp168[1].x = arg0->ir70[0] + arg0->ir60[0];
+        sp168[1].y = arg0->ir70[1] + arg0->ir60[1];
+        sp168[1].z = arg0->ir70[2] + arg0->ir60[2];
+        BuildRotMatrixX(&spA8[1], -arg0->ang80);
+        BuildRotMatrixZ(&sp60, -arg0->ang84);
+        MulMatrix(&spA8[1], &sp60);
+        MulMatrix2(&sp20, &spA8[1]);
+    }
+    if (drawLod == 0) {
+        sp168[2].x = arg0->worldPosition10.words[0] + arg0->ir60[0];
+        sp168[2].y = arg0->worldPosition10.words[1] + arg0->ir60[1];
+        sp168[2].z = arg0->worldPosition10.words[2] + arg0->ir60[2];
+        if (arg0->wheelSteering17C & 0x1000) {
+            s4_val = -arg0->wheelSteering17C;
+        } else {
+            s4_val = arg0->wheelSteering17C;
+        }
+        if (CarBoundsTable[slot_half]->wheelRotationAxis == 1) {
+            BuildRotMatrixY(&spA8[3], s4_val);
+        } else {
+            BuildRotMatrixX(&spA8[3], s4_val);
+        }
+        spA8[2] = sp40;
+        MulMatrix2(&sp20, &spA8[2]);
+        MulMatrix2(&spA8[2], &spA8[3]);
+        BuildRotMatrixY(&spA8[4], arg0->lateralMotion178 / 12);
+        BuildRotMatrixX(&spA8[5], s4_val);
+        MulMatrix2(&spA8[2], &spA8[4]);
+        MulMatrix2(&spA8[4], &spA8[5]);
+        RR_GTE_SETROT(&sp80);
+        for (i = 0; i < 2; i++) {
+            s32 v0_w = CarBoundsTable[slot_half]->halfWidth;
+            if (i & 1) {
+                v0_w = -v0_w;
+            }
+            spA0[0] = v0_w * 4;
+            spA0[1] = CarBoundsTable[slot_half]->wheelOffsetY * 4;
+            spA0[2] = -CarBoundsTable[slot_half]->halfLength * 4;
+            RR_GTE_MVMVA_ROT_V0_NOCV(spA0);
+            RR_GTE_STORE_IR(&sp168[i + 3]);
+            sp168[i + 3].x += sp168[2].x;
+            sp168[i + 3].y += sp168[2].y;
+            sp168[i + 3].z += sp168[2].z;
+        }
+    }
+
+    /* The trail effects at the original's step. */
+    switch (lod) {
+    case 0:
+        DrawWheelTrailEffects(arg0, &sp168[1].x, &spA8[1], &sp80, slot_idx, s5_val, 0);
+        break;
+    case 1:
+        DrawWheelTrailEffects(arg0, &sp168[1].x, &spA8[1], &sp80, slot_idx, s5_val, s7_val);
+        break;
+    case 2:
+        MulMatrix0((const MatrixWords32 *)((void *)SCRATCH_ROT_MATRIX), &sp80, &lowRotation);
+        lowPosition.x = arg0->worldPosition10.words[0];
+        lowPosition.y = arg0->worldPosition10.words[1];
+        lowPosition.z = arg0->worldPosition10.words[2];
+        DrawWheelTrailEffects(arg0, &lowPosition.x, &lowRotation, &sp80, slot_idx, s5_val, s7_val);
+        break;
+    default:
+        DrawWheelTrailEffects(arg0, 0, 0, 0, slot_idx, 0, 0);
+        break;
+    }
+
+    switch (drawLod) {
+    case 0:
+        for (i = 0; i < 8; i++) {
+            u8 s0_mode = CarPartRenderModes[i];
+            if (s0_mode != 1 || DrawRroModel(&sp168[CarPartTransformIndices[i]], &spA8[CarPartMatrixIndices[i]], CarPartModelIndices[i], fp_val) != s0_mode) {
+                SetGteObjectTransform(
+                    (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
+                    (const s16 *)&sp168[CarPartTransformIndices[i]],
+                    spA8[CarPartMatrixIndices[i]].w);
+                G->col78 = fp_val;
+                a1_val = 1;
+                if (CarPartModelIndices[i] < ModelBankFormat) {
+                    a1_val = CarPartModelIndices[i];
+                }
+                SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, i != 0, 0);
+            }
+        }
+        break;
+    case 1:
+        SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&sp168[0], spA8[0].w);
+        G->col78 = 0;
+        a1_val = 1;
+        if (ModelBankFormat >= 4) {
+            a1_val = 3;
+        }
+        SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 0, s7_val);
+        if (DrawRroModel(&sp168[1], &spA8[1], 1, fp_val) == 0) {
+            SetGteObjectTransform(
+                (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
+                (const s16 *)&sp168[1],
+                spA8[1].w);
+            G->col78 = fp_val;
+            SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, 1, 1, s7_val);
+        }
+        break;
+    case 2:
+        SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&lowPosition, lowRotation.w);
+        G->col78 = fp_val;
+        a1_val = 1;
+        if (ModelBankFormat >= 3) {
+            a1_val = 2;
+        }
+        SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 1, s7_val);
+        break;
+    }
 }
 
 /* Initial values of the globals this module owns. */

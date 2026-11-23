@@ -1,4 +1,5 @@
 #include "rr/field_rate.h"
+#include "rr/draw_distance.h"
 #include <string.h>
 #include "game/gfx/poly1.h"
 #include "rr/player_cars.h"
@@ -464,6 +465,14 @@ void ApplySegmentVisibilityMask(void) {
     } else {
         g[0x2E] = DefaultSegmentVisibilityMask;
     }
+    /* g[0x2E] is the course's far depth (OTZ, per segment and viewing
+     * octant, 2000..11200, about 8000..45000 units ahead), past which course
+     * tiles drop their vertex shading (baked shadows) and subdivision and take
+     * a half-resolution texture and one flat colour. With the extended draw
+     * distance that swap happens a short way ahead of the car inside a much
+     * longer view: draw every tile in full detail instead. */
+    if (ExtendedDrawDistance)
+        g[0x2E] = 0x7FFF;
 }
 
 void SetSegmentVisibilityTable(short *arg0) {

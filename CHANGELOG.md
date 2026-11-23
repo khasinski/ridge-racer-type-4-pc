@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- **Extended draw distance: no more shading, shadow and car-detail pop-in a
+  short way ahead.** The extended view only widened the course lists and the
+  depth range; the original's near-detail steps stayed where they were, well
+  inside it. Course tiles past a per-segment far depth (about 40-225 m
+  ahead, typically 105 m) were drawn in one flat colour with a
+  half-resolution texture, so baked shading such as the shadows on walls and
+  under bridges appeared as the car closed in; opponents dropped their wheels
+  past about 14 m, their shadow past about 65 m and vanished completely past
+  about 175 m (in the mirror: no wheels, shadow to 52 m, car to 83 m),
+  against a view of about 580 m. With
+  Extended on, course tiles keep full detail at any distance and opponents
+  keep their full model (the mirror its body and shadow) until the depth
+  range culls them. Only the drawn models change: the cars' trail effects
+  keep the original steps, so races, replays and the random sequence are
+  unchanged (car-state traces identical before and after in Time Attack on
+  four courses, Grand Prix at the field rate and the original rate, and
+  Versus), and with Original draw distance every picture is byte-identical.
+  The course's near subdivision levels are left as they are: forcing them
+  further out opens seams between tiles. Cost at 8x, hidden Metal: game
+  frame work +0.2 ms in a Grand Prix (4.7 to 4.9 ms mean), +0.04 ms in Time
+  Attack.
+
 - **The 1x copy of the VRAM is drawn only when the game reads it.** With a
   scaled picture every batch used to be drawn twice, at the scale and into
   the native 1x VRAM that serves read-backs (the replay blur's copy of the

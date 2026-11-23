@@ -9,6 +9,8 @@
 #include "rr/player_cars.h"
 #include "rr/widescreen.h"
 #include "game/camera/viewini.h"
+#include "game/gfx/poly1.h"
+#include "game/data/globals.h"
 #include "scratchpad.h"
 
 extern int ViewUsesCarTrackNode;
@@ -78,5 +80,25 @@ int main(void) {
     CHECK(((RroSceneScratchPrefix *)SCRATCHPAD)->depthShift60 == 5);
     BuildViewSegmentObjectList(0);
     Expect(original, 2);
+    /* The far depth (scratch 0x5C) past which course tiles lose their
+     * shading comes from the segment table, or the default for a negative
+     * entry; the extended draw distance keeps every tile in full detail. */
+    {
+        static short farDepths[16] = {2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000,
+                                      -1, -1, -1, -1, -1, -1, -1, -1};
+        short *farDepth = &((short *)SCRATCHPAD)[0x2E];
+        SetSegmentVisibilityTable(farDepths);
+        DefaultSegmentVisibilityMask = 0x1400;
+        ApplySegmentVisibilityMask();
+        CHECK(*farDepth == 2000);
+        farDepths[0] = farDepths[1] = farDepths[2] = farDepths[3] = -1;
+        farDepths[4] = farDepths[5] = farDepths[6] = farDepths[7] = -1;
+        ApplySegmentVisibilityMask();
+        CHECK(*farDepth == 0x1400);
+        ExtendedDrawDistance = 1;
+        ApplySegmentVisibilityMask();
+        CHECK(*farDepth == 0x7FFF);
+        ExtendedDrawDistance = 0;
+    }
     return failures ? 1 : 0;
 }
