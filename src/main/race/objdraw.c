@@ -269,6 +269,7 @@ static void TrackObjectEmit(int quads, void *list, s32 count, s32 mode) {
 #define TrackObjectEmitG4(list, count, mode) TrackObjectEmit(1, (list), (count), (mode))
 
 static void DrawTrackObjectsWork(s32 arg0) {
+    s32 beam; /* the beacon's drawn angle */
     MatrixWords32 sp18;
     MatrixWords32 sp38;
     MatrixWords32 sp58;
@@ -658,7 +659,10 @@ static void DrawTrackObjectsWork(s32 arg0) {
         if (q == 3) {
             TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 - 300 < 50) ? TrackObjectStates[i].f4 + RaceFieldSplit(10) : TrackObjectStates[i].f4;
         } else if (q == 0) {
+            /* at 0 at the latest, as the original's steps of 5 end */
             TrackObjectStates[i].f4 = (TrackObjectStates[i].f4 > 0) ? TrackObjectStates[i].f4 - RaceFieldSplit(5) : TrackObjectStates[i].f4;
+            if (TrackObjectStates[i].f4 < 0 && RaceFieldRateLive)
+                TrackObjectStates[i].f4 = 0;
         }
 
         if ((TrackObjectStates[i].f4 % 100) == 0) {
@@ -876,19 +880,28 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 s32 dz = (TrackObjectStates[i].f14 - (scene->view.projection.pose08.position00.xyz.z)) >> 4;
                 s3[0x00 / 4] = CordicSqrt((dx * dx + dz * dz) >> 12);
             }
+            /* The beam turns 0x20 per original tick and f8 keeps the
+             * original's values (multiples of 0x20: f8 / 10 is never 1, which
+             * the model code above reads as a start banner). At field rate
+             * the field between ticks draws it half a step on
+             * (rr/field_rate.h). */
+            beam = 0;
             if (((u16)GameModeType - 2U) < 3U) {
-                if (TrackObjVisibleFrame[i] != RaceFieldTimeAfter(ModeFrame) && RacePaused == 0) {
-                    TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + RaceFieldSplit(((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
+                if (TrackObjVisibleFrame[i] != RaceFieldTimeAfter(ModeFrame) && RacePaused == 0 && RaceSlowTick()) {
+                    TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + (((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
                 }
                 TrackObjVisibleFrame[i] = RaceFieldTimeAfter(ModeFrame);
-            } else if (RacePaused == 0) {
-                TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + RaceFieldSplit(((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
+            } else if (RacePaused == 0 && RaceSlowTick()) {
+                TrackObjectStates[i].f8 = (TrackObjectStates[i].f8 + (((i & 1) == 0) ? 0x20 : 0xFE0)) % 0x1000;
             }
+            if (RacePaused == 0 && RaceFieldPhase())
+                beam = ((i & 1) == 0) ? 0x10 : -0x10;
+            beam = (TrackObjectStates[i].f8 + beam) & 0xFFF;
             if (s3[0x00 / 4] < 900) {
                 for (j = 0; j < 2; j++) {
                     spA0[j].vx = 0;
                     spA0[j].vy = -1000 - s3[0x00 / 4];
-                    { s32 t = ((((s3[0x00 / 4] - 500) * 3 >> 2) + 900) * rsin(TrackObjectStates[i].f8) >> 12) - 400; spA0[j].vz = j * (((s3[0x00 / 4] - 500) / 7) + 400) + t; }
+                    { s32 t = ((((s3[0x00 / 4] - 500) * 3 >> 2) + 900) * rsin(beam) >> 12) - 400; spA0[j].vz = j * (((s3[0x00 / 4] - 500) / 7) + 400) + t; }
                     sp128[j].b = 0;
                     sp128[j].g = 0;
                     sp128[j].r = 0;
@@ -935,7 +948,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 for (j = 0; j < 2; j++) {
                     spA0[j].vx = 0;
                     spA0[j].vy = -1000 - s3[0x00 / 4];
-                    { s32 t = ((((s3[0x00 / 4] - 500) * 3 >> 2) + 900) * rsin(TrackObjectStates[i].f8) >> 12) - 400; spA0[j].vz = j * (((s3[0x00 / 4] - 500) / 7) + 400) + t; }
+                    { s32 t = ((((s3[0x00 / 4] - 500) * 3 >> 2) + 900) * rsin(beam) >> 12) - 400; spA0[j].vz = j * (((s3[0x00 / 4] - 500) / 7) + 400) + t; }
                     sp128[j].b = 0;
                     sp128[j].g = 0;
                     sp128[j].r = 0;
@@ -967,7 +980,7 @@ static void DrawTrackObjectsWork(s32 arg0) {
                 for (j = 0; j < 2; j++) {
                     spA0[j].vx = 0;
                     spA0[j].vy = -350 - (s3[0x00 / 4] >> 1);
-                    { s32 t = ((rsin(TrackObjectStates[i].f8) * 3000) >> 12) - 400; spA0[j].vz = j * 800 + t; }
+                    { s32 t = ((rsin(beam) * 3000) >> 12) - 400; spA0[j].vz = j * 800 + t; }
                     sp128[j].b = 0;
                     sp128[j].g = 0;
                     sp128[j].r = 0;
