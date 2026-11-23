@@ -93,18 +93,41 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      message box and quits (headless runs log it).
    - **GPU memory:** SDL keeps every buffer it cycles in (a buffer written
      while the GPU still reads it) and never frees them, so PsyZ cycles
-     rarely. Batches go one after another into one vertex/index buffer and
-     its transfer buffer (`RingReserve`), VRAM uploads into one upload
-     buffer (`UploadMap`); only a wrap cycles them, and it submits the work
-     with a fence and waits for the fence three wraps before. Presents keep
+     rarely. Batches go one after another into the vertex/index buffers of
+     the ring's current generation and its transfer buffer (`RingReserve`),
+     VRAM uploads into one upload buffer (`UploadMap`); a wrap moves to the
+     next of four generations (own buffers, not SDL cycles, so a deferred
+     native draw can still use its generation's vertices) and cycles the
+     transfer buffer, and it submits the work with a fence and waits for the
+     fence three wraps before. Presents keep
      two frames in flight (`SubmitFrame`). A waited fence is released after
      the next submit: SDL's Metal backend frees a finished command buffer
      (and its hold on the buffers it used) in a later submit, and a fence
      released before that was taken by the very next command buffer, so the
      old one never looked finished. A frame's command buffer is submitted
-     every 256 descriptors on every backend. At 8x with antialiasing a race
-     and its replay stay at about 2.6 GB (physical footprint, including GPU
-     memory) instead of growing past 10 GB.
+     every 256 descriptors on every backend (a test forces a submission
+     before every render pass and compares the pictures). At 8x with
+     antialiasing a race and its replay stay at about 2.6 GB (physical
+     footprint, including GPU memory) instead of growing past 10 GB.
+   - **Native VRAM on demand:** with a scaled target the native (1x) VRAM
+     only serves what reads the VRAM back (textures and palettes the game
+     drew itself, such as the replay's blur that draws the previous frame
+     over the next; StoreImage, MoveImage, a 24-bit display, captures). A
+     batch that draws only into recently shown display buffers keeps its
+     native draw queued (`NativeDefer`: views, indices, compact vertices,
+     ring generation) and draws it into the native VRAM, in order, only
+     when a read or write needs those pixels (`NativeRead`/`NativeWrite`
+     with the earlier queued draws they depend on); a fill or upload that
+     covers a queued draw drops it. A race frame nobody reads is never
+     drawn at 1x. Queued draws whose vertex buffers or palette rows are
+     about to be reused are dropped (or drawn, when from the last two
+     presents), their pixels marked out of date and rebuilt from the scaled
+     picture if read later (logged). `PSYZ_NATIVE_DEFER=0` draws every
+     batch at once; `PSYZ_NATIVE_VERIFY=1` draws a shadow native VRAM at
+     once and compares it at every read that drew queued draws or rebuilt
+     pixels, every download and one read in 61; `PSYZ_NATIVE_TRACE=1` logs
+     the queue's work. With framebuffer fetch (Metal) the scaled target has
+     no copy for semi-transparency (half the scaled VRAM memory).
    - **Geometry correction:** the renderers store every projected vertex
      through `RR_GTE_STORE_SXY` / `RR_SXY_COPY` (`include/rr_asm.h`), so
      PsyZ finds the precise projection of each packet vertex by its address

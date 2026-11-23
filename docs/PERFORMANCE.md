@@ -1,5 +1,79 @@
 # Performance measurements
 
+## Native VRAM drawn on demand; command buffer rollovers (2026-11-23)
+
+**Rollover audit.** `ReserveDrawDescriptors` submits the pending command
+buffer every 256 sampler descriptors, so a frame's drawing goes to the GPU
+in several submissions. Checked for anything that could drop or reorder
+draws: every render pass sets its viewport, scissor, uniforms, samplers
+and pipeline after the reservation (nothing carries across a submission);
+the batch's vertex upload and VRAM-to-sample copy are recorded before it,
+in the earlier buffer; queued CLUT loads are recorded by `AcquireCmd` into
+whichever buffer comes next, before the commands that read them; there is
+no depth buffer (order is submission order on one queue); every pass loads
+and stores (only the swapchain blit clears, on purpose). On the presented
+path the swapchain image is acquired on the present's own command buffer
+after the frame's drawing was flushed, and nothing between acquisition and
+submission can roll over (blits only). The differences between the hidden
+target and the swapchain are the target texture, the fence (`SubmitFrame`)
+and the non-waiting acquire, which can skip showing a frame (an old image
+stays) but cannot show a partial one. No bug found. Test
+`command_buffer_rollovers_keep_every_draw` draws a frame of 400 overlapping
+opaque/semi-transparent quads in four blend modes, lines, mask-bit changes,
+drawing-area changes and a quad textured from its own display buffer at
+1x/2x/4x with the budget at 4 descriptors (818-1637 rollovers in two
+frames) and requires the scaled VRAM, the native VRAM and the presented
+output to equal those drawn with no limit. The 120 Hz Metal pop-in report
+is not explained by this path; it was not reproduced here.
+
+**What reads the native VRAM in RR4** (traces of every flush, read and
+write): the replay blur (overlay sprites read the previous frame's buffer,
+1 frame old); 24-bit movie display (StoreImage of the shown buffer every
+frame); menu palettes at rows 506-511 inside the interlaced 320x512 menu
+buffer; palette/texture uploads into pages queued menu frames read. Race
+frames: nothing (Grand Prix and Time Attack fill the back buffer each
+frame).
+
+**Deferred native draws** (PsyZ `NativeDefer`): a batch whose drawing areas
+lie in recently shown display buffers keeps its 1x draw queued; it is drawn
+in order when a read (texture or CLUT footprint, download) or a write
+(upload, fill, move, an immediate 1x draw) touches its pixels or what it
+read. A full overwrite drops it; an opaque untextured rectangle covering it
+drops it. Its vertices stay in their ring generation (four own buffers
+instead of SDL cycling) and its palette rows in the CLUT cache until reused;
+there it is dropped and its pixels marked out of date, rebuilt from the
+scaled picture if read. Per 6000-12000-field run: attract 6383 deferred /
+4559 drawn later; GP 12308 / 3908 (4449 dropped, 3903 overwritten); Versus
+7172 / 1761. Rebuilt pixels occur only in menus (a palette upload replays
+the queued menu frames); every read of them was verified.
+
+Image check (`PSYZ_AUDIO_CLOCK=video`, captures every 15 fields of the
+rendered frame and the 1280x720 output, attract 12000 / TA 6600 / GP 12600
+/ GP with the replay blur toggled 12600 / Versus 7000 fields, at 1x and 4x
+with geometry correction + widescreen, 6x with antialiasing + filtering):
+40,380 of 40,380 captures byte-identical to before. `PSYZ_NATIVE_VERIFY=1`
+(a shadow 1x VRAM drawn at once, compared at every read that drew queued
+draws or rebuilt pixels, every download and one read in 61): 0 differing
+pixels in 297,456 reads (1.39 Gpx) at 4x and the same at 6x+AA.
+
+Not landed: presenting without the copy of the shown region (when not
+antialiasing). The nearest blit from the big VRAM texture rounds a texel
+boundary differently: one 247-pixel row differed on the Time Attack loading
+screen at 1x (1280x720). A scaled VRAM only as wide as the drawn/displayed
+area (512 of 1024 columns in RR4) showed no measurable GPU difference on
+the M5 Max (would halve memory again); not landed.
+
+Throughput, unpaced Time Attack race frames (present-log ms per frame,
+median of 3 runs, M5 Max shared with other agents' runs; spread between
+runs 10-30%): 1920x1080 Auto 5x 2.10 -> 1.48, 1280x720 Auto 3x 1.51 ->
+1.28, 3456x2234 Auto+AA (budget 2) 3.00 -> 2.57. With `PSYZ_NATIVE_DEFER=0`
+the new build measured within noise of the deferred one (1.49 / 1.30 /
+2.59), so these runs cannot attribute the difference; an earlier
+serialised `PSYZ_GPU_TIME` comparison of the same race with the 1x pass
+skipped outright gave 0.72 -> 0.60 ms GPU per frame at 1080p and 0.67 ->
+0.56 at 720p, and 12% less main-thread CPU. CPU user time of the runs:
+3.14 -> 2.53 s (1080p), 2.25 -> 2.23 s (720p), 3.01 -> 2.85 s (4K).
+
 ## Output-sized resolution, render budget, batched palette loads (2026-11-23)
 
 Report: a Mac (Apple Silicon, 120 Hz, Metal) mostly at 59.8 FPS with dips

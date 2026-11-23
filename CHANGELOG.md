@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- **The 1x copy of the VRAM is drawn only when the game reads it.** With a
+  scaled picture every batch used to be drawn twice, at the scale and into
+  the native 1x VRAM that serves read-backs (the replay blur's copy of the
+  previous frame, 24-bit movie frames, palettes, StoreImage). A batch that
+  draws only into the shown buffers now keeps its 1x draw queued and draws
+  it, in order, only when something reads or overwrites those pixels; race
+  frames nobody reads are never drawn at 1x. Captures of the attract mode,
+  Time Attack, Grand Prix (with the replay blur switched on), Versus and
+  their menus, movies and transitions at 1x, 4x and 6x + antialiasing are
+  byte-identical to before (40,380 pictures), and a diagnostic shadow 1x
+  VRAM (`PSYZ_NATIVE_VERIFY=1`) matched at every one of ~600,000 checked
+  reads. On Metal the scaled target no longer has a second copy for
+  semi-transparency (framebuffer fetch does not use it): half the scaled
+  VRAM memory (242 MiB less at 11x). The GPU's command buffer rollovers
+  were audited for lost or reordered draws (none found); a test now forces
+  one before every render pass and compares the pictures.
+
 - **Resolution follows the window; antialiasing and high scales stay
   affordable.** Internal resolution has a new default, Auto (window): the
   game draws at the whole multiple of the PlayStation picture that matches
