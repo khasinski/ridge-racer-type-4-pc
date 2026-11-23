@@ -15,7 +15,6 @@
 #include "rr/overlay661_init.h"
 #include "rr/overlay668_camera.h"
 #include "rr/audio_loop.h"
-#include "rr/cpu_work.h"
 #include "rr/field_rate.h"
 
 extern int MenuSoundEffectMap;
@@ -109,7 +108,7 @@ void InterpolateObjectKeyframe(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
     }
 }
 
-static void UpdateTrackObjectsWork(void) {
+void UpdateTrackObjects(void) {
     int i;
     int s0;
     int *sp = (int *)(SCRATCHPAD + 0x7C);
@@ -124,9 +123,7 @@ static void UpdateTrackObjectsWork(void) {
 
     UpdateTrackObjectActivation();
     for (i = 0; i < TrackObjectCount; i++) {
-            RrWorkCount[RR_WORK_OBJECTS]++;
             if (TrackObjectStates[i].f24 == 1) {
-                RrWorkCount[RR_WORK_OBJECTS_ACTIVE]++;
                 if (TrackObjectDefs[i].f8 == 0xA) {
                     if (TrackObjectStates[i].f8 == 0) {
                         if (GameModeType != 1) {
@@ -239,7 +236,6 @@ static void UpdateTrackObjectsWork(void) {
                         if (t0 == 0) {
                             TrackObjectStates[i].f24 = 0;
                         } else {
-                            RrWorkCount[RR_WORK_OBJECT_KEYS]++;
                             switch (TrackObjectKeyframes[s0].f08 % 10) {
                             case 1:
                             case 4:
@@ -395,11 +391,6 @@ static void UpdateTrackObjectsWork(void) {
 next_iter:
         ;
     }
-}
-
-/* With its PS1 time (rr/cpu_work.h). */
-void UpdateTrackObjects(void) {
-    RR_WORK_CALL(UpdateTrackObjectsWork(), &RrCostUpdateTrackObjects);
 }
 
 /* Initial values of the globals this module owns. */

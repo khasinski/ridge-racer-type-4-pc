@@ -1,5 +1,4 @@
 #include "rr/field_rate.h"
-#include "rr/ps1_sizes.h"
 #include "rr/video_timing.h"
 #include "game/data/resinit.h"
 #include "psyq/libgte/rotmat.h"
@@ -66,7 +65,7 @@ void InitPlayerCar(RaceVehicle *vehicle, s32 recordIndex, s32 gridIndex)
 
     control = &vehicle->control;
     record = CarRecordPtrs[recordIndex];
-    PsyqBzeroPs1(vehicle, sizeof(*vehicle), RR_PS1_RACE_VEHICLE_BYTES);
+    PsyqBzero(vehicle, (s32)(sizeof(*vehicle)));
     control->previewSample84.halves.low = SelectionRows.entries[recordIndex].option & 1;
     vehicle->slotIndex1E6 = recordIndex * 2;
     control->playerFlags24 = recordIndex;

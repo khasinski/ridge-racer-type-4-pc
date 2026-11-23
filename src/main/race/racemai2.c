@@ -21,7 +21,6 @@
 #include "rr/track_sample_types.h"
 #include "rr/audio_loop.h"
 #include "game/math/rotmat.h"
-#include "rr/cpu_work.h"
 
 
 extern unsigned char CourseStartSteeringBias[];
@@ -103,7 +102,6 @@ void StepRaceFrame(unsigned int gameMode)
    * (CarStageFast) and the rest by the tick. */
   const int tick = RaceSlowTick();
   const s32 carStep = RaceFieldCarStep;
-  RrWorkFrame = 1;
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
@@ -120,51 +118,51 @@ void StepRaceFrame(unsigned int gameMode)
   {
     case 0:
     default:
-      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
+      ReadCarInput(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars, 0);
       break;
 
     case 1:
     case 6:
-      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
+      ReadCarInput(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars, 0);
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      UpdateComCars();
       break;
 
     case 2:
-      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
+      ReadCarInput(PlayerCars, 0);
+      ReadCarInput(PlayerCars + 1, 1);
+      UpdatePlayerCar(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars + 1, 1);
       break;
 
     case 3:
-      RR_WORK_CALL(ReadCarInput(PlayerCars, 0), &RrCostReadCarInput);
-      RR_WORK_CALL(ReadCarInput(PlayerCars + 1, 1), &RrCostReadCarInput);
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars, 0), RrCostUpdatePlayerCar());
-      RR_WORK_CALL(UpdatePlayerCar(PlayerCars + 1, 1), RrCostUpdatePlayerCar());
+      ReadCarInput(PlayerCars, 0);
+      ReadCarInput(PlayerCars + 1, 1);
+      UpdatePlayerCar(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars + 1, 1);
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      UpdateComCars();
       break;
 
     case 4:
       for (i = 0; i < NumCars; i++)
       {
-        RR_WORK_CALL(ReadCarInput(CarTable[i], i), &RrCostReadCarInput);
+        ReadCarInput(CarTable[i], i);
       }
       for (i = 0; i < NumCars; i++)
       {
         if (CarTable[i]->half1E8 != (-1))
         {
-          RR_WORK_CALL(UpdatePlayerCar(CarTable[i], i), RrCostUpdatePlayerCar());
+          UpdatePlayerCar(CarTable[i], i);
         }
       }
       break;
 
     case 5:
       updateComProjections = 1;
-      RR_WORK_CALL(UpdateComCars(), RrCostUpdateComCars());
+      UpdateComCars();
       break;
   }
 
@@ -181,20 +179,18 @@ void StepRaceFrame(unsigned int gameMode)
       {
         RaceFieldRateLive = 0;
         RaceFieldCarStep = 0;
-        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        CarUpdateStages[i](sc);
         RaceFieldRateLive = 1;
         RaceFieldCarStep = carStep;
       }
       else if (sc->half1E8 != (-1) && (tick || RaceFieldCarStep || CarStageFast(i, sc)))
       {
-        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        CarUpdateStages[i](sc);
       }
     }
-    RrSpendStepRaceFrameLoop();
   }
   if (tick || RaceFieldCarStep || RaceFieldRateLive)
   {
-  int impactCars = 0, impacts = 0, contactCars = 0, contacts = 0;
   for (i = 0; i < NumCars; i++)
   {
     int pm = PlayerTickMode(CarTable[i], tick);
@@ -207,7 +203,6 @@ void StepRaceFrame(unsigned int gameMode)
     }
     if (CarTable[i]->half1E8 != (-1))
     {
-      impactCars++;
       CarFieldState *fs = RaceFieldCarStep ? CarFieldStateOf(CarTable[i]) : NULL;
       /* a contact's tick: its shake (armed from the speed before the
        * loss) and its loss once (WallLossThisField) */
@@ -219,7 +214,6 @@ void StepRaceFrame(unsigned int gameMode)
       }
       if (((short) CarTable[i]->impactFlags1A0) != 0 && contactTick)
       {
-        impacts++;
         impactAngle = ((AngleDiffAbs(0x800 - (s16)CarTable[i]->trackAngle1EC, CarTable[i]->heading1D4) - 0x400) * 3) / 5;
         car = CarTable[i];
         if (car->input >= 0xA1)
@@ -251,12 +245,10 @@ void StepRaceFrame(unsigned int gameMode)
         if (CarTable[i]->steeringLock1B8 == 0)
         {
           int kerbLoss = 0;
-          contactCars++;
           for (j = 0; j < 4; j++)
           {
             if (CarTable[i]->contactFlags1F0.bytes[j] != 0)
             {
-              contacts++;
               if (fs)
               {
                 if (CarTable[i]->contactFlags1F0.bytes[j] != 2)
@@ -289,7 +281,6 @@ void StepRaceFrame(unsigned int gameMode)
       RaceFieldCarStep = carStep;
     }
   }
-  RrSpendStepRaceFrameImpacts(impactCars, impacts, contactCars, contacts);
   }
   for (i = 7; i < 0xB; i++)
   {
@@ -301,17 +292,16 @@ void StepRaceFrame(unsigned int gameMode)
       {
         RaceFieldRateLive = 0;
         RaceFieldCarStep = 0;
-        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        CarUpdateStages[i](sc);
         RaceFieldRateLive = 1;
         RaceFieldCarStep = carStep;
       }
       else if (sc->half1E8 != (-1) && !(pm == 1 && i == 7) &&
                (tick || RaceFieldCarStep || CarStageFast(i, sc)))
       {
-        RR_WORK_CALL(CarUpdateStages[i](sc), &RrCostCarStages[i]);
+        CarUpdateStages[i](sc);
       }
     }
-    RrSpendStepRaceFrameLoop();
   }
   for (i = 0; i < 2 && RaceFieldRateLive && tick; i++)
     if (CarFieldFast(&PlayerCars[i]))
@@ -328,8 +318,6 @@ void StepRaceFrame(unsigned int gameMode)
   {
     UpdateComCarTrackProjections();
   }
-  /* its own work besides the calls (rr/cpu_work.h) */
-  RrSpendStepRaceFrameOwn(projected);
   }
 }
 
@@ -450,7 +438,6 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
             s32 diff18C;
             s32 other_24;
 
-            RrWorkCount[RR_WORK_COLLIDE_CARS]++;
 
             diff18C = ((other->word18C + TrackLength) - arg0_18C) % TrackLength;
             other_F4 = other->lateralVelF4;
@@ -751,7 +738,6 @@ void CheckFinalLapEvent(RaceVehicle *vehicle)
     int distanceLimit;
     int courseLength;
     int flags, node;
-    RR_CPU_CYCLES(RR_CYCLES_CHECK_FINAL_LAP);
     if (!(RaceVoiceFlags & 0x100)) {
         if (ReverseCourse != 1) {
             courseLength = TrackLength;

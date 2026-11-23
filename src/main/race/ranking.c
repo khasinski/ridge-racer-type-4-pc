@@ -1,6 +1,5 @@
 #include "rr/emblem_images.h"
 #include "game/data/menuvars.h"
-#include "rr/cpu_time.h"
 #include "types.h"
 #include "rr/load_cursor.h"
 #include "game/data/ldscn1.h"
@@ -39,7 +38,6 @@ extern char StrTitle0Log[];
 extern s32 VSyncThreshold;
 
 void InitDefaultTimeRecords(void) {
-    RR_CPU_CYCLES(RR_CYCLES_INIT_DEFAULT_TIME_RECORDS);
 
     int i, j, k;
 
@@ -84,7 +82,6 @@ void InitCourseChoices(void)
      * the rest of the table and the nine words the linker placed after it,
      * which therefore start from zero once the frame environment is set up. */
     PsyqBzero(CourseChoiceTable[1], sizeof(CourseChoiceTable) - sizeof(CourseChoiceTable[0]));
-    RR_CPU_CYCLES(0x24 * RR_CYCLES_BIOS_FILL_BYTE); // the PS1's bzero past the table
     BackColorR = 0;               /* 0x800ABE98 */
     RelFileOffsetPtr7 = NULL;
     TrackCollisionGridPtr = NULL;

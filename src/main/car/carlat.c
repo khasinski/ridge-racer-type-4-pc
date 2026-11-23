@@ -1,7 +1,6 @@
 #include "rr/race.h"
 #include "rr/track_lateral.h"
 #include "rr/vehicle_drive.h"
-#include "rr/cpu_work.h"
 
 s32 CalcSteerLimit(RaceVehicle *vehicle) {
     s32 raw = vehicle->input;
@@ -58,7 +57,6 @@ s32 ScanCurveAhead(RaceVehicle *a0, s32 a1, s32 *a2, s32 *a3, s32 *a4) {
     s5 = 0;
     if (s2 > 0) {
         do {
-            RrWorkCount[RR_WORK_CURVE_STEPS]++;
             r0 = GetTrackNodeHeading(s0, a1);
             r0 &= 0xFFF;
             v1 = s1 - r0;

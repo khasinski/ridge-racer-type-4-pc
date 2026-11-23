@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "rr/release.h"
 #include "game/data/menuvars.h"
 #include "game/system/pad.h"
@@ -38,7 +37,6 @@ extern int MenuStepDirection;
 
 
 void DrawResultsStandingsOverlay(int fadeLevel) {
-    RR_CPU_CYCLES(RR_CYCLES_RESULTS_STANDINGS_OVERLAY);
   u32 intensity;
   void *cursor;
   int nextX;
@@ -171,7 +169,6 @@ void NewCarModeEnter(void) {
 }
 
 void NewCarModeUpdate(void) {
-    RR_CPU_CYCLES(RR_CYCLES_NEW_CAR_MODE);
     int a;
     int t;
     int r;

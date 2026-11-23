@@ -1,4 +1,3 @@
-#include "rr/ps1_sizes.h"
 #include "rr/vehicle_table.h"
 #include "game/car/car.h"
 #include "game/car/carsetup.h"
@@ -70,7 +69,7 @@ void InitRaceCars(int a0)
         SetupRaceMemoryArena(2, 0);
         break;
     case 5:
-        PsyqBzeroPs1(PlayerCars, sizeof(PlayerCars[0]), RR_PS1_RACE_VEHICLE_BYTES);
+        PsyqBzero(PlayerCars, (s32)(sizeof(PlayerCars[0])));
         InitComCars(7);
         SetupRaceMemoryArena(1, 0);
         SavedRaceState = 2;

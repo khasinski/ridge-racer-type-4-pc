@@ -1,5 +1,3 @@
-#include "rr/cpu_time.h"
-#include "rr/ps1_sizes.h"
 #include "psyq/libgte/gtemat5.h"
 #include "game/race/racegrid.h"
 #include "rr/vehicle_table.h"
@@ -21,11 +19,10 @@
 #include "game/race/racesamp.h"
 #include "game/data/selection.h"
 #include "game/math/rotmat.h"
-#include "rr/cpu_work.h"
 
 void SetCarBounds(RaceVehicle *a);
 
-static void DrawCarsWork(s32 a0) {
+void DrawCars(s32 a0) {
     int z; 
     int i, s2;
     RaceVehicle **p;
@@ -92,18 +89,8 @@ static void DrawCarsWork(s32 a0) {
     }
 }
 
-/* With its PS1 time (rr/cpu_work.h). */
-void DrawCars(s32 a0) {
-    /* its own before the cars (DuckStation: 310-345 to the first car's
-     * call; it came after them) */
-    RR_CPU_CYCLES((unsigned)(RrCostDrawCars.per[RR_WORK_CALL] / 64));
-    DrawCarsWork(a0);
-}
-
 void SetCarBounds(RaceVehicle *vehicle)
 {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_SET_CAR_BOUNDS_MENU);
     int boundsIndex;
     CarBounds **boundsSlot;
     CarBounds **boundsTable;
@@ -133,7 +120,7 @@ void SetCarBounds(RaceVehicle *vehicle)
 
 void ResetCarState(RaceVehicle *a)
 {
-    PsyqBzeroPs1(a, sizeof(RaceVehicle), RR_PS1_RACE_VEHICLE_BYTES);
+    PsyqBzero(a, (s32)(sizeof(RaceVehicle)));
     SetCarBounds(a);
     a->ang80 = (unsigned short)a->rot50;
     a->ang82 = (unsigned short)a->rot54;
@@ -153,8 +140,6 @@ void UpdateCarWorldTransform(RaceVehicle *a0) {
     } L;
     int t1, t2;
     unsigned short u1, u2, u3;
-    if (!RrWorkFrame && RrWorkDepth == 0)
-        RR_CPU_CYCLES(RR_CYCLES_UPDATE_CAR_WORLD_TRANSFORM);
     a0->worldPosition10.words[0] = a0->position20.words[0] * 4;
     a0->worldPosition10.words[1] = a0->position20.words[1] * 4;
     a0->worldPosition10.words[2] = a0->position20.words[2] * 4;

@@ -1,5 +1,4 @@
 #include "rr/field_rate.h"
-#include "rr/cpu_time.h"
 #include "rr/video_timing.h"
 #include "game/data/menuvars.h"
 #include "rr/runtime_settings.h"
@@ -50,7 +49,6 @@ void DrawCourseInfoPanel(int arg0, int arg1) {
     void *p;
     char *b;
 
-    RR_CPU_CYCLES(RR_CYCLES_COURSE_INFO_PANEL);
     p = RR_GPU_SCRATCH->cursor;
     for (i = 0; i < 4; i++) {
         int v = CourseInfoRowOrder[i + (arg1 << 2)];
@@ -144,7 +142,6 @@ void DrawCourseMapPreview(int unusedSelection,int unusedMode) {
         r++;
         i = n - r;
     }
-    RR_CPU_CYCLES(RR_CYCLES_COURSE_MAP_PREVIEW);
     t = &TrackNodes[i];
     v.x = t->road.x;
     v.z = t->road.z;

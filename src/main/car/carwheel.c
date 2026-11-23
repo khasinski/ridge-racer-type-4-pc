@@ -21,7 +21,6 @@
 #include "rr/player_cars.h"
 #include "game/race/racemai2.h"
 #include "game/math/rotmat.h"
-#include "rr/cpu_work.h"
 
 #define G ((Scratch2D784 *)SCRATCHPAD)
 
@@ -58,7 +57,7 @@ int TriggerWheelBump(RaceVehicle *vehicle, int wheel)
     return 1;
 }
 
-static void DrawPreviewCarParts(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {
+void DrawPreviewCar(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {
     MatrixWords32 sp10;
     MatrixWords32 sp30;
     MatrixWords32 sp50;
@@ -157,7 +156,7 @@ static void DrawPreviewCarParts(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, 
 }
 
 
-static void DrawPlayerCarParts(RaceVehicle *arg0, s32 viewMode) {
+void DrawPlayerCar(RaceVehicle *arg0, s32 viewMode) {
     MatrixWords32 sp20;
     MatrixWords32 sp40;
     MatrixWords32 sp60;
@@ -262,7 +261,7 @@ static void DrawPlayerCarParts(RaceVehicle *arg0, s32 viewMode) {
 
 
 
-static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
+void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     MatrixWords32 sp20;
     MatrixWords32 sp40;
     MatrixWords32 sp60;
@@ -321,7 +320,6 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
         MulMatrix0(&LightMatrix.matrix, &sp80, &sp60);
         RR_GTE_SETLLM(&sp60);
         if (i < CarModelLodDistances[arg1].d0) {
-            RrWorkCount[RR_WORK_CAR_NEAR]++;
             BuildRotMatrixY(&sp20, -arg0->rot54);
             MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
             BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
@@ -389,7 +387,6 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
             }
             return;
         } else if (i < CarModelLodDistances[arg1].d2) {
-            RrWorkCount[RR_WORK_CAR_MID]++;
             BuildRotMatrixY(&sp20, -arg0->rot54);
             MulMatrix2((MatrixWords32 *)SCRATCH_ROT_MATRIX, &sp20);
             BuildRotMatrixX(&spA8[0], arg0->wheelRotX1A8 - arg0->rot50);
@@ -422,7 +419,6 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
             }
             return;
         } else if (i < CarModelLodDistances[arg1].d4) {
-            RrWorkCount[RR_WORK_CAR_FAR]++;
             MulMatrix0((const MatrixWords32 *)((void *)SCRATCH_ROT_MATRIX), &sp80, &spA8[0]);
             sp168[0].x = arg0->worldPosition10.words[0];
             sp168[0].y = arg0->worldPosition10.words[1];
@@ -439,26 +435,6 @@ static void DrawOpponentCarParts(RaceVehicle *arg0, s32 arg1) {
         }
     }
     DrawWheelTrailEffects(arg0, 0, 0, 0, slot_idx, 0, 0);
-}
-
-void DrawPreviewCar(RaceVehicle *arg0, PreviewRgb3 color, s32 arg2, s32 flags) {
-    /* The menus' car (the car selects, the garage): its PS1 time by its
-     * work as the race's player car (rr/cpu_work.h); a race frame's
-     * routines include it. On DuckStation a Time Attack car select's car
-     * takes 73.7k a frame, its five DrawRroModel calls 67k, which the port
-     * did not charge (only its SubmitModel calls, 1.5k). [mark] */
-    if (!RrWorkFrame && RrWorkDepth == 0)
-        RR_WORK_DRAW(DrawPreviewCarParts(arg0, color, arg2, flags), &RrCostDrawPlayerCar);
-    else
-        DrawPreviewCarParts(arg0, color, arg2, flags);
-}
-
-void DrawPlayerCar(RaceVehicle *arg0, s32 viewMode) {
-    RR_WORK_DRAW(DrawPlayerCarParts(arg0, viewMode), &RrCostDrawPlayerCar);
-}
-
-void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
-    RR_WORK_DRAW(DrawOpponentCarParts(arg0, arg1), &RrCostDrawOpponentCar);
 }
 
 /* Initial values of the globals this module owns. */

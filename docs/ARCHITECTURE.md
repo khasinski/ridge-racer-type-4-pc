@@ -341,9 +341,19 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      configuration mode and failed exchanges leave the buffer as it was
      (an unplugged pad's bytes stay for eleven vblanks); test input
      (`RR4_PAD_SCRIPT`) drives the controllers before the exchange
-     (`Psyz_SetPadsInputCb`). `src/main/race` and `src/main/car` still name
-     the removed time model's calls, as no-ops (`include/rr/cpu_work.h`,
-     `docs/TECH_DEBT.md` D21).
+     (`Psyz_SetPadsInputCb`).
+   - **Sound:** PsyZ's software mixer (`src/psyz/psyz_spu.c`,
+     `spu_voice.h`) plays the game's own sound data as the SPU did: VAG
+     ADPCM voices with their pitch and Gaussian interpolation, ADSR
+     envelopes, FM, noise, the reverb and the CD/XA audio, mixed to
+     44100 Hz stereo. In play the audio device's thread pulls the samples
+     (`sdl3_audio.c`); headless runs mix them on the offline field clock
+     so their sound is deterministic. libspu's register writes and RAM
+     transfers reach it directly (no DMA controller, interrupt or transfer
+     timing; libspu's status waits end on their first check). It keeps the
+     SPU's capture buffers in sound RAM and the key-on's five-sample delay:
+     they cost little, are part of each note's timing, and PsyZ's tests
+     observe a voice through the capture buffer as on the console.
    - **Link cable over the network:** the link battle's serial port (SIO1)
      is PsyZ libcomb (`src/psyz/libcomb.c`): Ridge Racer Type 4's libsio
      driver ported from the decompilation (`_sio_control`, the `sio:`

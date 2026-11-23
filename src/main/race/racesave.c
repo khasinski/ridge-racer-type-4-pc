@@ -1,5 +1,4 @@
 #include "rr/release.h"
-#include "rr/cpu_work.h"
 #include "game/race/racegrid.h"
 #include "game/data/menuvars.h"
 #include "rr/video_timing.h"
@@ -397,9 +396,6 @@ void ReplayModeUpdate(void) {
     SetupViewport(0);
     /* the node cameras view the cars every field, their timing by the tick */
     UpdateRaceCamera(2, &PlayerCars[ReplayFocusCarIndex]);
-    if (tick) {
-        RrSpendReplayFrame();
-    }
     /* every field (objsim.c, rr/field_rate.h) */
     UpdateTrackObjects();
     BuildCameraMatrices();

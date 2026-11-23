@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Clean-up, no change in play: the race and car modules no longer carry
+  the calls of the removed PS1 CPU time model (`RR_CPU_CYCLES`,
+  `RR_WORK_CALL`, the course objects' per-segment clock table and their
+  wrappers); `include/rr/cpu_work.h`, `cpu_time.h` and `ps1_sizes.h` are
+  gone. PsyZ drops its unused DMA controller model (`Psyz_DmaWrite`), its
+  sound mixer no longer copies the 512 KB sound RAM through the stack on a
+  hot reset, and its log says "SPU mixer initialized". Headless runs of the
+  attract mode, Time Attack, Grand Prix and Versus give the same state
+  traces, pictures and mixed audio as before.
 - Race frame rate: the player's car drives exactly as at 25/30 fps. Each
   tick's second field ends on the original's state: the car's update lands
   on the tick's result, and its track, suspension, bump and wall stages are

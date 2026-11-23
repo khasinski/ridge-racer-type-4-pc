@@ -1,5 +1,4 @@
 #include "rr/field_rate.h"
-#include "rr/cpu_time.h"
 #include "game/gfx/sprefct.h"
 #include "game/data/menuvars.h"
 #include "rr/release.h"
@@ -55,7 +54,6 @@ extern int TrackLength;
 extern int TotalRaceTime;
 
 #include "game/gfx/spremit.h"
-#include "rr/cpu_work.h"
 /* Aggregate coordinate arguments still need one recovered public contract. */
 extern unsigned char PauseMenuChoiceMap[][4];
 extern char SioDeviceName[];
@@ -78,8 +76,6 @@ int PollLinkStatus(void);
 
 void SetupMenuCarCamera(int a)
 {
-    if (!RrWorkFrame)
-        RR_CPU_CYCLES(RR_CYCLES_MENU_CAR_CAMERA);
   ProjectionView32 *g = &((ProjectionScratchPrefix *)SCRATCHPAD)->pose08;
   int i;
   g->position00.words[0] = StartSignalLightOffsetsB[a].x;
@@ -111,7 +107,7 @@ void SetupMenuCarCamera(int a)
   }
 }
 
-static void UpdateRaceChaseCameraWork(RaceVehicle *p) {
+void UpdateRaceChaseCamera(RaceVehicle *p) {
     struct {
         MatrixWords32 a, b;
         short v[3], reserved46;
@@ -173,11 +169,6 @@ static void UpdateRaceChaseCameraWork(RaceVehicle *p) {
     g->position00.words[2] += s.w[2];
 }
 
-/* With its PS1 time (rr/cpu_work.h). */
-void UpdateRaceChaseCamera(RaceVehicle *p) {
-    RR_WORK_CALL(UpdateRaceChaseCameraWork(p), &RrCostChaseCamera);
-}
-
 void DrawStartCountdown(GpuDmaTag *ordering, s32 frame) {
     UiUvRect glyph;
     s32 y;
@@ -195,9 +186,7 @@ void DrawStartCountdown(GpuDmaTag *ordering, s32 frame) {
     const s32 rate = RR_PAL_NTSC(25, 30);
     const s32 start = RR_PAL_NTSC(0x4B, 0x5A);
 
-    RR_CPU_CYCLES(RR_CYCLES_START_COUNTDOWN);
     if (RaceState != 0 && (s32)(frame - (u32)start) < rate * 7) {
-        RR_CPU_CYCLES(RR_CYCLES_START_COUNTDOWN_DRAW);
         tick = frame % rate;
         phase = (frame - start) / rate;
         if ((&CurrentDrawBuf->buffer.ordering70.tags[0]) == ordering) {

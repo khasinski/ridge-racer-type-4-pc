@@ -1,4 +1,3 @@
-#include "rr/cpu_time.h"
 #include "game/system/pad.h"
 #include "types.h"
 #include "psyq/libpad/padctl.h"
@@ -35,7 +34,6 @@ void SetPadButtonMapLayout(int a, int b, int c, int d) {
 }
 
 void ApplyOptionsPadButtonMaps(void) {
-    RR_CPU_CYCLES(RR_CYCLES_APPLY_PAD_BUTTON_MAPS);
     SetPadButtonMapLayout(0, Options.pulse[0].buttonLayout00, Options.pad[0].buttonLayout0C, Options.wheel[0].buttonLayout03);
     SetPadButtonMapLayout(1, Options.pulse[1].buttonLayout00, Options.pad[1].buttonLayout0C, Options.wheel[1].buttonLayout03);
 }
