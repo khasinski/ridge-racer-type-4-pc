@@ -241,7 +241,6 @@ void PlaceCarOnGrid(RaceVehicle *p, int arg1) {
         p->xHistory124[i] = p->rot50;
         p->zHistory144[i] = p->rot58;
     }
-    ResetCarBodyFieldRing(p);
     for (i = 0; i < 4; i++) {
         p->wheelPositions88[i].y = p->position20.vector.y;
         p->wheelBumpState1BC[i] = 0;

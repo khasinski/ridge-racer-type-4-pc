@@ -88,15 +88,12 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
     if (RaceState != 0) {
         if (ReplayState == 2) {
             if (ReplayFrame < ReplayLength) {
-                /* at field rate a tick's inputs on its first field, where
-                 * the cars' tick reads them (rr/replay_types.h) */
-                if (!RaceFieldPhase())
-                    CarInputs[arg1].frame = ReplayInputs[arg1][ReplayFrame];
+                CarInputs[arg1].frame = ReplayInputs[arg1][ReplayFrame];
                 if (GameModeType == 4) {
                     if (arg1 == 3) {
                         ReplayFrame += 1;
                     }
-                } else if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && RaceTickEnd()) {
+                } else if (arg1 == 1 || GameModeType < 2 || GameModeType == 6) {
                     ReplayFrame += 1;
                 }
             }
@@ -137,9 +134,7 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t5 = 0;
                         t3 = f | 0x20;
                     }
-                    /* the ramp: 4 a tick, on its first field (rr/field_rate.h): the
-                     * engine takes a tick's step from it */
-                    control->dynamics94.player.digitalThrottle1C += b * (RaceSlowTick() ? 4 : 0);
+                    control->dynamics94.player.digitalThrottle1C += b * 4;
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }
@@ -205,7 +200,7 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                         t1 = 0xFF;
                     }
                     b = (PlayerControllers[idx].input00.fields.buttons & PadButtonMap[idx].wheel[3]) != 0;
-                    control->dynamics94.player.digitalThrottle1C += b * (RaceSlowTick() ? 4 : 0);
+                    control->dynamics94.player.digitalThrottle1C += b * 4;
                     if (b == 0) {
                         control->dynamics94.player.digitalThrottle1C = 0;
                     }
@@ -271,9 +266,8 @@ void ReadCarInput(RaceVehicle *arg0, s32 arg1) {
                 }
             } else if (ReplayState == 1) {
                 if (ReplayFrame < ReplayLength) {
-                    if (!RaceFieldPhase())
-                        ReplayInputs[arg1][ReplayFrame] = CarInputs[arg1].frame;
-                    if ((arg1 == 1 || GameModeType < 2 || GameModeType == 6) && RaceTickEnd()) {
+                    ReplayInputs[arg1][ReplayFrame] = CarInputs[arg1].frame;
+                    if (arg1 == 1 || GameModeType < 2 || GameModeType == 6) {
                         ReplayFrame += 1;
                     }
                 }

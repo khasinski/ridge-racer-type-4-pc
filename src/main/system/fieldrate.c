@@ -128,43 +128,6 @@ s32 RaceDrawRand(void) {
 
 /* ---- fast-lane helpers ---- */
 
-static u32 IsqrtU64(unsigned long long v) {
-    unsigned long long r = 0, bit = 1ULL << 62;
-    while (bit > v)
-        bit >>= 2;
-    while (bit) {
-        if (v >= r + bit) {
-            v -= r + bit;
-            r = (r >> 1) + bit;
-        } else {
-            r >>= 1;
-        }
-        bit >>= 2;
-    }
-    return (u32)r;
-}
-
-/* sqrt(num/den) (Q16): a field's share of a filter keeping num/den a tick */
-static u32 RaceFieldKeepQ16(u32 num, u32 den) {
-    /* sqrt(num/den) in Q16 = sqrt(num * 2^32 / den) */
-    if (!den || num >= den)
-        return num >= den ? 0x10000u : 0;
-    return IsqrtU64(((unsigned long long)num << 32) / den);
-}
-
-s32 RaceFieldKeep(s32 x, u32 num, u32 den, s32 *rem) {
-    long long v;
-    int neg = x < 0;
-    if (!RaceFieldRateLive)
-        return (s32)((long long)x * (s32)num / (s32)den);
-    /* on the magnitude, as the game's divisions truncate toward zero: a
-     * small value decays to 0 from either side */
-    v = (long long)(neg ? -(long long)x : x) * RaceFieldKeepQ16(num, den) + (*rem & 0xFFFF);
-    *rem = (s32)(v & 0xFFFF);
-    v >>= 16;
-    return (s32)(neg ? -v : v);
-}
-
 s32 RaceFieldApproach(s32 tickStep, s32 gap, s32 *rem) {
     unsigned long long r, k, v;
     int neg = gap < 0;
@@ -190,48 +153,6 @@ s32 RaceFieldApproach(s32 tickStep, s32 gap, s32 *rem) {
     *rem = (s32)(v & 0xFFFF);
     v >>= 16; /* what the field leaves of the gap */
     return neg ? gap + (s32)v : gap - (s32)v;
-}
-
-s32 RaceFieldFilterAdd(s32 delta, u32 num, u32 den, int before, s32 *rem) {
-    long long v;
-    u32 k, f;
-    if (!RaceFieldRateLive)
-        return delta;
-    k = RaceFieldKeepQ16(num, den);
-    /* sqrt(k)/(1+sqrt(k)) or 1/(1+sqrt(k)), Q16 */
-    f = (u32)(((unsigned long long)(before ? k : 0x10000u) << 16) / (0x10000u + k));
-    v = (long long)delta * f + *rem;
-    *rem = (s32)(v & 0xFFFF);
-    return (s32)(v >> 16);
-}
-
-s32 RaceFieldDelta(s32 now, s32 *prev1, s32 *prev2) {
-    s32 d;
-    if (!RaceFieldRateLive) {
-        d = now - *prev1;
-        *prev2 = *prev1;
-        *prev1 = now;
-        return d;
-    }
-    d = now - *prev2;
-    *prev2 = *prev1;
-    *prev1 = now;
-    return d;
-}
-
-s32 RaceFieldStep(s32 x, s32 next, u32 slopeQ16, s32 *remQ16) {
-    long long v;
-    u32 root;
-    if (!RaceFieldRateLive)
-        return next;
-    if (slopeQ16 > 0x10000u)
-        slopeQ16 = 0x10000u;
-    /* sqrt(slope) in Q16 = sqrt(slope << 16) */
-    root = IsqrtU64((unsigned long long)slopeQ16 << 16);
-    /* (next - x) / (1 + root), in Q16 with the rounding carried */
-    v = ((long long)(next - x) << 32) / (0x10000 + root) + *remQ16;
-    *remQ16 = (s32)(v & 0xFFFF);
-    return x + (s32)(v >> 16);
 }
 
 /* ---- per-car sidecar ---- */

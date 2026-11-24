@@ -227,24 +227,31 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      original rate, and a mode that sets the menus' `VSyncThreshold` ends
      it. The slow lane (`RaceSlowTick()`, every second field) runs the
      counters, timers and one-frame events at the original tick; the pad
-     edges are latched between ticks. Converted code (the fast lane) runs
-     every field with half steps (`RaceFieldHalf`), square-rooted filter
-     factors (`RaceFieldKeep`) and two-field differences (`RaceFieldDelta`),
-     with its remainders in the per-car sidecar `CarFieldState` because
-     `RaceVehicle` keeps its PS1 size. The filters take the share a tick
-     keeps from the game's own tick result, so its truncations and dead
-     zones stay (`RaceFieldApproach`: the followers keep 2r/(1+r), a
-     tick's lag behind a moving target). In the fast lane: the opponents,
-     every car's stages and contact, the chase camera. The player cars
-     are not: they run the original's tick whole (below), so their
-     steering, engine, grip, drag, heading, gears and normal / slide /
-     spin-out states are the released code with no field-rate paths; only
-     `ReadCarInput` runs every field (its digital throttle ramp steps on
-     the tick's first field). A replay at
-     field rate records and plays each tick's inputs once, on the tick's
-     first field, and keeps the cars' sidecars at its snapshot (file blocks
-     FieldRate, CarFieldStates; an older file's FieldInputs block, the
-     second fields' inputs, is not read). Original-rate replays play at
+     edges are latched between ticks. The cars are the released game's:
+     `StepRaceFrame` (racemai2.c) runs the original tick of every car on
+     the tick's first field with the rate off (`StepRaceTick`: the player
+     cars' inputs and update, the opponents' driving `UpdateComCars` with
+     its rubber band and start boost, every car stage, the car and wall /
+     kerb contact, the opponents' track projections), in the original's
+     order, and nothing for them on the second field. A race's every tick
+     ends on the original's state, the opponents' included, and a replay
+     (recorded and played once a tick, as released) reproduces it. What is
+     drawn lies on one trajectory: the first field draws every car half
+     way from the last tick's end to this one's (`CarPoseHalf` over
+     `CarPoseFields`: position, angles, suspension, shakes and the drawn
+     offsets the renderer and cameras read), the second the tick's end, and
+     the pose goes back to the tick's end before the next field runs.
+     `CarPoseSettle` forgets a half way pose when the cars are replaced (a
+     race set up, a replay's snapshot restored, a replay file loaded) and
+     puts the tick's end back when the race ends: a stale one moved the
+     next race's cars off their grid slots and started replays where the
+     race had finished. Presentation code converted to run every field
+     (the fast lane) takes half steps (`RaceFieldHalf`) and the followers'
+     per-field share (`RaceFieldApproach`: 2r/(1+r), a tick's lag behind a
+     moving target), its remainders in the per-car sidecar
+     `CarFieldState`. A replay file keeps the sidecars at its snapshot
+     (block CarFieldStates; one of another size is not restored, an older
+     file's FieldInputs block is not read). Original-rate replays play at
      the original rate.
      Presentation code that runs every field reads tick counters in field
      time (`RaceFieldTimeAfter/Before`: counter * 2 + the field's phase),
@@ -263,54 +270,6 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `SoundUpdateField` between: listener, two-field Doppler, slot pitches
      and volumes, the master fade half way); the pad's auto-repeat counts
      ticks.
-     At field rate `StepRaceFrame` runs the other cars' stages and contact
-     every field: the motion's
-     integration halves, the wall / kerb / car contact losses keep the
-     square root of their share a field, the shake and contact timers count
-     their ticks by every second field (sidecar half flags), the body's
-     spring-dampers settle where the original's do (`RaceFieldFilterAdd`),
-     a wheel's bump arc counts fields as half ticks, and the body's 10-tick
-     pitch / roll averages take 20 field samples in the sidecar's ring
-     (`RaceVehicle`'s holds 16). The contact sounds are the player cars',
-     which run at the original rate.
-     A fast-lane player car (`CarFieldFast`: the player cars at field
-     rate) runs the original's tick whole on the tick's first field: its
-     update, every car stage and the wall / kerb contact at the original
-     rate (`PlayerTickUpdate`, `PlayerTickMode` in racemai2.c), and
-     nothing on the second. What is drawn lies on one trajectory: the first
-     field draws the pose half way from the last tick's end to this one's
-     (`CarPoseHalf` over `CarPoseFields`: position, angles, suspension,
-     shakes and the drawn offsets the renderer and cameras read), the
-     second the tick's end, and the pose goes back to the tick's end
-     before the next field runs. A tick's inputs show on its first field,
-     The car-vs-car contact runs on the tick's field. Open loop (the reference driver's NTSC Time Attack stick log
-     replayed at both rates) the player car's state is the original's at
-     every tick end over the whole log (8,030 ticks, three laps).
-     The opponents' driving (`UpdateComCars` and everything under it:
-     `carai.c`, `cardrive.c`, `carctrl.c`, `carcurv.c`, `carrpm.c`,
-     `trkproj.c`, `trkres2.c`, `trkseek2.c`) is in the fast lane:
-     `StepRaceFrame` calls it every field. Its state
-     stays in per-tick units (`steering8C`, `accel50`, `vel30/38`,
-     `lateralMotion178`, `limit6E`); adds are halved, the filters (the
-     steering filter, drag, rpm, the corner turn's blends) take
-     `RaceFieldStep`, which makes two fields of any per-tick update that is
-     affine in its state one tick's; the PD's D term is a two-field
-     difference and the heading's integration has the matched lead that
-     the tick's end-of-step filter value gives. The corner turn's rate
-     curves are built in fields (twice the duration, half the initial
-     rate). A tick is a slow-lane field and the `RaceTickEnd()` field
-     after it. Timers (the start boost, lane cooldowns) count on
-     `RaceSlowTick()`; the shift points are taken on `RaceTickEnd()`, so
-     the speed crosses a threshold by a tick's step as on the console, and
-     the shift's hold (which starts on the next slow-lane field) counts
-     down on it, so it lasts the original's 2 x hold fields. An impact's
-     attenuation (a reversed drive after a bounce back) holds for both
-     fields of the tick after it (`RaceFieldCount` at the impact), not
-     until the next field's `UpdateComCarTrackProjections`. `prevHeading1D6` / `prevInput1DA` hold the values of one
-     tick (two fields) ago, so the shared stages' one-tick differences
-     (body roll, contact sounds) keep their meaning. At field rate
-     `UpdateComCarTrackProjections` runs every field and reacts to an
-     opponent's impact on the field the stages see it.
 
    - **Releases (PAL / Japanese):** the mounted disc's `SYSTEM.CNF` selects
      a release profile (`include/rr/release.h`): `RR_RELEASE_JP` and

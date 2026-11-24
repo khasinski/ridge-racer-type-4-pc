@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Opponents drive exactly as in the original at 60 Hz.** The opponents'
+  driving, their car stages and the car-to-car contact ran every field with
+  halved steps and square-rooted filters, an approximation of the original's
+  tick: their positions drifted from the original's (thousands of units by
+  the second lap of a Grand Prix), the contact met the player car at the end
+  of its tick while the opponents were half way through theirs, and the car
+  stages run once a tick outside the race loop (UpdateFinishingPlayerCar,
+  after a Grand Prix's finish) moved a car half as far. Now every car runs
+  the original's tick whole on the tick's first field, in the original's
+  order, and is drawn half way between ticks as the player car already was:
+  the rubber band, start boost, lane changes and contact are the released
+  code, and a race at 60 Hz is the original rate's tick for tick. Headless
+  NTSC Grand Prix with the reference stick driver: every car's position,
+  speed and track distance at 60 Hz equal the original rate's at all 3,404
+  tick ends compared (before: the opponents differed from the first tick, by
+  up to 6,526 units of track by the second lap, their splits up to 13 ticks
+  apart); the grid is the original's (the player 8th of 8, also in the race
+  after a replay); replays equal their races at every tick end (Grand Prix
+  at 60 Hz, Time Attack at both rates). The per-field opponent and car stage
+  code is removed: the car modules are the released code again.
+
 - **Replays show the race you drove, and the next race starts from your
   grid slot.** At the 60 Hz race frame rate the player car is drawn half
   way between two game ticks on every other frame, and that drawn pose was

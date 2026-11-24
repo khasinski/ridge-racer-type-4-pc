@@ -34,35 +34,21 @@ extern short ReverseCourse;
 
 void ResolveCarCollisions(RaceVehicle *arg0);
 
-/* A wall's (or a car's) contact costs the original's loss, and arms its
- * shake, once per tick it is seen on. With the car stages every field (rr/field_rate.h) a contact
- * opens a window of a tick's two fields: its first field takes the tick's
- * whole loss, a contact on the second takes none, a contact after it
- * opens the next window. A one-field touch then costs what the original's
- * one-tick touch does (a hit's loss scaled to a field left the car fast
- * and further along, back on the wall), a contact held costs one loss a
- * tick. */
-static int WallLossThisField(CarFieldState *fs)
-{
-  s32 *open = &fs->rem[CAR_FIELD_WALL_WINDOW];
-  if (*open != 0 && RaceFieldCount - (u32)(*open - 1) == 1u)
-    return 0;
-  *open = (s32)(RaceFieldCount + 1);
-  return 1;
-}
 void UpdateRumbleStrip(RaceVehicle *p, int b);
 void CheckFinalLapEvent(RaceVehicle *vehicle);
 
-/* Field rate (rr/field_rate.h): a fast-lane player car (CarFieldFast)
- * runs the original's tick whole on the tick's first field: its update,
- * every car stage and the wall / kerb contact at the original rate, so
- * the tick ends on the original's state. The second field runs nothing
- * for it. Every field draws one trajectory: the first field draws the
- * car's pose half way from the last tick's end to this tick's end (the
- * same inputs, no wait for the next tick), the second field this tick's
- * end. The pose (CarPoseFields: the position, angles, suspension, shakes
- * and the drawn offsets the renderer and the cameras read) is put back
- * to the tick's end before anything runs on the next field. */
+/* Field rate (rr/field_rate.h): every car runs the original's tick whole
+ * on the tick's first field: the player cars' update, the opponents'
+ * driving (UpdateComCars), every car stage, the car and wall / kerb
+ * contact and the opponents' track projections at the original rate, in
+ * the original's order, so every tick ends on the original's state. The
+ * second field runs nothing for them. Every field draws one trajectory:
+ * the first field draws each car's pose half way from the last tick's end
+ * to this tick's end (the same inputs, no wait for the next tick), the
+ * second field this tick's end. The pose (CarPoseFields: the position,
+ * angles, suspension, shakes and the drawn offsets the renderer and the
+ * cameras read) is put back to the tick's end before anything runs on
+ * the next field. */
 typedef struct {
   unsigned short offset;
   unsigned char size, count, angle; /* angle: 1 a 4096 turn, 2 kept in 0..0xFFF */
@@ -86,8 +72,9 @@ static const CarPoseField CarPoseFields[] = {
     CAR_POSE(bumpPitch1B4, 1, 1),        CAR_POSE(shakeRollOffset1B6, 1, 1),
     CAR_POSE(heading1D4, 1, 2),
 };
-static RaceVehicle CarPoseTickStart[2], CarPoseTickEnd[2];
-static unsigned char CarPoseHalfDrawn[2];
+/* by CarTable index */
+static RaceVehicle CarPoseTickStart[8], CarPoseTickEnd[8];
+static unsigned char CarPoseHalfDrawn[8];
 
 static s32 CarPoseGet(const RaceVehicle *car, const CarPoseField *f, int k) {
   const unsigned char *at = (const unsigned char *) car + f->offset + k * f->size;
@@ -142,39 +129,21 @@ static void CarPoseRestore(RaceVehicle *car, const RaceVehicle *end) {
     memcpy((unsigned char *) car + f->offset, (const unsigned char *) end + f->offset, (size_t) f->size * f->count);
   }
 }
-/* 1: the car's whole tick on this field at the original rate, 2: nothing
- * this field, 0: its own lane */
-static int PlayerTickMode(const RaceVehicle *car, int tick) {
-  if (!CarFieldFast(car))
-    return 0;
-  return tick ? 1 : 2;
-}
 /* The cars were replaced (a race set up, a replay's snapshot restored,
  * a replay file loaded): a half way pose drawn before belongs to cars
  * that are gone, and putting their tick's end back would move the new
  * cars there (a replay started where the race had finished, the next
- * race's player car off its grid slot). keep: the race ends, its cars
- * stay at their last tick's end. */
+ * race's cars off their grid slots). keep: the race ends, its cars stay
+ * at their last tick's end. */
 void CarPoseSettle(int keep) {
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < 8; i++)
   {
-    if (keep && CarPoseHalfDrawn[i])
-      CarPoseRestore(&PlayerCars[i], &CarPoseTickEnd[i]);
+    if (keep && CarPoseHalfDrawn[i] && i < NumCars)
+      CarPoseRestore(CarTable[i], &CarPoseTickEnd[i]);
     CarPoseHalfDrawn[i] = 0;
   }
 }
-static void PlayerTickUpdate(RaceVehicle *car, int index, int tick) {
-  const int pm = PlayerTickMode(car, tick);
-  if (pm == 2)
-    return;
-  if (pm == 1)
-    RaceFieldRateLive = 0;
-  UpdatePlayerCar(car, index);
-  if (pm == 1)
-    RaceFieldRateLive = 1;
-}
-
-void StepRaceFrame(unsigned int gameMode)
+static void StepRaceTick(unsigned int gameMode)
 {
   int i;
   int j;
@@ -185,34 +154,21 @@ void StepRaceFrame(unsigned int gameMode)
   int impactCosine;
   RaceVehicle *car;
   int *carIndex;
-  /* Field rate (rr/field_rate.h): the opponents' driving (UpdateComCars:
-   * carai.c), their car stages and contact every field; a fast-lane
-   * player car's whole tick on the tick's first field (PlayerTickMode). */
-  const int tick = RaceSlowTick();
   carIndex = (int *) (SCRATCHPAD + 0x7C);
   updateComProjections = 0;
   courseGroup = (s16)CourseIndex >> 1;
-  /* the tick's end back where the first field drew the half way */
-  for (i = 0; i < 2; i++)
-  {
-    if (CarPoseHalfDrawn[i])
-      CarPoseRestore(&PlayerCars[i], &CarPoseTickEnd[i]);
-    CarPoseHalfDrawn[i] = 0;
-    if (RaceFieldRateLive && tick)
-      CarPoseTickStart[i] = PlayerCars[i];
-  }
   switch (gameMode)
   {
     case 0:
     default:
       ReadCarInput(PlayerCars, 0);
-      PlayerTickUpdate(PlayerCars, 0, tick);
+      UpdatePlayerCar(PlayerCars, 0);
       break;
 
     case 1:
     case 6:
       ReadCarInput(PlayerCars, 0);
-      PlayerTickUpdate(PlayerCars, 0, tick);
+      UpdatePlayerCar(PlayerCars, 0);
       updateComProjections = 1;
       UpdateComCars();
       break;
@@ -220,15 +176,15 @@ void StepRaceFrame(unsigned int gameMode)
     case 2:
       ReadCarInput(PlayerCars, 0);
       ReadCarInput(PlayerCars + 1, 1);
-      PlayerTickUpdate(PlayerCars, 0, tick);
-      PlayerTickUpdate(PlayerCars + 1, 1, tick);
+      UpdatePlayerCar(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars + 1, 1);
       break;
 
     case 3:
       ReadCarInput(PlayerCars, 0);
       ReadCarInput(PlayerCars + 1, 1);
-      PlayerTickUpdate(PlayerCars, 0, tick);
-      PlayerTickUpdate(PlayerCars + 1, 1, tick);
+      UpdatePlayerCar(PlayerCars, 0);
+      UpdatePlayerCar(PlayerCars + 1, 1);
       updateComProjections = 1;
       UpdateComCars();
       break;
@@ -242,7 +198,7 @@ void StepRaceFrame(unsigned int gameMode)
       {
         if (CarTable[i]->half1E8 != (-1))
         {
-          PlayerTickUpdate(CarTable[i], i, tick);
+          UpdatePlayerCar(CarTable[i], i);
         }
       }
       break;
@@ -257,39 +213,22 @@ void StepRaceFrame(unsigned int gameMode)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      RaceVehicle *sc = CarTable[*carIndex];
-      int pm = PlayerTickMode(sc, tick);
-      if (sc->half1E8 != (-1) && pm == 1)
+      if (CarTable[*carIndex]->half1E8 != (-1))
       {
-        RaceFieldRateLive = 0;
-        CarUpdateStages[i](sc);
-        RaceFieldRateLive = 1;
-      }
-      else if (sc->half1E8 != (-1) && pm == 0)
-      {
-        CarUpdateStages[i](sc);
+        CarUpdateStages[i](CarTable[*carIndex]);
       }
     }
   }
   for (i = 0; i < NumCars; i++)
   {
-    int pm = PlayerTickMode(CarTable[i], tick);
-    if (pm == 2)
-      continue;
-    if (pm == 1)
-      RaceFieldRateLive = 0;
     if (CarTable[i]->half1E8 != (-1))
     {
-      CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(CarTable[i]) : NULL;
-      /* a contact's tick: its shake (armed from the speed before the
-       * loss) and its loss once (WallLossThisField) */
-      int contactTick = !fs || ((short) CarTable[i]->impactFlags1A0) == 0 || WallLossThisField(fs);
-      if ((CarTable[i]->impactFlags1A0 & 7) && contactTick)
+      if (CarTable[i]->impactFlags1A0 & 7)
       {
         SetCarImpactState(2, CarTable[i]);
         StartCollisionShake(CarTable[i], (short) CarTable[i]->impactFlags1A0);
       }
-      if (((short) CarTable[i]->impactFlags1A0) != 0 && contactTick)
+      if (((short) CarTable[i]->impactFlags1A0) != 0)
       {
         impactAngle = ((AngleDiffAbs(0x800 - (s16)CarTable[i]->trackAngle1EC, CarTable[i]->heading1D4) - 0x400) * 3) / 5;
         car = CarTable[i];
@@ -321,55 +260,32 @@ void StepRaceFrame(unsigned int gameMode)
       {
         if (CarTable[i]->steeringLock1B8 == 0)
         {
-          int kerbLoss = 0;
           for (j = 0; j < 4; j++)
           {
             if (CarTable[i]->contactFlags1F0.bytes[j] != 0)
             {
-              if (fs)
-              {
-                if (CarTable[i]->contactFlags1F0.bytes[j] != 2)
-                  kerbLoss -= CourseStartSteeringBias[courseGroup];
-              }
-              else
-              {
               CarTable[i]->input -= CourseStartSteeringBias[courseGroup];
               if (CarTable[i]->contactFlags1F0.bytes[j] == 2)
               {
                 CarTable[i]->input += CourseStartSteeringBias[courseGroup];
               }
-              }
               if (courseGroup == 2 || CarTable[i]->contactTimer1A7 == 0)
               {
                 CarTable[i]->contactTimer1A7 = 0xA;
-                if (fs)
-                  fs->rem[CAR_FIELD_REM_CONTACT_HALF] = 0;
               }
             }
           }
-          if (fs)
-            CarTable[i]->input += RaceFieldHalf(kerbLoss, &fs->rem[CAR_FIELD_REM_KERB_INPUT]);
         }
       }
     }
-    if (pm == 1)
-      RaceFieldRateLive = 1;
   }
   for (i = 7; i < 0xB; i++)
   {
     for (*carIndex = 0; *carIndex < NumCars; (*carIndex)++)
     {
-      RaceVehicle *sc = CarTable[*carIndex];
-      int pm = PlayerTickMode(sc, tick);
-      if (sc->half1E8 != (-1) && pm == 1)
+      if (CarTable[*carIndex]->half1E8 != (-1))
       {
-        RaceFieldRateLive = 0;
-        CarUpdateStages[i](sc);
-        RaceFieldRateLive = 1;
-      }
-      else if (sc->half1E8 != (-1) && pm == 0)
-      {
-        CarUpdateStages[i](sc);
+        CarUpdateStages[i](CarTable[*carIndex]);
       }
     }
   }
@@ -377,23 +293,52 @@ void StepRaceFrame(unsigned int gameMode)
    * link battle (GameModeType 4); the PAL one only after UpdateComCars. */
   {
   int projected = RR_RELEASE_JP ? GameModeType != 4 : updateComProjections == 1;
-  /* every field at field rate: its countdown counts ticks (trkseek2.c),
-   * an impact is reacted to on the field the car stages see it */
   if (projected)
   {
     UpdateComCarTrackProjections();
   }
   }
-  /* the first field draws the half way to the tick's end */
-  for (i = 0; i < 2; i++)
+}
+
+/* At field rate the first field of a tick runs the original's tick at
+ * the original rate (StepRaceTick: every car's update, stages, contact
+ * and the opponents' driving and projections, the player cars' inputs
+ * read and recorded or played back once) and draws every car half way
+ * from the last tick's end to this one's; the second field runs nothing
+ * and draws the tick's end. At the original rate the tick every frame. */
+void StepRaceFrame(unsigned int gameMode)
+{
+  const int fields = RaceFieldRateLive;
+  int i;
+  /* the tick's end back where the first field drew the half way */
+  for (i = 0; i < NumCars && i < 8; i++)
   {
-    if (PlayerTickMode(&PlayerCars[i], tick) != 1)
+    if (CarPoseHalfDrawn[i])
+      CarPoseRestore(CarTable[i], &CarPoseTickEnd[i]);
+    CarPoseHalfDrawn[i] = 0;
+  }
+  if (!fields)
+  {
+    StepRaceTick(gameMode);
+    return;
+  }
+  if (!RaceSlowTick())
+    return;
+  for (i = 0; i < NumCars && i < 8; i++)
+    CarPoseTickStart[i] = *CarTable[i];
+  RaceFieldRateLive = 0;
+  StepRaceTick(gameMode);
+  RaceFieldRateLive = 1;
+  for (i = 0; i < NumCars && i < 8; i++)
+  {
+    if (CarTable[i]->half1E8 == (-1))
       continue;
-    CarPoseTickEnd[i] = PlayerCars[i];
-    CarPoseHalf(&PlayerCars[i], &CarPoseTickStart[i], &CarPoseTickEnd[i]);
+    CarPoseTickEnd[i] = *CarTable[i];
+    CarPoseHalf(CarTable[i], &CarPoseTickStart[i], &CarPoseTickEnd[i]);
     CarPoseHalfDrawn[i] = 1;
   }
 }
+
 
 unsigned PointInQuad(int corner0, int corner1, int corner2, int corner3, int point) {
     return NormalClip(corner0, corner1, point) >= 0 &&
@@ -474,18 +419,6 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
     s32 offZ;
 
     if (GameModeType == 0) {
-        return;
-    }
-    /* Field rate (the car stages every field, rr/field_rate.h): the
-     * contact runs as the original's, once a tick, on the tick's field (a
-     * fast-lane player car's tick whole there: StepRaceFrame). Its
-     * outcome (the knock back, the push, the shakes and their sideways
-     * balance, the next contact's timing) hangs on the overlap a tick's
-     * motion makes: met each field, a half-depth overlap pushed the cars
-     * apart and sideways unbalanced, and an opponent pushing the player
-     * slid past it. Between ticks two cars may overlap by half a tick's
-     * closing for one field. */
-    if (RaceFieldPhase()) {
         return;
     }
 
@@ -719,8 +652,6 @@ void ResolveCarCollisions(RaceVehicle *arg0) {
                                     cars[side ^ 1]->stateTimer1A5 == 0) {
                                     SetCarImpactState(8, cars[side ^ 1]);
                                 }
-                                /* a player car's: its tick at the original rate
-                                 * (StepRaceFrame) */
                                 if ((arg0 == &PlayerCars[0] || arg0 == &PlayerCars[1]) && arg0->stateTimer1A5 == 0x1E) {
                                     s16 pan = (other_F4 - arg0_F4) / 2;
                                     s16 vol;

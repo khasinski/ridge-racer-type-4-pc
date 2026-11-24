@@ -1,6 +1,5 @@
 #include "rr/track_lateral.h"
 #include "rr/steering.h"
-#include "rr/field_rate.h"
 
 void PlanComCarCornerTurn(RaceVehicle *a0);
 int FindTrackNodeBehind(int a0, int a1);
@@ -119,15 +118,7 @@ void PlanComCarCornerTurn(RaceVehicle *a0) {
             s0 |= ~0xFFF;
         }
         s2->dynamics94.steering.angle0C = s0 << 12;
-        /* At field rate the turn's curve runs in fields: twice its ticks,
-         * from half a tick's rate (steering8C is per tick). */
-        if (RaceFieldRateLive) {
-            s2->dynamics94.steering.duration04 *= 2;
-            BuildRateCurveQ12(&s2->dynamics94.steering.primary34, s2->dynamics94.steering.remaining08,
-                              s2->dynamics94.steering.duration04, -s2->steering8C * 2048);
-        } else {
-            BuildRateCurve(&s2->dynamics94.steering.primary34, s2->dynamics94.steering.remaining08, s2->dynamics94.steering.duration04, -s2->steering8C);
-        }
+        BuildRateCurve(&s2->dynamics94.steering.primary34, s2->dynamics94.steering.remaining08, s2->dynamics94.steering.duration04, -s2->steering8C);
         s2->dynamics94.steering.mode00 = 1;
         s2->dynamics94.steering.phase28 = 0;
         s2->dynamics94.steering.timer02 = 0;

@@ -6,7 +6,6 @@
 #include "game/car/carstate.h"
 #include "game/car/carwheel.h"
 #include "game/car/carmove1.h"
-#include "rr/field_rate.h"
 #include "rr/menu_overlay_runtime.h"
 #include "rr/overlay668_camera.h"
 
@@ -194,36 +193,11 @@ void FindWheelTrackNodes(RaceVehicle *arg0) {
     } while (g->wheelIndex08 < 4);
 }
 
-/* The car stages every field (at field rate): a wheel's bump counts
- * fields, state c at (c + 1) / 2 ticks from its start, the arc the
- * original's at that time (its speed per tick, wheelBumpVel1C4, as
- * TriggerWheelBump sets it); it lands from 2 ticks, its strength the ticks
- * it flew. The body's pitch and roll average the last 10 ticks' samples as
- * 20 fields' (the sidecar's ring: RaceVehicle's holds 16), the delayed one
- * the 10 ticks from 4 ticks back as fields 8..27. */
-static int BodyRingSum(const s16 *ring, s32 pos, int from, int count) {
-    int sum = 0;
-    for (int i = from; i < from + count; i++)
-        sum += ring[(pos - i) & (CAR_FIELD_BODY_RING - 1)];
-    return sum;
-}
-
-/* PlaceCarOnGrid: the ring as RaceVehicle's, the body at rest. */
-void ResetCarBodyFieldRing(RaceVehicle *vehicle) {
-    CarFieldState *fs = CarFieldStateOf(vehicle);
-    for (int i = 0; i < CAR_FIELD_BODY_RING; i++) {
-        fs->bodyPitch[i] = (s16)vehicle->rot50;
-        fs->bodyRoll[i] = (s16)vehicle->rot58;
-    }
-    fs->bodyRingPos = 0;
-}
-
 void UpdateWheelBumps(RaceVehicle *vehicle)
 {
     int *q7c = (int *)(SCRATCHPAD + 0x7C);
     CarTrackWork *work = (CarTrackWork *)SCRATCH_CAR_WORK;
     int t, t2, t3, v;
-    CarFieldState *fs = RaceFieldRateLive ? CarFieldStateOf(vehicle) : NULL;
     work->wheelIndex08 = 0;
     do {
         t = work->wheelIndex08;
@@ -238,21 +212,14 @@ void UpdateWheelBumps(RaceVehicle *vehicle)
         {
             int c = vehicle->wheelBumpState1BC[t2];
             if (c > 0) {
-                int lo;
-                if (fs) {
-                    /* (c + 1) / 2 ticks */
-                    lo = vehicle->wheelBumpVel1C4[t2] * (c + 1) / 2;
-                    vehicle->wheelPositions88[t2].y = vehicle->wheelBumpBase1CC[t2] + lo + (((c + 1) * (c + 1) << 9) / 900);
-                } else {
-                lo = vehicle->wheelBumpVel1C4[t2] * c;
+                int lo = vehicle->wheelBumpVel1C4[t2] * c;
                 vehicle->wheelPositions88[t2].y = vehicle->wheelBumpBase1CC[t2] + lo + ((c * c << 11) / 900);
-                }
                 t3 = work->wheelIndex08;
                 v = work->positions110[t3].y;
-                if (vehicle->wheelPositions88[t3].y >= v && vehicle->wheelBumpState1BC[t3] >= (fs ? 3 : 2)) {
+                if (vehicle->wheelPositions88[t3].y >= v && vehicle->wheelBumpState1BC[t3] >= 2) {
                     vehicle->wheelPositions88[t3].y = v;
                     if (work->wheelIndex08 == 0) {
-                        vehicle->steerInput1BA = fs ? (vehicle->wheelBumpState1BC[0] + 1) >> 1 : vehicle->wheelBumpState1BC[0];
+                        vehicle->steerInput1BA = vehicle->wheelBumpState1BC[0];
                         SetCarImpactState(1, vehicle);
                     }
                     vehicle->wheelBumpState1BC[work->wheelIndex08] = 0;
@@ -288,17 +255,6 @@ void UpdateWheelBumps(RaceVehicle *vehicle)
         work->w3C = (work->w34 + 0xC) & 0xF;
         work->w40 = (work->w34 + 2) & 0xF;
     }
-    if (fs) {
-        s32 pos = ++fs->bodyRingPos & (CAR_FIELD_BODY_RING - 1);
-        fs->bodyRingPos = pos;
-        fs->bodyPitch[pos] = Atan2Table(vehicle->halfSpan10E, (vehicle->wheelPositions88[0].y + vehicle->wheelPositions88[1].y - (vehicle->wheelPositions88[2].y + vehicle->wheelPositions88[3].y)) >> 3);
-        fs->bodyRoll[pos] = Atan2Table(vehicle->width10C, (vehicle->wheelPositions88[0].y + vehicle->wheelPositions88[2].y - (vehicle->wheelPositions88[1].y + vehicle->wheelPositions88[3].y)) >> 3);
-        vehicle->rot50 = (short)(BodyRingSum(fs->bodyPitch, pos, 0, 20) / 20);
-        vehicle->rot58 = (short)(BodyRingSum(fs->bodyRoll, pos, 0, 20) / 20);
-        vehicle->ang80 = BodyRingSum(fs->bodyPitch, pos, 8, 20) / 20 + (vehicle->renderAngleX1AC >> 1);
-        vehicle->ang82 = (u16)vehicle->rot54;
-        vehicle->ang84 = vehicle->renderAngleZ1AE + BodyRingSum(fs->bodyRoll, pos, 8, 20) / 20;
-    } else {
     vehicle->xHistory124[work->w34] = Atan2Table(vehicle->halfSpan10E, (vehicle->wheelPositions88[0].y + vehicle->wheelPositions88[1].y - (vehicle->wheelPositions88[2].y + vehicle->wheelPositions88[3].y)) >> 3);
     vehicle->zHistory144[work->w34] = Atan2Table(vehicle->width10C, (vehicle->wheelPositions88[0].y + vehicle->wheelPositions88[2].y - (vehicle->wheelPositions88[1].y + vehicle->wheelPositions88[3].y)) >> 3);
     vehicle->pitchAverage164 += vehicle->xHistory124[work->w34];
@@ -314,7 +270,6 @@ void UpdateWheelBumps(RaceVehicle *vehicle)
     vehicle->ang80 = vehicle->pitchAverage168 / 10 + (vehicle->renderAngleX1AC >> 1);
     vehicle->ang82 = (u16)vehicle->rot54;
     vehicle->ang84 = vehicle->renderAngleZ1AE + vehicle->rollAverage16A / 10;
-    }
     vehicle->ir70[0] += vehicle->worldPosition10.words[0];
     vehicle->ir70[1] += vehicle->worldPosition10.words[1];
     vehicle->ir70[2] += vehicle->worldPosition10.words[2];

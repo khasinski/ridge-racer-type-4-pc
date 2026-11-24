@@ -12,7 +12,6 @@
 #include "game/course/trkproj.h"
 #include "rr/audio_loop.h"
 #include "rr/vehicle_drive.h"
-#include "rr/field_rate.h"
 
 /* Keep the original table-relative cursors, while using the canonical native
  * record stride and array offset (the pointer-bearing row grows on a host). */
@@ -491,9 +490,7 @@ void UpdateComCarOvertake(RaceVehicle *p)
       v0 = q->laneCooldown40;
       if (v0 > 0)
       {
-        /* counts original ticks (rr/field_rate.h) */
-        if (RaceSlowTick())
-          q->laneCooldown40 = v0 - 1;
+        q->laneCooldown40 = v0 - 1;
       }
       else
       {
@@ -641,15 +638,13 @@ void UpdateComCarTargetPoint(RaceVehicle *vehicle) {
                 control->laneMode88 = 0;
             }
         } else {
-            /* 14 a tick: 7 a field at field rate */
-            const s32 laneStep = 14 / RaceFieldsPerTick();
             if (control->laneDelta6C > 0) {
-                control->laneDelta6C -= laneStep;
+                control->laneDelta6C -= 14;
                 if (control->laneDelta6C < 0) {
                     control->laneDelta6C = 0;
                 }
             } else {
-                control->laneDelta6C += laneStep;
+                control->laneDelta6C += 14;
                 if (control->laneDelta6C > 0) {
                     control->laneDelta6C = 0;
                 }

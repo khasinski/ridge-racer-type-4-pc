@@ -1,7 +1,6 @@
 #include "game/course/trkseek2.h"
 #include "rr/player_cars.h"
 #include "rr/track_projection.h"
-#include "rr/field_rate.h"
 
 
 void UpdateComCarTrackProjections(void)
@@ -15,9 +14,7 @@ void UpdateComCarTrackProjections(void)
         s1 = &ComCars[s2];
         if ((short)s1->flags1E4 > 0) {
             s0 = &s1->control;
-            /* counts original ticks (rr/field_rate.h) */
-            if (RaceSlowTick())
-                s0->attenuation4A = (unsigned short)s0->attenuation4A - 1;
+            s0->attenuation4A = (unsigned short)s0->attenuation4A - 1;
             if (s0->attenuation4A < 0) {
                 s0->attenuation4A = 0;
             }
@@ -30,17 +27,10 @@ void UpdateComCarTrackProjections(void)
                 s0->laneTarget3C = u;
                 v = s1->input; if (v < 0) v = 0x20; else v = 0x10;
                 s0->attenuation4A = v;
-                CarFieldStateOf(s1)->rem[CAR_FIELD_REM_AI_IMPACT_FIELD] = (s32)RaceFieldCount;
                 v = s1->input;
                 if (v < 0) v = -v;
                 s0->speed4C = v << 8;
-            } else if (!RaceFieldRateLive ||
-                       RaceFieldCount - (u32)CarFieldStateOf(s1)->rem[CAR_FIELD_REM_AI_IMPACT_FIELD] >=
-                           (u32)RaceFieldsPerTick()) {
-                /* The impact's attenuation (and its reversed accel after a
-                 * bounce back) holds for the one tick of driving after it:
-                 * both fields of it at field rate, where this runs every
-                 * field. */
+            } else {
                 s0->attenuation4A = 0;
             }
         }

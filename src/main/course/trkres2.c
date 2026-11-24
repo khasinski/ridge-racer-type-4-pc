@@ -9,26 +9,20 @@
 void BuildRateCurve(Curve24 *curve, s32 displacement, s32 duration, s32 initialRate);
 s32 EvalRateCurve(const Curve24 *curve, s32 time, s32 *output);
 
-/* Build a two-phase rate curve in twelve-bit fixed-point units, its
- * initial rate given in them (BuildRateCurveQ12: a field-rate curve starts
- * at half a tick's rate, which may be odd). */
-void BuildRateCurveQ12(Curve24 *curve, s32 displacement, s32 duration, s32 scaledInitialRate)
+/* Build a two-phase rate curve in twelve-bit fixed-point units. */
+void BuildRateCurve(Curve24 *curve, s32 displacement, s32 duration, s32 initialRate)
 {
     s32 half = duration / 2;
     s32 scaledDisplacement = displacement * 4096;
     s32 middleRate;
+    s32 scaledInitialRate = initialRate * 4096;
     curve->initialRate = scaledInitialRate;
-    middleRate = scaledDisplacement / half - scaledInitialRate / 2;
+    middleRate = scaledDisplacement / half - (initialRate * 2048);
     curve->displacement = scaledDisplacement;
     curve->duration = duration;
     curve->middleRate = middleRate;
     curve->firstAcceleration = (middleRate - curve->initialRate) / half;
     curve->secondAcceleration = -middleRate / half;
-}
-
-void BuildRateCurve(Curve24 *curve, s32 displacement, s32 duration, s32 initialRate)
-{
-    BuildRateCurveQ12(curve, displacement, duration, initialRate * 4096);
 }
 
 s32 EvalRateCurve(const Curve24 *curve, s32 time, s32 *output)

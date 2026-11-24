@@ -27,7 +27,6 @@
 #include "rr/badge_rows.h"
 #include "game/ui/badgespr.h"
 #include "rr/animated_glyph.h"
-#include "rr/field_rate.h"
 
 typedef struct { unsigned char c[4]; } B4;
 
@@ -785,24 +784,17 @@ void StartCollisionShake(RaceVehicle *vehicle, s32 impactKind) {
     }
     vehicle->shakeX198 = shakeX;
     vehicle->shakeY19A = shakeY;
-    /* the car stages every field: the timer's ticks from here
-     * (DecayCarOffset) */
-    CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
     if (vehicle->flags1E4 & 0x10) {
         panCosine = rcos(AngleDiffAbs(reverseTrackHeading, vehicle->heading1D4)) >> 6;
         if (vehicle->lateralVelF4 < 0) panCosine = -panCosine;
         pan = panCosine + 0x40;
         if (vehicle == &PlayerCars[0] || vehicle == &PlayerCars[1]) {
-            /* a player car's tick runs at the original rate (StepRaceFrame) */
             if (ReplayState != 2) PlaySfxVolPan(0x21, volume, (s16)pan, -1);
         }
     }
 }
 
 void SetVehicleShake(RaceVehicle *vehicle, s32 x, s32 y) {
-    /* the car stages every field: the timer's ticks from here
-     * (DecayCarOffset spreads the push over the tick's fields) */
-    CarFieldStateOf(vehicle)->rem[CAR_FIELD_REM_SHAKE_HALF] = 0;
     vehicle->shakeActive19C = 2;
     vehicle->shakeX198 = x;
     vehicle->shakeY19A = y;

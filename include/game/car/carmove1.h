@@ -8,9 +8,6 @@ extern short *TrackNodeGrid;
 void FindAxleTrackNode(void);
 void FindWheelTrackNodes(RaceVehicle *arg0);
 void UpdateWheelBumps(RaceVehicle *a);
-/* The car's field-rate pitch / roll samples (rr/field_rate.h) at rest:
- * PlaceCarOnGrid, after RaceVehicle's ring. */
-void ResetCarBodyFieldRing(RaceVehicle *vehicle);
 /* Publish TrackNodeGrid/TrackNodes/TrackNodeCount/TrackLength from a loaded
  * track node file (read in place). */
 void SetTrackNodeData(void *data);
