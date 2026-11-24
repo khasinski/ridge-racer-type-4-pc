@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- **Replays show the race you drove, and the next race starts from your
+  grid slot.** At the 60 Hz race frame rate the player car is drawn half
+  way between two game ticks on every other frame, and that drawn pose was
+  put back on the next frame from a copy of the previous tick's end. The
+  copy outlived the race: when a replay began (the cars restored from the
+  snapshot taken at the last lap), its first frame moved the player car to
+  where the race had finished, keeping the snapshot's speed, so the replay
+  drove a different line from the start (Grand Prix, 2,257 ticks compared:
+  47,000 units off the race at the first tick); the next race (the
+  second Grand Prix race, a retry, any race after a replay) put the player
+  car at the position where the previous race or replay had ended instead
+  of its grid slot (in a test, 4th of 8 on the grid instead of 8th, with
+  the rank and the opponents' catch-up following that position). The
+  half way pose is now forgotten whenever the cars are replaced (race
+  setup, a replay's start, a loaded replay file) and settled when the race
+  ends.
+
 - **Extended draw distance: far opponents no longer show through walls, the
   road or your own car.** The renderer positions a car from the low 16 bits
   of its distance to the camera on each axis, which wraps 32768 units

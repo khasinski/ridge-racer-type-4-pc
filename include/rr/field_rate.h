@@ -239,6 +239,10 @@ int CarFieldFast(const void *car);
 /* Cleared at race setup; SaveCarSnapshots / the replay's start copy the
  * cars' sidecars with the cars. */
 void CarFieldStatesClear(void);
+/* A player car's half way pose (StepRaceFrame, racemai2.c): keep != 0
+ * puts the tick's end back (the race ends), 0 forgets it (the cars were
+ * replaced: race setup, a replay's snapshot or file). */
+void CarPoseSettle(int keep);
 /* The sidecars SaveCarSnapshots took (CarSnapshots' order), for the
  * replay files. */
 extern CarFieldState CarFieldSnapshots[8];

@@ -149,6 +149,20 @@ static int PlayerTickMode(const RaceVehicle *car, int tick) {
     return 0;
   return tick ? 1 : 2;
 }
+/* The cars were replaced (a race set up, a replay's snapshot restored,
+ * a replay file loaded): a half way pose drawn before belongs to cars
+ * that are gone, and putting their tick's end back would move the new
+ * cars there (a replay started where the race had finished, the next
+ * race's player car off its grid slot). keep: the race ends, its cars
+ * stay at their last tick's end. */
+void CarPoseSettle(int keep) {
+  for (int i = 0; i < 2; i++)
+  {
+    if (keep && CarPoseHalfDrawn[i])
+      CarPoseRestore(&PlayerCars[i], &CarPoseTickEnd[i]);
+    CarPoseHalfDrawn[i] = 0;
+  }
+}
 static void PlayerTickUpdate(RaceVehicle *car, int index, int tick) {
   const int pm = PlayerTickMode(car, tick);
   if (pm == 2)

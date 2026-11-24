@@ -38,6 +38,7 @@ void RaceFieldRateBegin(s32 gameMode) {
      * peer that may run the original rate; the attract demo stays as the
      * console shows it. */
     RaceFieldRateLive = RaceFieldRate && gameMode != 4 && gameMode != 5;
+    CarPoseSettle(0);
     ResetLane();
     CarFieldStatesClear();
     VSyncThreshold = RaceFieldRateThreshold();
@@ -45,11 +46,13 @@ void RaceFieldRateBegin(s32 gameMode) {
 
 void RaceFieldRateResume(s32 live) {
     RaceFieldRateLive = live != 0;
+    CarPoseSettle(0);
     ResetLane();
     VSyncThreshold = RaceFieldRateThreshold();
 }
 
 void RaceFieldRateEnd(void) {
+    CarPoseSettle(1);
     RaceFieldRateLive = 0;
     ResetLane();
 }
@@ -258,6 +261,7 @@ void CarFieldStatesSave(void) {
 }
 
 void CarFieldStatesRestore(void) {
+    CarPoseSettle(0);
     for (int i = 0; i < NumCars && i < 8; i++)
         *CarFieldStateOf(CarTable[i]) = CarFieldSnapshots[i];
 }
