@@ -138,7 +138,12 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      that snap to zero height are drawn instead of opening gaps, and a vertex
      the course renderer subdivides with INTPL keeps its exact position
      (`Psyz_GteSetPgxpIntpl`), so it stays on the edge of a less subdivided
-     neighbour tile instead of leaving a hairline crack. With the option off
+     neighbour tile instead of leaving a hairline crack. Only where the
+     truncated fraction projects under a pixel: close to the camera it spans
+     several, and the exact vertex moved away from the whole-unit ones the
+     neighbouring polygons are drawn from (the sky showed through a tunnel's
+     ceiling at the top of the screen), so there it keeps the whole unit.
+     With the option off
      the packets are unchanged: at Nx the original whole-pixel vertices
      leave the T-junction cracks between differently subdivided course tiles
      that fall between the PS1's samples at 1x (as in DuckStation upscaling

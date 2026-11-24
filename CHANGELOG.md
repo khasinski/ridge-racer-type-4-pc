@@ -16,6 +16,14 @@
   as far). Original draw distance: no change in Time Attack and Grand Prix
   captures.
 
+- **Geometry correction: no sky through tunnel ceilings at the top of the
+  screen.** The subdivided course vertices keep their exact position (which
+  closes far hairline cracks) only where the difference projects under a
+  pixel; right above the camera it is several pixels, and the moved
+  vertices left a sliver of sky between ceiling tiles at the top edge in
+  tunnels and under bridges. The far road stays closed as before. PsyZ
+  (GTE INTPL precision for geometry correction).
+
 - **Extended draw distance: no more shading, shadow and car-detail pop-in a
   short way ahead.** The extended view only widened the course lists and the
   depth range; the original's near-detail steps stayed where they were, well
