@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.4-alpha
+
+Highlights: races at 60 frames a second without interpolation, with the
+original's driving, opponents and replays; no PlayStation timing emulation
+(fast loads); resolution that follows the window; extended draw distance
+without pop-in or cars through walls; an experimental GPU depth buffer.
 
 - **Depth buffer (Escape > Graphics > Depth buffer; experimental, off by
   default).** The PlayStation draws the 3D world in ordering-table order: a
@@ -270,38 +275,17 @@
   instant behaviour is the only one now), the `RR4_FUNC_MARKS` build and
   `RR4_MARK` diagnostics, and the DuckStation timing-fit tools
   (`ds_compare.py`, `ds_mark.py`, `ds_stall.py`).
-- **Races at 50 / 60 frames a second (work in progress).** Graphics >
-  Race frame rate (default 60 FPS; `race_field_rate` in the settings file,
-  `RR4_RACE_FIELD_RATE`) runs a race's frame every video field instead of
-  every second one, with no interpolation. The race's timers, countdown,
-  voices, lap timing and HUD keep the original speed (they step once per
-  original frame, and button presses between them are kept). The player's
-  car (engine, gears, steering, grip, slides and spins) and the chase
-  camera now move every field, tuned to drive the same line as at 25/30
-  fps for the same inputs; the contacts, suspension and
-  effects still step once per original frame and follow. Replays record
-  every field; replays saved before keep the original rate. The link race
-  and the attract demo stay at the original rate.
-- Race frame rate: the start's orbit, the replay and Grand Prix fly-by
-  cameras, the course's moving objects (blimps, planes, the helicopter,
-  the train), fireworks, light and brake trails, flashing lights,
-  scrolling textures and HUD pulses now move every field at the original
-  speed; the engine pitch, Doppler and stereo position follow the cars
-  every field. Their timers (camera cuts, object keyframes, colour
-  cycles, sound fades and the menus' button repeat) keep the original
-  timing.
-- Race frame rate: the wall, kerb and car-to-car contact, the impact and
-  landing shakes, the body's roll, pitch and suspension, the wheels' bumps
-  and jumps and the wheels' spin run every field with the original's
-  real-time behaviour. Fixed: at field rate a wall hit cost the car
-  far too little speed (its losses applied on every second field only).
-- **Race frame rate: the opponents drive at 50 / 60 Hz.** With Race frame
-  rate on, the computer cars' driving (steering, lane changes and
-  overtakes, corner turns, speed, gear shifts and engine revs) updates every
-  video field with half the original frame's step, keeping the original's
-  timing: the same shift points and over a two-lap Grand Prix race the
-  same finishing order, with each car's finishing time within 0.45 s
-  (about 0.2 %) of the original rate's.
+- **Races at 60 frames a second, without interpolation.** Graphics >
+  Race frame rate (default on; `race_field_rate` in the settings file,
+  `RR4_RACE_FIELD_RATE`) shows a new race picture every video field. Every
+  car, the player's and the opponents', runs the original's whole frame on
+  the frame's first field and is drawn half way between frames, so the
+  driving, the opponents, lap times and replays are the original's exactly;
+  the start's orbit, the replay and fly-by cameras, the course's moving
+  objects, fireworks, trails, flashing lights, scrolling textures, HUD
+  pulses and the engine sound move every field at the original speed. The
+  race's timers, countdown, voices and lap timing keep the original timing.
+  The link race and the attract demo stay at the original rate.
 - **Frame interpolation removed.** The 60 / 120 FPS frame rate setting
   guessed in-between pictures from the PlayStation's draw lists, which drew
   visible artifacts and made movies stutter. Every game frame is now
