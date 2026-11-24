@@ -485,8 +485,13 @@ static SkyTri17A90 *EmitSkyDepthCuedGT3(SkyTri17A90 *a0, SkyCtx *a1, int a2) {
 
 static void DrawTrackSceneryRecords(int a0);
 
+/* The backdrop is projected around the camera (no translation): with the
+ * depth buffer it is drawn by its ordering-table order behind the world,
+ * not depth-tested at its small radius. */
 void DrawTrackScenery(int a0) {
+    Psyz_GteSetPgxpDepthClass(PSYZ_PGXP_DEPTH_NONE);
     DrawTrackSceneryRecords(a0);
+    Psyz_GteSetPgxpDepthClass(PSYZ_PGXP_DEPTH_WORLD);
 }
 
 static void DrawTrackSceneryRecords(int a0) {

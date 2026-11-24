@@ -153,6 +153,47 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      offset of the address in the executable's image, so which vertex a
      full set would drop does not change with ASLR from run to run (it
      did: a rare hairline seam on the car or the road, TECH_DEBT H16).
+   - **Depth buffer (Escape > Graphics, `depth_buffer`,
+     `RR4_DEPTH_BUFFER`; off by default):** the 3D world is depth-tested per
+     pixel on the GPU instead of only drawn in ordering-table order
+     (`include/rr/depth_buffer.h`, PsyZ `Psyz_VideoSetDepthBuffer`). Its
+     depth comes from the same precise-vertex cache as geometry correction
+     (kept active while the option is on, whether or not geometry
+     correction draws from it): a polygon whose packet vertices all have a
+     precise projection carries 1 / view depth per vertex (a vertex
+     attribute of `psx.vert`; reversed: cleared to 0, `GREATER_OR_EQUAL`,
+     32-bit float where the device has it). Opaque ones are tested and
+     written, semi-transparent ones only tested; 2D, sprites, lines and
+     everything without precise vertices keep the ordering table's order
+     untested, exactly as before. The game marks each 3D view in its
+     ordering table: `SetupViewport` links a host GP0 command (1Eh, handled
+     by `DepthViewMark` in `camera/viewcam.c`) right after the view's
+     drawing area, which clears the depth there and starts the view; the
+     frame links an end command last in both ordering tables
+     (`system/frmtask.c`). Only polygons drawn under the view's drawing
+     area are tested (an off-screen sky render is not), and only the shown
+     target has a depth texture (the scaled one at Nx; at 1x the GPU
+     rasterizer draws, not the CPU one). The sky and backdrop
+     (`DrawTrackScenery`, projected around the camera) are tagged
+     `PSYZ_PGXP_DEPTH_NONE`. Coplanar layers keep the original's choice:
+     every course face and horizon tile hands its ordering bias to its
+     vertices (`Psyz_GteSetPgxpDepthLayer`, `gfx/submodel.c`), and PsyZ moves
+     the face by half a depth unit per bias entry (horizon tiles: two), so a
+     road marking (bias 5) stays on the subdivided road (15..30), whose
+     whole-unit INTPL vertices are not planar with it; semi-transparent
+     polygons (shadows) move a unit forward. Vertices whose projection
+     saturates or is clamped (a tile reaching under the camera) carry no
+     depth and leave their polygon in ordering-table order. A light trail's
+     far edge is a sample projected in an earlier frame: its stored SZ
+     gives it a depth (`Psyz_GteStorePgxpDepth`, `gfx/gtepoly1.c`), and a
+     semi-transparent polygon with only some depths is tested at their
+     average, so trails behind a wall are hidden with their car. With the
+     option on, the course-occlusion check (`gfx/course_occlusion.c`) is
+     skipped: the depth test hides what lies behind the course. With it
+     off nothing is linked or classified differently and frames are
+     unchanged. `PSYZ_DEPTH_DEBUG=1..5` tints written / tested polygons,
+     the faces' biases and the 3D polygons left untested. What is left is
+     listed in TECH_DEBT H2.
    - **Widescreen 16:9 (hor+, square pixels):** the projection is
      unchanged; a full-width race view (`include/rr/widescreen.h`, set up in
      `camera/viewcam.c`) culls `WideMargin()` pixels past both screen sides,

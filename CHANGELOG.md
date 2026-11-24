@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+- **Depth buffer (Escape > Graphics > Depth buffer; experimental, off by
+  default).** The PlayStation draws the 3D world in ordering-table order: a
+  whole polygon at the average depth of its corners, plus per-face biases
+  the course data uses to keep markings on the road and walls behind what
+  stands in front of them. Large or long polygons then sort through each
+  other (trees over bridge pillars, cars over walls, crests and tunnel roofs
+  at the extended draw distance). With the depth buffer on, every polygon
+  of the 3D world is also hidden per pixel by what is in front of it, on the
+  GPU: its depth comes from the precise projection of its vertices that
+  geometry correction uses (with or without that option). Only the 3D world
+  takes part: the HUD, text, menus, movies, sprites and the sky and
+  backdrop are drawn exactly as before, in the original's order.
+  Semi-transparent polygons (shadows, glass, smoke, lights) are depth-tested
+  but do not hide what is drawn after them. The course's ordering biases
+  still decide between faces on one surface (road markings stay on the
+  road), and every view (race, mirror, split screen, replay, the garage and
+  car select previews) starts with its own cleared depth. With it on, the
+  course-occlusion check of the extended draw distance is not needed and is
+  skipped. Off, every frame is drawn exactly as before (captures
+  pixel-identical). `RR4_DEPTH_BUFFER=1` turns it on for a run;
+  `PSYZ_DEPTH_DEBUG=1..4` tints what is depth-tested. SDL GPU renderer only
+  (Metal, Vulkan, Direct3D 12); greyed out with the OpenGL or CPU renderer.
+  Measured headless against the same frames with it off (Grand Prix on six
+  courses, versus, Time Attack, menus, a race and its replay, 1x and 4x,
+  with and without geometry correction): 0.0-0.4% of the pixels change,
+  the cars and light trails behind walls, crests and tunnel walls, trees
+  and posts behind bridge pillars, and the parts of cars the course
+  occlusion check had left. Cost: no measurable frame time at 4x 1080p or
+  8x with antialiasing; about 0.3 ms at 16x 2160p with antialiasing (within
+  run-to-run noise there), one more render pass a frame, and a depth
+  texture the size of the scaled VRAM (32 MB at 4x, 128 MB at 8x). Not yet
+  free of artifacts, so off by default: far road markings lose a few edge
+  pixels without geometry correction (most at 1x), and course objects
+  modelled partly below the ground show as sunk (TECH_DEBT H2).
+
 - **Extended draw distance: rivals no longer show through walls, crests,
   tunnel roofs and the road.** The course and the cars are layered by
   ordering-table slot: each course tile at the average depth of its corners

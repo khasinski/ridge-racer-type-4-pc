@@ -29,9 +29,11 @@
 
 #include "host_log.h"
 #include "rr/draw_distance.h"
+#include "rr/depth_buffer.h"
 #include "rr/field_rate.h"
 
 int ExtendedDrawDistance;
+int DepthBuffer;
 s32 RaceFieldRate = 1;
 
 #define PREFS_FILE "ridge-racer-type-4.toml"
@@ -293,6 +295,8 @@ static int ParseValue(Rr4Prefs *p, const char *section, const char *key, char *v
             return ParseFlag(value, &p->extended_draw_distance);
         if (!strcmp(key, "race_field_rate"))
             return ParseFlag(value, &p->race_field_rate);
+        if (!strcmp(key, "depth_buffer"))
+            return ParseFlag(value, &p->depth_buffer);
         /* The removed frame interpolation (0.3 and before): its keys are
          * accepted and dropped, so older files keep their other settings. */
         if (!strcmp(key, "frame_interpolation") || !strcmp(key, "frame_rate"))
@@ -512,7 +516,8 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             "texture_filtering = %s\n"
             "geometry_correction = %s\n"
             "extended_draw_distance = %s\n"
-            "race_field_rate = %s\n\n"
+            "race_field_rate = %s\n"
+            "depth_buffer = %s\n\n"
             "[audio]\n"
             "volume = %u\n"
             "mute = %s\n\n"
@@ -530,7 +535,7 @@ int Rr4PrefsSaveFile(const Rr4Prefs *p, const char *path) {
             Bool(p->disable_dithering),
             Bool(p->antialiasing), Bool(p->texture_filtering),
             Bool(p->geometry_correction), Bool(p->extended_draw_distance),
-            Bool(p->race_field_rate), p->volume, Bool(p->mute), Rr4PadTypeKey(p->pad_type[0]), Rr4PadTypeKey(p->pad_type[1]),
+            Bool(p->race_field_rate), Bool(p->depth_buffer), p->volume, Bool(p->mute), Rr4PadTypeKey(p->pad_type[0]), Rr4PadTypeKey(p->pad_type[1]),
             Bool(p->force_feedback));
     for (int i = 0; i < RR4_AXES; i++)
         fprintf(file, "%s_deadzone = %g\n%s_saturation = %g\n%s_linearity = %g\n%s_scaling = %g\n",
@@ -717,6 +722,13 @@ void Rr4ApplyWidescreen(int enabled) {
     Psyz_VideoSetAspectMode(Psyz_VideoGetWidescreen() ? PSYZ_ASPECT_SQUARE : PSYZ_ASPECT_DISPLAY);
 }
 
+void Rr4ApplyDepthBuffer(int enabled) {
+    /* The game marks its views only while the renderer can draw them. */
+    DepthBuffer = enabled && Psyz_VideoSetDepthBuffer(1) == 0 && Psyz_VideoDepthBufferActive();
+    if (!DepthBuffer)
+        Psyz_VideoSetDepthBuffer(0);
+}
+
 void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
     static const PsyzVsyncMode kVsync[] = {PSYZ_VSYNC_AUTO, PSYZ_VSYNC_ON, PSYZ_VSYNC_OFF};
 
@@ -728,6 +740,7 @@ void Rr4PrefsApply(const Rr4Prefs *p, int window_ready) {
     Psyz_VideoSetAntialiasing(p->antialiasing != 0);
     Psyz_VideoSetModelFiltering(p->texture_filtering != 0);
     Psyz_VideoSetGeometryCorrection(p->geometry_correction != 0);
+    Rr4ApplyDepthBuffer(p->depth_buffer != 0);
     Rr4ApplyWidescreen(p->aspect_ratio == RR4_ASPECT_WIDESCREEN);
     if (Psyz_VideoGetVsyncMode() != kVsync[p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0])
         Psyz_VideoSetVsyncMode(kVsync[p->vsync >= 0 && p->vsync <= 2 ? p->vsync : 0]);

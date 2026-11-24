@@ -14,6 +14,7 @@
 #include "scratchpad.h"
 #include "rr/frame_loop.h"
 #include "rr/widescreen.h"
+#include "rr/depth_buffer.h"
 #include "rr/video_timing.h"
 #include "rr/release.h"
 #include <psyz/gpu.h>
@@ -296,6 +297,12 @@ void MainLoop(void) {
             ClearOTagR(ordering,length);
         }
         ClearOTagR(CurrentDrawBuf->buffer.secondaryOrderingB70.tags,0x2C0);
+        /* Linked first, drawn last: each ordering table ends its depth
+         * views (rr/depth_buffer.h). */
+        RR_GPU_SCRATCH->cursor = DepthViewMark(&CurrentDrawBuf->buffer.ordering70.tags[0],
+                                               RR_GPU_SCRATCH->cursor, 0);
+        RR_GPU_SCRATCH->cursor = DepthViewMark(&CurrentDrawBuf->buffer.secondaryOrderingB70.tags[0],
+                                               RR_GPU_SCRATCH->cursor, 0);
         CdFileStep();
         /* the sound's timers and fades by the original tick, its listener,
          * Doppler, pitches and volumes every field (rr/field_rate.h) */

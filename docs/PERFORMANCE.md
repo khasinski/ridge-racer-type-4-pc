@@ -1,5 +1,35 @@
 # Performance measurements
 
+## Depth buffer (2026-11-24)
+
+The depth buffer option (docs/ARCHITECTURE.md, off by default) adds a
+depth texture the size of the scaled VRAM target (D32_FLOAT on Metal and on
+D3D12 WARP: 32 MB at 4x, 128 MB at 8x, 512 MB at 16x), a float per vertex
+(the vertex grows by 8 bytes), the depth attachment on the batch's render
+passes and one more render pass a frame (median 2 -> 3 per race frame:
+the view's clear is the first depth pass's load, and segments split where
+the depth mode changes). With it on the course-occlusion check of the
+extended draw distance is skipped.
+
+Headless Grand Prix, course 1, extended draw distance, autodrive,
+unpaced, race frames 7400-12300 (median of 2 runs each, M5 Max shared with
+other agents' runs; run-to-run spread 5-10%):
+
+| Setting | CPU work ms off -> on | p95 off -> on |
+| --- | --- | --- |
+| 4x, 1920x1080, geometry correction, filtering, widescreen | 5.17 -> 4.98 | 5.90 -> 5.68 |
+| 9x (8x + AA, budget 2), 2992x1878 | 5.17 -> 5.15 | 5.81 -> 5.97 |
+| 16x (8x + AA, no budget), 3840x2160, frames 7400-9700 | 5.47 / 6.03 -> 5.95 / 6.17 (interval) | 6.17 / 7.30 -> 6.95 / 9.79 |
+
+The runs are CPU-bound up to 9x; the 4x saving is the occlusion check
+(0.1-0.3 ms, as measured when it landed). At 16x the GPU shows through and
+the depth buffer costs about 0.1-0.5 ms a frame, within the noise of two
+runs. `PSYZ_GPU_TIME` cannot attribute it: the frame's drawing is
+submitted in pieces at the descriptor rollovers, so the serialised
+end-of-frame submission it times is near zero either way. Whole-run CPU
+time (12,400 fields): 28.5 / 27.4 s off, 27.1 / 27.0 s on at 4x; 28.1 /
+28.1 s off, 28.3 / 27.9 s on at 9x.
+
 ## Native VRAM drawn on demand; command buffer rollovers (2026-11-23)
 
 **Rollover audit.** `ReserveDrawDescriptors` submits the pending command

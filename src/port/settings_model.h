@@ -31,6 +31,7 @@ enum {
     SETTINGS_FEATURE_FILTERING = 1 << 2,
     SETTINGS_FEATURE_GEOMETRY = 1 << 3,
     SETTINGS_FEATURE_WIDESCREEN = 1 << 4,
+    SETTINGS_FEATURE_DEPTH_BUFFER = 1 << 5,
 };
 
 typedef enum SettingsAction {

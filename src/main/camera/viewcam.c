@@ -28,6 +28,8 @@
 #include "game/camera/viewcam.h"
 #include "rr/animated_glyph.h"
 #include "rr/widescreen.h"
+#include "rr/depth_buffer.h"
+#include <psyz/gpu.h>
 #include <psyz/video.h>
 static GpuRectangleFields CourseSelectPreviewUvsJp[2][7];
 static const s16 CourseSelectLabelPosYJp[8];
@@ -282,6 +284,8 @@ void SetupViewport(s32 viewport) {
         RR_GPU_SCRATCH->order = &CurrentDrawBuf->buffer.ordering70.tags[0];
     }
     WideSetupViewport(viewport);
+    /* linked first: drawn right after the drawing area (rr/depth_buffer.h) */
+    packet = DepthViewMark(&RR_GPU_SCRATCH->order[703], packet, 1);
     SetDrawArea(packet, rectangle);
     AddPrim(&RR_GPU_SCRATCH->order[703], packet);
     packet += sizeof(GpuDrawModePacket);
@@ -429,6 +433,35 @@ void WideCommitFrame(s32 bufferY, s32 width, s32 height, const GpuDmaTag *orderi
     WideViewLastFrame = WideViewThisFrame;
     WideViewThisFrame = 0;
     WideSqueezedThisFrame = 0;
+}
+
+/* Depth buffer views (rr/depth_buffer.h): GP0 command 1Eh, bit 0 begins a
+ * view at the drawing area set before it, 0 ends it (PsyZ's depth buffer
+ * applies them in ordering-table order). */
+#define DEPTH_VIEW_COMMAND 0x1Eu
+
+static int DepthViewCommand(const u_long *words, int available, void *userdata) {
+    (void)available;
+    (void)userdata;
+    Psyz_VideoDepthView((int)(words[0] & 1u));
+    return 1;
+}
+
+u8 *DepthViewMark(GpuDmaTag *entry, u8 *cursor, s32 begin) {
+    static s32 registered;
+    GpuCommandPacket *packet;
+
+    if (!DepthBuffer)
+        return cursor;
+    if (!registered) {
+        if (Psyz_GpuRegisterCommandHandlerIfVacant(DEPTH_VIEW_COMMAND, DepthViewCommand, NULL) != 0)
+            return cursor;
+        registered = 1;
+    }
+    packet = (GpuCommandPacket *)cursor;
+    packet->command = (uintptr_t)(DEPTH_VIEW_COMMAND << 24) | (begin ? 1u : 0u);
+    RR_GPU_ADD_PRIM(entry, packet, 1);
+    return (u8 *)(packet + 1);
 }
 
 int GetViewTrackNode(const s32 *position, s32 player) {

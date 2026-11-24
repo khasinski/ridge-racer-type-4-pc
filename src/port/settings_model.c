@@ -71,6 +71,8 @@ static const char *const kDrawDistanceNames[] = {"Original", "Extended (2x)"};
 ACCESSORS(DrawDistance, p->extended_draw_distance != 0, p->extended_draw_distance = i)
 
 static const char *const kRaceRateNames[] = {"Original", "60 FPS"};
+
+ACCESSORS(DepthBuffer, p->depth_buffer != 0, p->depth_buffer = i)
 ACCESSORS(RaceRate, p->race_field_rate != 0, p->race_field_rate = i)
 
 static const ChoiceSetting kGraphics[] = {
@@ -101,6 +103,9 @@ static const ChoiceSetting kGraphics[] = {
     GPU_SETTING("Geometry correction", "Experimental. Subpixel vertices and perspective-correct textures.",
             kSwitchNames, Geometry,
             SETTINGS_FEATURE_GEOMETRY),
+    GPU_SETTING("Depth buffer", "Experimental. The 3D world is hidden per pixel by what is in front of it: cars stay behind walls and crests at any draw distance and large polygons no longer sort through each other. Off: the PlayStation's polygon order only.",
+            kSwitchNames, DepthBuffer,
+            SETTINGS_FEATURE_DEPTH_BUFFER),
 };
 
 static const char *const kVolumeNames[] = {
@@ -366,6 +371,7 @@ static void ResetPage(SettingsModel *m) {
         p->geometry_correction = d->geometry_correction;
         p->extended_draw_distance = d->extended_draw_distance;
         p->race_field_rate = d->race_field_rate;
+        p->depth_buffer = d->depth_buffer;
         break;
     case SETTINGS_PAGE_CONTROLS:
         memcpy(DeviceBindings(p, m->device), DeviceBindings((Rr4Prefs *)d, m->device),

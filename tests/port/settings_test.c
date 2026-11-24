@@ -16,6 +16,7 @@
 #include "link.h"
 #include "preferences.h"
 #include "rr/draw_distance.h"
+#include "rr/depth_buffer.h"
 #include "settings_model.h"
 #include "settings_raster.h"
 
@@ -47,6 +48,7 @@ static void TestDefaults(void) {
     CHECK(d->vsync == RR4_VSYNC_AUTO);
     CHECK(d->video_timing == RR4_VIDEO_NTSC);
     CHECK(!d->extended_draw_distance);
+    CHECK(!d->depth_buffer);
     CHECK(d->pad_type[0] == RR4_PAD_DIGITAL && d->pad_type[1] == RR4_PAD_DIGITAL);
     CHECK(d->force_feedback == 1);
     CHECK(d->axes[RR4_AXIS_STEERING].linearity == 0.5f && d->axes[RR4_AXIS_THROTTLE].linearity == 0.0f);
@@ -145,8 +147,38 @@ static void TestUnavailable(void) {
     CHECK(m.prefs.fullscreen == 1);
     SettingsModelRow(&m, 5, &v); /* aspect ratio: visible near the top */
     CHECK(v.disabled && !strcmp(v.label, "Aspect ratio"));
-    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* geometry correction */
-    CHECK(!v.disabled);
+    SettingsModelRow(&m, SettingsContentRows(&m) - 2, &v); /* geometry correction */
+    CHECK(!v.disabled && !strcmp(v.label, "Geometry correction"));
+    SettingsModelRow(&m, SettingsContentRows(&m) - 1, &v); /* depth buffer */
+    CHECK(!v.disabled && !strcmp(v.label, "Depth buffer") && !strcmp(v.value, "Off"));
+    /* Without it (the OpenGL or CPU renderer) the depth buffer row keeps
+     * its value and does not change. */
+    m.unavailable |= SETTINGS_FEATURE_DEPTH_BUFFER;
+    SettingsModelSelect(&m, SettingsContentRows(&m) - 1);
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(v.disabled);
+    SettingsModelTakeChanged(&m);
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.depth_buffer == 0 && !SettingsModelTakeChanged(&m));
+}
+
+/* The depth buffer is a Graphics switch, off by default, restored by the
+ * page's defaults. */
+static void TestDepthBufferRow(void) {
+    SettingsModel m;
+    SettingsRowView v;
+
+    SettingsModelOpen(&m, Rr4PrefsDefaults(), NULL);
+    SettingsModelSelect(&m, SettingsContentRows(&m) - 1);
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!strcmp(v.label, "Depth buffer") && !strcmp(v.value, "Off"));
+    Do(&m, SETTINGS_RIGHT, 1);
+    CHECK(m.prefs.depth_buffer == 1 && SettingsModelTakeChanged(&m) == 1);
+    SettingsModelRow(&m, m.row, &v);
+    CHECK(!strcmp(v.value, "On"));
+    SettingsModelSelect(&m, SettingsContentRows(&m));
+    Do(&m, SETTINGS_ACTIVATE, 1);
+    CHECK(m.prefs.depth_buffer == 0);
 }
 
 static void TestControlsPage(void) {
@@ -428,6 +460,7 @@ static void TestPrefsFile(const char *dir) {
     p.aspect_ratio = RR4_ASPECT_WIDESCREEN;
     p.video_timing = RR4_VIDEO_PAL;
     p.extended_draw_distance = 1;
+    p.depth_buffer = 1;
     p.volume = 35;
     p.mute = 1;
     p.keys[BTN_UP] = SDL_SCANCODE_I;
@@ -565,6 +598,8 @@ static void TestApply(void) {
     p.axes[RR4_AXIS_THROTTLE].deadzone = 0.25f;
     Rr4PrefsApply(&p, 0);
     CHECK(ExtendedDrawDistance == 1);
+    /* Off by default: the game marks no depth views. */
+    CHECK(DepthBuffer == 0);
     CHECK(Psyz_AudioGetOutputVolume() == 40);
     CHECK(Psyz_PadsSetKind(0, 0, PSYZ_CTRL_QUERY_KIND) == PSYZ_CTRL_NEGCON);
     CHECK(Psyz_PadsSetKind(1, 0, PSYZ_CTRL_QUERY_KIND) == PSYZ_CTRL_DIGITAL_PAD);
@@ -626,6 +661,7 @@ int main(int argc, char **argv) {
     Rr4PrefsCaptureDefaults();
     TestDefaults();
     TestGraphicsPage();
+    TestDepthBufferRow();
     TestUnavailable();
     TestControlsPage();
     TestAudioAndDisc();

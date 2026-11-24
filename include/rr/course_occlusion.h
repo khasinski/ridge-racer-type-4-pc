@@ -25,7 +25,8 @@
  * if it stays in front of the course behind it (else only its shadow
  * moves). The main view submits its cars before its course, so they wait
  * for the view's course; the mirror's come after it. Only with
- * ExtendedDrawDistance. */
+ * ExtendedDrawDistance, and not with the depth buffer (rr/depth_buffer.h),
+ * which hides what lies behind the course per pixel. */
 
 /* Frame start: forget the buffers and any faces still waiting. */
 void CourseOcclusionFrame(void);

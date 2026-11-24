@@ -31,6 +31,20 @@ void Psyz_GteSetPgxpLibraryStores(int enabled);
  * after INTPL interpolated it keeps the exact interpolated position. */
 void Psyz_GteSetPgxpNclip(int enabled);
 void Psyz_GteSetPgxpIntpl(int enabled);
+/* Depth buffer class of the vertices projected or copied from now on
+ * (rr/depth_buffer.h): PSYZ_PGXP_DEPTH_NONE for a sky or backdrop around the
+ * camera, which stays behind the world by its ordering-table order; WORLD
+ * again after it. */
+#ifndef PSYZ_PGXP_DEPTH_WORLD
+#define PSYZ_PGXP_DEPTH_WORLD 0
+#define PSYZ_PGXP_DEPTH_NONE 1
+#endif
+void Psyz_GteSetPgxpDepthClass(int depth_class);
+/* The ordering bias of the face whose vertices are projected or copied from
+ * now on (active != 0): it decides between faces at the same depth. */
+void Psyz_GteSetPgxpDepthLayer(int active, int ordering_bias);
+/* The SZ of a screen word projected in an earlier frame, stored at dst. */
+void Psyz_GteStorePgxpDepth(const void *dst, unsigned int sxy, int sz);
 /* swc2 / lwc2 of any data register. */
 static inline void RrGteSwc2(unsigned reg, void *dst)
 {

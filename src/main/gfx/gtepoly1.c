@@ -10,6 +10,7 @@
 #include "types.h"
 #include "scratchpad.h"
 #include "rr_asm.h"
+#include "rr/depth_buffer.h"
 #include "game/gfx/gtepoly1.h"
 #include "rr/rro_model.h"
 #include "rr/rro_effects.h"
@@ -687,6 +688,14 @@ const RroTexturedQuadPrefix *EmitProjectedQuadsFT4(const RroTexturedQuadPrefix *
  * panels of one sample keep their identity only keyed by it. */
 static const void *TrailPanelSample;
 
+/* Depth buffer (rr/depth_buffer.h): a trail panel's far edge is a sample
+ * projected in an earlier frame, which carries no precise vertex; its SZ
+ * gives it a depth, so a light trail behind a wall is hidden with its car. */
+static void TrailHistoryDepth(void *dst, const RroProjectedVertex *v) {
+    if (DepthBuffer)
+        Psyz_GteStorePgxpDepth(dst, (u32)v->sxy, v->sz);
+}
+
 void EmitProjectedLitTrisGT3(const RroTrailPanelCommand *command, s32 count, RroEffectWork *work) {
     GpuPolyG4 *packet = (GpuPolyG4 *)RR_GPU_SCRATCH->cursor;
     s32 primaryColor = work->colors15C.palette.rgb160[0] | 0x3A000000;
@@ -740,6 +749,8 @@ void EmitProjectedLitTrisGT3(const RroTrailPanelCommand *command, s32 count, Rro
                             RR_SXY_COPY(packet[i].words.xy3, alternate[command->outer[i]].sxy);
                             RR_SXY_COPY(packet[i].words.xy0, base[command->center].sxy);
                             RR_SXY_COPY(packet[i].words.xy2, alternate[command->center].sxy);
+                            TrailHistoryDepth(&packet[i].words.xy3, &alternate[command->outer[i]]);
+                            TrailHistoryDepth(&packet[i].words.xy2, &alternate[command->center]);
                             packet[i].words.color04 = primaryColor;
                             packet[i].words.color0C = 0;
                             packet[i].words.color14 = secondaryColor;

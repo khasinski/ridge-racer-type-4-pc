@@ -847,6 +847,8 @@ void Rr4DiagnosticsInit(Rr4Prefs *prefs, int interactive) {
         apply_graphics(prefs, text, interactive);
     prefs->extended_draw_distance = env_long("RR4_DRAW_DISTANCE", prefs->extended_draw_distance) != 0;
     ExtendedDrawDistance = prefs->extended_draw_distance;
+    prefs->depth_buffer = env_long("RR4_DEPTH_BUFFER", prefs->depth_buffer) != 0;
+    Rr4ApplyDepthBuffer(prefs->depth_buffer);
     prefs->race_field_rate = env_long("RR4_RACE_FIELD_RATE", prefs->race_field_rate) != 0;
     RaceFieldRate = prefs->race_field_rate;
     frame_limit = env_long("RR4_FRAME_LIMIT", 0);

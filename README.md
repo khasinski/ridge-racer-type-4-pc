@@ -48,7 +48,11 @@ original. **Graphics > Draw distance > Extended (2x)** doubles the course
 view depth and draws more scenery, and keeps the course's shading and the
 opponents' wheels and shadows at full detail at any distance (the parts of
 them behind walls, crests and tunnel roofs are left out), at a higher CPU
-and GPU cost.
+and GPU cost. **Graphics > Depth buffer** (experimental, off by default)
+hides the 3D world per pixel by what is in front of it instead of only by
+the PlayStation's polygon order: cars stay behind walls and crests at any
+draw distance and large polygons no longer sort through each other; the
+HUD, menus and movies are drawn as before.
 Each game frame is presented once, at its field (frame interpolation was
 removed after 0.3). Antialiasing also filters the final reduction from 8x to the window
 size to reduce shimmering on distant detail.

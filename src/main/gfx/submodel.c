@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include "types.h"
 #include "rr_asm.h"
+#include "rr/depth_buffer.h"
 #include "scratchpad.h"
 #include "rr/gpu.h"
 #include "rr/gpu_scratch_types.h"
@@ -178,6 +179,22 @@ typedef struct {
 static inline s32 FaceBias(const u32 *face, unsigned byteOffset)
 {
     return ((const s8 *)face)[byteOffset];
+}
+
+/* Depth buffer (rr/depth_buffer.h): the face's ordering bias goes with its
+ * packet vertices. Faces on one surface get the same depth, and the bias
+ * decides between them as the ordering table did: a road marking (a smaller
+ * bias) stays on the road it lies on. */
+static inline void FaceDepthClass(const u32 *face, unsigned byteOffset)
+{
+    if (DepthBuffer)
+        Psyz_GteSetPgxpDepthLayer(1, FaceBias(face, byteOffset));
+}
+
+static inline void FaceDepthClassEnd(void)
+{
+    if (DepthBuffer)
+        Psyz_GteSetPgxpDepthLayer(0, 0);
 }
 
 /* mvmva(light matrix, Vn) followed by two squarings and a colour multiply. */
@@ -501,6 +518,7 @@ static void SubmitModelFaceList(RroSceneScratchPrefix *scene, u32 header, int tw
         depth >>= depthShift & 31;
         staleV0 = (u32)(depth - 1) < 0x1BF;
         if (!staleV0) goto next;
+        FaceDepthClass(words, kind->stride - 3);
         {
             u8 *face = packet;
             packet = kind->emit(scene, packet, words, sxy, ot + depth);
@@ -513,6 +531,7 @@ static void SubmitModelFaceList(RroSceneScratchPrefix *scene, u32 header, int tw
     next:
         face += kind->stride;
     } while (--count != 0);
+    FaceDepthClassEnd();
 
     RroScene.drawPrimitive = (const u32 *)face;
     RR_GPU_SCRATCH->cursor = packet;
@@ -675,7 +694,9 @@ static void CourseEmitF4(RroSceneScratchPrefix *scene, u32 count, int fog)
     u8 *packet = RR_GPU_SCRATCH->cursor;
     do {
         s32 sxy[4];
-        s32 depth = CourseFaceVisible(scene, face, sxy);
+        s32 depth;
+        FaceDepthClass(face, 0xD);
+        depth = CourseFaceVisible(scene, face, sxy);
         if (depth >= 0) {
             PolyF4Packet *p = (PolyF4Packet *)packet;
             RR_SXY_COPY(p->xy0, sxy[0]);
@@ -695,6 +716,7 @@ static void CourseEmitF4(RroSceneScratchPrefix *scene, u32 count, int fog)
         }
         face += 4;
     } while (--count != 0);
+    FaceDepthClassEnd();
     RroScene.drawPrimitive = face;
     RR_GPU_SCRATCH->cursor = packet;
 }
@@ -706,7 +728,9 @@ static void CourseEmitFT4(RroSceneScratchPrefix *scene, u32 count, int fog)
     u8 *packet = RR_GPU_SCRATCH->cursor;
     do {
         s32 sxy[4];
-        s32 depth = CourseFaceVisible(scene, face, sxy);
+        s32 depth;
+        FaceDepthClass(face, 0x19);
+        depth = CourseFaceVisible(scene, face, sxy);
         if (depth >= 0) {
             GpuPolyFT4 *p = (GpuPolyFT4 *)packet;
             RR_SXY_COPY(p->words.xy0, sxy[0]);
@@ -733,6 +757,7 @@ static void CourseEmitFT4(RroSceneScratchPrefix *scene, u32 count, int fog)
         }
         face += 7;
     } while (--count != 0);
+    FaceDepthClassEnd();
     RroScene.drawPrimitive = face;
     RR_GPU_SCRATCH->cursor = packet;
 }
@@ -956,7 +981,9 @@ static void CourseEmitSubdivided(RroSceneScratchPrefix *scene, u32 count, int va
     u8 *packet = RR_GPU_SCRATCH->cursor;
     CourseQuad *q = &CourseSubdivQuad;
     do {
-        s32 depth = CourseFaceVisible(scene, face, q->sxy);
+        s32 depth;
+        FaceDepthClass(face, 0x19);
+        depth = CourseFaceVisible(scene, face, q->sxy);
         if (depth >= 0) {
             u32 levels = ((const u16 *)face)[0xD];
             s32 x2 = ScreenX(q->sxy[2]);
@@ -994,6 +1021,7 @@ static void CourseEmitSubdivided(RroSceneScratchPrefix *scene, u32 count, int va
         }
         face += 8;
     } while (--count != 0);
+    FaceDepthClassEnd();
     RroScene.drawPrimitive = face;
     RR_GPU_SCRATCH->cursor = packet;
 }
@@ -1088,6 +1116,19 @@ typedef struct {
     HorizonVertex rows[2][HORIZON_ROW_ENTRIES]; /* 0x178, 0x25C */
 } HorizonWork;
 static HorizonWork Horizon;
+
+/* The ordering-table entry of a horizon tile; with the depth buffer its
+ * bias goes with the tile's packet vertices (FaceDepthClass), four times
+ * over: the road's tiles are not planar where its markings lie on them, so
+ * a marking (bias 5) stays over the road (bias 15..30) by 20 depth units
+ * (some 20 cm) and more. (Not decals: the smallest bias also holds
+ * kerbs and barriers, which must hide what lies behind them.) */
+static GpuDmaTag *HorizonOrder(s32 depth, s32 bias)
+{
+    if (DepthBuffer)
+        Psyz_GteSetPgxpDepthLayer(1, bias * 4);
+    return RenderOrderBase() + depth + bias;
+}
 
 /* The loop over a pass's views: nonzero while view is one of them. */
 static int HorizonView(u32 view, const VisibleCourseViews *views)
@@ -1429,7 +1470,7 @@ static void HorizonPassLitTiles(const VisibleCourseViews *views)
                 subdivide = (levelU | levelV) != 0;
                 if (offscreen) continue;
             }
-            Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+            Horizon.ot = HorizonOrder(depth, Horizon.otBias);
             CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             uvs[0] = tile->uv[0];
             uvs[1] = tile->uv[1];
@@ -1604,7 +1645,7 @@ static int HorizonProjectTile(const HorizonSectionTile *t, HorizonTileState *st)
         st->subdivide = (st->levelU | st->levelV) != 0;
     }
     if (offscreen) return 0;
-    Horizon.ot = RenderOrderBase() + st->depth + Horizon.otBias;
+    Horizon.ot = HorizonOrder(st->depth, Horizon.otBias);
     CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
@@ -2072,7 +2113,7 @@ static int HorizonTileClassify6(u32 flags24, s16 levels26, HorizonTileClass6 *c)
         c->subdivide = (c->levelU | c->levelV) != 0;
     }
     if (offscreen) return 0;
-    Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+    Horizon.ot = HorizonOrder(depth, Horizon.otBias);
     CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
@@ -2382,7 +2423,7 @@ static void HorizonEmitBillboards(const VisibleCourseViews *views, int section, 
             halve = !(otz < HorizonFarDepth());
             gte_cmd(GTE_DPCS);
             bias = b->flags24 >> 8;
-            Horizon.ot = RenderOrderBase() + depth + bias;
+            Horizon.ot = HorizonOrder(depth, bias);
             CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             halve &= b->flags24;
             uvs[0] = b->uv[0];
@@ -2758,7 +2799,7 @@ static void HorizonPassTris(const VisibleCourseViews *views, int section,
                 if (levels < 0) levels = 0;
                 if (offscreen) continue;
             }
-            Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+            Horizon.ot = HorizonOrder(depth, Horizon.otBias);
             CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             uv0 = t->uv0;
             uv1 = t->uv1;
@@ -3174,7 +3215,7 @@ static void HorizonC8Pass(const VisibleCourseViews *views, int section, u32 stri
                     HorizonC8LoadCameraMatrix();
                     continue;
                 }
-                Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+                Horizon.ot = HorizonOrder(depth, Horizon.otBias);
                 CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
                 RR_GTE_STORE_SXY(GTE_SXY2, &alt[3]);
                 gte_cmd(GTE_NCLIP);
@@ -3222,7 +3263,7 @@ static void HorizonC8Pass(const VisibleCourseViews *views, int section, u32 stri
                     subdivide = (levelU | levelV) != 0;
                 }
                 if (offscreen) continue;
-                Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+                Horizon.ot = HorizonOrder(depth, Horizon.otBias);
                 CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             }
             if (!far && subdivide) {
@@ -3444,7 +3485,7 @@ static int HorizonC7Front(const s32 pos[4], const u32 zw[2], u32 tileFlags, s32 
     }
     if (offscreen) return 0;
     *farOut = far;
-    Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+    Horizon.ot = HorizonOrder(depth, Horizon.otBias);
     CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
@@ -3734,6 +3775,7 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);
     RR_GPU_SCRATCH->cursor = Horizon.cursor;
+    FaceDepthClassEnd();
     Psyz_GteSetExtendedProjection(projection);
 }
 

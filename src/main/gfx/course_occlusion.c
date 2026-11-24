@@ -4,6 +4,7 @@
 #include <string.h>
 #include "rr/course_occlusion.h"
 #include "rr/draw_distance.h"
+#include "rr/depth_buffer.h"
 #include "rr/widescreen.h"
 #include "psyq/libgpu/gpuenv.h"
 #include "rr/gpu_scratch_types.h"
@@ -242,7 +243,8 @@ void CourseOcclusionCourseBegin(const RroSceneScratchPrefix *scene) {
     BufferValid = 0;
     Tile.valid = 0;
     TileCount = 0;
-    if (!ExtendedDrawDistance) return;
+    /* The depth buffer (rr/depth_buffer.h) hides them per pixel itself. */
+    if (!ExtendedDrawDistance || DepthBuffer) return;
     BufferView = ViewOf(scene);
     OriginX = BufferView.x0 - 2;
     OriginY = BufferView.y0 - 2;
@@ -574,7 +576,7 @@ void CourseOcclusionCourseEnd(const u8 *cursor) {
 void CourseOcclusionCarBegin(const RroSceneScratchPrefix *scene) {
     PendingCar *car;
     CarShadow = 0;
-    if (!ExtendedDrawDistance || CarCount >= MAX_CARS) return;
+    if (!ExtendedDrawDistance || DepthBuffer || CarCount >= MAX_CARS) return;
     car = &Cars[CarCount++];
     car->view = ViewOf(scene);
     car->first = PendingCount;

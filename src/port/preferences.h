@@ -87,6 +87,7 @@ typedef struct Rr4Prefs {
     int video_timing; /* Rr4VideoTimingPref, used from the next start */
     int extended_draw_distance; /* double the course view depth */
     int race_field_rate; /* races at 50/60 Hz (rr/field_rate.h), from the next race */
+    int depth_buffer; /* depth-tested 3D world (rr/depth_buffer.h) */
     /* [audio] */
     unsigned volume; /* 0..100 */
     int mute;
@@ -113,6 +114,8 @@ extern float Rr4RenderBudget;
 
 /* Psyz_VideoSetWidescreen for RR4: buffers already drawn stay 4:3. */
 void Rr4ApplyWidescreen(int enabled);
+/* The depth buffer (rr/depth_buffer.h): on only where the renderer has it. */
+void Rr4ApplyDepthBuffer(int enabled);
 
 /* Lower-case pad button names, the TOML keys ("l2" ... "left"). */
 const char *Rr4PrefsButtonKey(int button);
