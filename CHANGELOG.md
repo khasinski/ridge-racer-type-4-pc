@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+- **Extended draw distance: rivals no longer show through walls, crests,
+  tunnel roofs and the road.** The course and the cars are layered by
+  ordering-table slot: each course tile at the average depth of its corners
+  plus a per-tile bias the course data uses to push walls, banks and
+  roadside tiles behind what stands in front of them. With the extended
+  view each slot is twice as deep, so those biases push tiles twice as far
+  back (a wall tile with bias 20 by about 45 m instead of 22 m), and since
+  opponents, their wheels and shadows are drawn to the end of the view, a
+  car or its shadow behind a wall, a crest or a tunnel roof was drawn over
+  it. Now, with Extended on, each view's drawn course tiles are also
+  drawn, in the GPU's order, into a one-pixel buffer of the depth of the
+  course where it shows (their corner depths from the GTE), leaving out
+  tiles that are semi-transparent or whose texels include the transparent
+  colour (fences, trees, cut-out shapes). An opponent's faces (body,
+  wheels, shadow) that lie behind the visible course over their whole
+  area are not drawn; when other faces of the car show over course in
+  front of them, the whole car is linked behind that course in the
+  ordering table, in its own order, if it stays in front of the course
+  behind it, so the course covers the hidden parts (otherwise only its
+  shadow moves, and the car is drawn whole as before). Cars nearer than
+  about 25 m, the tail-light trails and cars behind track objects (signs,
+  buildings) are drawn as before. The mirror and the split screen get the
+  same test. Measured headless in Grand Prix races on courses 1 to 7 (a
+  per-pixel check of what is drawn against the precise depths of geometry
+  correction): car pixels drawn over nearer course beyond 25 m down by 82%
+  (bodies 75%, wheels 63%, shadows 83%), beyond 175 m by 89%; visible car
+  pixels lost by mistake under 0.01%. About 0.1 to 0.3 ms of CPU a frame.
+  Original draw distance: no change (captures identical).
+
 - **Opponents drive exactly as in the original at 60 Hz.** The opponents'
   driving, their car stages and the car-to-car contact ran every field with
   halved steps and square-rooted filters, an approximation of the original's

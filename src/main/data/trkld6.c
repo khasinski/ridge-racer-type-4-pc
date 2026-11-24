@@ -1,3 +1,4 @@
+#include "rr/course_occlusion.h"
 #include "rr/scene_camera_state.h"
 #include "rr/menu_selection.h"
 #include "rr/race_audio_resources.h"
@@ -95,6 +96,7 @@ int LoadRaceSoundAndTrackStep(void) {
         return 0;
     case 2:
         if (LoadTrackStep() != 0) {
+            CourseOcclusionCourseLoaded();
             RaceSoundTrackLoadState += 1;
             CourseIndex = SavedCourseIndex;
         }

@@ -15,6 +15,9 @@
 #include "game/gfx/poly1.h"
 #include "game/data/globals.h"
 #include "scratchpad.h"
+#include "rr/course_occlusion.h"
+#include "rr/gpu.h"
+#include "rr/gpu_scratch_types.h"
 
 extern int ViewUsesCarTrackNode;
 static int failures;
@@ -26,6 +29,18 @@ static struct {
     struct { u32 count; u16 indices[4]; } lists[16];
 } archive;
 static CourseViewRecord records[65536];
+
+void Psyz_GteDataWrite(unsigned reg, unsigned int value);
+
+/* A quad's projection as the GTE leaves it: corners (x, y) and depths. */
+static void Project(s32 sxy[4], const s16 xy[8], const u16 z[4]) {
+    for (int i = 0; i < 4; i++) {
+        sxy[i] = (s32)(((u32)(u16)xy[2 * i]) | ((u32)(u16)xy[2 * i + 1] << 16));
+        Psyz_GteDataWrite(16 + i, z[i]);
+    }
+}
+
+typedef struct { GpuDmaTag tag; u32 words[9]; } TestPacket;
 
 static void Expect(const u16 *indices, u32 count) {
     CHECK(PrimaryVisibleViews.objects.count == count);
@@ -134,6 +149,98 @@ int main(void) {
         CHECK(b.fields.matrix18.fields.translation14[1] == 0);
         CHECK(b.fields.matrix18.fields.translation14[2] == -50000 * 4);
         CHECK(b.fields.transformed08.z == -50000 * 4);
+    }
+    /* Course occlusion (extended draw distance): an opaque wall tile linked
+     * behind the cars (entry 300, the faces at 250) though nearer hides the
+     * faces wholly behind it, and a car with faces reaching past its edge
+     * (showing over the wall) moves behind the wall's entry whole. A car
+     * with a near face is left as it is. A see-through (semi-transparent)
+     * wall hides nothing, and nothing changes without the extended view. */
+    {
+        RroSceneScratchPrefix *scene = (RroSceneScratchPrefix *)SCRATCHPAD;
+        static GpuDmaTag table[704];
+        static TestPacket arena[16];
+        const s16 wall[8] = {40, 40, 200, 40, 40, 200, 200, 200};
+        const u16 wallZ[4] = {2000, 2000, 2000, 2000};
+        const s16 behind[8] = {80, 80, 120, 80, 80, 120, 120, 120};
+        const s16 edge[8] = {180, 80, 230, 80, 180, 120, 230, 120};
+        const u16 farZ[4] = {6000, 6000, 6100, 6100}, nearZ[4] = {1500, 1500, 1500, 1500};
+        GpuDmaTag *faceEntry = &table[250], *wallEntry = &table[300];
+        s32 sxy[4];
+        int k;
+        WideMarginX = 0;
+        scene->viewport6C.rect.x = 0;
+        scene->viewport6C.rect.y = 0;
+        scene->viewport6C.rect.w = 319;
+        scene->viewport6C.rect.h = 255;
+        scene->renderFlags64 = 0;
+        RR_GPU_SCRATCH->order = table;
+        for (int pass = 0; pass < 3; pass++) {
+            /* pass 0: opaque flat wall; 1: semi-transparent wall; 2: off */
+            ExtendedDrawDistance = pass != 2;
+            CourseOcclusionFrame();
+            for (k = 0; k < 704; k++) table[k].address = RR_GPU_END_LINK;
+            for (k = 0; k < 16; k++) arena[k].tag.length = 5;
+            /* the cars come first (main view): one behind and past the wall's
+             * edge (a two-packet face, a shadow face, a body face), one near */
+            CourseOcclusionCarBegin(scene);
+            Project(sxy, behind, farZ);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[1], 5);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[0], 5);
+            CourseOcclusionFace(faceEntry, &arena[0].tag, &arena[1].tag, &arena[1].tag, sxy, 4);
+            Project(sxy, edge, farZ);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[2], 5);
+            CourseOcclusionCarShadow(1);
+            CourseOcclusionFace(faceEntry, &arena[2].tag, &arena[2].tag, NULL, sxy, 4);
+            CourseOcclusionCarShadow(0);
+            Project(sxy, edge, farZ);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[5], 5);
+            CourseOcclusionFace(faceEntry, &arena[5].tag, &arena[5].tag, NULL, sxy, 4);
+            CourseOcclusionCarEnd();
+            CourseOcclusionCarBegin(scene);
+            Project(sxy, behind, nearZ);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[3], 5);
+            CourseOcclusionFace(faceEntry, &arena[3].tag, &arena[3].tag, NULL, sxy, 4);
+            Project(sxy, behind, farZ);
+            RR_GPU_ADD_PRIM(faceEntry, &arena[6], 5);
+            CourseOcclusionFace(faceEntry, &arena[6].tag, &arena[6].tag, NULL, sxy, 4);
+            CourseOcclusionCarEnd();
+            CourseOcclusionCourseBegin(scene);
+            Project(sxy, wall, wallZ);
+            CourseOcclusionTile(sxy, wallEntry, (const u8 *)&arena[8]);
+            arena[8].words[0] = pass == 1 ? 0x2A000000u : 0x28000000u; /* F4 */
+            RR_GPU_ADD_PRIM(wallEntry, &arena[8], 5);
+            CourseOcclusionCourseEnd((const u8 *)&arena[9]);
+            CHECK((arena[0].tag.length == 0) == (pass == 0));
+            CHECK((arena[1].tag.length == 0) == (pass == 0));
+            CHECK(arena[2].tag.length == 5);
+            CHECK(arena[5].tag.length == 5);
+            CHECK(arena[3].tag.length == 5);
+            CHECK(arena[6].tag.length == 5); /* the near car's: as it is */
+            if (pass == 0) {
+                /* the car's showing faces head entry 301 in their order */
+                CHECK(table[301].address == (uintptr_t)&arena[5]);
+                CHECK(arena[5].tag.address == (uintptr_t)&arena[2]);
+                CHECK(arena[2].tag.address == RR_GPU_END_LINK);
+                CHECK(faceEntry->address == (uintptr_t)&arena[6]);
+                CHECK(arena[6].tag.address == (uintptr_t)&arena[3]);
+                CHECK(arena[3].tag.address == (uintptr_t)&arena[0]);
+                CHECK(arena[1].tag.address == RR_GPU_END_LINK);
+            } else {
+                CHECK(table[301].address == RR_GPU_END_LINK);
+                CHECK(arena[3].tag.address == (uintptr_t)&arena[5]);
+            }
+            /* the mirror's cars come after its course: done at once */
+            if (pass == 0) {
+                CourseOcclusionCarBegin(scene);
+                Project(sxy, behind, farZ);
+                RR_GPU_ADD_PRIM(faceEntry, &arena[4], 5);
+                CourseOcclusionFace(faceEntry, &arena[4].tag, &arena[4].tag, NULL, sxy, 4);
+                CourseOcclusionCarEnd();
+                CHECK(arena[4].tag.length == 0);
+            }
+        }
+        ExtendedDrawDistance = 0;
     }
     return failures ? 1 : 0;
 }

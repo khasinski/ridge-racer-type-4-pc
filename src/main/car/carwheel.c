@@ -1,4 +1,5 @@
 #include "rr/ps1_low_ram.h"
+#include "rr/course_occlusion.h"
 #include "rr/draw_distance.h"
 #include "rr_asm.h"
 #include "rr/rro_model.h"
@@ -433,10 +434,13 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
      * position does not saturate past 32767 units of view x/y (the same as
      * the GTE's for every nearer vertex). */
     projection = Psyz_GteSetExtendedProjection(ExtendedDrawDistance);
+    CourseOcclusionCarBegin((const RroSceneScratchPrefix *)SCRATCHPAD);
     switch (drawLod) {
     case 0:
         for (i = 0; i < 8; i++) {
             u8 s0_mode = CarPartRenderModes[i];
+            /* pose 1 is the shadow's */
+            CourseOcclusionCarShadow(CarPartTransformIndices[i] == 1);
             if (s0_mode != 1 || DrawRroModel(&sp168[CarPartTransformIndices[i]], &spA8[CarPartMatrixIndices[i]], CarPartModelIndices[i], fp_val) != s0_mode) {
                 SetGteObjectTransformWide(
                     (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
@@ -459,6 +463,7 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
             a1_val = 3;
         }
         SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 0, s7_val);
+        CourseOcclusionCarShadow(1);
         if (DrawRroModel(&sp168[1], &spA8[1], 1, fp_val) == 0) {
             SetGteObjectTransformWide(
                 (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
@@ -478,6 +483,7 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 1, s7_val);
         break;
     }
+    CourseOcclusionCarEnd();
     Psyz_GteSetExtendedProjection(projection);
 }
 

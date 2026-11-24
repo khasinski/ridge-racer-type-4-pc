@@ -46,8 +46,9 @@ correction and other graphics options, controls, volume and the disc image.
 Enhancements are off by default, so the game looks and plays like the
 original. **Graphics > Draw distance > Extended (2x)** doubles the course
 view depth and draws more scenery, and keeps the course's shading and the
-opponents' wheels and shadows at full detail at any distance, at a higher
-CPU and GPU cost.
+opponents' wheels and shadows at full detail at any distance (the parts of
+them behind walls, crests and tunnel roofs are left out), at a higher CPU
+and GPU cost.
 Each game frame is presented once, at its field (frame interpolation was
 removed after 0.3). Antialiasing also filters the final reduction from 8x to the window
 size to reduce shimmering on distant detail.

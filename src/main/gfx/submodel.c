@@ -1,3 +1,4 @@
+#include "rr/course_occlusion.h"
 #include "rr/field_rate.h"
 /* Handwritten GTE renderers of the resident executable.
  *
@@ -500,7 +501,13 @@ static void SubmitModelFaceList(RroSceneScratchPrefix *scene, u32 header, int tw
         depth >>= depthShift & 31;
         staleV0 = (u32)(depth - 1) < 0x1BF;
         if (!staleV0) goto next;
-        packet = kind->emit(scene, packet, words, sxy, ot + depth);
+        {
+            u8 *face = packet;
+            packet = kind->emit(scene, packet, words, sxy, ot + depth);
+            if (CourseOcclusionCarActive && packet != face)
+                CourseOcclusionFace(ot + depth + FaceBias(words, kind->stride - 3),
+                                    (GpuDmaTag *)face, (GpuDmaTag *)face, NULL, sxy, 4);
+        }
         /* The emitters leave a nonnegative value in that register. */
         staleV0 = 0;
     next:
@@ -1423,6 +1430,7 @@ static void HorizonPassLitTiles(const VisibleCourseViews *views)
                 if (offscreen) continue;
             }
             Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+            CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             uvs[0] = tile->uv[0];
             uvs[1] = tile->uv[1];
             uvs[2] = tile->uv[2] & 0xFFFF;
@@ -1597,6 +1605,7 @@ static int HorizonProjectTile(const HorizonSectionTile *t, HorizonTileState *st)
     }
     if (offscreen) return 0;
     Horizon.ot = RenderOrderBase() + st->depth + Horizon.otBias;
+    CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
 
@@ -2064,6 +2073,7 @@ static int HorizonTileClassify6(u32 flags24, s16 levels26, HorizonTileClass6 *c)
     }
     if (offscreen) return 0;
     Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+    CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
 
@@ -2373,6 +2383,7 @@ static void HorizonEmitBillboards(const VisibleCourseViews *views, int section, 
             gte_cmd(GTE_DPCS);
             bias = b->flags24 >> 8;
             Horizon.ot = RenderOrderBase() + depth + bias;
+            CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             halve &= b->flags24;
             uvs[0] = b->uv[0];
             uvs[1] = b->uv[1];
@@ -2748,6 +2759,7 @@ static void HorizonPassTris(const VisibleCourseViews *views, int section,
                 if (offscreen) continue;
             }
             Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+            CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             uv0 = t->uv0;
             uv1 = t->uv1;
             uv2 = (u32)(s32)t->uv2;
@@ -3163,6 +3175,7 @@ static void HorizonC8Pass(const VisibleCourseViews *views, int section, u32 stri
                     continue;
                 }
                 Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+                CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
                 RR_GTE_STORE_SXY(GTE_SXY2, &alt[3]);
                 gte_cmd(GTE_NCLIP);
                 altArea1 = gte_mfc2(GTE_MAC0);
@@ -3210,6 +3223,7 @@ static void HorizonC8Pass(const VisibleCourseViews *views, int section, u32 stri
                 }
                 if (offscreen) continue;
                 Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+                CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
             }
             if (!far && subdivide) {
                 Horizon.clut = (u16)(w[6] >> 16);
@@ -3431,6 +3445,7 @@ static int HorizonC7Front(const s32 pos[4], const u32 zw[2], u32 tileFlags, s32 
     if (offscreen) return 0;
     *farOut = far;
     Horizon.ot = RenderOrderBase() + depth + Horizon.otBias;
+    CourseOcclusionTile(Horizon.sxy, Horizon.ot, Horizon.cursor);
     return 1;
 }
 
@@ -3710,9 +3725,11 @@ void SubmitCourseHorizon(void *scene, VisibleCourseViews *views, s32 course)
     Horizon.savedFarColor[2] = gte_cfc2(GTE_FC_B);
     program = (Horizon.scene->renderFlags64 == 0 ? HorizonPrograms : HorizonMirrorPrograms)[course];
     Horizon.cursor = RR_GPU_SCRATCH->cursor;
+    CourseOcclusionCourseBegin(Horizon.scene);
     for (; *program != NULL; program++) {
         (*program)(views);
     }
+    CourseOcclusionCourseEnd(Horizon.cursor);
     gte_ctc2(GTE_FC_R, Horizon.savedFarColor[0]);
     gte_ctc2(GTE_FC_G, Horizon.savedFarColor[1]);
     gte_ctc2(GTE_FC_B, Horizon.savedFarColor[2]);

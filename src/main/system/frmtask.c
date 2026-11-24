@@ -1,3 +1,4 @@
+#include "rr/course_occlusion.h"
 #include "rr/field_rate.h"
 #include <string.h>
 #include "rr/gpu_address.h"
@@ -276,6 +277,7 @@ void MainLoop(void) {
         /* The previous frame's ordering table went to the GPU (DrawOTag
          * below, which copies its precise vertices along). */
         Psyz_PgxpNextFrame();
+        CourseOcclusionFrame();
         {
             s32 length=0x2C0;
             FrameStorage *frames;

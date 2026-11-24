@@ -1,3 +1,4 @@
+#include "rr/course_occlusion.h"
 #include "rr/field_rate.h"
 #include "rr/widescreen.h"
 #include "rr/release.h"
@@ -148,6 +149,10 @@ const u32 *EmitRroLitGouraudQuads(const u32 *commands, RroRenderWork *work, s32 
                 work->normal48 = *RroHighVertex(normals, quad->normals.words[1]);
                 RR_GTE14_LIGHT1();
                 RR_GPU_ADD_PRIM(RroScene.workOrdering + work->depth18 + quad->orderingBias15, packet, 11);
+                if (CourseOcclusionCarActive)
+                    CourseOcclusionFace(RroScene.workOrdering + work->depth18 + quad->orderingBias15,
+                                        (GpuDmaTag *)packet, (GpuDmaTag *)packet, NULL,
+                                        &work->projected50[0].word, 4);
                 packet->setMask04 = RRO_MASK_COMMAND | 1;
                 packet->nop = RR_GPU_MERGED_PRIM_NOP;
                 packet->restoreMask28 = RRO_MASK_COMMAND | MaskBitSetting;
@@ -242,6 +247,9 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
                     /* Compact the staged body behind a bare GT4 header. */
                     memmove(&direct->body, &e->primary.body, sizeof(direct->body));
                     RR_GPU_ADD_PRIM(head, direct, 12);
+                    if (CourseOcclusionCarActive)
+                        CourseOcclusionFace(head, (GpuDmaTag *)direct, (GpuDmaTag *)direct, NULL,
+                                            &work->projected50[0].word, 4);
                     cursor += sizeof(GpuEnvMapDirect);
                 } else {
                     e->primary.setMask = RRO_MASK_COMMAND;
@@ -259,6 +267,14 @@ const u32 *EmitRroEnvMapQuads(const u32 *commands, RroRenderWork *work, s32 coun
                     }
                     RR_GPU_ADD_PRIM(head, &e->reflected, 14);
                     RR_GPU_ADD_PRIM(head, &e->primary, 14);
+                    /* primary, reflected and the mask restore when linked:
+                     * one run of the entry's list */
+                    if (CourseOcclusionCarActive)
+                        CourseOcclusionFace(head, (GpuDmaTag *)&e->primary,
+                                            e->reflected.tag.address == (uintptr_t)&e->restore
+                                                ? (GpuDmaTag *)&e->restore
+                                                : (GpuDmaTag *)&e->reflected,
+                                            (GpuDmaTag *)&e->reflected, &work->projected50[0].word, 4);
                     e->reflected.body.uv0 = RroEnvMapUV(envVShift) | work->envClut0C;
 
                     RR_GTE14_LWC2_V0(&work->normal48);
