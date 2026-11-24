@@ -175,6 +175,39 @@ void SetGteObjectTransform(ObjectTransform38 *output, const s16 *position, s32 *
     SetTransMatrix(output->fields.matrix18.w);
 }
 
+/* SetGteObjectTransform for a full-word position. The original takes each
+ * word's low half and subtracts the camera's in 16 bits, which wraps once
+ * the object is 32768 units or more from the camera on an axis (beyond the
+ * original's car draw distances, inside the extended one): a car there was
+ * drawn about 65536 units off, often in front of the walls and road between
+ * it and the camera. Within that range this is SetGteObjectTransform. */
+void SetGteObjectTransformWide(ObjectTransform38 *output, const Vector *position, s32 *rotation) {
+    ProjectionScratchPrefix *view = (ProjectionScratchPrefix *)SCRATCHPAD;
+    const MatrixWords32 *m = (const MatrixWords32 *)SCRATCH_ROT_MATRIX;
+    s32 d[3];
+    int i;
+    d[0] = position->x - view->pose08.position00.words[0];
+    d[1] = position->y - view->pose08.position00.words[1];
+    d[2] = position->z - view->pose08.position00.words[2];
+    if (d[0] == (s16)d[0] && d[1] == (s16)d[1] && d[2] == (s16)d[2]) {
+        SetGteObjectTransform(output, (const s16 *)position, rotation);
+        return;
+    }
+    output->fields.relative00.fields.x = (s16)d[0];
+    output->fields.relative00.fields.y = (s16)d[1];
+    output->fields.relative00.fields.z = (s16)d[2];
+    for (i = 0; i < 3; i++) {
+        s64 sum = (s64)m->fields.rotation00[i][0] * d[0] + (s64)m->fields.rotation00[i][1] * d[1] +
+                  (s64)m->fields.rotation00[i][2] * d[2];
+        output->fields.matrix18.fields.translation14[i] = (s32)(sum >> 12);
+    }
+    output->fields.transformed08.x = output->fields.matrix18.fields.translation14[0];
+    output->fields.transformed08.y = output->fields.matrix18.fields.translation14[1];
+    output->fields.transformed08.z = output->fields.matrix18.fields.translation14[2];
+    SetRotMatrix(rotation);
+    SetTransMatrix(output->fields.matrix18.w);
+}
+
 void BuildLightMatrix(void) {
     int i;
     MatrixWords32 rotation;

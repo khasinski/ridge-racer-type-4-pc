@@ -9,6 +9,9 @@
 #include "rr/player_cars.h"
 #include "rr/widescreen.h"
 #include "game/camera/viewini.h"
+#include "game/camera/viewcam.h"
+#include "rr/projection_state.h"
+#include "rr/matrix_workspace.h"
 #include "game/gfx/poly1.h"
 #include "game/data/globals.h"
 #include "scratchpad.h"
@@ -99,6 +102,38 @@ int main(void) {
         ApplySegmentVisibilityMask();
         CHECK(*farDepth == 0x7FFF);
         ExtendedDrawDistance = 0;
+    }
+    /* Object transforms: within 32767 units of the camera the full-word
+     * variant is the original's; past it the original's 16-bit difference
+     * wraps (a car 40000 units ahead drawn 25536 behind) and the full-word
+     * one does not. */
+    {
+        ProjectionScratchPrefix *view = (ProjectionScratchPrefix *)SCRATCHPAD;
+        MatrixWords32 *m = (MatrixWords32 *)SCRATCH_ROT_MATRIX;
+        ObjectTransform38 a, b;
+        MatrixWords32 rotation = {{0}};
+        Vector near = {0x12345 + 1000, 0x200 - 300, 0x54321 - 32767, 0};
+        Vector far = {0x12345 + 40000, 0x200, 0x54321 - 50000, 0};
+        *m = rotation;
+        m->fields.rotation00[0][0] = m->fields.rotation00[1][1] = 0x4000;
+        m->fields.rotation00[2][2] = 0x4000;
+        m->fields.rotation00[0][2] = 0x0800;
+        rotation.fields.rotation00[0][0] = rotation.fields.rotation00[1][1] = 0x1000;
+        rotation.fields.rotation00[2][2] = 0x1000;
+        view->pose08.position00.words[0] = 0x12345;
+        view->pose08.position00.words[1] = 0x200;
+        view->pose08.position00.words[2] = 0x54321;
+        SetGteObjectTransform(&a, (const s16 *)&near, rotation.w);
+        SetGteObjectTransformWide(&b, &near, rotation.w);
+        CHECK(a.fields.matrix18.fields.translation14[0] == b.fields.matrix18.fields.translation14[0]);
+        CHECK(a.fields.matrix18.fields.translation14[1] == b.fields.matrix18.fields.translation14[1]);
+        CHECK(a.fields.matrix18.fields.translation14[2] == b.fields.matrix18.fields.translation14[2]);
+        CHECK(b.fields.matrix18.fields.translation14[2] == -32767 * 4);
+        SetGteObjectTransformWide(&b, &far, rotation.w);
+        CHECK(b.fields.matrix18.fields.translation14[0] == 40000 * 4 + (-50000 / 2));
+        CHECK(b.fields.matrix18.fields.translation14[1] == 0);
+        CHECK(b.fields.matrix18.fields.translation14[2] == -50000 * 4);
+        CHECK(b.fields.transformed08.z == -50000 * 4);
     }
     return failures ? 1 : 0;
 }

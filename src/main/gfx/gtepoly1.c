@@ -303,8 +303,8 @@ int DrawRroModel(const Vector *position, MatrixWords32 *rotation, s32 object, s3
     if (ModelTexturePage < 0) {
         return 0;
     }
-    SetGteObjectTransform(&((RroModelScratch *)SCRATCHPAD)->work7C.transform,
-                          (const s16 *)position, rotation->w);
+    SetGteObjectTransformWide(&((RroModelScratch *)SCRATCHPAD)->work7C.transform,
+                              position, rotation->w);
     work->flags08 = flags;
     textureX = (ModelTexturePage & 0xF) << 6;
     textureY = (ModelTexturePage & 0x10) << 4;

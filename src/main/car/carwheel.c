@@ -1,5 +1,6 @@
 #include "rr/ps1_low_ram.h"
 #include "rr/draw_distance.h"
+#include "rr_asm.h"
 #include "rr/rro_model.h"
 #include "game/gfx/model.h"
 #include "rr/track_lighting.h"
@@ -299,7 +300,7 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     s32 s5_val;
     s32 s4_val;
     s32 i;
-    int lod, drawLod;
+    int lod, drawLod, projection;
     u8 a1_val;
 
     slot_half = arg0->slotIndex1E6 >> 1;
@@ -324,7 +325,11 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
     }
     s7_val = 0;
     if (arg1 == 1) {
-        s7_val = -0x5A;
+        /* The mirror draws its cars 0x5A ordering-table steps nearer. The
+         * extended view's steps are twice as deep (depthShift60 6), so half
+         * as many keep the original's depth: twice it pulled far cars in
+         * front of the walls and crests twice as far ahead of them. */
+        s7_val = ExtendedDrawDistance ? -0x2D : -0x5A;
     }
     s5_val = ComputeCarSurfaceLighting((void *)arg0, GetCarTrackLightIndex(arg0));
     s5_val = (s16)(TrackLightTable[s5_val].flags02 | ForceTailLightTrails);
@@ -423,14 +428,19 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         break;
     }
 
+    /* Far cars of the extended view: whole-word positions (see
+     * SetGteObjectTransformWide) and the course's projection, whose screen
+     * position does not saturate past 32767 units of view x/y (the same as
+     * the GTE's for every nearer vertex). */
+    projection = Psyz_GteSetExtendedProjection(ExtendedDrawDistance);
     switch (drawLod) {
     case 0:
         for (i = 0; i < 8; i++) {
             u8 s0_mode = CarPartRenderModes[i];
             if (s0_mode != 1 || DrawRroModel(&sp168[CarPartTransformIndices[i]], &spA8[CarPartMatrixIndices[i]], CarPartModelIndices[i], fp_val) != s0_mode) {
-                SetGteObjectTransform(
+                SetGteObjectTransformWide(
                     (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
-                    (const s16 *)&sp168[CarPartTransformIndices[i]],
+                    &sp168[CarPartTransformIndices[i]],
                     spA8[CarPartMatrixIndices[i]].w);
                 G->col78 = fp_val;
                 a1_val = 1;
@@ -442,7 +452,7 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         }
         break;
     case 1:
-        SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&sp168[0], spA8[0].w);
+        SetGteObjectTransformWide((ObjectTransform38 *)(SCRATCHPAD + 0x7C), &sp168[0], spA8[0].w);
         G->col78 = 0;
         a1_val = 1;
         if (ModelBankFormat >= 4) {
@@ -450,16 +460,16 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         }
         SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 0, s7_val);
         if (DrawRroModel(&sp168[1], &spA8[1], 1, fp_val) == 0) {
-            SetGteObjectTransform(
+            SetGteObjectTransformWide(
                 (ObjectTransform38 *)(SCRATCHPAD + 0x7C),
-                (const s16 *)&sp168[1],
+                &sp168[1],
                 spA8[1].w);
             G->col78 = fp_val;
             SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, 1, 1, s7_val);
         }
         break;
     case 2:
-        SetGteObjectTransform((ObjectTransform38 *)(SCRATCHPAD + 0x7C), (const s16 *)&lowPosition, lowRotation.w);
+        SetGteObjectTransformWide((ObjectTransform38 *)(SCRATCHPAD + 0x7C), &lowPosition, lowRotation.w);
         G->col78 = fp_val;
         a1_val = 1;
         if (ModelBankFormat >= 3) {
@@ -468,6 +478,7 @@ void DrawOpponentCar(RaceVehicle *arg0, s32 arg1) {
         SubmitModel((RroSceneScratchPrefix *)SCRATCHPAD, a1_val, 1, s7_val);
         break;
     }
+    Psyz_GteSetExtendedProjection(projection);
 }
 
 /* Initial values of the globals this module owns. */

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **Extended draw distance: far opponents no longer show through walls, the
+  road or your own car.** The renderer positions a car from the low 16 bits
+  of its distance to the camera on each axis, which wraps 32768 units
+  (about 165 m) away. The original drew no opponent that far; since
+  opponents keep their model to the end of the extended view, a car past it
+  was drawn about 330 m off its place: a small car on the road in front of
+  you, over a wall or in the sky. Opponents and their wheels and shadows now
+  take the whole distance, with the course's projection for points far off
+  the view's axis; within 32768 units the result is the original's. The
+  mirror's car depth bias keeps its original depth with the extended
+  view's deeper ordering steps (it pulled far cars in front of walls twice
+  as far). Original draw distance: no change in Time Attack and Grand Prix
+  captures.
+
 - **Extended draw distance: no more shading, shadow and car-detail pop-in a
   short way ahead.** The extended view only widened the course lists and the
   depth range; the original's near-detail steps stayed where they were, well
