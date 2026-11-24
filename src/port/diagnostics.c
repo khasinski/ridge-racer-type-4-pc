@@ -424,14 +424,14 @@ static unsigned short autodrive_reference(int port) {
     const RaceVehicle *car = &PlayerCars[port];
     int node = car->trackNodeF0, n = TrackNodeCount > 0 ? TrackNodeCount : 1;
     int speed = car->input;
-    int ahead = 2 + speed / 300, far = 6 + speed / 120;
+    int ahead = 2 + speed / 300, reach = 6 + speed / 120;
     /* a forward course runs down the node list (ConstrainCarToTrack's
      * distance), a reverse one up it */
     int dir = ReverseCourse ? 1 : -1;
     int aim = TrackNodes[((node + dir * ahead) % n + n) % n].road.heading;
     int turn = 0, error, limit;
     unsigned short mask;
-    for (int k = 1; k <= far; k++) {
+    for (int k = 1; k <= reach; k++) {
         int d = wrap12(TrackNodes[((node + dir * k) % n + n) % n].road.heading -
                        TrackNodes[((node + dir * (k - 1)) % n + n) % n].road.heading);
         turn += d < 0 ? -d : d;
