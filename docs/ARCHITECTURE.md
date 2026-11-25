@@ -290,6 +290,11 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      `CarPoseFields`: position, angles, suspension, shakes and the drawn
      offsets the renderer and cameras read), the second the tick's end, and
      the pose goes back to the tick's end before the next field runs.
+     The track position (`trackNodeF0`, `trackFraction170`) is race logic
+     and stays the tick's end; what is placed by it and drawn with the car
+     reads `CarDrawnTrackDistance` (half way with the pose): the replay
+     track cameras (`UpdateRaceCamera` kinds 5 and 6) took the tick's end
+     and led the car on one field of two, a shake at the field rate.
      `CarPoseSettle` forgets a half way pose when the cars are replaced (a
      race set up, a replay's snapshot restored, a replay file loaded) and
      puts the tick's end back when the race ends: a stale one moved the

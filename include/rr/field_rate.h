@@ -157,6 +157,11 @@ void CarFieldStatesClear(void);
  * puts the tick's end back (the race ends), 0 forgets it (the cars were
  * replaced: race setup, a replay's snapshot or file). */
 void CarPoseSettle(int keep);
+/* The car's distance along the course (trackNodeF0 << 10 plus
+ * trackFraction170) where it is drawn this field: half way on the first
+ * field of a tick, as its pose (racemai2.c), for what is placed by it. */
+struct RaceVehicle;
+s32 CarDrawnTrackDistance(const struct RaceVehicle *car);
 /* The sidecars SaveCarSnapshots took (CarSnapshots' order), for the
  * replay files. */
 extern CarFieldState CarFieldSnapshots[8];

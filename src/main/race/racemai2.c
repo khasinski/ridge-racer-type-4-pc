@@ -101,13 +101,14 @@ static void CarPosePutField(RaceVehicle *car, const CarPoseField *f, int k, s32 
     memcpy(at, &v, 4);
 }
 /* The first field's pose: half way from a to b (a jump of more than a
- * few ticks' motion, a reset, is drawn where it lands). */
-static void CarPoseHalf(RaceVehicle *car, const RaceVehicle *a, const RaceVehicle *b) {
+ * few ticks' motion, a reset, is drawn where it lands). Non-zero when
+ * the pose was moved half way. */
+static int CarPoseHalf(RaceVehicle *car, const RaceVehicle *a, const RaceVehicle *b) {
   for (int k = 0; k < 3; k++)
   {
     s32 d = b->posScaled00[k] - a->posScaled00[k];
     if (d > 0x80000 || d < -0x80000)
-      return;
+      return 0;
   }
   for (size_t n = 0; n < sizeof(CarPoseFields) / sizeof(CarPoseFields[0]); n++)
   {
@@ -121,6 +122,7 @@ static void CarPoseHalf(RaceVehicle *car, const RaceVehicle *a, const RaceVehicl
       CarPosePutField(car, f, k, f->angle == 2 ? (va & 0xFFF) : va);
     }
   }
+  return 1;
 }
 static void CarPoseRestore(RaceVehicle *car, const RaceVehicle *end) {
   for (size_t n = 0; n < sizeof(CarPoseFields) / sizeof(CarPoseFields[0]); n++)
@@ -143,6 +145,46 @@ void CarPoseSettle(int keep) {
     CarPoseHalfDrawn[i] = 0;
   }
 }
+/* The car's distance along the course where it is drawn, in track nodes
+ * << 10 (trackNodeF0 << 10 | trackFraction170). The track position is the
+ * race logic's, not a part of the drawn pose: on the first field of a tick
+ * the car is drawn half way from the last tick's end, and a camera placed
+ * by the car's distance (the track cameras, UpdateRaceCamera kinds 5 and
+ * 6) takes the distance half way too, or it would lead the car drawn there
+ * by half a tick's motion on one field and not on the next, a shake at the
+ * field rate. */
+s32 CarDrawnTrackDistance(const RaceVehicle *car) {
+  s32 end = (car->trackNodeF0 << 10) + car->trackFraction170;
+  for (int i = 0; i < NumCars && i < 8; i++)
+  {
+    if (CarTable[i] != car || CarPoseHalfDrawn[i] != 2)
+      continue;
+    {
+      const RaceVehicle *a = &CarPoseTickStart[i];
+      s32 lap = TrackNodeCount << 10;
+      s32 start = (a->trackNodeF0 << 10) + a->trackFraction170;
+      s32 d = end - start;
+      if (lap > 0)
+      {
+        if (d > lap / 2)
+          d -= lap;
+        else if (d < -lap / 2)
+          d += lap;
+      }
+      start += d / 2;
+      if (lap > 0)
+      {
+        if (start < 0)
+          start += lap;
+        else if (start >= lap)
+          start -= lap;
+      }
+      return start;
+    }
+  }
+  return end;
+}
+
 static void StepRaceTick(unsigned int gameMode)
 {
   int i;
@@ -334,8 +376,7 @@ void StepRaceFrame(unsigned int gameMode)
     if (CarTable[i]->half1E8 == (-1))
       continue;
     CarPoseTickEnd[i] = *CarTable[i];
-    CarPoseHalf(CarTable[i], &CarPoseTickStart[i], &CarPoseTickEnd[i]);
-    CarPoseHalfDrawn[i] = 1;
+    CarPoseHalfDrawn[i] = 1 + CarPoseHalf(CarTable[i], &CarPoseTickStart[i], &CarPoseTickEnd[i]);
   }
 }
 

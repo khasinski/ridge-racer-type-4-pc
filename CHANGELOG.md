@@ -39,6 +39,28 @@
   `PSYZ_SIM_VSYNC` and `PSYZ_SIM_DISPLAY_LOG`. PsyZ's `psyz_pacing_tests`
   run the frame limiter's decisions on a fake clock against fixed, slower,
   faster and variable refresh displays in every VSync mode.
+- **Fixed: the camera shook very fast in some replay camera angles** (at
+  the field rate, 0.4's default). Two kinds of replay track camera are
+  placed by the car's distance along the course: one that runs alongside
+  the car at a fixed angle, and one that rides the course beside it and
+  turns to follow it. The car is drawn half way between two of the
+  original's ticks on every other field, but its distance along the
+  course is race logic and stayed at the tick's end, so those cameras
+  jumped ahead of the car on one field and fell back on the next. They
+  now take the distance where the car is drawn (`CarDrawnTrackDistance`).
+  Measured per field on Grand Prix replays of all eight courses (the
+  drawn camera's position, angles and lens, and the camera-to-car vector;
+  sign-alternating second differences of 8 units or more): the
+  alongside camera alternated on 99% of its fields (runs of up to 265
+  fields in a row, steps up to 320 units), now on at most 2 isolated
+  fields per course; the riding camera on 95 to 99.6% (runs up to 323,
+  up to 390 units), now on 0.3 to 2.9% in runs of at most 6 and at most
+  20 units, the integer rounding of the original's camera maths (a replay at
+  the original rate: 9%, runs up to 4, up to 18). The other replay
+  cameras (fixed, pivoting and zooming), the race's chase camera, the
+  start orbit and the Grand Prix fly-by did not alternate and are
+  unchanged. The race itself is untouched: every car's state per tick is
+  the same as before.
 
 ## 0.4-alpha
 

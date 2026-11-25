@@ -57,7 +57,9 @@ void GetTrackLaneWorldPos(RaceVehicle *a0, int *a1, const CamNode44 *node) {
     int r;
     int t;
     int j;
-    d = (a0->trackNodeF0 << 10) + a0->trackFraction170 - node->z;
+    /* where the car is drawn (half way on a tick's first field at field
+     * rate, rr/field_rate.h), not the tick's end */
+    d = CarDrawnTrackDistance(a0) - node->z;
     t = d;
     if (d < 0) t = d + 0x3FF;
     r = t >> 10;
