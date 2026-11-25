@@ -1,5 +1,174 @@
 # Performance measurements
 
+## Target copies in levels; CLUT reuse; no sampler scaled target (2026-11-25)
+
+Report (0.4-alpha, Windows, RTX 3080 Ti, probably D3D12, Auto at
+1440p/4K): the GPU at 70% and more; an RTX 3060 slows down only on
+Shooting Hoops, most on its last lap.
+
+**Where the work went.** `PSYZ_GPU_COUNTERS=file` (new) writes one line a
+present: render passes, copy passes, texture copies and their pixels,
+draws, pipeline binds, submissions, blits and the CPU time of the level
+ordering below. Without framebuffer fetch (D3D12, Vulkan, or
+`PSYZ_GPU_FETCH=0` on Metal) a semi-transparent primitive read its
+destination from a copy made before its render pass, and a pass ended at
+every semi-transparent primitive overlapping anything drawn earlier in it.
+In SDL's D3D12 backend every texture copy transitions its source and
+destination and back (four resource barriers) and every render pass on
+the scaled target (a sampler texture, at rest in the shader-resource
+state) two more; each barrier makes the GPU finish the work before it.
+Headless counts, Auto at 2560x1440 (6x), fetch off, per presented frame
+(mean / max; before = 0.4 main):
+
+| Scene (frames) | Render passes before -> after | Texture copies before -> after |
+| --- | ---: | ---: |
+| Attract: boot, movie, menus, demo (5990) | 147 / 1270 -> 67 / 671 | 178 / 1459 -> 76 / 767 |
+| Time Attack race (2100) | 23 / 365 -> 9 / 189 | 106 / 434 -> 17 / 198 |
+| Grand Prix race, course 1, mirror (2100) | 63 / 1188 -> 32 / 635 | 191 / 1461 -> 65 / 720 |
+| Grand Prix replay with blur (500) | 301 / 922 -> 196 / 828 | 395 / 1115 -> 214 / 874 |
+| Car select and course menus (500) | 506 / 693 -> 486 / 669 | 640 / 844 -> 499 / 684 |
+| Versus split screen race (2400) | 46 / 337 -> 12 / 144 | 208 / 412 -> 34 / 222 |
+| Shooting Hoops, start (600) | 291 / 1063 -> 164 / 661 | 447 / 1316 -> 203 / 817 |
+| Shooting Hoops, last lap (3800) | 245 / 7077 -> 53 / 1321 | 399 / 7650 -> 69 / 1330 |
+| Shooting Hoops, finish, fireworks (600) | 1368 / 5157 -> 179 / 869 | 1775 / 5769 -> 203 / 901 |
+
+Shooting Hoops is the heaviest course by far: its fireworks and lights
+are hundreds of overlapping semi-transparent sprites a frame (the other
+courses' races stay under 100 passes on average). Counting two barriers a
+pass and four a copy, its finish took about 9,800 barriers a frame on
+D3D12 (up to 33,000); now about 800-1,200 (the scaled target's passes
+need none). With fetch (Metal) the race frames keep 2-3 passes; their
+copies (CLUT loads) go from 85-164 to 8-35 a race frame (Grand Prix 127
+-> 31, versus 164 -> 19, Shooting Hoops' last lap 96 -> 18).
+
+With fetch (Metal) a race frame takes 2-3 passes; its copies are the CLUT
+cache's palette loads (one copy each, 70-130 a race frame) and the
+presentation's.
+
+**Changes (PsyZ).**
+
+1. *Levels.* A batch's segments (a run of opaque primitives, or one
+   semi-transparent primitive or quad) get a level: the highest level of
+   the earlier segments whose target-pixel boxes they overlap, plus one
+   for a semi-transparent one. Level L is one render pass after one set of
+   copies (the level's semi-transparent boxes, merged while the union
+   costs at most 8x8 VRAM pixels more: a wider merge doubled the copied
+   pixels at the finish of Shooting Hoops). Every pixel's primitives keep
+   their order (overlapping segments never go to a lower level), and a
+   semi-transparent primitive's copy holds exactly the earlier segments on
+   its pixels. The first 512 segments of a window compare boxes; later
+   ones read a height map (the highest level on each VRAM pixel, 16x16
+   tiles for boxes over 1024 VRAM pixels), which can only raise a level.
+   Ordering cost: mean 35-96 us a frame, at most 0.5 ms in races, 3-8 ms
+   in nine menu transition frames of 12,600 (24,000 draws each).
+   `PSYZ_GPU_LEVELS=0` (or `Draw_SetTargetLevels(0)`) draws in order.
+2. *Scaled target without SAMPLER usage.* Only drawn into and copied
+   from (the presentation and the VRAM debug view copy the shown region
+   first), so D3D12 and Vulkan keep it in the render-target state.
+3. *CLUT rows reused across commands.* A palette loaded again reuses its
+   row while nothing wrote its VRAM pixels since (stamps of 64-pixel row
+   blocks set by `MarkVramDirty`, which every native VRAM write goes
+   through), from the newer half of the 2048-row ring; a batch is drawn
+   before a load would come round to a row it reads. Before, only loads
+   with no command recorded in between were shared.
+
+4. *Lines drawn whole by the shader.* A line (GP0 40h-5Fh) was stepped
+   on the CPU and drawn as a quad for every run of pixels on one row with
+   one colour: a Gouraud line, one 4-vertex quad (672 bytes of vertices)
+   a pixel. Shooting Hoops' final lap switches on two fireworks objects,
+   510 Gouraud lines a frame, which took the race past the 131,072-vertex
+   batch. Now, where exact polygons are drawn (no widescreen, no geometry
+   correction, 1:1 draw grid; PsyZ shader revision 2), dithered (not high
+   colour) and inside the VRAM, a line is one quad over its box: the
+   fragment shader finds the major-axis step of its VRAM pixel, steps the
+   minor axis in 32.32 and the colour in 12.12 like the CPU code, and
+   keeps the pixel only where the line passes. With widescreen or
+   geometry correction the runs stay (their squeezed or corrected quads
+   cannot be matched pixel for pixel from the fragment position).
+   `PSYZ_GPU_LINES=0` / `Draw_SetExactLines(0)` draws runs only. On Shooting
+   Hoops' final lap at 2560x1440 without widescreen (fetch off), vertices
+   a frame: lap 21,700 -> 7,500 (max 128,500 -> 18,300), finish 24,400 ->
+   9,900; line quads 3,760 -> 210 and 4,060 -> 430.
+
+**GPU and frame time, M5 Max** (other agents' runs shared the machine;
+single runs, 5-10% run-to-run spread).
+
+Unpaced (`PSYZ_AUDIO_CLOCK=video`, no limiter: each frame takes the CPU
+or the GPU time, whichever is longer), the last 600 frames of Shooting
+Hoops' finish (fields ~11,450-12,050), ms a frame mean / p95:
+
+| Setting | Before | After |
+| --- | ---: | ---: |
+| Auto 2560x1440 (6x), widescreen, geometry correction, fetch off | 24.21 / 82.63 | 6.25 / 17.46 |
+| Auto 2560x1440, no widescreen or geometry correction (exact lines), fetch off | 4.81 / 13.08 | 2.27 / 6.24 |
+| Auto 3840x2160 + antialiasing (12x), fetch off | 49.18 / 164.74 | 9.34 / 35.97 |
+| Auto 2560x1440, widescreen, fetch (Metal default) | 3.88 / 4.97 | 3.75 / 4.72 |
+| Auto 2560x1440, no widescreen, fetch | 1.53 / 1.95 | 1.47 / 1.82 |
+| Auto 3840x2160 + antialiasing, fetch | 3.95 / 4.84 | 3.97 / 5.13 |
+
+GPU busy per 16.7 ms window (Metal System Trace, 5 s, paced wall-clock
+runs, `measure.sh`-style attach at a field), mean ms:
+
+| Scene, setting | Before | After |
+| --- | ---: | ---: |
+| GP race course 1, 1440p widescreen, fetch off | 3.37 | 2.31 |
+| GP race course 1, 1440p widescreen, fetch | 2.96 | 2.01 |
+| Shooting Hoops finish, 1440p widescreen, fetch off | 6.93 | 4.31 |
+| Shooting Hoops finish, 1440p classic, fetch off | 8.28 | 5.20 |
+| Shooting Hoops finish, 1440p widescreen, Vulkan (MoltenVK) | 8.17 | 3.31 |
+| GP race course 1, 1440p widescreen, Vulkan (MoltenVK) | 4.21 | 2.83 |
+
+(The Vulkan rows are a local experiment: PsyZ on macOS was built with
+SPIR-V shaders and `SDL_GPU_DRIVER=vulkan` against MoltenVK; not part of
+the change. They predate the exact lines, which widescreen does not use.)
+At 4K with antialiasing and fetch off the paced traces disagree (7.68
+before, 10.35 and 10.53 after): there the game drops frames, so the same
+field shows different moments of the race in each build; the unpaced
+table above compares the same frames.
+
+**Image identity.** `PSYZ_AUDIO_CLOCK=video` runs, captures (rendered
+frame and display) every 300 fields (150 on Shooting Hoops), 2,008 per
+build: attract with the opening movie and menus (12,000 fields), Time
+Attack (6,600), Grand Prix on course 1 with the mirror and results
+(12,600), the same with the replay blur, versus split screen (7,000), and
+Grand Prix on Shooting Hoops through its last lap and finish (12,450),
+each at 1x with fetch off, Auto at 2560x1440 with fetch off and on, Auto
+at 3840x2160 with antialiasing and fetch off (all with widescreen and
+geometry correction), and Auto at 2560x1440 without them (where the
+exact lines draw) with fetch off and on: 3,012 of 3,012 byte-identical
+to main (the 1,004 without widescreen again after the last change to the
+lines). Frames between captures were not compared; the
+PsyZ test `target_copy_levels_keep_drawing_order` compares the whole
+scaled VRAM, native VRAM and output of an overlap scene and a
+600-particle batch with levels on and off at 1x/2x/4x (D3D12 WARP,
+Metal with and without fetch, lavapipe, MoltenVK), and
+`clut_cache_reload_sees_every_vram_write` reloads a palette after an
+upload, a primitive and a copy over it; `exact_lines_match_pixel_runs`
+draws 1,200 lines (all directions, Gouraud and flat, semi-transparent,
+leaving the drawing area, the VRAM and the 11-bit range) both ways at
+1x/2x/4x (D3D12 WARP with the CI-built DXIL, Metal, MoltenVK).
+
+**Not done, measured or argued.**
+
+- *Fixed-function blending for the PS1 modes.* Not byte-identical on the
+  RGBA8 target: it stores 5-bit colour k as round(255k/31), and
+  B+F (likewise B-F, B+F/4, B/2+F/2) of two such values is not a fixed
+  linear function of the stored destination: for a given F the exact
+  result's code differs from the destination's by two values one apart
+  depending on B, so no source value (or dual-source factor) rounds to
+  it for every B. It needs another target format (more memory traffic)
+  or a different encoding the presentation would convert; not done.
+- *Texture-page cache (CLUT textures decoded to RGBA).* Not done: the
+  fragment shader is not where the time goes (Metal with fetch, all
+  shading included: 2.0 ms a race frame at 6x).
+- Fireworks remain chains: each particle overlaps the one before it,
+  so the finish of Shooting Hoops still takes about 180 (up to 870) passes a frame
+  without fetch.
+- The full present copy, the antialiasing reduction chain and the
+  per-batch upload copy pass are unchanged.
+- No Windows or NVIDIA GPU was measured; the D3D12 path was run only on
+  WARP in CI (correctness).
+
 ## Depth buffer (2026-11-24)
 
 The depth buffer option (docs/ARCHITECTURE.md, off by default) adds a

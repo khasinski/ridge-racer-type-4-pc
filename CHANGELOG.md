@@ -62,6 +62,42 @@
   unchanged. The race itself is untouched: every car's state per tick is
   the same as before.
 
+- **Less GPU work on Direct3D 12 and Vulkan (Windows, Linux), most of all
+  in Shooting Hoops.** Without Metal's framebuffer fetch, a
+  semi-transparent primitive (smoke, shadows, light trails, glass, the
+  fireworks over Shooting Hoops' finish) blends with a copy of the picture
+  made before it, and every copy and every render pass is a set of
+  whole-texture barriers on these APIs, where the GPU waits for all the
+  work before it. The renderer ended a render pass and copied again at
+  every semi-transparent primitive that overlapped anything drawn earlier
+  in the pass: at the finish of Shooting Hoops about 1,400 passes and
+  1,800 copies a frame on average (up to 5,000), 60 and 190 in a race on
+  course 1, hundreds in menus. Now each batch is drawn in levels: a
+  semi-transparent primitive goes one level above the highest thing it
+  overlaps that was drawn before it, everything else into the level of
+  what it overlaps, and each level is one render pass after one set of
+  merged copies. Every pixel still sees its primitives in the original
+  order, so the picture is the same (3,012 of 3,012 headless captures
+  byte-identical: attract, menus, movie, Time Attack, Grand Prix with the
+  mirror, replay blur and results, versus split screen, Shooting Hoops'
+  last lap, at 1x, Auto at 1440p and Auto at 2160p with antialiasing, with
+  and without widescreen, with and without framebuffer fetch). The scaled
+  picture also stays in its render-target state between passes (it is no
+  longer a sampler texture), and palettes are copied into the CLUT cache
+  again only when their VRAM was written since (a race frame copied each
+  of its palettes every few draws). Lines (the fireworks are 510 Gouraud
+  lines a frame on the final lap) were stepped on the CPU and drawn as a
+  quad for every pixel whose colour changes; without widescreen and
+  geometry correction each line is now one quad, and the shader steps it
+  per pixel with the same integer arithmetic (identical pixels; with
+  widescreen or geometry correction the per-pixel quads stay). Headless at
+  Shooting Hoops' finish with the copy path (as on Direct3D 12 and
+  Vulkan): 24 -> 6 ms a frame at 1440p with widescreen, 49 -> 9 ms at 4K
+  with antialiasing; a Grand Prix race's GPU time 3.4 -> 2.3 ms at 1440p,
+  and with Metal's framebuffer fetch 3.0 -> 2.0 ms (fewer palette copies).
+  Measured on a Mac (Metal with framebuffer fetch off, and Vulkan through
+  MoltenVK); no Windows GPU was measured.
+
 ## 0.4-alpha
 
 Highlights: races at 60 frames a second without interpolation, with the

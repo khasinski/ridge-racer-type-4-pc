@@ -76,6 +76,20 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      pixel: on Apple GPUs (Metal) read from the colour attachment
      (framebuffer fetch), elsewhere from a copy of the target made before
      the primitive (`PSYZ_GPU_FETCH=0` forces the copies on Metal). The
+     copies are made in levels: each run of opaque primitives and each
+     semi-transparent primitive of a batch gets the highest level of what
+     it overlaps drawn before it (plus one when it reads the destination),
+     and each level is one render pass after one set of merged copies, so a
+     pixel sees its primitives in the original order while independent
+     ones share a pass (`PSYZ_GPU_LEVELS=0` draws a pass per overlap, as
+     before). The scaled target is not a sampler texture (the presentation
+     copies the shown region first), so D3D12 and Vulkan keep it in its
+     render-target state between passes. A palette (CLUT cache row) whose
+     VRAM pixels nothing wrote since it was loaded is not copied again.
+     Lines are stepped on the CPU and drawn as a quad a run of pixels; where
+     exact polygons are drawn (no widescreen or geometry correction) a
+     dithered line is one quad and the fragment shader repeats the
+     stepping per VRAM pixel (`PSYZ_GPU_LINES=0` keeps the runs). The
      probe for framebuffer fetch asks SDL's own Metal device, which on a Mac
      with two GPUs need not be the system default one.
    - **Fallback without SDL GPU:** when no SDL GPU device can be created
