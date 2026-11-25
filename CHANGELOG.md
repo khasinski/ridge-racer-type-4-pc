@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1-alpha
 
 - **Fixed: on a 60 Hz display with VSync on (Auto or On), the game ran at
   half speed for about three seconds in every six** while the picture
