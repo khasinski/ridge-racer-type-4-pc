@@ -213,12 +213,20 @@ src/main/ + src/overlays/ -> host C11 compiler -> original game + PsyZ
      the original one.
 
    - **Presentation:** every game frame is presented once, at the field
-     blank it is shown from (paced presents, `sdl3_common.h`): with the
-     display at the field rate, driver VSync paces the game; otherwise the
-     frame limiter does, with VSync present mode where the display is
-     faster, and the swapchain image is acquired without waiting
-     (`SDL_AcquireGPUSwapchainTexture`), so a full swapchain queue never
-     stalls the game (that frame is not shown). 2D screens, menus and
+     blank it is shown from (paced presents, `sdl3_common.h`). The frame
+     limiter always paces the fields by the wall clock at the console's
+     field rate (59.82 Hz NTSC); the display never does
+     (`field_pacing.h`). VSync Auto and On present in a VSync present
+     mode (no tearing) on a display at about the field rate or faster, and
+     the swapchain image is acquired without waiting
+     (`SDL_AcquireGPUSwapchainTexture`, three frames in flight), so a full
+     swapchain queue never stalls the game (that frame is not shown). In
+     0.4 driver VSync paced the game on a 60 Hz display: the 60.000 Hz
+     refreshes beat against the 59.82 Hz fields and the game ran at half
+     speed for about three seconds in every 5.5. A backend without
+     non-blocking synced presents (OpenGL) still waits for the display in
+     its swap, but the wait for the field's blank counts that time
+     (`Psyz_FieldWaitUntilNs`). 2D screens, menus and
      movies are presented at the display aspect in both Classic and
      Widescreen. The PS1-era frame interpolation (in-between frames guessed
      from the PS1 draw lists, 0.3 and before) was removed.

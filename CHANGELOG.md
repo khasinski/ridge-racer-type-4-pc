@@ -1,5 +1,45 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed: on a 60 Hz display with VSync on (Auto or On), the game ran at
+  half speed for about three seconds in every six** while the picture
+  stayed at 60 frames a second (reported on Windows with NVIDIA GPUs; VSync
+  Off avoided it). Since 0.4 a display at about the game's field rate let
+  its VSync pace the game, while the game's field clock (and its VSync
+  wait) followed the wall clock at the PlayStation's 59.82 Hz. A 60.000 Hz
+  display's refreshes drift against those fields by one refresh every 5.5
+  seconds: for half of that time each field's blank came while the game
+  was still drawing its frame, so every frame waited two refreshes. Now the
+  frame limiter always paces the game by the wall clock, in every VSync
+  mode, and VSync only decides how frames reach the display: Auto and On
+  present in the display's VSync present mode (no tearing) on any display
+  at 57 Hz or faster, without the game waiting for a full swapchain (three
+  frames in flight on Direct3D 12 and Vulkan, so a present at about the
+  display's own rate finds a free image). On a 60.000 Hz display one field
+  is shown for two refreshes every 5.5 s (the fields are 59.82 Hz); on 120,
+  144 or 165 Hz displays the fields keep their 2/3-refresh cadence; with
+  G-Sync / FreeSync every field is shown once. With OpenGL, whose synced
+  swap waits for the display, the time the swap waited now counts towards
+  the field's wait instead of adding to it. The log
+  (`ridge-racer-type-4.log`) names the choice ("vsync auto, 60.00 Hz
+  display: 59.817 Hz fields from the frame limiter, synced presents").
+  Measured headless on a modelled 60.000 Hz display (`PSYZ_SIM_DISPLAY`,
+  Time Attack, real GPU renderer): 0.4 alternated about 3 s at 60 and
+  2.5 s at 30 game frames a second (44 to 47 on average over the race, at
+  60 and 59.94 Hz, Auto and On); now 59.8 in every second at 60, 59.94,
+  144 and 165 Hz and on a variable refresh display (144 and 165 Hz were
+  not affected before either).
+- Diagnostics for frame pacing in the log: `[Frame pacing] long frame`
+  lines (at most one a second) when a frame took longer than a field, with
+  the game's own work and the VSync wait, and `no_image=` in the
+  `[Presentation FPS]` line for frames not shown because every swapchain
+  image was queued. `PSYZ_SIM_DISPLAY=<hz>[,vrr][,images=n]` (with
+  `PSYZ_HEADLESS=gpu`) models a display for headless pacing tests, with
+  `PSYZ_SIM_VSYNC` and `PSYZ_SIM_DISPLAY_LOG`. PsyZ's `psyz_pacing_tests`
+  run the frame limiter's decisions on a fake clock against fixed, slower,
+  faster and variable refresh displays in every VSync mode.
+
 ## 0.4-alpha
 
 Highlights: races at 60 frames a second without interpolation, with the
